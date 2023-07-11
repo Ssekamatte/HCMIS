@@ -1,0 +1,82 @@
+﻿using Blazor.SubtleCrypto;
+using Blazored.LocalStorage;
+using Blazored.Toast.Services;
+using HCMIS.Data;
+using HCMIS.Interface;
+using HCMIS.Model;
+using HCMIS.SHARED.Data;
+using HCMIS.SHARED.Models.SPModel;
+using System.Text.Json;
+using static System.Net.WebRequestMethods;
+
+namespace HCMIS.Repository
+{
+    public class ReportService : IReportService
+    {
+        private readonly HttpClient _httpClient;
+        private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        private readonly IToastService toastService;
+        private readonly ICryptoService Crypto;
+        private readonly ILocalStorageService sessionStorage;
+        public ReportService(HttpClient httpClient, IToastService toastService, ICryptoService Crypto, ILocalStorageService sessionStorage)
+        {
+            _httpClient = httpClient;
+            this.toastService = toastService;
+            this.Crypto = Crypto;
+            this.sessionStorage = sessionStorage;
+        }
+
+        public async Task<List<spViewBalanceScoreCardReportResult>> GetAppraisal(UtilitiesSearchPanel SearchModel)
+        {
+            List<spViewBalanceScoreCardReportResult>? data = new List<spViewBalanceScoreCardReportResult>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetAppraisalReport", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<spViewBalanceScoreCardReportResult>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
+
+        public async Task<List<spViewEmployeeLeavesReportResult>> GetLeaveRequest(UtilitiesSearchPanel SearchModel)
+        {
+            List<spViewEmployeeLeavesReportResult>? data = new List<spViewEmployeeLeavesReportResult>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetLeaveRequestReport", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<spViewEmployeeLeavesReportResult>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
+
+    }
+}

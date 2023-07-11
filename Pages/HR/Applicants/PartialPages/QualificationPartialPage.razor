@@ -1,0 +1,281 @@
+﻿@using HCMIS.Data
+@using HCMIS.ViewModel
+
+@inject DocumentUploadModel _DocumentUploadModel;
+@*<h3>QualificationPartialPage</h3>*@
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+@if (OndataLoad == true){
+    <div class="row">
+        @if (IsKnowledgeCountGreaterthanZero == true || IsQualificationCountGreaterthanZero ==true)
+        {
+            if (IsKnowledgeCountGreaterthanZero == true)
+            {
+                <div class="@KnowledSection">
+                    <h4>Job Qualification Requirements</h4>
+                    <ul>
+                        @foreach (var item in JobDescriptionKnowledgeData)
+                        {
+                            string required = string.Empty;
+                            if (item.IsRequired == true)
+                            {
+                                required = "as a must";
+                            }
+                            <li><p>should have a @item.LevelofEducationDesc in @item.FieldOfStudyDesc @required .</p></li>
+                        }
+                    </ul>
+                    
+                </div>
+            }
+            if (IsQualificationCountGreaterthanZero == true)
+            {
+                <div class="@QualificationSection">
+                    <h4>Applicant's Qualifications</h4>
+                    <SfGrid @ref="QualificationGrid" TValue="NonStaffQualification" DataSource="@QualificationData"
+                Toolbar="@(new string[] {"Edit","Delete","Update","Cancel","ColumnChooser"})" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+                AllowPaging="true" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" GridLines="GridLine.Both" AllowSelection="true">
+                        <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+                        <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+                        @* OnActionBegin="OnQualificationActionBegin"*@
+                        <GridEvents OnActionComplete="@OnQualificationActionComplete" TValue="NonStaffQualification"></GridEvents>
+                        <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
+
+                            <HeaderTemplate>
+                                @{
+                                    var text = GetQualificationHeader((context as NonStaffQualification));
+                                    <div class="headerbandimg" />
+
+                                    <span>@text</span>
+                                }
+                            </HeaderTemplate>
+                            <Template Context="QualificationContext">
+                                @{
+                                    QualificationReviewData = (QualificationContext as NonStaffQualification);
+                                    if (QualificationReviewData != null)
+                                    {
+                                        <div style="padding:15px;">
+                                            <div class="row">
+                                                <div class="col-md-12" hidden>
+                                                    <SfNumericTextBox @bind-Value="@(QualificationReviewData.QualificationId)" Enabled="false" Placeholder="BranchId" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label>Institution Name</label>
+                                                    <p>@QualificationReviewData.InstitutionName</p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label>Level of Education</label>
+                                                    @if (LevelofEducationData != null)
+                                                    {
+                                                        var a = LevelofEducationData.FirstOrDefault(o => o.LevelofEducationId == QualificationReviewData.LevelofEducationId);
+                                                        if (a != null)
+                                                        {
+                                                            <p>@a.LevelofEducationDesc</p>
+                                                        }
+                                                    }
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label>Field of study</label>
+                                                    @if (FieldOfStudyData != null)
+                                                    {
+                                                        var a = FieldOfStudyData.FirstOrDefault(o => o.FieldOfStudyId == QualificationReviewData.FieldOfStudyId);
+                                                        if (a != null)
+                                                        {
+                                                            <p>@a.FieldOfStudyDesc</p>
+                                                        }
+                                                    }
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label>Other Field of study</label>
+                                                    <p>@QualificationReviewData.OtherFieldOfStudy</p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label>From </label>
+                                                    @if (QualificationReviewData.StartDate.HasValue)
+                                                    {
+                                                        <p>@QualificationReviewData.StartDate.Value.ToString("dd/MM/yyyy")</p>
+                                                    }
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label>To</label>
+                                                    @if (QualificationReviewData.EndDate.HasValue)
+                                                    {
+                                                        <p>@QualificationReviewData.EndDate.Value.ToString("dd/MM/yyyy")</p>
+                                                    }
+                                                    else if (QualificationReviewData.IsCurrent == true)
+                                                    {
+                                                        <p>Current</p>
+                                                    }
+                                                </div>
+
+                                                <div class="form-group col-md-12">
+                                                    @if (!string.IsNullOrEmpty(QualificationDocumentString))
+                                                    {
+                                                        if (!string.IsNullOrEmpty(QualificationReviewData.QualificationDocumentExt) && QualificationReviewData.QualificationDocumentExt.ToLower().Contains("pdf"))
+                                                        {
+                                                            <embed src="@QualificationDocumentString" width="100%" height="600px" style="border: none;" frameborder="0" allowfullscreen="true" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <img src="@QualificationDocumentString" class="img-thumbnail" height="500" width="100%" style="margin-bottom:10px; margin:10%; margin-right:auto;" />
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+
+                                }
+                            </Template>
+                            <FooterTemplate>
+                                <button type="button" class="btn btn-danger" @onclick=@(async()=>{ await QualificationGrid.CloseEditAsync();})>Close</button>
+                            </FooterTemplate>
+                        </GridEditSettings>
+                        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                        <GridPageSettings PageSize="20"></GridPageSettings>
+                        <GridColumns>
+                            <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                            <GridColumn Field=@nameof(NonStaffQualification.QualificationId) HeaderText="PatientId" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+                            <GridForeignColumn Field=@nameof(NonStaffQualification.LevelofEducationId) HeaderText="Level of Education" Width="150" ForeignKeyField="@(nameof(ALevelofEducation.LevelofEducationId))" ForeignKeyValue="@(nameof(ALevelofEducation.LevelofEducationDesc))" ForeignDataSource="@LevelofEducationData"></GridForeignColumn>
+                            <GridForeignColumn Field=@nameof(NonStaffQualification.FieldOfStudyId) HeaderText="field of study" Width="150" ForeignKeyField="@(nameof(AFieldOfStudy.FieldOfStudyId))" ForeignKeyValue="@(nameof(AFieldOfStudy.FieldOfStudyDesc))" ForeignDataSource="@FieldOfStudyData"></GridForeignColumn>
+                            <GridColumn Field=@nameof(NonStaffQualification.OtherFieldOfStudy) HeaderText="Other field of study" Width="150"></GridColumn>
+                            <GridColumn Field=@nameof(NonStaffQualification.InstitutionName) HeaderText="Institution" Width="150"></GridColumn>
+                            <GridColumn Field=@nameof(NonStaffQualification.StartDate) Format="dd/MM/yyyy" HeaderText="From" Width="180"></GridColumn>
+                            <GridColumn Field=@nameof(NonStaffQualification.EndDate) Format="dd/MM/yyyy" HeaderText="To" Width="180"></GridColumn>
+                            <GridColumn Field=@nameof(NonStaffQualification.IsCurrent) HeaderText="To Current" Width="180"></GridColumn>
+                        </GridColumns>
+                    </SfGrid>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="alert-info">There is no data to display</p>
+        }
+    </div>
+}
+else{
+    <div class="col-md-12">
+        <div class="loader">
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--text"></div>
+        </div>
+    </div>
+}
+
+@code {
+    #region Toasters
+    public static string ToastContent { get; set; }
+    SfToast? ToastObj;
+    SfToast DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+        {
+            new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+            new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+            new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+            new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+        };
+    #endregion Toasters
+    [Parameter]
+    public List<NonStaffQualification>? QualificationData { get; set; }
+    [Parameter]
+    public List<ViewJobDescriptionKnowledge>? JobDescriptionKnowledgeData { get; set; }
+    [Parameter]
+    public List<AFieldOfStudy>? FieldOfStudyData { get; set; }
+    [Parameter]
+    public List<ALevelofEducation>? LevelofEducationData { get; set; }
+    [Parameter]
+    public string? AccessToken { get; set; }
+    private bool OndataLoad { get; set; } = false;
+    bool IsKnowledgeCountGreaterthanZero { get; set; } = false;
+    bool IsQualificationCountGreaterthanZero { get; set; } = false;
+    string? QualificationDocumentString { get; set; } = null;
+    string? KnowledSection { get; set; } = "col-md-12";
+    string? QualificationSection { get; set; } = "col-md-12";
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "95%" };
+    SfGrid<NonStaffQualification>? QualificationGrid;
+    private NonStaffQualification? QualificationReviewData { get; set; }
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        if (QualificationData?.Count > 0)
+        {
+            IsQualificationCountGreaterthanZero = true;
+        }
+        if (JobDescriptionKnowledgeData?.Count > 0)
+        {
+            IsKnowledgeCountGreaterthanZero = true;
+        }
+        if(IsQualificationCountGreaterthanZero==true && IsKnowledgeCountGreaterthanZero == true)
+        {
+            KnowledSection = "col-md-4";
+            QualificationSection = "col-md-8";
+        }
+        OndataLoad = true;
+    }
+    public async Task OnQualificationActionComplete(ActionEventArgs<NonStaffQualification> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            QualificationGrid.PreventRender(false);
+            if (!string.IsNullOrEmpty(args.RowData.QualificationDocumentName) && !string.IsNullOrEmpty(args.RowData.QualificationDocumentExt))
+            {
+                QualificationDocumentString = await GetImageString(args.RowData.QualificationDocumentName, args.RowData.QualificationDocumentExt, "Qualifications");
+            }
+
+        }
+    }
+    public string GetQualificationHeader(NonStaffQualification Value)
+    {
+        if (Value.QualificationId == 0)
+        {
+            return "Add a New Qualification";
+        }
+        else
+        {
+            return "Edit Details for " + Value.InstitutionName;
+        }
+    }
+    private async Task<string> GetImageString(string imageUrl, string ext, string Rootfolder)
+    {
+        string result = null;
+        try
+        {
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                ImageUpload a = await _DocumentUploadModel.GetDocument(imageUrl, Rootfolder, AccessToken);
+
+                if (a != null)
+                {
+                    if (a.ImageExt.Contains("pdf"))
+                    {
+                        string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
+                        result = "data:application/pdf;base64," + base64String;
+                    }
+                    else
+                    {
+                        string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
+                        result = "data:image/" + a.ImageExt + ";base64," + base64String;
+                    }
+
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        return result;
+    }
+}

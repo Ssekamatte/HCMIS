@@ -1,0 +1,406 @@
+﻿@page "/DisciplinaryCommittee"
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using HCMIS.ViewModel
+@using System.Collections
+@using Microsoft.AspNetCore.Authorization
+@inject HttpClient Http
+@inject SystemSettings _SystemSettings
+@inject ApiConfig _ApiConfig;
+@inject AppState AppState
+@inject NavigationManager Navigation
+@inject DocumentUploadModel _DocumentUploadModel;
+
+<style>
+    .e-dialog.e-control.e-popup {
+        padding: 3px;
+        min-width: 94%;
+    }
+    /*.e-dialog .e-lib .e-schedule-dialog .e-dlg-modal .e-popup .e-control .e-popup-open {
+                padding: 3px;
+                min-width: 94%;
+            }*/
+    .e-recurrenceeditor .e-editor {
+        display: -ms-flexbox;
+        display: flex;
+        -ms-flex-flow: row wrap;
+        flex-flow: row wrap;
+        margin-left: 1px;
+        margin-right: 1px;
+        /*max-width: 1240px;*/
+    }
+
+    h4 {
+        background-color: #007bff;
+        color: whitesmoke;
+        padding: 10px;
+    }
+
+    .e-schedule-dialog .e-footer-content {
+        margin-top: 4px;
+        display: none;
+    }
+
+    .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn-text {
+        color: black;
+    }
+</style>
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+<ol class="breadcrumb" style="margin-top: 5px; background-color: mediumblue;">
+    <li class="breadcrumb-item active" style="color: ghostwhite;"> <strong>NHCC Ltd Disciplinary |</strong> Committee</li>
+</ol>
+<SfGrid @ref="DisciplinaryCommitteeGrid" TValue="ADisciplinaryCommittee"
+     Toolbar="@(new string[] {"Add","Edit","Delete","Update","Cancel","ColumnChooser"})" AllowGrouping="true" ShowColumnChooser="true" AllowTextWrap="true"
+      AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true">
+     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+    <SfDataManager AdaptorInstance="@typeof(DisciplinaryCommitteAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <GridEvents TValue="ADisciplinaryCommittee"></GridEvents>
+    <GridEvents OnActionComplete="@OnADisplinaryCategoryActionComplete" OnActionBegin="@OnADisciplinaryCommitteeActionBegin" TValue="ADisciplinaryCommittee"></GridEvents>
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog" Dialog="DialogParams">
+               <HeaderTemplate>
+            @{
+                var text = GetADisciplinaryCommitteeHeader((context as ADisciplinaryCommittee));
+                        <div class="headerbandimg">
+                            <span>@text</span>
+                        </div>
+            }
+        </HeaderTemplate>
+        <Template Context="DisplinaryCommitteeContext">
+            @{
+                DisciplinaryCommitteeData = (DisplinaryCommitteeContext as ADisciplinaryCommittee);
+                @if (DisciplinaryCommitteeData != null)
+                { 
+                         <div class="row">
+                          <div class="form-row">
+                          <div class="row">
+                                <div class="col-md-12">
+                                    <center><strong><p class="alert alert-primary"> DISCIPLINARY COMMITTEE REGISTRATION</p></strong>  </center>
+                                </div>
+                            </div>
+                          </div>
+                          <br>
+                         <div class="col-md-6">
+                            <div class="row">
+                                 <div class="col-md-3">
+                                <p style="margin-bottom:30px">Department / Section:<span style="color:red;">(*)</span></p>
+                                <SfDropDownList @bind-Value="@(DisciplinaryCommitteeData.DepartmentId)" Enabled="true" TItem="ADepartment" TValue="int?" DataSource="@DepartmentData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                               <DropDownListFieldSettings Value="@nameof(ADepartment.DepartmentId)" Text="@nameof(ADepartment.DepartmentDescription)"></DropDownListFieldSettings>
+                              <DropDownListEvents TValue="int?" TItem="ADepartment" ValueChange="OnDepartmentChange"></DropDownListEvents>
+                               </SfDropDownList>
+                                <p> <ValidationMessage For="@(() => DisciplinaryCommitteeData.DepartmentId)" /></p>
+                        </div>
+                        <div class="col-md-6">
+                                <p style="margin-bottom:30px">Employee Name:<span style="color:red;">(*)</span></p>
+                                    <SfDropDownList @bind-Value="@(DisciplinaryCommitteeData.Employeeid)" Query="@DepartmentChange" Enabled="true" TItem="ViewDisciplinaryCommittee" TValue="int?" DataSource="@ViewDisplinaryCommitteData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                        <DropDownListFieldSettings Value="@nameof(ViewDisciplinaryCommittee.Employeeid)" Text="@nameof(ViewDisciplinaryCommittee.EmployeeName)"></DropDownListFieldSettings>
+                                        <DropDownListEvents TValue="int?" TItem="ViewDisciplinaryCommittee" ValueChange="OnEmployeeChange"></DropDownListEvents>
+                               </SfDropDownList>
+                               <p> <ValidationMessage For="@(() => DisciplinaryCommitteeData.Employeeid)" /></p>
+                        </div>
+                            @if (employeeno != null)
+                            {
+                            <div class="col-md-4">
+                            <strong><p>Employee Number:</p> </strong><br>
+                                @employeeno.EmployeeNumber
+                            </div>
+                           
+                              <div class="col-md-3">
+                              <strong><p>Desgnation:</p> </strong><br>
+                            </div>
+                            <div class="col-md-3"> 
+                              @employeeno.JobDescription
+                            </div>
+                             <div class="col-md-3">
+                              <strong><p>Duration at NHCC:</p> </strong><br>
+                            </div>
+                            <div class="col-md-3"> 
+                              @employeeno.DurationatWork
+                            </div>
+                            <br />
+                            <div class="col-md-3">
+                             <strong><p>Email Address:</p> </strong><br>
+                            </div>
+                            <div class="col-md-3">
+                              @employeeno.EmailAddress
+                             </div>
+                            <div class="col-md-3">
+                             <strong><p> Date Joined:</p> </strong><br>
+                            </div>
+                            <div class="col-md-3">
+                           @if(employeeno.DateJoined.HasValue){
+                                    @employeeno.DateJoined.Value.ToString("dd/MM/yyyy");
+                                }     
+                            </div>
+                            }
+                            </div>
+                            </div>
+
+                          </div>
+                }
+            }
+         </Template>
+
+    </GridEditSettings>
+
+</SfGrid>
+
+
+@code {
+    #region Toasters
+    public static string? ToastContent { get; set; }
+    SfToast? ToastObj;
+    SfToast? DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+{
+        new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+        new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+        new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+        new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+    };
+    #endregion Toasters
+    public Query ChildQuery = new Query();
+    string? RegisterError { get; set; }
+    string? RegisterSuccess { get; set; }
+     EmployeeDisplinaryModel inputmodel { get; set; } = new EmployeeDisplinaryModel();
+     List<ADepartment>? DepartmentData { get; set; }
+    List<ViewDisciplinaryCommittee>? ViewDisplinaryCommitteData { get; set; }
+    private static ViewDisciplinaryCommittee? employeeno { get; set; }
+    private ADisciplinaryCommittee? DisciplinaryCommitteeData { get; set; }
+    private SfGrid<ADisciplinaryCommittee>? DisciplinaryCommitteeGrid;
+    Query DepartmentChange { get; set; } = new();
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "60%" };
+    private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        try
+        {
+            await _SystemSettings.GetLoginCredentials();
+            //  mainQuery = new();
+            ChildQuery = new();
+            //    mainQuery.AddParams("AccessToken", _SystemSettings.AccessToken).AddParams("BaseUrl",_ApiConfig.BaseUrl);
+            ChildQuery.AddParams("AccessToken", _SystemSettings.AccessToken).AddParams("BaseUrl", _ApiConfig.BaseUrl);
+            inputmodel = new();
+            // inputmodel.EmpDisplinary = new();
+            var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeDisplinary/GetEmployeeDisplinaryDataList");
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode)
+            {
+                var _EmployeeDisplinaryModel = JsonSerializer.Deserialize<EmployeeDisplinaryModel>(content, _options);
+
+                if (_EmployeeDisplinaryModel != null)
+                {
+                    ViewDisplinaryCommitteData = _EmployeeDisplinaryModel.ViewDisciplinaries;
+                    //DisplinaryData = _EmployeeDisplinaryModel.DisplinaryAction;
+                    ////DepartmentData = _EmployeeDisplinaryModel.Departments;
+                    //DisplinaryReasonData = _EmployeeDisplinaryModel.DisplinaryReason;
+                    //DisplinaryCategoryData = _EmployeeDisplinaryModel.DisplinaryCategories;
+                    //DisplinaryWarningData = _EmployeeDisplinaryModel.DisplinaryWarnings;
+                }
+            }
+    
+        }
+        catch (Exception ex)
+        {
+            RegisterError = $"Error: {ex.Message}";
+        }
+    }
+    public void OnDepartmentChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ADepartment> args)
+    {
+        if (args.ItemData != null)
+        {
+            DepartmentChange = new Query().Where(new WhereFilter() { Field = "DepartmentId", Operator = "equal", value = args.ItemData.DepartmentId, IgnoreCase = false, IgnoreAccent = false });
+        }
+    }
+    public void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewDisciplinaryCommittee> args)
+    {
+        employeeno = args.ItemData;
+    }
+    #region DisciplinaryCommitte
+    public class DisciplinaryCommitteAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        public IToastService toastService;
+        SystemSettings _SystemSettings;
+        ApiConfig _ApiConfig;
+        public DisciplinaryCommitteAdapter(HttpClient _http, IToastService ts, SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            _SystemSettings = systemSettings;
+            _ApiConfig = apiConfig;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<ADisciplinaryCommittee>();
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeDisplinary/GetDisplinaryCommitte");
+                var content = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    toastService.ShowError(response.ReasonPhrase);
+                }
+                data = JsonSerializer.Deserialize<List<ADisciplinaryCommittee>>(content, _options);
+
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<ADisciplinaryCommittee>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                var val = (value as ADisciplinaryCommittee);
+
+                await _SystemSettings.GetLoginCredentials();
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeDisplinary/SaveGetDisplinaryCommittee", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    toastService.ShowSuccess("Disciplinary committee memeber was sucessfully saved");
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                var val = (value as ADisplinaryCategory);
+                await _SystemSettings.GetLoginCredentials();
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeDisplinary/SaveGetDisplinaryCommittee", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    toastService.ShowSuccess($"Disciplinary committe member details  sucessfully updated");
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+    }
+
+    public void OnADisciplinaryCommitteeActionBegin(ActionEventArgs<ADisciplinaryCommittee> args)
+    {
+        try
+        {
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+            {
+                
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        //finally { StateHasChanged(); }
+    }
+    public void OnADisplinaryCategoryActionComplete(ActionEventArgs<ADisciplinaryCommittee> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            DisciplinaryCommitteeGrid?.PreventRender(false);
+        }
+    }
+    public string GetADisciplinaryCommitteeHeader(ADisciplinaryCommittee Value)
+    {
+        if (Value.DisplinaryCommitteId == 0)
+        {
+            return "Add a New Disciplinary Committee member";
+        }
+        else
+        {
+            return "Edit Details";
+        }
+    }
+    #endregion DisciplinaryCommitte
+}

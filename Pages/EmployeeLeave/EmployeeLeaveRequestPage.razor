@@ -1,0 +1,3130 @@
+﻿@page "/EmployeeLeaveRequestPage"
+@using HCMIS.Model
+@using HCMIS.SHARED;
+@using HCMIS.SHARED.DTOs;
+@using HCMIS.ViewModel
+@using System.Text.Json
+@using System.Text.RegularExpressions
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject SystemSettings _SystemSettings
+@using System.Collections;
+@inject IToastService toastService;
+@using System.Globalization;
+@using HCMIS.SHARED.Data
+@inject IJSRuntime JsRuntime
+
+<style>
+    /*Customize Scroll Bars*/
+    ::-webkit-scrollbar-thumb {
+        background-color: #888;
+        border-radius: 10px
+    }
+
+    ::-webkit-scrollbar {
+        background-color: white;
+    }
+
+    ::-webkit-scrollbar-button {
+        background-color: #bbbbbb;
+    }
+    /*Customize Scroll Bars*/
+
+    /*stick grid headers*/
+    .e-gridheader {
+        position: -webkit-sticky;
+        position: sticky;
+        top: 56px;
+        z-index: 1;
+    }
+    /*stick grid headers*/
+
+    .e-edit-dialog {
+        max-height: 95%;
+        max-width: 100%;
+        min-width: 100%;
+        min-height: 95%;
+    }
+
+    h6 {
+        color: ghostwhite;
+        background-color: red;
+        padding: 10px;
+        width: 100%;
+        font-size: 18px;
+    }
+
+    h4 {
+        color: black;
+        background-color: deepskyblue;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+
+    h3 {
+        color: black;
+        background-color: darkorange;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+
+    /*Change Cell Color */
+    .e-headercell.e-attr1 {
+        background: #ff4d00;
+        color: white;
+    }
+
+    .e-headercell.e-attr2 {
+        background: #FFFF00;
+        color: darkred;
+    }
+
+    .e-headercell.e-attr3 {
+        background: grey;
+        color: white;
+    }
+
+    /**/
+    #container {
+        position: relative;
+        height: 550px;
+    }
+
+    .e-spinner-pane.e-spin-overlay {
+        background-color: rgb(192,192,192);
+    }
+
+    /*Accordion Colors*/
+    .e-accordion {
+        border-radius: 6px 6px 6px 6px;
+        border: none !important;
+    }
+
+        /* header custom css*/
+        .e-accordion .e-acrdn-item .e-acrdn-header {
+            background-color: rgb(0, 204, 0);
+            border-radius: 6px 6px 6px 6px;
+        }
+
+            /*header on hover custom css*/
+            .e-accordion .e-acrdn-item .e-acrdn-header:hover {
+                background-color: rgb(0, 204, 0);
+            }
+
+        /*header on selected and expanded custom css*/
+        .e-accordion .e-acrdn-item.e-select.e-expand-state > .e-acrdn-header {
+            background: rgb(0, 204, 0);
+        }
+
+        .e-accordion .e-acrdn-item.e-select.e-selected.e-expand-state > .e-acrdn-header {
+            background: rgb(0, 204, 0);
+        }
+
+        .e-accordion .e-acrdn-item.e-expand-state.e-select:not(.e-selected) > .e-acrdn-header:focus {
+            background: rgb(0, 204, 0);
+        }
+
+        /*content custom css*/
+        .e-accordion .e-acrdn-item .e-acrdn-panel .e-acrdn-content {
+            background-color: whitesmoke;
+            border-radius: 6px 6px 6px 6px;
+        }
+
+        /*to remove the white line*/
+        .e-accordion .e-acrdn-item.e-select {
+            border-bottom: 1px solid white !important;
+            border-top: 1px solid white !important;
+        }
+        /*to change the accordion header color*/
+        .e-accordion .e-acrdn-item .e-acrdn-header .e-acrdn-header-content {
+            color: darkred;
+        }
+
+
+    .pp {
+        color: ghostwhite;
+        background-color: #00cc00;
+        padding: 10px;
+    }
+    /*Hide Grid Pager Numbers*/
+    .e-pager {
+        display: none;
+    }
+</style>
+
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+
+<center>
+    <h5>
+        <strong>LEAVE APPLICATION FORM</strong>
+    </h5>    
+</center>
+
+@if ((!string.IsNullOrEmpty(_SystemSettings.UserRole)&& _SystemSettings.UserRole.Contains("Administrator"))
+|| (UserJobTitleId != null && UserJobTitleId == 44))
+{
+<div class="form-row">
+    <div class="col-md-12">
+        <SfAccordion ExpandMode="ExpandMode.Single">
+            <AccordionItems>
+                <AccordionItem Expanded="true">
+                    <HeaderTemplate>Search Panel</HeaderTemplate>
+                    <ContentTemplate>
+                        <div style="padding:10px;">
+                            <EditForm Model="@SearchModel" OnValidSubmit="@SearchRecords">
+                                <div class="form-row">
+                                    <div class="col-md-6">
+                                        <p>Employee</p>
+                                        <SfMultiSelect @bind-Value="@SearchModel.Employeeid" TValue="int?[]" TItem="ViewBscEmployeeDto" 
+                                        AllowFiltering="true" Placeholder="Please select" 
+                                        Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" 
+                                        ShowSelectAll="true" 
+                                        EnableSelectionOrder="true" 
+                                        ShowDropDownIcon="true" 
+                                        FilterBarPlaceholder="Search Employee" 
+                                        FloatLabelType="FloatLabelType.Never" 
+                                        PopupHeight="350px"
+                                        FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                <MultiSelectFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></MultiSelectFieldSettings>
+                                        </SfMultiSelect>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p>Approval Status</p>
+                                        <SfMultiSelect @bind-Value="@SearchModel.LeaveApprovalStatusId" TValue="int?[]" TItem="ALeaveApprovalStatusDto" 
+                                        AllowFiltering="true" Placeholder="Please select" 
+                                        Mode="@VisualMode.CheckBox" DataSource="@ApprovalStatusData" 
+                                        ShowSelectAll="true" 
+                                        EnableSelectionOrder="true" 
+                                        ShowDropDownIcon="true" 
+                                        FilterBarPlaceholder="Search Approval Status" 
+                                        FloatLabelType="FloatLabelType.Never" 
+                                        PopupHeight="350px"
+                                        FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                <MultiSelectFieldSettings Value="@nameof(ALeaveApprovalStatusDto.LeaveApprovalStatusId)" Text="@nameof(ALeaveApprovalStatusDto.LeaveApprovalStatus)"></MultiSelectFieldSettings>
+                                        </SfMultiSelect>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <SfButton class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Search</SfButton>
+                                        <SfButton class="btn btn-danger" data-ripple="true" @onclick="ClearSearchBtnClick">Clear Search</SfButton>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <DataAnnotationsValidator />
+                                        <ValidationSummary/>
+                                    </div>
+                                </div>
+                            </EditForm>
+                        </div>
+                    </ContentTemplate>
+            	</AccordionItem>
+            </AccordionItems>
+        </SfAccordion>
+
+    </div>
+</div>
+}
+
+
+<SfGrid @ref="@DataGrid" TValue="ViewEmployeeLeaveDto" ID="Grid" AllowPaging="true" AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Query="@mainQuery"
+    Toolbar="@ToolbarMenu">
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+        <HeaderTemplate>
+            @{
+                var text = GetLeaveRequestHeader((context as ViewEmployeeLeaveDto));
+                <div class="headerbandimg">
+                    <span>@text</span>
+                </div>
+            }
+        </HeaderTemplate>
+        <Template>
+            @{
+                <div class="row">
+                    <div class="col-md-4">
+                        <center>
+                            <h5>
+                                <strong>LEAVE APPLICATION FORM</strong>
+                            </h5>
+                        </center>
+                    </div>
+
+                    @if(employeeleave!=null)
+                    {
+                        <div class="col-md-4">   
+                               <h5 style="color:green;">
+                                        <strong>Leave No: @employeeleave.EmployeeLeaveNo</strong>
+                                </h5>
+                        </div>
+                        <div class="col-md-4">                                  
+                                <marquee scrollamount="3">
+                                    <h5 style="color:green;">
+                                        <strong>Application Status: @employeeleave.LeaveApprovalStatus</strong>
+                                    </h5>
+                                </marquee>
+                        </div>
+                    }
+                </div>
+                    LeaveData = (context as ViewEmployeeLeaveDto);
+
+                    <SfAccordion ExpandMode="ExpandMode.Single">
+                        <AccordionItems>                        
+                            <AccordionItem Expanded="true">
+                                <HeaderTemplate><strong>PART I: EMPLOYEE PROFILE:  To be Completed and returned to the HR Department</strong></HeaderTemplate>
+                                <ContentTemplate>
+                                @* style="width:100%;font-size:20px; border-color:black; border-width:2px; border-style:solid; "*@
+                                <table class="table table-bordered">
+                                <tr>
+                                    <td style="font-weight:bold">
+                                            No.
+                                    </td>
+                                    <td style="font-weight:bold">
+                                            Item/Narration
+                                    </td>
+                                    <td style="font-weight:bold">
+                                            Response
+                                    </td>
+                                </tr>
+                                    <tr>
+                                        <td>
+                                            1.
+                                        </td>
+                                        <td>
+                                            Employee Name
+                                        </td>
+                                        <td>
+                                            <SfDropDownList @bind-Value="@(LeaveData.EmployeeId)" Enabled="EmployeeDD" TItem="ViewBscEmployeeDto" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                <DropDownListFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></DropDownListFieldSettings>
+                                                <DropDownListEvents TValue="int?" TItem="ViewBscEmployeeDto" ValueChange="OnEmployeeChange"></DropDownListEvents>
+                                            </SfDropDownList>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            2.
+                                        </td>
+                                        <td>
+                                            Designation
+                                        </td>
+                                        <td>
+                                            @if (employeeno != null)
+                                            {
+                                                @employeeno.JobTitleDescription
+                                            }                                                                                     
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            3.
+                                        </td>
+                                        <td>
+                                            Department
+                                        </td>
+                                        <td>
+                                            @if (employeeno != null)
+                                            {
+                                                @employeeno.DepartmentDescription
+                                            }                                            
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            4.
+                                        </td>
+                                        <td>
+                                            Date of Last Leave within the Present Year
+                                        </td>
+                                        <td>
+                                            @if (employeeno != null)
+                                            {
+                                                
+                                            }                                            
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            5.
+                                        </td>
+                                        <td>
+                                            Telephone contact during Leave
+                                        </td>
+                                        <td>
+                                            @if (employeeno != null)
+                                            {
+                                                @employeeno.OfficialPhoneNumber
+                                            }                                            
+                                        </td>
+                                    </tr>                                    
+                                </table>
+
+                                <div class="row">
+                                
+                                <div class="col-md-12">
+                                    <p><h3>Acting Officer During Period of Leave</h3></p>
+                                </div>
+                                <div class="col-md-3">
+                                    <p>Name</p>
+                                </div>
+                                <div class="col-md-3">
+                                <SfDropDownList @bind-Value="@(LeaveData.ActingOfficerId)" TItem="ViewBscEmployeeDto" TValue="int?" DataSource="@EmployeeData" Enabled="ActingOfficerDD" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                       <DropDownListFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></DropDownListFieldSettings>
+                                       <DropDownListEvents TValue="int?" TItem="ViewBscEmployeeDto" ValueChange="OnActingOfficerChange"></DropDownListEvents>
+                                </SfDropDownList>
+                                </div>
+                                
+                                <div class="col-md-3">
+                                    <p>Title</p>
+                                    </div>
+                                <div class="col-md-3">
+                                    @if (employeeactingofficer != null)
+                                    {
+                                            @employeeactingofficer.JobTitleDescription
+                                    }
+                                </div>
+
+                                <div class="col-md-12">
+                                    <p><h3>Type of Leave Applied For</h3></p>
+                                </div>
+                                <div class="col-md-3">
+                                    <p>Leave Type:<span style="color:red;">*</span></p>
+                                </div>
+                                <div class="col-md-3">
+                                    <SfDropDownList @bind-Value="@(LeaveData.LeaveTypeId)" Enabled="LeaveTypeIdDD" TItem="ALeaveTypeDto" TValue="int?" DataSource="@LeaveTypeData" Placeholder="Choose Leave Type" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                        <DropDownListFieldSettings Value="@nameof(ALeaveTypeDto.LeaveTypeId)" Text="@nameof(ALeaveTypeDto.LeaveTypeDescription)"></DropDownListFieldSettings>
+                                        <DropDownListEvents TValue="int?" TItem="ALeaveTypeDto" ValueChange="OnLeaveTypeChange"></DropDownListEvents>
+                                    </SfDropDownList>
+                                </div>
+                                                                
+                                @if(employeeno != null && employeeno.GenderId == 2 &&  LeaveData != null 
+                                    && LeaveData.LeaveTypeId == 4)
+                                {
+                                 <h6 style="background-color:red; color:ghostwhite;">Females donot qualify for paternal leave</h6>
+                                }
+                                else if(employeeno != null && employeeno.GenderId == 1 &&  LeaveData != null 
+                                    && LeaveData.LeaveTypeId == 2)
+                                {
+                                        <h6 style="background-color:red; color:ghostwhite;">Males do not qualify for maternal leave</h6>
+                                }
+
+                                else
+                                {
+                                <div class="col col-md-3">
+                                    <p>Commencement Date:<span style="color:red;">*</span></p>
+                                </div>
+                                <div class="col col-md-3">
+                                    <SfDatePicker @bind-Value="@(LeaveData.ScheduledStartDate)" Enabled="StartDateEnabler" ID="ScheduledStartDate" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Always" Min="MinDate">
+                                         @if (LeaveData != null && (LeaveData.LeaveTypeId == 2 || LeaveData.LeaveTypeId == 4  || LeaveData.LeaveTypeId == 5))
+                                          {
+                                              EndDateEnabler = false;
+                                              <DatePickerEvents TValue="DateTime?" ValueChange="OnMaternityDateChange"></DatePickerEvents>
+                                          }
+                                          else
+                                          {
+                                               EndDateEnabler = true;
+                                          }
+                                        
+                                    </SfDatePicker>
+                                </div>
+                                <div class="col col-md-3">
+                                    <p>End Date:<span style="color:red;">*</span></p>
+                                </div>
+
+                                <div class="col-md-3">
+                                     <SfDatePicker @bind-Value="@(LeaveData.ScheduledEndDate)" Enabled="EndDateEnabler" ID="ScheduledEndDate" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Always" Min="MinDate" Max='@MaxDate'>
+                                        <DatePickerEvents TValue="DateTime?" ValueChange="OnEndDateChange"></DatePickerEvents>
+                                    </SfDatePicker>
+                                </div>
+
+                                @if(LeaveData.ScheduledEndDate < LeaveData.ScheduledStartDate)
+                                {
+                                <div class="col-md-12">
+                                      <h6>The End Date should not be before the Start Date</h6>
+                                </div>
+                                }
+
+                                @if (LeaveData != null && LeaveData.LeaveTypeId != null)
+                                {
+                                    
+                                    <div class="col col-md-3">
+                                        <p>Days Entitled:</p>
+                                    </div>
+                                    <div class="col col-md-3">
+                                        @if (leavetypedays != null)
+                                        {
+                                            @leavetypedays.LeaveDaysPerYear
+                                        }
+                                    </div>
+                                    <div class="col-md-3">
+                                            <label>Days Arleady Utilized</label>
+                                    </div>
+                                    @if(LeaveData.LeaveTypeId != 2 && LeaveData.LeaveTypeId != 4)
+                                    {
+                                        <div class="col col-md-3">
+                                            @TotalDaysTakenPrior
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="col col-md-3">
+                                            <p style:"color:red;">N/A</p>
+                                        </div>
+                                    }
+                                    
+                                    <div class="col-md-3">
+                                            <label>Days Selected</label>
+                                    </div>
+                                    
+                                    <div class="col col-md-3">
+                                           <SfNumericTextBox @bind-Value="@(LeaveData.NoDaysAppliedFor)" Enabled="false" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                                    </div>
+                                    
+                                    <div class="col-md-3">
+                                            <label>Total Days (In Year)</label>
+                                    </div>
+                                    @if(LeaveData.LeaveTypeId != 2 && LeaveData.LeaveTypeId != 4)
+                                    {
+                                        <div class="col col-md-3">
+                                            <SfNumericTextBox @bind-Value="@(LeaveData.TotalDays)" Enabled="false" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                                        </div>
+                                    }  
+                                    else
+                                    {
+                                        <div class="col col-md-3">
+                                            <p style:"color:red;">N/A</p>
+                                        </div>
+                                    }
+                                 }
+                                    
+                                    @if (leavetypedays != null && (LeaveData.LeaveTypeId != 2 || LeaveData.LeaveTypeId != 4) && 
+                                        (LeaveData.TotalDays > @leavetypedays.LeaveDaysPerYear))
+                                    {
+                                        <h6>
+                                            You have exceeded the @leavetypedays.LeaveDaysPerYear working days allocated. 
+                                            Kindly reduce on the number of days.
+                                        </h6>
+                                    }                                    
+                                }
+                                </div>
+                                </ContentTemplate>
+                            </AccordionItem> 
+
+                            @*Super Administrator or Administrator or Head of Department or Levels 1 to 4*@
+                                @if (!string.IsNullOrEmpty(UserRole) && (UserRole.Contains("f9e6ea81-9577-4622-b159-17f7ea11aca1", StringComparison.CurrentCultureIgnoreCase)
+                            || UserRole.Contains("f9e6ea81-9577-4622-b159-17f7ea11aca2", StringComparison.CurrentCultureIgnoreCase)
+                            || employeeno != null && (employeeno.JobTitleId == 44 @*(employeeno.JobDescription.Contains("Chief Human Resource Officer", StringComparison.CurrentCultureIgnoreCase)*@
+                            || employeeno.EmployeeLevelId == 1 || employeeno.EmployeeLevelId == 2 || employeeno.EmployeeLevelId == 3 || employeeno.EmployeeLevelId == 4)
+                            ))
+                            {
+                                <AccordionItem Expanded="false">
+                                    <HeaderTemplate><strong>PART II: LEAVE COMPUTATION: Completed by the Head-HR & Administration</strong></HeaderTemplate>
+                                    <ContentTemplate>
+                                    <table class="table table-bordered">
+                                        <tr>
+                                            <td style="font-weight:bold">
+                                                No.
+                                            </td>
+                                            <td style="font-weight:bold">
+                                                Item/Narration
+                                            </td>
+                                            <td style="font-weight:bold">
+                                                Response
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                1.
+                                            </td>
+                                            <td>
+                                                Leave due for the present year (January to December)
+                                            </td>
+                                            <td>
+                                                @{
+                                                    annualleavetypedays = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == 1);                                                
+                                                    if(annualleavetypedays != null)
+                                                    {
+                                                        @annualleavetypedays.LeaveDaysPerYear
+                                                    }
+                                                }
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                2.
+                                            </td>
+                                            <td>
+                                                Total leave Days taken prior to this application (So far Utilized)
+                                            </td>
+                                            <td>
+                                                @TotalDaysTakenPrior
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                3.
+                                            </td>
+                                            <td>
+                                                Annual Leave Days presently applied for
+                                            </td>
+                                            <td>
+                                                @LeaveData.NoDaysAppliedFor
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                4.
+                                            </td>
+                                            <td>
+                                                Balance of Annual Leave Due Days in the present year.
+                                            </td>
+                                            <td>  
+                                                @{
+                                                    int? Balance = 0;
+                                                }
+                                                @if (annualleavetypedays != null)
+                                                {
+                                                    Balance = annualleavetypedays.LeaveDaysPerYear - @LeaveData.NoDaysAppliedFor;
+                                                }
+                                                @Balance
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    </ContentTemplate>
+                                </AccordionItem>
+                            }
+
+                            <AccordionItem Expanded="false">
+                                <HeaderTemplate><strong>PART III: RECOMMENDATION</strong></HeaderTemplate>
+                                <ContentTemplate>
+                                    <table class="table table-bordered">
+                                        <tr>
+                                            <td style="font-weight:bold">
+                                                Recommended By
+                                            </td>
+                                            <td style="font-weight:bold">
+                                                Name
+                                            </td>
+                                        
+                                            @if(LeaveData.LeaveApprovalStatusId != null)
+                                            {
+                                                if(LeaveData.LeaveApprovalStatusId == 3)
+                                                {
+                                                    <td style="font-weight:bold">
+                                                        Reason for Approval
+                                                    </td>
+                                                }
+                                                else if(LeaveData.LeaveApprovalStatusId == 4)
+                                                {
+                                                    <td style="font-weight:bold">
+                                                        Reason for Rejection
+                                                    </td>
+                                                }
+                                                else if(LeaveData.LeaveApprovalStatusId == 5)
+                                                {
+                                                    <td style="font-weight:bold">
+                                                        Reason for Recommendation
+                                                    </td>
+                                                }
+                                                else
+                                                {
+                                                    @*<td style="font-weight:bold">
+                                                        Application Status
+                                                    </td>*@
+                                                }
+                                            }
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                Immediate Supervisor <span style="color:red;">*</span>
+                                            </td>     
+                                            
+                                            <td>
+                                                <SfDropDownList @bind-Value="@(LeaveData.SupervisorRecommendationBy)" TItem="ViewBscEmployeeDto" Enabled="ImmediateSupervisorDD" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                   <DropDownListFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></DropDownListFieldSettings>
+                                                   <DropDownListEvents TValue="int?" TItem="ViewBscEmployeeDto" ValueChange="OnEmployeeSupervisorChange"></DropDownListEvents>
+                                                </SfDropDownList>
+
+                                                @if (employeenosupervisor != null && !string.IsNullOrEmpty(employeenosupervisor.EmailAddress) && LeaveData.SupervisorRecommendationBy != null)
+                                                {
+                                                    <p style="color:forestgreen; font-weight:bold">Email: @employeenosupervisor.EmailAddress</p>
+                                                }
+                                                else if ((LeaveData!= null && LeaveData.SupervisorRecommendationBy != null) 
+                                                && (employeenosupervisor != null && string.IsNullOrEmpty(employeenosupervisor.EmailAddress)))
+                                                {
+                                                    <p style="color:red; font-weight:bold">Email Not Provided</p>
+                                                }  
+                                                else
+                                                {
+                                                    
+                                                }
+                                            </td>
+
+                                            @if (!string.IsNullOrEmpty(LeaveData.RecommendationRejectionReason))
+                                            {
+                                            <td rowspan="2">
+                                                <SfTextBox Multiline="true" @bind-Value="@(LeaveData.RecommendationRejectionReason)" Enabled="false" FloatLabelType="FloatLabelType.Always"></SfTextBox>                                           
+                                             </td>
+                                            }
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                            Head of Department <span style="color:red;">*</span>
+                                            </td>                                        
+                                            <td>
+                                                    <SfDropDownList @bind-Value="@(LeaveData.HodrecommendationBy)" Enabled="HeadofDepartmentDD" TItem="ViewBscEmployeeDto" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                       <DropDownListFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></DropDownListFieldSettings>
+                                                    <DropDownListEvents TValue="int?" TItem="ViewBscEmployeeDto" ValueChange="OnEmployeeHODChange"></DropDownListEvents>
+                                                    </SfDropDownList>
+                                                    @if (employeenohodchange != null && !string.IsNullOrEmpty(employeenohodchange.EmailAddress) && LeaveData.HodrecommendationBy != null)
+                                                    {
+                                                        <p style="color:forestgreen; font-weight:bold">Email: @employeenohodchange.EmailAddress</p>
+                                                    }
+                                                    else if (employeenohodchange != null && (LeaveData!= null && LeaveData.HodrecommendationBy != null) 
+                                                    && (employeenohodchange != null && string.IsNullOrEmpty(employeenohodchange.EmailAddress)))
+                                                    {
+                                                        <p style="color:red; font-weight:bold">Email Not Provided</p>
+                                                    } 
+                                                    else
+                                                    {
+                                                    
+                                                    }                                                
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </ContentTemplate>
+                            </AccordionItem>
+                        
+                            @*Super Administrator or Administrator or Head of Department*@
+                                @if (!string.IsNullOrEmpty(UserRole) && (UserRole.Contains("f9e6ea81-9577-4622-b159-17f7ea11aca1", StringComparison.CurrentCultureIgnoreCase)
+                            || UserRole.Contains("f9e6ea81-9577-4622-b159-17f7ea11aca2", StringComparison.CurrentCultureIgnoreCase)
+                            || employeeno != null && employeeno.JobTitleId == 44 @*(employeeno.JobDescription.Contains("Chief Human Resource Officer", StringComparison.CurrentCultureIgnoreCase))*@
+                            ))
+                            {
+                            <AccordionItem Expanded="false" Visible="false">
+                                <HeaderTemplate><strong>PART IV: APPROVAL </strong></HeaderTemplate>
+                                <ContentTemplate>
+                                    <p>Leave Approved By: Chief Human Resource Officer</p>
+                                    <SfDropDownList @bind-Value="@(LeaveData.ChroapprovedBy)" TItem="ViewBscEmployeeDto" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                        <DropDownListFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></DropDownListFieldSettings>
+                                    </SfDropDownList>
+                                </ContentTemplate>
+                            </AccordionItem>
+                        }
+                        </AccordionItems> 
+                    </SfAccordion>
+                    @*Reason for rejection - Supervisor*@
+                    <div class="form-group col-md-12">                    
+                    <SfDialog @ref="@RejectLeaveDialogue" Width="80%" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+                            <DialogTemplates>
+                                <Content>
+                                    <div class="form-row">
+                                        <div class="col-md-3">
+                                            <p>Provide Rejection Reason <span style="color:red;">*</span></p>
+                                        </div>
+                                        <div class="form-group col-md-12">
+                                            <SfTextBox Multiline="true" @bind-Value="@(LeaveData.RecommendationRejectionReason)" Enabled="true" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                                        </div>
+                                    </div>
+
+                                </Content>
+                            </DialogTemplates>
+                            <DialogButtons>
+                                <DialogButton OnClick="@RejectReasonYes" Content="Confirm Rejection" IsPrimary="true"/>  
+                            <DialogButton OnClick="@RejectReasonNo" Content="Cancel"/>
+                        </DialogButtons>
+                        </SfDialog>
+                    </div>
+
+                    <div class="form-group col-md-12">
+                    <SfDialog @ref="@ConfirmationDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+                        <DialogTemplates>
+                            <Content>
+                                @((MarkupString)@ConfirmationText)
+                            </Content>
+                        </DialogTemplates>
+                        <DialogButtons>
+                            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationYes" />
+                            <DialogButton Content="No" OnClick="@ComfirmationNo" />
+                        </DialogButtons>
+                    </SfDialog>
+                    </div>
+
+                    @*Reason for rejection - HOD*@
+                    <div class="form-group col-md-12">
+                    <SfDialog @ref="@RejectLeaveDialogueHOD" Width="80%" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+                            <DialogTemplates>
+                                <Content>
+                                    <div class="form-row">
+                                        <div class="col-md-3">
+                                            <p>Provide Rejection Reason HOD <span style="color:red;">*</span></p>
+                                        </div>
+                                        <div class="form-group col-md-12">
+                                            <SfTextBox Multiline="true" @bind-Value="@(LeaveData.RecommendationRejectionReason)" Enabled="true" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                                        </div>
+                                    </div>
+
+                                </Content>
+                            </DialogTemplates>
+                            <DialogButtons>
+                                <DialogButton OnClick="@RejectReasonYesHOD" Content="Confirm Rejection" IsPrimary="true"/>  
+                            <DialogButton OnClick="@RejectReasonNoHOD" Content="Cancel"/>
+                        </DialogButtons>
+                        </SfDialog>
+                    </div>
+                    
+                    <div class="form-group col-md-12">
+                    <SfDialog @ref="@ConfirmationHODDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+                        <DialogTemplates>
+                            <Content>
+                                @((MarkupString)@ConfirmationText)
+                            </Content>
+                        </DialogTemplates>
+                        <DialogButtons>
+                            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationYesHOD" />
+                            <DialogButton Content="No" OnClick="@ComfirmationNoHOD" />
+                        </DialogButtons>
+                    </SfDialog>
+                    </div>
+
+                     @*Reason for approval*@
+                    <div class="form-group col-md-12">                    
+                    <SfDialog @ref="@ApproveLeaveDialogue" Width="80%" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+                            <DialogTemplates>
+                                <Content>
+                                    <div class="form-row">
+                                        <div class="col-md-3">
+                                            <p>Provide Approval Reason</p>
+                                        </div>
+                                        <div class="form-group col-md-12">
+                                        <SfTextBox Multiline="true" @bind-Value="@(LeaveData.ApprovalReason)" Enabled="true" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                                        </div>
+                                    </div>
+
+                                </Content>
+                            </DialogTemplates>
+                            <DialogButtons>
+                                <DialogButton OnClick="@ApproveReasonYes" Content="Confirm Approval" IsPrimary="true"/>
+                            <DialogButton OnClick="@ApproveReasonNo" Content="Cancel" />
+                        </DialogButtons>
+                        </SfDialog>
+                    </div>
+                    <div class="form-group col-md-12">
+                    <SfDialog @ref="@ConfirmationApproveDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+                        <DialogTemplates>
+                            <Content>
+                                @((MarkupString)@ConfirmationText)
+                            </Content>
+                        </DialogTemplates>
+                        <DialogButtons>
+                            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationApproveYes" />
+                            <DialogButton Content="No" OnClick="@ComfirmationApproveNo" />
+                        </DialogButtons>
+                    </SfDialog>
+                    </div>
+
+                     @*Reason for rejection - CHRO*@
+                    <div class="form-group col-md-12">
+                    <SfDialog @ref="@RejectLeaveDialogueCHRO" Width="80%" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+                            <DialogTemplates>
+                                <Content>
+                                    <div class="form-row">
+                                        <div class="col-md-3">
+                                            <p>Provide Rejection Reason CHRO <span style="color:red;">*</span></p>
+                                        </div>
+                                        <div class="form-group col-md-12">
+                                            <SfTextBox Multiline="true" @bind-Value="@(LeaveData.RecommendationRejectionReason)" Enabled="true" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                                        </div>
+                                    </div>
+
+                                </Content>
+                            </DialogTemplates>
+                            <DialogButtons>
+                                <DialogButton OnClick="@RejectReasonYesCHRO" Content="Confirm Rejection" IsPrimary="true"/>  
+                            <DialogButton OnClick="@RejectReasonNoCHRO" Content="Cancel"/>
+                        </DialogButtons>
+                        </SfDialog>
+                    </div>
+
+                    <div class="form-group col-md-12">
+                    <SfDialog @ref="@ConfirmationCHRODialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+                        <DialogTemplates>
+                            <Content>
+                                @((MarkupString)@ConfirmationText)
+                            </Content>
+                        </DialogTemplates>
+                        <DialogButtons>
+                            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationYesCHRO" />
+                            <DialogButton Content="No" OnClick="@ComfirmationNoCHRO" />
+                        </DialogButtons>
+                    </SfDialog>
+                    </div>
+             }
+        </Template>
+        <FooterTemplate>
+
+            @*Assistant*@           
+            @if ((UserLevelId != null && UserLevelId == 5) 
+            && (LeaveData != null && (leavetypedays != null)
+            && (LeaveData.ScheduledStartDate <= LeaveData.ScheduledEndDate)))
+                {
+                       <button @onclick="@onSaveDraftForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>            
+                       <button @onclick="@onSubmitAssistantForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Submit To Supervisor</button>
+
+                }
+            @*Officer,Head of Section*@
+            else if (UserJobTitleId != null && UserJobTitleId != 44
+            && (UserLevelId != null && UserLevelId == 2 || UserLevelId == 3 || UserLevelId == 4)
+            && (leavetypedays != null && LeaveData != null && (LeaveData.NoDaysAppliedFor <= leavetypedays.LeaveDaysPerYear))
+            && (LeaveData.ScheduledStartDate <= LeaveData.ScheduledEndDate))
+                {
+                    if ((_previousAdd == Syncfusion.Blazor.Grids.Action.Add 
+                        || _previousEdit == Syncfusion.Blazor.Grids.Action.BeginEdit)
+                        && (LeaveData != null && LeaveData.EmployeeId == _SystemSettings.StaffId))
+                    {
+                        <button @onclick="@onSaveDraftForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
+                        <button @onclick="@onSubmitAssistantForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Submit Request</button>
+                        @*<button @onclick="@onSubmitSupervisorSelfForm" class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Submit Request</button>*@ @*Submits Directly To HOD*@
+                    }
+                    else
+                    {
+                        <button @onclick="@onSaveDraftForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>            
+                        <button @onclick="@onSubmitSupervisorForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Approval Request</button>
+                        <button @onclick="@onRejectSupervisorForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Reject Back To Employee</button>
+                    }     
+                }
+
+
+
+            @*Head of Department*@
+            else if (UserLevelId != null && UserLevelId== 1 
+            && (leavetypedays != null && LeaveData != null 
+            && (LeaveData.NoDaysAppliedFor <= leavetypedays.LeaveDaysPerYear))
+            && (LeaveData.ScheduledStartDate <= LeaveData.ScheduledEndDate)
+            && (LeaveData.LeaveApprovalStatusId != 9 && LeaveData.LeaveApprovalStatusId != 11))
+                {
+                    if ((_previousAdd == Syncfusion.Blazor.Grids.Action.Add 
+                        || _previousEdit == Syncfusion.Blazor.Grids.Action.BeginEdit)
+                        && (LeaveData != null && LeaveData.EmployeeId == _SystemSettings.StaffId))
+                    {
+                        <button @onclick="@onSaveDraftForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
+                        <button @onclick="@onSubmitAssistantForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Submit To Supervisor</button>
+                        @*<button @onclick="@onSubmitHODSelfForm" class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Submit Request</button>*@ @*Submits Directly To CHRO*@
+                    }
+                    else
+                    {
+                        <button @onclick="@onSaveDraftForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
+                        <button @onclick="@onSubmitHODForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Approval Request</button>
+                        <button @onclick="@onRejectHODForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Reject Back To Employee</button>
+                    }                            
+                }
+
+            @*CHRO*@ 
+            else if((UserJobTitleId != null && UserJobTitleId == 44)
+            && ((leavetypedays != null && LeaveData  != null )
+            && (LeaveData.NoDaysAppliedFor <= leavetypedays.LeaveDaysPerYear)
+            && (LeaveData.ScheduledStartDate <= LeaveData.ScheduledEndDate)))
+            {
+                    if ((_previousAdd == Syncfusion.Blazor.Grids.Action.Add 
+                        || _previousEdit == Syncfusion.Blazor.Grids.Action.BeginEdit)
+                        && (LeaveData != null && LeaveData.EmployeeId == _SystemSettings.StaffId))
+                    {
+                        <button @onclick="@onSaveDraftForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
+                        <button @onclick="@onSubmitCHROAssistantForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Submit To Supervisor</button>
+                        //<button @onclick="@onSubmitCHROSelfForm" class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Submit Request</button>
+                    }
+                    else
+                    {
+                        <button @onclick="@onSaveDraftForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
+                        <button @onclick="@onApproveCHROForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Approve Request</button>
+                        <button @onclick = "@onRejectCHROForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Reject Back To Employee</button>
+                    }                    
+                }
+                <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel Plan</button>
+
+        </FooterTemplate>
+    </GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple"></GridSelectionSettings>
+    <GridEvents OnToolbarClick="@GridToolbarClick"
+        OnActionComplete="ActionCompleteMain" 
+        OnActionBegin="ActionBeginMain"
+        QueryCellInfo="QueryCellInfoHandler"
+        RowDataBound="RowBound"
+                TValue="ViewEmployeeLeaveDto">
+    </GridEvents>
+    <SfDataManager AdaptorInstance="@typeof(LeaveRequestAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <GridColumns>
+      <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+        <GridColumn Field=@nameof(ViewEmployeeLeaveDto.EmployeeLeaveId) HeaderText="EmployeeLeaveId" AllowEditing="false" IsPrimaryKey="true" Width="80" Visible="false"></GridColumn>
+        <GridForeignColumn Field=@nameof(ViewEmployeeLeaveDto.EmployeeId)
+                           HeaderText="Employee"
+                           Width="100"
+                           AllowEditing="true"
+                           ForeignKeyField="@(nameof(ViewBscEmployee.Employeeid))"
+                           ForeignKeyValue="@(nameof(ViewBscEmployee.EmployeeDetails))"
+                           ForeignDataSource="@EmployeeData" AllowFiltering="false"
+                           CustomAttributes="@(new Dictionary<string,
+                    object>(){ { "class", "e-attr1" }})">
+        </GridForeignColumn>
+        <GridForeignColumn Field=@nameof(ViewEmployeeLeaveDto.LeaveTypeId)
+                           HeaderText="Leave Type"
+                           Width="80"
+                           AllowEditing="false"
+                           ForeignKeyField="@(nameof(ALeaveTypeDto.LeaveTypeId))"
+                           ForeignKeyValue="@(nameof(ALeaveTypeDto.LeaveTypeDescription))"
+                           ForeignDataSource="@LeaveTypeData"
+                           AllowFiltering="false"
+                           IsFrozen="false"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+        </GridForeignColumn>    
+        <GridColumn 
+            Field=@nameof(ViewEmployeeLeaveDto.NoDaysAppliedFor) 
+            HeaderText="Requested Days" 
+            AllowEditing="false" 
+            Width="80" 
+            Visible="true"        
+            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+        </GridColumn>
+        <GridForeignColumn Field=@nameof(ViewEmployeeLeaveDto.LeaveApprovalStatusId)
+                           HeaderText="Approval Status"
+                           Width="80"
+                           AllowEditing="false"
+                           ForeignKeyField="@(nameof(ALeaveApprovalStatusDto.LeaveApprovalStatusId))"
+                           ForeignKeyValue="@(nameof(ALeaveApprovalStatusDto.LeaveApprovalStatus))"
+                           ForeignDataSource="@ApprovalStatusData"
+                           AllowFiltering="false"
+                           IsFrozen="false"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+        </GridForeignColumn>    
+        <GridColumn 
+            Field=@nameof(ViewEmployeeLeaveDto.EmployeeLeaveNo) 
+            HeaderText="Employee Leave No" 
+            AllowEditing="false" 
+            Width="80" 
+            Visible="true"
+            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+        </GridColumn>
+        <GridColumn 
+            Field=@nameof(ViewEmployeeLeaveDto.ApplicationDate) 
+            HeaderText="Application Date" 
+            Format="dd/MMMM/yyyy hh:mm:ss" 
+            TextAlign="TextAlign.Justify" 
+            Width="80" 
+            ClipMode="ClipMode.EllipsisWithTooltip" 
+            Type="ColumnType.Date"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+        </GridColumn>
+        <GridColumn 
+            Field=@nameof(ViewEmployeeLeaveDto.SubmittedToSupervisor) 
+            HeaderText="Submitted To Supervisor" 
+            AllowEditing="false" 
+            Width="80" 
+            Visible="false">
+        </GridColumn>
+        <GridColumn 
+            Field=@nameof(ViewEmployeeLeaveDto.SubmittedToHod) 
+            HeaderText="Submitted To HOD" 
+            AllowEditing="false" 
+            Width="80"
+            Visible="false">
+        </GridColumn>
+        <GridColumn 
+            Field=@nameof(ViewEmployeeLeaveDto.SubmittedToChro) 
+            HeaderText="Submitted To CHRO" 
+            AllowEditing="false" 
+            Width="80" 
+            Visible="false">
+        </GridColumn>
+        <GridColumn 
+            Field=@nameof(ViewEmployeeLeaveDto.ApprovedByChro) 
+            HeaderText="Approved By CHRO" 
+            AllowEditing="false" 
+            Width="80"
+            Visible="false">
+        </GridColumn>
+    </GridColumns>
+</SfGrid>
+
+<div>
+    <SfDialog @ref="@LoadingDialogue"
+              ID="LoadingDialog"
+              Height="auto"
+              Width="20%"
+              AllowDragging="true"
+              Target=".mainbody"
+              ShowCloseIcon="false"
+              IsModal=true
+              Visible="false">
+        <DialogTemplates>
+            <Content>
+                <div style="padding:25px">
+                    <div class="loader">
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        @*<div class="loader-Loading-text"></div>*@
+                        <div class="loader-Saving-text"></div>
+                    </div>
+                </div>
+            </Content>
+            <FooterTemplate>
+
+            </FooterTemplate>
+        </DialogTemplates>
+    </SfDialog>
+</div>
+
+@code {
+    #region Toasters
+    public static string ToastContent { get; set; }
+    SfToast? ToastObj;
+    SfToast DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 890000;
+    private List<ToastModel> Toast = new List<ToastModel>
+        {
+            new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+            new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+            new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+            new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+        };
+    #endregion Toasters
+    List<ViewBscEmployeeDto>? EmployeeData { get; set; }
+    List<ALeaveTypeDto>? LeaveTypeData { get; set; }
+    List<ALeaveApprovalStatusDto>? ApprovalStatusData { get; set; }
+    private static ViewEmployeeLeaveDto? LeaveData { get; set; }
+    List<APublicHolidays>? PublicHolidaysData { get; set; }
+    private static ViewBscEmployeeDto? employeeno { get; set; }
+    private static ViewBscEmployeeDto? employeenosupervisor { get; set; }
+    private static ViewBscEmployeeDto? employeenohod { get; set; }
+    private static ViewBscEmployeeDto? employeenohodchange { get; set; }
+    private static ViewBscEmployeeDto? employeeactingofficer { get; set; }
+    private static ViewEmployeeLeaveDto? employeeleave { get; set; }
+    private static ALeaveTypeDto? leavetypedays { get; set; }
+    private static ALeaveTypeDto? annualleavetypedays { get; set; }
+    public static int TotalDaysTakenPrior { get; set; } = 0;
+    public static int LeaveDays { get; set; } = 0;
+    public static int PublicHolidays { get; set; } = 0;
+    public static int numberOfDays2 { get; set; } = 0;
+    public static int AnnualLeaveBalanceDays { get; set; } = 0;
+    public static DateTime[]? datesselectedd = null;
+    DateTime StartDate = DateTime.Now;
+    DateTime EndDate = DateTime.Now;
+    private static ViewEmployeeLeaveDto? LeaveRecordsData { get; set; }
+    List<ViewEmployeeLeaveDto>? RoasterCount { get; set; }
+    string UserJobTitle { get; set; }
+    string UserRole { get; set; }    
+    public static int InterestDue { get; set; } = 0;
+    SfDialog RejectLeaveDialogue;
+    SfDialog RejectLeaveDialogueHOD;
+    SfDialog RejectLeaveDialogueCHRO;
+    SfDialog ApproveLeaveDialogue;
+    SfDialog ConfirmationDialogue;
+    SfDialog ConfirmationHODDialogue;
+    SfDialog ConfirmationCHRODialogue;
+    SfDialog ConfirmationApproveDialogue;
+    SfDialog? LoadingDialogue;
+    string ConfirmationText { get; set; }
+    int currentMonth = DateTime.Now.Month;
+    int currentYear = DateTime.Now.Year;
+    int currentDay = DateTime.Now.Day;
+    public DateTime MinDate { get; set; } = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
+    public DateTime MaxDate { get; set; } = new DateTime(DateTime.Now.Year, 12, 31);    
+    public bool EmployeeDD = true;
+    bool EndDateEnabler = false;
+    bool StartDateEnabler = true;
+    bool ActingOfficerDD = true;
+    bool LeaveTypeIdDD = true;
+    bool ScheduledStartDateBool = true;
+    bool ImmediateSupervisorDD = true;
+    bool HeadofDepartmentDD = true;
+    Syncfusion.Blazor.Grids.Action _previousAdd { get; set; }
+    Syncfusion.Blazor.Grids.Action _previousEdit { get; set; }
+    SfGrid<ViewEmployeeLeaveDto> DataGrid { get; set; }
+    public static int UserJobTitleId { get; set; } = 0;
+    public static int UserLevelId { get; set; } = 0;
+    private UtilitiesSearchPanel SearchModel = new();
+    Query mainQuery { get; set; } = new();
+    bool IsDisabled = false;
+
+    /// <summary>
+    /// Event for Toolbar click for Grid Exporting
+    /// </summary>
+    public void GridToolbarClick(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Id == "//IDValue###_excelexport")
+        {
+            this.DataGrid.ExportToExcelAsync();
+        }
+        if (args.Item.Id == "//IDValue###_pdfexport")
+        {
+            this.DataGrid.ExportToPdfAsync();
+        }
+        if (args.Item.Id == "//IDValue###_csvexport")
+        {
+            this.DataGrid.ExportToCsvAsync();
+        }
+    }
+
+    private List<object> ToolbarMenu = new List<object>()
+    {
+        new ItemModel() { Text = "Create Request", PrefixIcon = "e-add", Id = "Grid_add"},
+        new ItemModel(){ Text = "Edit Request", PrefixIcon= "e-edit", Id="Grid_edit"},
+        //new ItemModel(){ Text = "Delete Training Plan", PrefixIcon= "e-delete", Id="Grid_delete"},
+        new ItemModel(){ Text = "Update Request", PrefixIcon= "e-update", Id="Grid_update"},
+        new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            employeeno = null;
+            employeenosupervisor = null;
+            employeenohod = null;
+            leavetypedays = null;
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            var responseemployee = await Http.GetAsync($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+            var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+            var responseleavetype = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetLeaveType");
+            var contentleavetype = await responseleavetype.Content.ReadAsStringAsync();
+            var responsepublicholiday = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetPublicHoliday");
+            var contentpublicholiday = await responsepublicholiday.Content.ReadAsStringAsync();
+            var responseemployeeleave = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/GetEmployeeLeaveData");
+            var contentemployeeleave = await responseemployeeleave.Content.ReadAsStringAsync();
+            var responseuserjobtitle = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUserJobTitle");        
+            var responseuserrole = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUserRoleId");
+            var contentuserrole = await responseuserrole.Content.ReadAsStringAsync();
+            var contentuserjobtitle = await responseuserjobtitle.Content.ReadAsStringAsync();
+            var responseapprovalstatus = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetLeaveApprovalStatus");
+            var contentapprovalstatus = await responseapprovalstatus.Content.ReadAsStringAsync();
+            var responseuserlevelid = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetEmployeeLevelId");
+            var contentuserlevelid = await responseuserlevelid.Content.ReadAsStringAsync();
+            var responseuserjobtitleid = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUserJobTitleId");
+            var contentuserjobtitleid = await responseuserjobtitleid.Content.ReadAsStringAsync();
+
+            if (responseemployee.IsSuccessStatusCode)
+            {
+                EmployeeData = await Http.GetFromJsonAsync<List<ViewBscEmployeeDto>>
+                ($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+            }
+            if (responseleavetype.IsSuccessStatusCode)
+            {
+                LeaveTypeData = await Http.GetFromJsonAsync<List<ALeaveTypeDto>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetLeaveType");
+            }
+            if (responsepublicholiday.IsSuccessStatusCode)
+            {
+                PublicHolidaysData = await Http.GetFromJsonAsync<List<APublicHolidays>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetPublicHoliday");
+            }
+            if (responseemployeeleave.IsSuccessStatusCode)
+            {
+                RoasterCount = await Http.GetFromJsonAsync<List<ViewEmployeeLeaveDto>>
+                ($"{_ApiConfig.BaseUrl}EmployeeLeave/GetEmployeeLeaveData");
+            }
+
+            if (responseuserjobtitle.IsSuccessStatusCode)
+            {
+                UserJobTitle = contentuserjobtitle;
+            }
+
+            if (responseapprovalstatus.IsSuccessStatusCode)
+            {
+                ApprovalStatusData = await Http.GetFromJsonAsync<List<ALeaveApprovalStatusDto>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetLeaveApprovalStatus");
+            }
+
+            if (responseuserrole.IsSuccessStatusCode)
+            {
+                UserRole = contentuserrole;
+            }
+
+            if (responseuserlevelid.IsSuccessStatusCode)
+            {
+                UserLevelId = Convert.ToInt32(contentuserlevelid);
+            }
+
+            if (responseuserjobtitleid.IsSuccessStatusCode)
+            {
+                UserJobTitleId = Convert.ToInt32(contentuserjobtitleid);
+            }
+        }
+        catch(Exception ex)
+        {
+
+        }
+    }
+
+    private void SearchRecords()
+    {
+        try
+        {
+            mainQuery = new Query();
+            if (SearchModel.LeaveApprovalStatusId != null)
+            {
+                mainQuery.AddParams("LeaveApprovalStatusId", string.Join(",", SearchModel.LeaveApprovalStatusId));
+            }
+            if (SearchModel.Employeeid != null)
+            {
+                mainQuery.AddParams("Employeeid", string.Join(",", SearchModel.Employeeid));
+            }            
+        }
+
+        catch (Exception ex)
+        {
+            ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+    }
+
+    private void ClearSearchBtnClick()
+    {
+        SearchModel = new();
+        mainQuery = new Query();
+    }
+
+    public async void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,ViewBscEmployeeDto> args)
+    {
+        employeeno = args.ItemData;  
+        leavetypedays = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == 1);
+        //LeaveRecordsData = RoasterCount.FirstOrDefault(o => o.EmployeeId == args.ItemData.Employeeid);
+
+        //if (LeaveRecordsData != null && LeaveRecordsData.TotalDays != null)
+        //{
+        //    TotalDays = LeaveRecordsData.TotalDays.Value;
+        //}
+        //else
+        //{
+        //    TotalDays = 0;
+        //}     
+    }
+
+    public async void OnActingOfficerChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,ViewBscEmployeeDto> args)
+    {
+        employeeactingofficer = args.ItemData;  
+    }
+
+    public async void OnEmployeeSupervisorChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,ViewBscEmployeeDto> args)
+    {
+        employeenosupervisor = args.ItemData;  
+    }
+
+    public async void OnEmployeeHODChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,ViewBscEmployeeDto> args)
+    {
+        employeenohodchange = args.ItemData;
+    }
+
+
+    public void OnLeaveTypeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,ALeaveTypeDto> args)
+    {
+        leavetypedays = args.ItemData;
+        int? leavetypeId = args.ItemData.LeaveTypeId;
+
+        //If the leavetype is changed in drodown, clear the other text fields
+        if(args.PreviousItemData != null)
+        {
+            LeaveData.ScheduledStartDate = null;
+            LeaveData.ScheduledEndDate = null;
+            LeaveData.NoDaysAppliedFor = null;
+            LeaveData.NoChildren = null;
+        }
+        else
+        {
+            if(leavetypeId!=null && (leavetypeId == 2 || leavetypeId == 4))
+            {
+                EndDateEnabler = false;
+            }
+            else
+            {
+                EndDateEnabler = true;
+            }
+        }
+        StateHasChanged();
+    }
+
+    protected async Task OnMaternityDateChange(ChangedEventArgs<DateTime?> args)
+    {
+        EndDateEnabler = false;
+        StartDate = Convert.ToDateTime(args.Value);
+        leavetypedays = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == LeaveData.LeaveTypeId);
+        DateTime EndDateWeekDays = GetWeekDaysOnly(StartDate,leavetypedays.LeaveDaysPerYear.Value).AddDays(-1); // Subtract one day inorder to get end date as the actual date the leave ends
+
+
+        //LeaveData.ScheduledEndDate = EndDate;
+
+        PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDateWeekDays);
+        LeaveData.ScheduledEndDate = EndDateWeekDays.AddDays(PublicHolidays);
+
+        numberOfDays2 = GetNumberOfDates(StartDate, EndDateWeekDays);
+        datesselectedd = GetDatesBetween(StartDate, EndDateWeekDays).ToArray();      
+
+        LeaveData.NoDaysAppliedFor = leavetypedays.LeaveDaysPerYear.Value;
+
+        StateHasChanged();
+    }
+
+    public static DateTime GetWeekDaysOnly(DateTime date, int days)
+    {
+        if (days < 0)
+        {
+            throw new ArgumentException("days cannot be negative", "days");
+        }
+
+        if (days == 0) return date;
+
+        if (date.DayOfWeek == DayOfWeek.Saturday)
+        {
+            date = date.AddDays(2);
+            days -= 1;
+        }
+        else if (date.DayOfWeek == DayOfWeek.Sunday)
+        {
+            date = date.AddDays(1);
+            days -= 1;
+        }
+
+        date = date.AddDays(days / 5 * 7);
+        int extraDays = days % 5;
+
+        if ((int)date.DayOfWeek + extraDays > 5)
+        {
+            extraDays += 2;
+        }
+
+        return date.AddDays(extraDays);
+    }
+
+    //Get Maternity EndDate Excluding ypublic holidays
+    public List<DateTime> GetMaternityPublicHolidays(DateTime from, DateTime to)
+    {
+        List<DateTime> allDates = new List<DateTime>();
+        //PublicHolidays = PublicHolidaysData.Where(o => o.HolidayDate >= from && o.HolidayDate <= to).Count();
+
+        //if (PublicHolidays!=null)
+        //{
+        //    allDates = to.AddDays(PublicHolidays);
+        //    days -= 1;
+        //}
+
+        return allDates;
+    }
+
+
+    protected async Task OnEndDateChange(ChangedEventArgs<DateTime?> value)
+    {        
+        StartDate = Convert.ToDateTime(LeaveData.ScheduledStartDate);
+        EndDate = Convert.ToDateTime(LeaveData.ScheduledEndDate);
+        numberOfDays2 = GetNumberOfDates(StartDate,EndDate);
+        datesselectedd = GetDatesBetween(StartDate, EndDate).ToArray();
+        PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDate);
+        LeaveDays = numberOfDays2 - PublicHolidays;
+
+        //Calculate the current number of days between the two dates
+        if(StartDate != EndDate)
+        {
+            LeaveData.NoDaysAppliedFor = LeaveDays;
+        }
+        else 
+        {
+            LeaveData.NoDaysAppliedFor = 1;
+        }
+
+        StateHasChanged();
+
+        var LD = RoasterCount?.OrderByDescending(x => x.TotalDays)
+        .FirstOrDefault(o => o.EmployeeId == LeaveData.EmployeeId && 
+            o.LeaveTypeId == LeaveData.LeaveTypeId);
+        if (LD!=null && LD.TotalDays != null)
+        {
+            //LeaveData.NoDaysAppliedFor = LeaveDays + LD.TotalDays.Value; // This one sums up  
+
+            LeaveData.TotalDays = LeaveDays + LD.TotalDays.Value;
+            TotalDaysTakenPrior = LD.TotalDays.Value;
+            StateHasChanged();
+        } 
+        else
+        {
+            LeaveData.TotalDays = LeaveDays;
+            TotalDaysTakenPrior = 0;
+        }
+    }
+
+    //Function to return number of days minus weekends
+    static int GetNumberOfDates(DateTime from, DateTime to)
+    {
+        if (to < from)
+            throw new ArgumentException("To cannot be smaller than from.", nameof(to));
+
+        if (to.Date == from.Date)
+            return 0;
+
+        int n = 0;
+        DateTime nextDate = from;
+        while (nextDate <= to.Date)
+        {
+            if (nextDate.DayOfWeek != DayOfWeek.Saturday && nextDate.DayOfWeek != DayOfWeek.Sunday)
+                n++;
+            nextDate = nextDate.AddDays(1);
+        }
+
+        return n;
+    }
+
+    //Get number of public holidays
+    public int GetNumberOfPublicHolidays(DateTime from, DateTime to)
+    {
+        PublicHolidays = PublicHolidaysData.Where(o => o.HolidayDate >= from && o.HolidayDate <= to).Count();
+        return PublicHolidays;
+    }
+
+    //Function to get all dates between two dates
+    public List<DateTime> GetDatesBetween(DateTime startDate, DateTime endDate)
+    {
+        List<DateTime> allDates = new List<DateTime>();
+
+        for (DateTime date = startDate; date <= endDate; date = date.AddDays(1))
+        {
+            var countdata = PublicHolidaysData?.FirstOrDefault(o => o.HolidayDate == date);
+
+            if ((date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday) && (countdata == null))
+            {
+                allDates.Add(date.Date);
+            }            
+        }
+
+        return allDates;
+    }
+
+    public async Task onSubmitAssistantForm()
+    {
+        try
+        {    
+            if(LeaveData.EmployeeId == null)
+            {
+                toastService.ShowWarning("Please select the employee (Part I)");
+            }
+
+            else if(LeaveData.LeaveTypeId == null)
+            {
+                toastService.ShowWarning("Please select the leave type");
+            }
+
+            else if(LeaveData.ScheduledStartDate == null)
+            {
+                toastService.ShowWarning("Please select the commencement date (Part I)");
+            }
+
+            else if(LeaveData.ScheduledEndDate == null)
+            {
+                toastService.ShowWarning("Please select the end date (Part I)");
+            }
+
+            else if(employeenosupervisor != null && employeenosupervisor.EmailAddress == null)
+            {
+                toastService.ShowWarning("Supervisor email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if(LeaveData.SupervisorRecommendationBy == null)
+            {
+                toastService.ShowWarning("Please select your supervisor (Part III).");
+            }
+
+            else if(employeenohodchange != null && employeenohodchange.EmailAddress == null)
+            {
+                toastService.ShowWarning("Head of Department email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if(LeaveData.HodrecommendationBy == null)
+            {
+                toastService.ShowWarning("Please select your Head of Department (Part III).");
+            }
+
+            else if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                LeaveData.LeaveApprovalStatusId = 2;
+                LeaveData.ApplicationDate = DateTime.Now;
+                LeaveData.SubmittedToSupervisor = true;
+                await DataGrid.EndEditAsync();
+            }            
+        }
+        catch (Exception ex)
+        {
+            //toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+
+            //Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            //string json = Newtonsoft.Json.JsonConvert.SerializeObject(LeaveData);
+            //StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            //var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/LeaveRequestSubmissionEmail", httpContent);
+        }
+    }
+
+    public async Task onSaveDraftForm()
+    {
+        try
+        {
+            if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                LeaveData.LeaveApprovalStatusId = 1;
+                LeaveData.ApplicationDate = DateTime.Now;
+                await DataGrid.EndEditAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            //toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    //Approval
+    private async Task ApproveReasonYes()
+    {
+        try
+        {
+            if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                LeaveData.LeaveApprovalStatusId = 9;
+                LeaveData.ChroapprovalDate = DateTime.Now;
+                LeaveData.ChroapprovedBy = _SystemSettings.StaffId;
+                LeaveData.ApprovedByChro = true;
+                await DataGrid.EndEditAsync();
+            }            
+        }
+        catch (Exception ex)
+        {
+            //toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            DataGrid.Refresh();
+            await this.ApproveLeaveDialogue.Hide();
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+
+            string? _baseurl = Navigation.BaseUri;            
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(LeaveData);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/ApproveEmployeeLeaveCHRO?_baseurl={_baseurl}", httpContent);
+        }
+    }
+
+    private void ApproveReasonNo()
+    {
+        DataGrid.Refresh();
+        this.ApproveLeaveDialogue.Hide();
+    }
+
+    public async Task onApproveCHROForm()
+    {
+        try
+        {
+            if(LeaveData.EmployeeId == null)
+            {
+                toastService.ShowWarning("Please select the employee (Part I)");
+            }
+
+            else if(LeaveData.LeaveTypeId == null)
+            {
+                toastService.ShowWarning("Please select the leave type");
+            }
+
+            else if(LeaveData.ScheduledStartDate == null)
+            {
+                toastService.ShowWarning("Please select the commencement date (Part I)");
+            }
+
+            else if(LeaveData.ScheduledEndDate == null)
+            {
+                toastService.ShowWarning("Please select the end date (Part I)");
+            }
+
+            else if(employeenosupervisor != null && employeenosupervisor.EmailAddress == null)
+            {
+                toastService.ShowWarning("Supervisor email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if (employeenohodchange != null && employeenohodchange.EmailAddress == null)
+            {
+                toastService.ShowWarning("Head of Department email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if(LeaveData.SupervisorRecommendationBy == null)
+            {
+                toastService.ShowWarning("Please select your supervisor (Part III).");
+            }
+
+            else if(employeenohodchange != null && employeenohodchange.EmailAddress == null)
+            {
+                toastService.ShowWarning("Head of Department email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if(LeaveData.HodrecommendationBy == null)
+            {
+                toastService.ShowWarning("Please select your Head of Department (Part III).");
+            }
+
+            else
+            {
+                LeaveData.ApprovalReason = null;
+                ConfirmationText = "<p>Are you sure you want to approve this leave request! </p>";
+                await this.ConfirmationApproveDialogue.Show();
+            }
+
+        }
+        catch (Exception ex)
+        {
+            //toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async void ComfirmationApproveYes()
+    {
+        try
+        {
+            await this.ApproveLeaveDialogue.Show();
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private void ComfirmationApproveNo()
+    {
+        this.ConfirmationApproveDialogue.Hide();
+    }
+
+    //Supervisor Rejection
+    private async Task RejectReasonYes()
+    {
+        try
+        {              
+            if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                LeaveData.LeaveApprovalStatusId = 4;
+                LeaveData.SubmittedToSupervisor = false;
+                LeaveData.ApplicationDate = DateTime.Now;
+                await DataGrid.EndEditAsync();
+            }
+
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(LeaveData);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/RejectEmployeeLeave", httpContent);
+        }
+        catch (Exception ex)
+        {
+            //toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            DataGrid.Refresh();
+            await this.RejectLeaveDialogue.Hide();
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void RejectReasonNo()
+    {
+        DataGrid.Refresh();
+        this.RejectLeaveDialogue.Hide();
+    }
+
+    public async Task onRejectSupervisorForm()
+    {
+        try
+        {
+            LeaveData.RecommendationRejectionReason = null;
+            ConfirmationText = "<p>Are you sure you want to reject this leave request! </p>";
+            await this.ConfirmationDialogue.Show();            
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    public async void DialogCancelBtnclicked()
+    {
+        if (DataGrid != null)
+        {
+            await DataGrid.CloseEdit();
+        }        
+    }
+
+    private async void ComfirmationYes()
+    {
+        try
+        {
+            await this.RejectLeaveDialogue.Show();
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private void ComfirmationNo()
+    {
+        this.ConfirmationDialogue.Hide();
+    }
+
+    //Supervisor
+
+    public async Task onSubmitSupervisorForm()
+    {
+        try
+        {    
+            if(LeaveData.EmployeeId == null)
+            {
+                toastService.ShowWarning("Please select the employee (Part I)");
+            }
+
+            else if(LeaveData.LeaveTypeId == null)
+            {
+                toastService.ShowWarning("Please select the leave type");
+            }
+
+            else if(LeaveData.ScheduledStartDate == null)
+            {
+                toastService.ShowWarning("Please select the commencement date (Part I)");
+            }
+
+            else if(LeaveData.ScheduledEndDate == null)
+            {
+                toastService.ShowWarning("Please select the end date (Part I)");
+            }
+
+            else if(employeenosupervisor != null && employeenosupervisor.EmailAddress == null)
+            {
+                toastService.ShowWarning("Supervisor email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if (employeenohodchange != null && employeenohodchange.EmailAddress == null)
+            {
+                toastService.ShowWarning("Head of Department email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if(LeaveData.SupervisorRecommendationBy == null)
+            {
+                toastService.ShowWarning("Please select your supervisor (Part III).");
+            }
+
+            else if(employeenohodchange != null && employeenohodchange.EmailAddress == null)
+            {
+                toastService.ShowWarning("Head of Department email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if(LeaveData.HodrecommendationBy == null)
+            {
+                toastService.ShowWarning("Please select your Head of Department (Part III).");
+            }
+
+            else if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                LeaveData.LeaveApprovalStatusId = 5;
+                LeaveData.SupervisorRecommendationDate = DateTime.Now;
+                LeaveData.SubmittedToHod = true;
+                await DataGrid.EndEditAsync();
+            }            
+        }
+        catch (Exception ex)
+        {
+            //toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+
+            string? _baseurl = Navigation.BaseUri;            
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(LeaveData);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/LeaveRequestSupervisorToHODEmail?_baseurl={_baseurl}", httpContent);
+        }
+    }
+
+    public async Task onSubmitSupervisorSelfForm()
+    {
+        try
+        {    
+            if(LeaveData.EmployeeId == null)
+            {
+                toastService.ShowWarning("Please select the employee (Part I)");
+            }
+
+            else if(LeaveData.LeaveTypeId == null)
+            {
+                toastService.ShowWarning("Please select the leave type");
+            }
+
+            else if(LeaveData.ScheduledStartDate == null)
+            {
+                toastService.ShowWarning("Please select the commencement date (Part I)");
+            }
+
+            else if(LeaveData.ScheduledEndDate == null)
+            {
+                toastService.ShowWarning("Please select the end date (Part I)");
+            }
+
+            else if(employeenosupervisor != null && employeenosupervisor.EmailAddress == null)
+            {
+                toastService.ShowWarning("Supervisor email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if(LeaveData.SupervisorRecommendationBy == null)
+            {
+                toastService.ShowWarning("Please select your supervisor (Part III).");
+            }
+
+            else if(employeenohodchange != null && employeenohodchange.EmailAddress == null)
+            {
+                toastService.ShowWarning("Head of Department email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if(LeaveData.HodrecommendationBy == null)
+            {
+                toastService.ShowWarning("Please select your Head of Department (Part III).");
+            }
+
+            else if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                LeaveData.LeaveApprovalStatusId = 5;
+                LeaveData.ApplicationDate = DateTime.Now;
+                LeaveData.SubmittedToHod = true;
+                await DataGrid.EndEditAsync();
+            }            
+        }
+        catch (Exception ex)
+        {
+            //toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    //HOD
+    public async Task onSubmitHODForm()
+    {
+        try
+        {
+            if (LeaveData.EmployeeId == null)
+            {
+                toastService.ShowWarning("Please select the employee (Part I)");
+            }
+
+            else if (LeaveData.LeaveTypeId == null)
+            {
+                toastService.ShowWarning("Please select the leave type");
+            }
+
+            else if (LeaveData.ScheduledStartDate == null)
+            {
+                toastService.ShowWarning("Please select the commencement date (Part I)");
+            }
+
+            else if (LeaveData.ScheduledEndDate == null)
+            {
+                toastService.ShowWarning("Please select the end date (Part I)");
+            }
+
+            else if (employeenosupervisor != null && employeenosupervisor.EmailAddress == null)
+            {
+                toastService.ShowWarning("Supervisor email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if (LeaveData.SupervisorRecommendationBy == null)
+            {
+                toastService.ShowWarning("Please select your supervisor (Part III).");
+            }
+
+            else if(employeenohodchange != null && employeenohodchange.EmailAddress == null)
+            {
+                toastService.ShowWarning("Head of Department email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if(LeaveData.HodrecommendationBy == null)
+            {
+                toastService.ShowWarning("Please select your Head of Department (Part III).");
+            }
+
+            else if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == LeaveData.EmployeeId);
+                var chroemployeeid = EmployeeData.FirstOrDefault(o => o.JobTitleId == 44); //Get the CHRO EmployeeId
+
+                if(employeeno != null && employeeno.JobTitleId == 44)
+                {
+                    LeaveData.LeaveApprovalStatusId = 11;
+                    LeaveData.HodrecommendationDate = DateTime.Now;
+                    LeaveData.SubmittedToChro = true;
+                }
+                else
+                {
+                    LeaveData.LeaveApprovalStatusId = 8;
+                    LeaveData.HodrecommendationDate = DateTime.Now;
+                    LeaveData.SubmittedToChro = true;
+                    if(chroemployeeid != null)
+                    {
+                        LeaveData.ChroapprovedBy = chroemployeeid.Employeeid;
+                    }                    
+                }
+
+                await DataGrid.EndEditAsync();
+
+                //await LoadingDialogue.ShowAsync();
+                //LeaveData.LeaveApprovalStatusId = 8;
+                //LeaveData.HodrecommendationDate = DateTime.Now;
+                //LeaveData.SubmittedToChro = true;
+                //await DataGrid.EndEditAsync();
+            }            
+        }
+        catch (Exception ex)
+        {
+            //toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+
+            string? _baseurl = Navigation.BaseUri;
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(LeaveData);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/SendHODToCHROEmail?_baseurl={_baseurl}", httpContent);            
+        }
+    }
+
+    public async Task onRejectHODForm()
+    {
+        try
+        {
+            LeaveData.RecommendationRejectionReason = null;
+            ConfirmationText = "<p>Are you sure you want to reject this leave request! </p>";
+            await this.ConfirmationHODDialogue.Show();            
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task RejectReasonYesHOD()
+    {
+        try
+        {              
+            if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                LeaveData.LeaveApprovalStatusId = 7;
+                LeaveData.SubmittedToSupervisor = false;
+                LeaveData.SubmittedToHod = false;
+                await DataGrid.EndEditAsync();
+            }            
+        }
+        catch (Exception ex)
+        {
+            //toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            DataGrid.Refresh();
+            await this.RejectLeaveDialogueHOD.Hide();
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+
+            string? _baseurl = Navigation.BaseUri;
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(LeaveData);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/RejectEmployeeLeaveHOD?_baseurl={_baseurl}", httpContent);
+        }
+    }
+
+    private void RejectReasonNoHOD()
+    {
+        DataGrid.Refresh();
+        this.RejectLeaveDialogueHOD.Hide();
+    }
+
+    private async void ComfirmationYesHOD()
+    {
+        try
+        {
+            await this.RejectLeaveDialogueHOD.Show();
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private void ComfirmationNoHOD()
+    {
+        this.ConfirmationHODDialogue.Hide();
+    }
+
+    public async Task onSubmitHODSelfForm()
+    {
+        try
+        {    
+            if(LeaveData.EmployeeId == null)
+            {
+                toastService.ShowWarning("Please select the employee (Part I)");
+            }
+
+            else if(LeaveData.LeaveTypeId == null)
+            {
+                toastService.ShowWarning("Please select the leave type");
+            }
+
+            else if(LeaveData.ScheduledStartDate == null)
+            {
+                toastService.ShowWarning("Please select the commencement date (Part I)");
+            }
+
+            else if(LeaveData.ScheduledEndDate == null)
+            {
+                toastService.ShowWarning("Please select the end date (Part I)");
+            }
+
+            else if(employeenosupervisor != null && employeenosupervisor.EmailAddress == null)
+            {
+                toastService.ShowWarning("Supervisor email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if(LeaveData.SupervisorRecommendationBy == null)
+            {
+                toastService.ShowWarning("Please select your supervisor (Part III).");
+            }
+
+            else if(employeenohodchange != null && employeenohodchange.EmailAddress == null)
+            {
+                toastService.ShowWarning("Head of Department email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if(LeaveData.HodrecommendationBy == null)
+            {
+                toastService.ShowWarning("Please select your Head of Department (Part III).");
+            }
+
+            else if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                LeaveData.LeaveApprovalStatusId = 8;
+                LeaveData.ApplicationDate = DateTime.Now;
+                LeaveData.SubmittedToChro = true;
+                await DataGrid.EndEditAsync();
+            }            
+        }
+        catch (Exception ex)
+        {
+            //toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    //CHRO
+    public async Task onRejectCHROForm()
+    {
+        try
+        {
+            LeaveData.RecommendationRejectionReason = null;
+            ConfirmationText = "<p>Are you sure you want to reject this leave request! </p>";
+            await this.ConfirmationCHRODialogue.Show();            
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task RejectReasonYesCHRO()
+    {
+        try
+        {              
+            if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                LeaveData.LeaveApprovalStatusId = 10;
+                LeaveData.SubmittedToSupervisor = false;
+                LeaveData.SubmittedToHod = false;
+                LeaveData.SubmittedToChro = false;
+                LeaveData.ApprovedByChro = false;
+                await DataGrid.EndEditAsync();
+            }            
+        }
+        catch (Exception ex)
+        {
+            //toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            DataGrid.Refresh();
+            await this.RejectLeaveDialogueCHRO.Hide();
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+
+            string? _baseurl = Navigation.BaseUri;            
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(LeaveData);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/RejectEmployeeLeaveCHRO?_baseurl={_baseurl}", httpContent);
+        }
+    }
+
+    private void RejectReasonNoCHRO()
+    {
+        DataGrid.Refresh();
+        this.RejectLeaveDialogueCHRO.Hide();
+    }
+
+    private async void ComfirmationYesCHRO()
+    {
+        try
+        {
+            await this.RejectLeaveDialogueCHRO.Show();
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private void ComfirmationNoCHRO()
+    {
+        this.ConfirmationCHRODialogue.Hide();
+    }
+
+    public async Task onSubmitCHROAssistantForm()
+    {
+        try
+        {    
+            if(LeaveData.EmployeeId == null)
+            {
+                toastService.ShowWarning("Please select the employee (Part I)");
+            }
+
+            else if(LeaveData.LeaveTypeId == null)
+            {
+                toastService.ShowWarning("Please select the leave type");
+            }
+
+            else if(LeaveData.ScheduledStartDate == null)
+            {
+                toastService.ShowWarning("Please select the commencement date (Part I)");
+            }
+
+            else if(LeaveData.ScheduledEndDate == null)
+            {
+                toastService.ShowWarning("Please select the end date (Part I)");
+            }
+
+            else if(employeenosupervisor != null && employeenosupervisor.EmailAddress == null)
+            {
+                toastService.ShowWarning("Supervisor email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if(LeaveData.SupervisorRecommendationBy == null)
+            {
+                toastService.ShowWarning("Please select your supervisor (Part III).");
+            }
+
+            else if(employeenohodchange != null && employeenohodchange.EmailAddress == null)
+            {
+                toastService.ShowWarning("Head of Department email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if(LeaveData.HodrecommendationBy == null)
+            {
+                toastService.ShowWarning("Please select your Head of Department (Part III).");
+            }
+
+            else if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                LeaveData.LeaveApprovalStatusId = 5;
+                LeaveData.ApplicationDate = DateTime.Now;
+                LeaveData.SubmittedToSupervisor = true;
+                LeaveData.SubmittedToHod = true;
+                await DataGrid.EndEditAsync();
+            }            
+        }
+        catch (Exception ex)
+        {
+            //toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    public async Task onSubmitCHROSelfForm()
+    {
+        try
+        {    
+            if(LeaveData.EmployeeId == null)
+            {
+                toastService.ShowWarning("Please select the employee (Part I)");
+            }
+
+            else if(LeaveData.LeaveTypeId == null)
+            {
+                toastService.ShowWarning("Please select the leave type");
+            }
+
+            else if(LeaveData.ScheduledStartDate == null)
+            {
+                toastService.ShowWarning("Please select the commencement date (Part I)");
+            }
+
+            else if(LeaveData.ScheduledEndDate == null)
+            {
+                toastService.ShowWarning("Please select the end date (Part I)");
+            }
+
+            else if(employeenosupervisor != null && employeenosupervisor.EmailAddress == null)
+            {
+                toastService.ShowWarning("Supervisor email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if(LeaveData.SupervisorRecommendationBy == null)
+            {
+                toastService.ShowWarning("Please select your supervisor (Part III).");
+            }
+
+            else if(employeenohodchange != null && employeenohodchange.EmailAddress == null)
+            {
+                toastService.ShowWarning("Head of Department email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if(LeaveData.HodrecommendationBy == null)
+            {
+                toastService.ShowWarning("Please select your Head of Department (Part III).");
+            }
+
+            else if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                LeaveData.LeaveApprovalStatusId = 9;
+                LeaveData.ApplicationDate = DateTime.Now;
+                LeaveData.ChroapprovalDate = DateTime.Now;
+                LeaveData.ApprovedByChro = true;
+                await DataGrid.EndEditAsync();
+            }            
+        }
+        catch (Exception ex)
+        {
+            //toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    #region LeaveRequest
+
+    public class LeaveRequestAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        SystemSettings _SystemSettings;
+        ApiConfig _ApiConfig;
+        public IToastService toastService;
+        private readonly NavigationManager Navigation;
+        private readonly ILogger <LeaveRequestAdapter> _logger;
+
+        public LeaveRequestAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+            , SystemSettings systemSettings, ApiConfig apiConfig,
+        ILogger<LeaveRequestAdapter> logger)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            Navigation = _Navigation;
+            _ApiConfig = apiConfig;
+            _SystemSettings = systemSettings;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            await _SystemSettings.GetLoginCredentials();
+
+            var data = new List<ViewEmployeeLeaveDto>();
+
+            string? AccessToken = _SystemSettings.AccessToken;
+            string? BaseUrl = _ApiConfig.BaseUrl;
+            int? EmployeeId = _SystemSettings.StaffId;
+            string? UserRoleId = _SystemSettings.UserRoleId;
+            string? UserRole = _SystemSettings.UserRole;
+
+            try
+            {
+                string LeaveApprovalStatusId = null;
+                string Employeeidsearch = null;
+
+                if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
+                {
+                    var val = dataManagerRequest.Params;
+
+                    if (val.FirstOrDefault(o => o.Key == "LeaveApprovalStatusId").Value != null)
+                    {
+                        LeaveApprovalStatusId = val.FirstOrDefault(o => o.Key == "LeaveApprovalStatusId").Value.ToString();
+                    }
+                }
+
+                if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
+                {
+                    var val = dataManagerRequest.Params;
+
+                    if (val.FirstOrDefault(o => o.Key == "Employeeid").Value != null)
+                    {
+                        Employeeidsearch = val.FirstOrDefault(o => o.Key == "Employeeid").Value.ToString();
+                    }
+                }
+
+                var response = await Http.GetAsync($"{BaseUrl}EmployeeLeave/GetEmployeeLeaveById?EmployeeId={EmployeeId}&UserRoleId={UserRoleId}&UserRole={UserRole}&LeaveApprovalStatusId={LeaveApprovalStatusId}&Employeeidsearch={Employeeidsearch}");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveDto>>(content, _options);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message, ex);
+                toastService.ShowError(ex.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<ViewEmployeeLeaveDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                string? _datesselectedd = null;         
+                string? _baseurl = Navigation.BaseUri;   
+
+                if (datesselectedd != null)
+                {
+                    _datesselectedd = string.Join(",", datesselectedd.Select(d => d.ToString("dd/MM/yyyy")).ToArray());
+                }
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as ViewEmployeeLeaveDto);
+                if (val != null)
+                {
+                    if (val.EmployeeLeaveId == 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/CreateEmployeeLeave?_datesselectedd={_datesselectedd}&_baseurl={_baseurl}", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/UpdateEmployeeLeave?_datesselectedd={_datesselectedd}&_baseurl={_baseurl}", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                string? _datesselectedd = null;
+                string? _baseurl = Navigation.BaseUri;
+
+                if (datesselectedd != null)
+                {
+                    _datesselectedd = string.Join(",", datesselectedd.Select(d => d.ToString("dd/MM/yyyy")).ToArray());
+                }
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as ViewEmployeeLeaveDto);
+                if (val != null)
+                {
+                    if (val.EmployeeLeaveId == 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/CreateEmployeeLeave?_datesselectedd={_datesselectedd}&_baseurl={_baseurl}", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/UpdateEmployeeLeave?_datesselectedd={_datesselectedd}&_baseurl={_baseurl}", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+
+    }
+
+    public async void ActionCompleteMain(ActionEventArgs<ViewEmployeeLeaveDto> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) ||
+        args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            DataGrid.PreventRender(false);
+        }
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+        {
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            var responseemployee = await Http.GetAsync($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+            var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+            var responseleavetype = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetLeaveType");
+            var contentleavetype = await responseleavetype.Content.ReadAsStringAsync();
+            var responsepublicholiday = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetPublicHoliday");
+            var contentpublicholiday = await responsepublicholiday.Content.ReadAsStringAsync();
+            var responseemployeeleave = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/GetEmployeeLeaveData");
+            var contentemployeeleave = await responseemployeeleave.Content.ReadAsStringAsync();
+            var responseuserjobtitle = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUserJobTitle");        
+            var responseuserrole = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUserRoleId");
+            var contentuserrole = await responseuserrole.Content.ReadAsStringAsync();
+            var contentuserjobtitle = await responseuserjobtitle.Content.ReadAsStringAsync();
+            var responseapprovalstatus = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetLeaveApprovalStatus");
+            var contentapprovalstatus = await responseapprovalstatus.Content.ReadAsStringAsync();
+
+            if (responseemployee.IsSuccessStatusCode)
+            {
+                EmployeeData = await Http.GetFromJsonAsync<List<ViewBscEmployeeDto>>
+                ($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+            }
+            if (responseleavetype.IsSuccessStatusCode)
+            {
+                LeaveTypeData = await Http.GetFromJsonAsync<List<ALeaveTypeDto>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetLeaveType");
+            }
+            if (responsepublicholiday.IsSuccessStatusCode)
+            {
+                PublicHolidaysData = await Http.GetFromJsonAsync<List<APublicHolidays>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetPublicHoliday");
+            }
+            if (responseemployeeleave.IsSuccessStatusCode)
+            {
+                RoasterCount = await Http.GetFromJsonAsync<List<ViewEmployeeLeaveDto>>
+                ($"{_ApiConfig.BaseUrl}EmployeeLeave/GetEmployeeLeaveData");
+            }
+
+            if (responseuserjobtitle.IsSuccessStatusCode)
+            {
+                UserJobTitle = contentuserjobtitle;
+            }
+
+            if (responseapprovalstatus.IsSuccessStatusCode)
+            {
+                ApprovalStatusData = await Http.GetFromJsonAsync<List<ALeaveApprovalStatusDto>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetLeaveApprovalStatus");
+            }
+
+            if (responseuserrole.IsSuccessStatusCode)
+            {
+                UserRole = contentuserrole;
+            }
+        }
+    }
+
+
+    public async void ActionBeginMain(ActionEventArgs<ViewEmployeeLeaveDto> Args)
+    {
+        var data = Args.Data;
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+        {
+            //await LoadingDialogue.ShowAsync();
+            int? employid = Args.Data.EmployeeId;
+        }
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+        {
+            _previousEdit = Args.RequestType;
+            employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.EmployeeId /*_SystemSettings.StaffId*/);
+            employeenosupervisor = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.SupervisorRecommendationBy);
+            employeenohod = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.HodrecommendationBy);
+            employeeleave  = RoasterCount.FirstOrDefault(o => o.EmployeeLeaveId == Args.RowData.EmployeeLeaveId);
+            employeeactingofficer = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.ActingOfficerId);
+
+            leavetypedays = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == Args.RowData.LeaveTypeId);
+
+            //Getting Dates Between Two Dates On Update
+            StartDate = Convert.ToDateTime(Args.RowData.ScheduledStartDate);
+            EndDate = Convert.ToDateTime(Args.RowData.ScheduledEndDate);
+            datesselectedd = GetDatesBetween(StartDate, EndDate).ToArray();
+
+            //Get number of days between two dates selected on Edit
+            int numberOfDays2 = GetNumberOfDates(StartDate, EndDate);
+            datesselectedd = GetDatesBetween(StartDate, EndDate).ToArray();
+            GetNumberOfPublicHolidays(StartDate, EndDate);
+            PublicHolidays = PublicHolidaysData.Where(o => o.HolidayDate >= Args.RowData.ScheduledStartDate && o.HolidayDate <= Args.RowData.ScheduledEndDate).Count();
+
+            LeaveDays = numberOfDays2 - PublicHolidays;
+
+            var LD = RoasterCount?.OrderByDescending(o => o.TotalDays)
+            .FirstOrDefault(o => o.EmployeeId == Args.RowData.EmployeeId
+            && o.LeaveTypeId == Args.RowData.LeaveTypeId);
+
+            if (LD != null && LD.TotalDays != null)
+            {
+                //Args.Data.TotalDays = LeaveDays + LD.TotalDays.Value;   
+                Args.Data.TotalDays = Args.RowData.TotalDays;
+                TotalDaysTakenPrior = LD.TotalDays.Value;
+                StateHasChanged();
+            }
+            else
+            {
+                TotalDaysTakenPrior = LeaveDays;
+                Args.Data.TotalDays = 0;
+            }
+
+            //Submitted to Supervisor and Not Rejected or Rejected
+            if(Args.Data.SubmittedToSupervisor == true 
+            && Args.Data.SubmittedToHod == false 
+            && Args.Data.EmployeeId == _SystemSettings.StaffId
+            &&(Args.Data.LeaveApprovalStatusId != 4 
+            && Args.Data.LeaveApprovalStatusId != 7 
+            && Args.Data.LeaveApprovalStatusId != 10
+            && Args.Data.LeaveApprovalStatusId != 1))
+            {
+                    IsDisabled = true;
+                    EmployeeDD = false;
+                    EndDateEnabler = false;
+                    StartDateEnabler = false;
+                    ActingOfficerDD = false;
+                    LeaveTypeIdDD = false;
+                    ScheduledStartDateBool = false;
+                    ImmediateSupervisorDD = false;
+                    HeadofDepartmentDD = false;
+            }
+
+            //Supervisor reviewing another persons recommendation
+            else if(Args.Data.SubmittedToSupervisor == true
+            && Args.Data.SubmittedToHod == false 
+            && Args.Data.EmployeeId != _SystemSettings.StaffId
+            && Args.Data.SupervisorRecommendationBy == _SystemSettings.StaffId)
+            {
+                    IsDisabled = false;
+                    EmployeeDD = false;
+                    EndDateEnabler = false;
+                    StartDateEnabler = false;
+                    ActingOfficerDD = false;
+                    LeaveTypeIdDD = false;
+                    ScheduledStartDateBool = false;
+                    ImmediateSupervisorDD = false;
+                    HeadofDepartmentDD = false;
+            }            
+            
+            //Disable for Supervisor after submitting to HOD (For Non CHROs Approval)
+            else if(Args.Data.SubmittedToSupervisor == true
+            && Args.Data.SubmittedToHod == true 
+            && Args.Data.EmployeeId != _SystemSettings.StaffId
+            && Args.Data.SupervisorRecommendationBy == _SystemSettings.StaffId
+            && (employeeno != null && employeeno.JobTitleId != 44))
+            {
+                    IsDisabled = true;
+                    EmployeeDD = false;
+                    EndDateEnabler = false;
+                    StartDateEnabler = false;
+                    ActingOfficerDD = false;
+                    LeaveTypeIdDD = false;
+                    ScheduledStartDateBool = false;
+                    ImmediateSupervisorDD = false;
+                    HeadofDepartmentDD = false;
+            }
+
+            //Disable for Supervisor after submitting to HOD (For CHROs Approval)
+            else if(Args.Data.SubmittedToSupervisor == true
+            && Args.Data.SubmittedToHod == true 
+            && Args.Data.EmployeeId != _SystemSettings.StaffId
+            && Args.Data.SupervisorRecommendationBy == _SystemSettings.StaffId
+            && (employeeno != null && employeeno.JobTitleId == 44))
+            {
+                    IsDisabled = false;
+                    EmployeeDD = false;
+                    EndDateEnabler = false;
+                    StartDateEnabler = false;
+                    ActingOfficerDD = false;
+                    LeaveTypeIdDD = false;
+                    ScheduledStartDateBool = false;
+                    ImmediateSupervisorDD = false;
+                    HeadofDepartmentDD = false;
+            }
+
+            //Disable for applicant when submitted to HOD
+            else if(Args.Data.SubmittedToSupervisor == true
+            && Args.Data.SubmittedToHod == true 
+            && Args.Data.SubmittedToHod == false 
+            && Args.Data.EmployeeId == _SystemSettings.StaffId)
+            {
+                    IsDisabled = true;
+                    EmployeeDD = false;
+                    EndDateEnabler = false;
+                    StartDateEnabler = false;
+                    ActingOfficerDD = false;
+                    LeaveTypeIdDD = false;
+                    ScheduledStartDateBool = false;
+                    ImmediateSupervisorDD = false;
+                    HeadofDepartmentDD = false;
+            }
+
+            //Disable for applicant when submitted to CHRO
+            else if(Args.Data.SubmittedToSupervisor == true
+            && Args.Data.SubmittedToHod == true 
+            && Args.Data.SubmittedToHod == true 
+            && Args.Data.EmployeeId == _SystemSettings.StaffId)
+            {
+                    IsDisabled = true;
+                    EmployeeDD = false;
+                    EndDateEnabler = false;
+                    StartDateEnabler = false;
+                    ActingOfficerDD = false;
+                    LeaveTypeIdDD = false;
+                    ScheduledStartDateBool = false;
+                    ImmediateSupervisorDD = false;
+                    HeadofDepartmentDD = false;
+            }
+
+            //HOD reviewing another persons recommendation
+            else if(Args.Data.SubmittedToHod == true
+            && Args.Data.SubmittedToChro == false 
+            && Args.Data.EmployeeId != _SystemSettings.StaffId
+            && Args.Data.HodrecommendationBy == _SystemSettings.StaffId)
+            {
+                    IsDisabled = false;
+                    EmployeeDD = false;
+                    EndDateEnabler = false;
+                    StartDateEnabler = false;
+                    ActingOfficerDD = false;
+                    LeaveTypeIdDD = false;
+                    ScheduledStartDateBool = false;
+                    ImmediateSupervisorDD = false;
+                    HeadofDepartmentDD = false;
+            }
+
+            //Disable for HOD after submitting to CHRO
+            else if(Args.Data.SubmittedToHod == true
+            && Args.Data.SubmittedToChro == true 
+            && Args.Data.EmployeeId != _SystemSettings.StaffId
+            && Args.Data.HodrecommendationBy == _SystemSettings.StaffId)
+            {
+                    IsDisabled = true;
+                    EmployeeDD = false;
+                    EndDateEnabler = false;
+                    StartDateEnabler = false;
+                    ActingOfficerDD = false;
+                    LeaveTypeIdDD = false;
+                    ScheduledStartDateBool = false;
+                    ImmediateSupervisorDD = false;
+                    HeadofDepartmentDD = false;
+            }
+
+            //Disable for CHRO after Approval
+            else if(Args.Data.ApprovedByChro == true)
+            {
+                    IsDisabled = true;
+                    EmployeeDD = false;
+                    EndDateEnabler = false;
+                    StartDateEnabler = false;
+                    ActingOfficerDD = false;
+                    LeaveTypeIdDD = false;
+                    ScheduledStartDateBool = false;
+                    ImmediateSupervisorDD = false;
+                    HeadofDepartmentDD = false;
+            }
+
+            else
+            {
+                IsDisabled = false;
+                EmployeeDD = true;
+                EndDateEnabler = true;
+                StartDateEnabler = true;
+                ActingOfficerDD = true;
+                LeaveTypeIdDD = true;
+                ScheduledStartDateBool = true;
+                ImmediateSupervisorDD = true;
+                HeadofDepartmentDD = true;
+            }
+
+        }
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+        {
+            //employeeno = null;
+            //Enable Buttons on Add
+            IsDisabled = false;
+            _previousAdd = Args.RequestType;
+            leavetypedays = null;
+            EmployeeDD = true;
+            if(_SystemSettings.StaffId > 0)
+            {
+                Args.Data.EmployeeId = _SystemSettings.StaffId /*Args.RowData.EmployeeId*/;
+                if(EmployeeData != null)
+                {
+                    employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.EmployeeId /*_SystemSettings.StaffId*/);
+                    employeenosupervisor = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.SupervisorRecommendationBy);
+                    employeenohod = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.EmployeeId);
+                    employeenohodchange = EmployeeData.FirstOrDefault(o => o.Employeeid == employeenohod.HoDemployeeId);
+                    
+                    //Assign HOD on Add
+                    Args.Data.HodrecommendationBy = employeenohod.HoDemployeeId;
+                    
+                    //Assign HOD on Add
+                    //@if (employeenohod != null)
+                    //{
+                    //    Args.Data.HodrecommendationBy = employeenohod.HoDemployeeId;
+                    //}
+                    //Assign Immediate Supervisor on Add for CHRO
+                    @if (employeeno != null && employeeno.JobTitleId == 44)
+                    {
+                        //Check for Chief Executive Officer Job Title
+                        var employeeid = EmployeeData.FirstOrDefault(o=>o.JobTitleId == 2);
+                        if(employeeid != null)
+                        {
+                            //Assign CEO as supervisor for CHRO and HOD
+                            Args.Data.SupervisorRecommendationBy = employeeid.Employeeid;
+                            Args.Data.HodrecommendationBy = employeeid.Employeeid;
+                            employeenosupervisor = EmployeeData.FirstOrDefault(o => o.Employeeid == employeeid.Employeeid);
+                            employeenohodchange = EmployeeData.FirstOrDefault(o => o.Employeeid == employeeid.Employeeid);
+                        }                        
+                    }
+
+                    //Dropdowns for CHRO
+                    if (employeeno!= null && employeeno.JobTitleId == 44)
+                    {
+                        //Enable Fields On Add
+                        EmployeeDD = true;
+                        EndDateEnabler = false;
+                        StartDateEnabler = true;
+                        ActingOfficerDD = true;
+                        LeaveTypeIdDD = true;
+                        ScheduledStartDateBool = true;
+                        ImmediateSupervisorDD = true;
+                        HeadofDepartmentDD = false;
+                    }
+                    //Dropdowns for others
+                    else
+                    {
+                        //Enable Fields On Add
+                        EmployeeDD = true;
+                        EndDateEnabler = false;
+                        StartDateEnabler = true;
+                        ActingOfficerDD = true;
+                        LeaveTypeIdDD = true;
+                        ScheduledStartDateBool = true;
+                        ImmediateSupervisorDD = true;
+                        HeadofDepartmentDD = true;
+                    }
+                }
+            }   
+        }
+    }
+    
+    public void QueryCellInfoHandler(QueryCellInfoEventArgs<ViewEmployeeLeaveDto> Args)
+    {
+        if (Args.Column.Field == "LeaveApprovalStatusId")
+        {
+            if (Args.Data.LeaveApprovalStatusId == 9 || Args.Data.LeaveApprovalStatusId == 11)
+            {
+                Args.Cell.AddClass(new string[] { "Approved" });
+            }
+            else
+            {
+                Args.Cell.AddClass(new string[] { "Draft" });
+            }  
+        }
+    }
+
+    public void RowBound(RowDataBoundEventArgs<ViewEmployeeLeaveDto> Args)
+    {   
+        //Only show draft aoolicationsfor the applicant and hide for the others
+        if (Args.Data.LeaveApprovalStatusId == 1 
+            && Args.Data.EmployeeId != _SystemSettings.StaffId)
+        {
+            //Args.Row.AddClass(new string[] { "equal-5" });
+            Args.Row.AddClass(new string[] { "hiderecord" }); //adding class name to row
+        }
+
+        //Only show approved for the applicant and hide for the others
+        else if((Args.Data.LeaveApprovalStatusId == 9 
+            || Args.Data.LeaveApprovalStatusId == 11)
+            && Args.Data.EmployeeId != _SystemSettings.StaffId)
+        {
+            Args.Row.AddClass(new string[] { "hiderecord" });
+        }
+
+        //else if (Args.Data.SubmittedToSupervisor == true ||
+        //Args.Data.SubmittedToHod == true||
+        //Args.Data.SubmittedToChro == true||
+        //Args.Data.ApprovedByChro == true)
+        //{
+        //    EmployeeDD = false;
+        //    EndDateEnabler = false;
+        //    StartDateEnabler = false;
+        //    ActingOfficerDD = false;
+        //    LeaveTypeIdDD = false;
+        //    ScheduledStartDateBool = false;
+        //    ImmediateSupervisorDD = false;
+        //    HeadofDepartmentDD = false;
+        //}
+
+        else
+        {
+            //Args.Row.AddClass(new string[] { "e-removeDeletecommand" });
+        }
+    }
+
+    public string GetLeaveRequestHeader(ViewEmployeeLeaveDto Value)
+    {
+        if (Value.EmployeeLeaveId == 0)
+        {
+            return "New Leave Request";
+        }
+        else
+        {
+            return "Edit " + Value.EmployeeFullName;
+        }
+    }
+    #endregion LeaveRequest
+}
+
+<style>
+    /*Define Colors for Cells*/
+    .Draft {
+        background-color: red;
+    }
+
+    .Approved {
+        background-color: forestgreen;
+    }
+
+    /*Change color for text in Grid*/
+    /*QueryCellInfo*/
+    /*.Draft*/
+    .e-grid .e-gridcontent .e-rowcell.Draft {
+        color: ghostwhite;
+    }
+
+    /*.Approved*/
+    .e-grid .e-gridcontent .e-rowcell.Approved {
+        color: White;
+    }
+
+     /*.hiderecord*/
+    .hiderecord {
+        display: none; 
+    } 
+
+    .equal-5 {
+        background-color: #336c12;
+    }
+    /*QueryCellInfo*/
+</style>

@@ -1,0 +1,628 @@
+﻿@page "/AvailableJobsPage"
+@using HCMIS.ViewModel
+@using System.Text.Json
+@using System.Collections
+@inject HttpClient Http
+@inject AppState AppState
+@inject ApiConfig _ApiConfig;
+@inject NavigationManager Navigation
+@inject SystemSettings _SystemSettings
+<style>
+	#target {
+			max-height: 800px;
+			height: 400px;
+	}
+
+    h3 {
+        color: ghostwhite;
+        background-color: darkslategray;
+        padding: 10px;
+        width: 100%;
+    }
+    li{
+        margin: 0px 0px 4px;
+        line-height: 1.8;
+        color: rgb(102, 102, 102);
+        font-family: "Open Sans", sans-serif;
+        font-size: 14px;
+        font-style: normal;
+        font-weight: 400;
+        text-indent: 0px;
+        white-space: normal;
+       /* background-color: rgb(255, 255, 255);*/
+        text-align: justify;
+    }
+    p{
+        margin: 0px 0px 4px;
+        line-height: 1.8;
+        color: rgb(102, 102, 102);
+        font-family: "Open Sans", sans-serif;
+        font-size: 14px;
+        font-style: normal;
+        font-weight: 400;
+        text-indent: 0px;
+        white-space: normal;
+       /* background-color: rgb(255, 255, 255);*/
+        text-align: justify;
+    }
+    h5{
+        color:#06c;
+    }
+    label{
+        margin-top:15px;
+    }
+
+    ul.e-list-parent .e-ul >li {
+        min-height:10vh;
+    }
+</style>
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+<BreadcrumbPage CategoryName="Applications" PageName="Available Jobs" />
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="row" style="margin:10px;">
+            <div class="col-md-12">
+                <input class="form-control" type="text" placeholder="search department / Job Title" style="margin-bottom:10px;" @oninput="@FilterChangedAsync" />
+            </div>
+            <div class="col-md-12">
+
+            </div>
+        </div>
+    </div>
+    @if (availableJobsModel != null && availableJobsModel.Count > 0 && JobDecriptionModel != null && JobDecriptionModel.Count > 0)
+    {
+        var listData = JobDecriptionModel.Skip(SkipValue).Take(TakeValue).ToList();
+        <div class="col-md-12">
+            <SfListView TValue="ViewAvailableJobs" DataSource="@listData" EnableVirtualization="false" CssClass="e-list-template">
+                <ListViewFieldSettings Id="JobDescriptionId" Text="JobTitleDescription" GroupBy="DepartmentDescription" TValue="ViewAvailableJobs" />
+                <ListViewTemplates TValue="ViewAvailableJobs">
+                    <Template>
+                        @{
+                            var data = (context as ViewAvailableJobs);
+                        }
+                        <div class="row" style="margin:10px; border-color:gray; border-style:solid; border-width:1px;">
+                            <div class="col-md-5" style="padding:10px;">
+                                <h5>@data.JobTitleDescription?.Replace("(1)","")</h5>
+                                <p>Ref No: @data.ReferenceNumber</p>
+                                <p>Job Type: @data.TypeDescription</p>
+                                <p>Reports To: @data.ReportsToDesc?.Replace("(1)","")</p>
+                            </div>
+                            <div class="col-md-4" style="padding:10px;">
+                                @if(data.JobTypeId==3){
+                                    <p>contract length: @data.ContractLength @data.ContractLengthTypeDesc</p>
+                                }
+                                <p>Salary Scale: @data.SalaryScaleDescription</p>
+                                <p>vacancies: @data.Vacancies</p>
+                                <p>Deadline: @data.ApplicationClosingDate.Value.ToString("dd MMMM yyyy") at @data.ApplicationClosingDate.Value.ToString("hh:mm tt")</p>
+                            </div>
+                            <div class="col-md-3" style="padding:10px;">
+                                <button class="btn btn-primary" @onclick=@(()=>{viewJobClick(data);})><i class="oi oi-eye"></i> view Job</button>
+                            </div>
+                        </div>
+                    </Template>
+                    <GroupTemplate>
+                        <div>
+                            <span class="category">@context.Text</span>
+                        </div>
+                    </GroupTemplate>
+                </ListViewTemplates>
+            </SfListView>
+        </div>
+        <div class="col-md-12">
+            <SfPager @ref="@Page" PageSize=5 NumericItemsCount=4 TotalItemsCount=@JobDecriptionModel.Count ItemClick="PaggerClick">
+            </SfPager>
+        </div>
+    }
+    else
+    {
+        if(IsPageLoaded==false){
+            <div class="col-md-12">
+                <div class="loader">
+                    <div class="loader--dot"></div>
+                    <div class="loader--dot"></div>
+                    <div class="loader--dot"></div>
+                    <div class="loader--dot"></div>
+                    <div class="loader--dot"></div>
+                    <div class="loader--dot"></div>
+                    <div class="loader--text"></div>
+                </div>
+            </div>
+        }
+        else{
+            <p class="alert-info" style="padding:10px;">There are no available jobs.</p>
+        }
+        
+            
+    }
+    <div class="col-md-12">
+        <SfDialog  Width="98%" ShowCloseIcon="true" @bind-Visible="Visibility" AllowDragging="true" EnableResize="true" IsModal="true">
+            <DialogEvents OnOpen="@DialogOpen" Closed="@DialogClose"></DialogEvents>
+            <DialogTemplates>
+                <Header>Job Details</Header>	
+                <Content>
+                    @if(SelectedJobsModel != null){
+                        <div class="row" style="margin-left:5%;margin-right:5%; margin-top:10px; margin-bottom:10px;">
+                            <div class="col-md-12">
+                                <h3>@SelectedJobsModel.viewAvailableJobs?.JobTitleDescription?.Replace("(1)","")</h3>
+                            </div>
+                            <div class="col-md-6">
+                                <p style="margin-left:20px;">Reports To: @SelectedJobsModel.viewAvailableJobs?.ReportsToDesc?.Replace("(1)","")</p>
+                                <p style="margin-left:20px;">Ref No: @SelectedJobsModel.viewAvailableJobs?.ReferenceNumber</p>
+                                <p style="margin-left:20px;">Job Type: @SelectedJobsModel.viewAvailableJobs?.TypeDescription</p>
+                                <p style="margin-left:20px;">Deadline: @SelectedJobsModel.viewAvailableJobs?.ApplicationClosingDate.Value.ToString("dd MMMM yyyy") at @SelectedJobsModel.viewAvailableJobs?.ApplicationClosingDate.Value.ToString("hh:mm tt")</p>
+                            </div>
+                            <div class="col-md-6">
+                                @if (SelectedJobsModel.viewAvailableJobs?.JobTypeId == 3)
+                                {
+                                    <p>contract length: @SelectedJobsModel.viewAvailableJobs?.ContractLength @SelectedJobsModel.viewAvailableJobs?.ContractLengthTypeDesc</p>
+                                }
+                                <p>Salary Scale: @SelectedJobsModel.viewAvailableJobs?.SalaryScaleDescription</p>
+                                <p>vacancies: @SelectedJobsModel.viewAvailableJobs?.Vacancies</p>
+                            </div>
+                            <div class="col-md-12">
+                                <h5>Job Description</h5>
+                                @*<p>@SelectedJobsModel.viewAvailableJobs?.JobDescription</p>*@
+                                <div style="margin-left:20px; width:100%;">
+                                    @((MarkupString)SelectedJobsModel.viewAvailableJobs?.JobDescription)
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <h5>Job requirements</h5>
+                                @if (SelectedJobsModel.jobDescriptionKnowledge != null && SelectedJobsModel.jobDescriptionKnowledge.Count > 0){
+                                    <h6>Educational Qualifications</h6>
+                                    <ol>
+                                            @foreach (var item in SelectedJobsModel.jobDescriptionKnowledge)
+                                            {
+                                                string conditionString = string.Empty;
+                                                if(item.IsRequired==true){
+                                                    conditionString = "Must have a";
+                                                }
+                                                else{
+                                                    conditionString = "A";
+                                                }
+                                            <li style="margin-left:10px;">
+                                                @conditionString @item.LevelofEducationDesc in @item.FieldOfStudyDesc .
+                                                @if (!string.IsNullOrEmpty(item.Notes)){
+                                                        <br /> @item.Notes
+                                                }
+                                                    </li>
+                                            }
+                                    </ol>
+                                }
+                                @if (SelectedJobsModel.jobDescriptionWorkExperienceRequirement != null && SelectedJobsModel.jobDescriptionWorkExperienceRequirement.Count > 0)
+                                {
+                                    <h6>Work Experience</h6>
+                                    <ol>
+                                        @foreach (var item in SelectedJobsModel.jobDescriptionWorkExperienceRequirement)
+                                            {
+                                              <li style="margin-left:10px;">@item.ExperienceDesc</li>
+                                            }
+                                    </ol>
+                                }
+                            </div>
+                            <div class="col-md-12">
+                                <h5>Job Responsibilities</h5>
+                                @if (SelectedJobsModel.jobDescriptionResponsibility != null && SelectedJobsModel.jobDescriptionResponsibility.Count > 0)
+                                {
+                                    <ol>
+                                        @foreach (var item in SelectedJobsModel.jobDescriptionResponsibility)
+                                        {
+                                            <li style="margin-left:10px;">@item.ResponsibilityDesc</li>
+                                        }
+                                    </ol>
+                                }
+                            </div>
+                            <div class="col-md-12">
+                                <h5>Benefits of working with us</h5>
+                                @if (SelectedJobsModel.jobDescriptionBenefit != null && SelectedJobsModel.jobDescriptionBenefit.Count > 0)
+                                {
+                                    <ol>
+                                        @foreach (var item in SelectedJobsModel.jobDescriptionBenefit)
+                                        {
+                                            <li style="margin-left:10px;">@item.BenefitDescription</li>
+                                        }
+                                    </ol>
+                                }
+                            </div>
+                            <div>
+                                <SfDialog @ref=@ApplicationDialog Width="70%" Height="90vh" ShowCloseIcon="true" Visible=false AllowDragging="true" EnableResize="true"
+                                IsModal="true">
+                                    <DialogTemplates>
+                                        <Header>@SelectedJobsModel.viewAvailableJobs?.JobTitleDescription?.Replace("(1)","")</Header>
+                                        <Content>
+                                            @if(appliedForJobsModel != null){
+                                                if(appliedForJobsModel.appliedForJobs != null){
+                                                    <div class="row">
+                                                        <div class="col-md-12">
+                                                            <label>ARE YOU RELATED TO ANY STAFF OF THE COMPANY?</label>
+                                                            <SfDropDownList @bind-Value="@(appliedForJobsModel.appliedForJobs.AreYouRelatedToAnyCompanyStaff)" TItem="AYesNo" TValue="int?" Width="100%" PopupHeight="230px" DataSource="@YesNoData">
+                                                                <DropDownListFieldSettings Text="@(nameof(AYesNo.YesNoDesc))" Value="@(nameof(AYesNo.YesNoId))"></DropDownListFieldSettings>
+                                                            </SfDropDownList>
+                                                        </div>
+                                                        <div class="col-md-12">
+                                                            <label>NUMBER OF CHILDREN</label>
+                                                            <SfNumericTextBox @bind-Value="@(appliedForJobsModel.appliedForJobs.NoOfChildren)" TValue="int?" Width="100%" Format="N0" Placeholder="Children" Step="1" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                                        </div>
+                                                        <div class="col-md-12">
+                                                            <label>
+                                                                HAVE YOU PREVIOUSLY APPLIED FOR APPOINTMENT TO THE
+                                                                SERVICE OF THE COMPANY FOR ANY OTHER VACANY?
+                                                            </label>
+                                                            <SfDropDownList @bind-Value="@(appliedForJobsModel.appliedForJobs.PreviouslyAppliedForAjob)" TItem="AYesNo" TValue="int?" Width="100%" PopupHeight="230px" DataSource="@YesNoData">
+                                                                <DropDownListFieldSettings Text="@(nameof(AYesNo.YesNoDesc))" Value="@(nameof(AYesNo.YesNoId))"></DropDownListFieldSettings>
+                                                            </SfDropDownList>
+                                                        </div>
+                                                        @if(appliedForJobsModel.appliedForJobs.PreviouslyAppliedForAjob==1){
+                                                            <div class="col-md-12">
+                                                                <label>IF SO GIVE BRIEF DETAILS OF THE APPOINTMENT</label>
+                                                                <SfTextBox Multiline=true @bind-Value="@(appliedForJobsModel.appliedForJobs.AppointmentDetail)" Width="100%" Placeholder="Give a brief narrative" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                            </div>
+                                                        }
+                                                        <div class="col-md-12">
+                                                            <label>
+                                                                PERSONAL REFEREES: (Give names and addresses of two responsible and
+                                                                professional persons who know you well, either in private or public life. Names of
+                                                                candidate’s relatives should not be given)
+                                                            </label>
+                                                        </div>
+                                                        <div class="col-md-12">
+                                                            <SfGrid TValue="AppliedForJobReferees" DataSource="@appliedForJobsModel.appliedForJobReferees"
+                                                            AllowPaging="true" AllowFiltering="true" AllowReordering="true" AllowResizing="true"
+                                                        Toolbar="@(new List<string>() {"Add", "Edit", "Delete", "Cancel", "Update", "Search"})">
+                                                                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                                                                <GridPageSettings PageSizes="true"></GridPageSettings>
+                                                                <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+                                                                <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
+                                                                    <Template>
+                                                                        @{
+                                                                            var ReferenceReviewData = (context as AppliedForJobReferees);
+                                                                            if(ReferenceReviewData != null){
+                                                                                    <div class="row">
+                                                                                        <div class="col-md-4">
+                                                                                            <label>Name</label>
+                                                                                            <SfTextBox Multiline=true @bind-Value="@(ReferenceReviewData.RefereeName)" Width="100%" Placeholder="Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                                                        </div>
+                                                                                        <div class="col-md-4">
+                                                                                            <label>Gender</label>
+                                                                                            <SfDropDownList @bind-Value="@(ReferenceReviewData.GenderId)" Enabled="true" TItem="AGender" TValue="int?" DataSource="@GenderData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                                                                <DropDownListFieldSettings Value="@nameof(AGender.GenderId)" Text="@nameof(AGender.GenderDesc)"></DropDownListFieldSettings>
+                                                                                            </SfDropDownList>
+                                                                                        </div>
+                                                                                        <div class="col-md-4">
+                                                                                            <label>Nationality</label>
+                                                                                            <SfDropDownList @bind-Value="@(ReferenceReviewData.CoutryId)" Enabled="true" TItem="ACountry" TValue="int?" DataSource="@CountryData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                                                                <DropDownListFieldSettings Value="@nameof(ACountry.CoutryId)" Text="@nameof(ACountry.CountryDesc)"></DropDownListFieldSettings>
+                                                                                            </SfDropDownList>
+                                                                                        </div>
+                                                                                        <div class="col-md-4">
+                                                                                            <label>Title of the Current Job</label>
+                                                                                            <SfTextBox Multiline=true @bind-Value="@(ReferenceReviewData.RefereeJobTitle)" Width="100%" Placeholder="Title" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                                                        </div>
+                                                                                        <div class="col-md-4">
+                                                                                            <label>Current Organisation Name</label>
+                                                                                            <SfTextBox Multiline=true @bind-Value="@(ReferenceReviewData.RefereeCompany)" Width="100%" Placeholder="Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                                                        </div>
+                                                                                        <div class="col-md-4">
+                                                                                            <label>Email</label>
+                                                                                            <SfTextBox Multiline=true @bind-Value="@(ReferenceReviewData.RefereeEmail)" Width="100%" Placeholder="Official Mail" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                                                        </div>
+                                                                                        <div class="col-md-4">
+                                                                                            <label>Phone Number</label>
+                                                                                            <SfNumericTextBox @bind-Value="@(ReferenceReviewData.RefereePhoneNumber)" Width="100%" Placeholder="Phone Number" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                                                                        </div>
+                                                                                        <div class="col-md-4">
+                                                                                            <label>Other Phone Number</label>
+                                                                                            <SfNumericTextBox @bind-Value="@(ReferenceReviewData.RefereeOtherPhoneNumber)" Width="100%" Placeholder="Mobile" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                                                                        </div>
+                                                                                        <div class="col-md-4">
+                                                                                            <label>Physical Address</label>
+                                                                                            <SfTextBox Multiline=true @bind-Value="@(ReferenceReviewData.RefereePhysicalAddress)" Width="100%" Placeholder="Address" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                                                        </div>
+                                                                                    </div>
+                                                                            }
+                                                                        }
+                                                                    </Template>
+                                                                </GridEditSettings>
+                                                                <GridColumns>
+                                                                    <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                                                                    <GridColumn Field=@nameof(AppliedForJobReferees.AppliedForRefereeId) Visible=false HeaderText="JobDescriptionId" AllowEditing="false" IsPrimaryKey="true" Width="150"></GridColumn>
+                                                                    <GridColumn Field=@nameof(AppliedForJobReferees.AppliedForJobsId) Visible=false HeaderText="AppliedForJobsId" AllowEditing="false" Width="150"></GridColumn>
+                                                                    <GridColumn Field=@nameof(AppliedForJobReferees.RefereeName) Visible=true HeaderText="Name" AllowEditing="true" Width="150"></GridColumn>
+                                                                    <GridForeignColumn Field=@nameof(AppliedForJobReferees.GenderId) Visible=true HeaderText="Gender" AllowEditing="true" Width="100" ForeignKeyField="@(nameof(AGender.GenderId))" ForeignKeyValue="@(nameof(AGender.GenderDesc))" ForeignDataSource="@GenderData"></GridForeignColumn>
+                                                                    <GridForeignColumn Field=@nameof(AppliedForJobReferees.CoutryId) Visible=true HeaderText="Nationality" AllowEditing="true" Width="120" ForeignKeyField="@(nameof(ACountry.CoutryId))" ForeignKeyValue="@(nameof(ACountry.CountryDesc))" ForeignDataSource="@CountryData"></GridForeignColumn>
+                                                                    <GridColumn Field=@nameof(AppliedForJobReferees.RefereeJobTitle) Visible=true HeaderText="Title" AllowEditing="true" Width="150"></GridColumn>
+                                                                    <GridColumn Field=@nameof(AppliedForJobReferees.RefereeCompany) Visible=true HeaderText="Company" AllowEditing="true" Width="150"></GridColumn>
+                                                                    <GridColumn Field=@nameof(AppliedForJobReferees.RefereeEmail) Visible=true HeaderText="Email" AllowEditing="true" Width="150"></GridColumn>
+                                                                    <GridColumn Field=@nameof(AppliedForJobReferees.RefereePhoneNumber) Visible=true HeaderText="Offical Phone Number" AllowEditing="true" Width="150"></GridColumn>
+                                                                    <GridColumn Field=@nameof(AppliedForJobReferees.RefereePhysicalAddress) Visible=true HeaderText="Physical Address" AllowEditing="true" Width="150"></GridColumn>
+                                                                </GridColumns>
+                                                            </SfGrid>
+                                                        </div>
+                                                        <div class="col-md-12">
+                                                            <label>HAVE YOU EVER BEEN CONVICTED?</label>
+                                                            <SfDropDownList @bind-Value="@(appliedForJobsModel.appliedForJobs.EverBeenConvicted)" TItem="AYesNo" TValue="int?" Width="100%" PopupHeight="230px" DataSource="@YesNoData">
+                                                                <DropDownListFieldSettings Text="@(nameof(AYesNo.YesNoDesc))" Value="@(nameof(AYesNo.YesNoId))"></DropDownListFieldSettings>
+                                                            </SfDropDownList>
+                                                        </div>
+                                                        @if(appliedForJobsModel.appliedForJobs.EverBeenConvicted==1){
+                                                            <div class="col-md-12">
+                                                                <label>
+                                                                    IF SO GIVE DETAILS OF THE
+                                                                    OFFENCE (S)
+                                                                </label>
+                                                                 <SfTextBox Multiline=true @bind-Value="@(appliedForJobsModel.appliedForJobs.ConvictionReason)" Width="100%" Placeholder="Give a brief narrative" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                            </div>
+                                                        }
+                                                        <div class="col-md-12" style="margin-top:10px;">
+                                                            <SfCheckBox @bind-Checked=@appliedForJobsModel.appliedForJobs.InformationAcknowledgement LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After" Label="I hereby certify that to the best of my knowledge and belief, the particulars given in this form are true and complete in all aspects."></SfCheckBox>
+                                                        </div>
+                                                        <div class="col-md-12" style="margin-top:10px;">
+                                                            @if(!string.IsNullOrEmpty(ErrorMessage)){
+                                                                <p class="alert alert-danger">
+                                                                    @((MarkupString)ErrorMessage)
+                                                                </p>
+                                                            }
+                                                        </div>
+                                                    </div>  
+                                                }
+                                            }
+                                        </Content>
+                                        <FooterTemplate>
+                                        @if (appliedForJobsModel != null && appliedForJobsModel.appliedForJobs != null && appliedForJobsModel.appliedForJobs.InformationAcknowledgement == true)
+                                            {
+                                                <button @onclick="@onSubmitApplication" class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Submit Application</button>
+                                            }
+                                            <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel</button>
+                                        </FooterTemplate>
+                                    </DialogTemplates>
+                                </SfDialog>
+                            </div>
+                        </div>
+                    }
+                </Content>
+                <FooterTemplate>
+                    <button  @onclick="@ApplyBtnclicked" class="btn btn-primary" data-ripple="true">Apply for this job</button>
+                    <button  @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel</button>
+                </FooterTemplate>
+            </DialogTemplates>
+            <DialogPositionData X="center" Y="center"></DialogPositionData>
+        </SfDialog>
+    </div>
+</div>
+@code {
+    private bool Visibility { get; set; } = false;
+    private bool ShowButton { get; set; } = false;
+    private bool IsPageLoaded { get; set; } = false;
+    private void DialogOpen(Object args)
+    {
+        this.ShowButton = false;
+    }
+    private void DialogClose(Object args)
+    {
+        this.ShowButton = true;
+    }
+    SfDialog? ApplicationDialog { get; set; }
+
+    SfPager? Page;
+    SfToast? ToastObj;
+    private string ToastPosition = "Right";
+    string? ErrorMessage { get; set; }
+    List<AYesNo>? YesNoData{ get; set; }
+    List<ACountry>? CountryData{ get; set; }
+    List<AGender>? GenderData{ get; set; }
+    List<ViewAvailableJobs>? JobDecriptionModel { get; set; } = new List<ViewAvailableJobs>();
+    List<AvailableJobsModel>? availableJobsModel { get; set; } = new List<AvailableJobsModel>();
+    AvailableJobsModel? SelectedJobsModel { get; set; } = new();
+    AppliedForSaveModel appliedForJobsModel { get; set; } = new();
+    private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "96%" };
+    public int SkipValue { get; set; }
+    public int pageSize { get; set; }
+    public int TakeValue { get; set; } = 5;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        try
+        {
+            IsPageLoaded = false;
+            await _SystemSettings.GetLoginCredentials();
+            if (string.IsNullOrEmpty(_SystemSettings.AccessToken))
+            {
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                var tasks = new List<Task>();
+                tasks.Add(Task.Run(async () =>
+               {
+                   Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                   var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetCountry");
+                   var content = await response.Content.ReadAsStringAsync();
+                   if (response.IsSuccessStatusCode)
+                   {
+                       CountryData = JsonSerializer.Deserialize<List<ACountry>>(content, _options);
+                   }
+               }));
+                tasks.Add(Task.Run(async () =>
+                {
+                    Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                    var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetGender");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        GenderData = JsonSerializer.Deserialize<List<AGender>>(content, _options);
+                    }
+                }));
+                tasks.Add(Task.Run(async () =>
+               {
+                   Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                   var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}HumanResource/GetAvailableJobs");
+                   var content = await response.Content.ReadAsStringAsync();
+                   if (response.IsSuccessStatusCode)
+                   {
+                       availableJobsModel = JsonSerializer.Deserialize<List<AvailableJobsModel>>(content, _options);
+                       if (availableJobsModel != null && availableJobsModel.Count > 0){
+                           foreach (var item in availableJobsModel)
+                           {
+                               JobDecriptionModel?.Add(item.viewAvailableJobs);
+                           }
+                       }
+                   }
+               }));
+                tasks.Add(Task.Run(async () =>
+                {
+                    Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                    var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetYesNo");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        YesNoData = JsonSerializer.Deserialize<List<AYesNo>>(content, _options);
+                    }
+                }));
+                Task t = Task.WhenAll(tasks);
+                await t;
+            }
+
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error: {ex.Message}";
+        }
+        finally{
+            IsPageLoaded = true;
+        }
+    }
+    private void FilterChangedAsync(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        //SearchText = args.Value.ToString();
+        //.ToLower().IndexOf(args.Value.ToString().ToLower(), StringComparison.OrdinalIgnoreCase) >= 0)
+    }
+    private void viewJobClick(ViewAvailableJobs value){
+        try{
+            SelectedJobsModel = availableJobsModel?.FirstOrDefault(o => o.viewAvailableJobs?.JobDescriptionId == value.JobDescriptionId);
+            this.Visibility = true;
+        } 
+        catch (Exception ex)
+        {
+            ToastObj?.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+    }
+    public void PaggerClick(Syncfusion.Blazor.Navigations.PagerItemClickEventArgs args)
+    {
+        SkipValue = (args.CurrentPage * Page.PageSize) - Page.PageSize;
+        TakeValue = Page.PageSize;
+        //StateHasChanged();
+    }
+    public async Task ApplyBtnclicked()
+    {
+        try{
+            appliedForJobsModel.appliedForJobs = new();
+            appliedForJobsModel.appliedForJobReferees = new();
+            appliedForJobsModel.appliedForJobs.JobOpeningId = SelectedJobsModel.viewAvailableJobs.JobOpeningId;
+            appliedForJobsModel.appliedForJobs.ApplicationDate = DateTime.Now;
+            appliedForJobsModel.appliedForJobs.ApplicationStatusId = 1;
+            if (_SystemSettings.UserRole == "Non-Staff"){
+                appliedForJobsModel.appliedForJobs.NonStaffid = _SystemSettings.StaffId;
+            }
+            else{
+                appliedForJobsModel.appliedForJobs.Employeeid = _SystemSettings.StaffId;
+            }
+        }
+        catch(Exception ex){
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        finally{
+            await ApplicationDialog.ShowAsync();
+        }
+    }
+    public void DialogCancelBtnclicked(){
+        ApplicationDialog.HideAsync();
+        this.Visibility = false;
+    }
+    public async Task onSubmitApplication(){
+        try
+        {
+            string? error = string.Empty;
+            var data = appliedForJobsModel.appliedForJobs;
+            if (data.AreYouRelatedToAnyCompanyStaff == null || data.EverBeenConvicted == null
+                || data.InformationAcknowledgement == false || data.NoOfChildren==null || data.PreviouslyAppliedForAjob==null)
+            {
+                error = "<ul>";
+                if(data.AreYouRelatedToAnyCompanyStaff == null){
+                    error += $"<li>Please select to indicator whether you are related to any staff in the company or not. </li>";
+                }
+                if(data.EverBeenConvicted == null){
+                    error += $"<li>Please select to indicator whether you have ever been convincted or not. </li>";
+                }
+                if(data.NoOfChildren == null){
+                    error += $"<li>Please enter the number of children you have. </li>";
+                }
+                if(data.PreviouslyAppliedForAjob == null){
+                    error += $"<li>Please select to indicator whether you had ever applied for a job at this company or not. </li>";
+                }
+            }
+            else if((data.PreviouslyAppliedForAjob==1 && string.IsNullOrEmpty(data.AppointmentDetail)) || (data.EverBeenConvicted==1 && string.IsNullOrEmpty(data.ConvictionReason))){
+                error = "<ul>";
+                if((data.PreviouslyAppliedForAjob==1 && string.IsNullOrEmpty(data.AppointmentDetail))){
+                    error += $"<li>Please enter the appointment detail. </li>";
+                }
+                if((data.EverBeenConvicted==1 && string.IsNullOrEmpty(data.ConvictionReason))){
+                    error += $"<li>Please enter the details of the offence. </li>";
+                }
+            }
+            else if(appliedForJobsModel.appliedForJobReferees.Count < 2){
+                error = "<ul>";
+                error += $"<li>Please enter atleast two personal referees. </li>";
+            }
+            else{
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(appliedForJobsModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}HumanResource/SaveAppliedForJobs", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    var _data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                    if (_data != null)
+                    {
+                        if (_data.IsSuccess)
+                        {
+                            await ToastObj.ShowAsync(new ToastModel { Title = "Success!", Content = _data.Message, CssClass = "e-toast-success", Icon = "e-success toast-icons" });
+                        }
+                        else
+                        {
+                            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = _data.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                        }
+                    }
+                }
+                else
+                {
+                    await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = result.ReasonPhrase, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                }
+                await ApplicationDialog.HideAsync();
+                this.Visibility = false;
+            }
+
+            if(!string.IsNullOrEmpty(error)){
+                error += "</ul>";
+                ErrorMessage = error;
+            }
+            
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        finally{
+            StateHasChanged();
+        }
+    }
+}

@@ -1,0 +1,1098 @@
+﻿@page "/LeaveRoster" 
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using HCMIS.ViewModel
+@using System.Collections
+@*@using Newtonsoft.Json*@
+@using Syncfusion.Blazor.Schedule;
+@using Microsoft.AspNetCore.Authorization
+@inject HttpClient Http
+@inject SystemSettings _SystemSettings
+@inject ApiConfig _ApiConfig;
+@inject AppState AppState
+@inject NavigationManager Navigation
+@inject DocumentUploadModel _DocumentUploadModel;
+@*@inject ILeaveRosterService leaveRoster;*@
+
+<style>
+    .e-dialog.e-control.e-popup {
+        padding: 3px;
+        min-width: 94%;
+    }
+    /*.e-dialog .e-lib .e-schedule-dialog .e-dlg-modal .e-popup .e-control .e-popup-open {
+            padding: 3px;
+            min-width: 94%;
+        }*/
+    .e-recurrenceeditor .e-editor {
+        display: -ms-flexbox;
+        display: flex;
+        -ms-flex-flow: row wrap;
+        flex-flow: row wrap;
+        margin-left: 1px;
+        margin-right: 1px;
+        /*max-width: 1240px;*/
+    }
+
+    h4 {
+        background-color: #007bff;
+        color: whitesmoke;
+        padding: 10px;
+    }
+
+    .e-schedule-dialog .e-footer-content {
+        margin-top: 4px;
+        display: none;
+    }
+
+    .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn-text {
+        color: black;
+    }
+</style>
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="width: 100%; color: darkblue; font-family: Cambria; padding: 5px; font: bolder;"><img src="/Image/logo.png" height="35" width="50" /> <stong>|Leave Roster  Schedular</stong></li>
+</ol>
+<SfSchedule TValue="ALeaveRoster" @ref="@LeaveRosterRef" Width="100%" Height="650px" @bind-SelectedDate="@CurrentDate" ShowWeekend="false" StartHour="07:00" EndHour="18:00">
+    <ScheduleEvents TValue="ALeaveRoster" OnPopupOpen="OnPopupOpen"></ScheduleEvents>
+ <ScheduleTemplates>
+       <EditorTemplate>
+            @{
+                LeaveRosterData = (context as ALeaveRoster);
+                if (LeaveRosterData.IsApproved == true)
+                {
+                    IsEnabled = false;
+                }
+            }
+            <input type="hidden" name="Id" class="e-field" value="@(LeaveRosterData.LeaveRosterId)" />
+            <div class="form-row" style="margin-top: 15px; margin-bottom: 15px; height: 65vh; overflow: auto; white-space: nowrap;">
+                 <div class="col-md-12">
+                    <div class="row">
+                      <div class="row">
+                         <div class="col-md-3">
+                                <p style="margin-bottom:30px">Leave Type:<span style="color:red;">(*)</span></p>
+                               <SfDropDownList @bind-Value="@(LeaveRosterData.LeaveTypeId)" Enabled="true" TItem="ALeaveType" TValue="int?" DataSource="@LeaveTypeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                               <DropDownListFieldSettings Value="@nameof(ALeaveType.LeaveTypeId)" Text="@nameof(ALeaveType.LeaveTypeDescription)"></DropDownListFieldSettings>
+                              </SfDropDownList>
+                               <p> <ValidationMessage For="@(() => LeaveRosterData.LeaveTypeId)" /></p>
+                        </div>
+                        <div class="col-md-3">
+                                <p style="margin-bottom:30px">Department / Section:<span style="color:red;">(*)</span></p>
+                                 <SfDropDownList @bind-Value="@(LeaveRosterData.DepartmentId)" Enabled="true" TItem="ADepartment" TValue="int?" DataSource="@DepartmentData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                               <DropDownListFieldSettings Value="@nameof(ADepartment.DepartmentId)" Text="@nameof(ADepartment.DepartmentDescription)"></DropDownListFieldSettings>
+                             <DropDownListEvents TValue="int?" TItem="ADepartment" ValueChange="OnDepartmentChange"></DropDownListEvents>
+                               </SfDropDownList>
+                               <p> <ValidationMessage For="@(() => LeaveRosterData.DepartmentId)" /></p>
+                        </div>
+                        <div class="col-md-6">
+                                <p style="margin-bottom:30px">Employee Name:<span style="color:red;">(*)</span></p>
+                            <SfDropDownList @bind-Value="@(LeaveRosterData.Employeeid)" Query="@DepartmentChange" Enabled="true" TItem="ViewEmployeeLeaveRoster" TValue="int?" DataSource="@ViewLeaveRosterData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                <DropDownListFieldSettings Value="@nameof(ViewEmployeeLeaveRoster.Employeeid)" Text="@nameof(ViewEmployeeLeaveRoster.EmployeeDetails)"></DropDownListFieldSettings>
+                                <DropDownListEvents TValue="int?" TItem="ViewEmployeeLeaveRoster" ValueChange="OnEmployeeChange"></DropDownListEvents>
+                               </SfDropDownList>
+                               <p> <ValidationMessage For="@(() => LeaveRosterData.Employeeid)" /></p>
+                        </div>
+                        </div>
+                        @if (employeeno != null)
+                        {
+                          <div class="col-md-2">
+                                <strong><p>Employee Number:</p> </strong>
+                            @*    <br>*@
+                                  <p>@employeeno.EmployeeNumber</p>
+                            </div>
+                          <div class="col-md-2">
+                                <strong> <p>Position:</p> </strong>
+                       @*     <br>*@
+                         <p>@employeeno.JobTitleDescription</p>
+                        </div>
+                          <div class="col-md-2">
+                            <strong>  <p>Date of Engagement:</p></strong>
+                         @*   <br>*@
+                                @if (employeeno.DateJoined.HasValue)
+                                {
+                                  <p> @employeeno.DateJoined</p> 
+                                }
+                        </div>
+                          <div class="col-md-2">
+                              <strong> <p>Salary Scale:</p></strong>
+                        @*  <br>*@
+                               <p></p>
+                          </div>
+                          <div class="col-md-2">
+                              <strong> <p>Leave Entitlement:</p> </strong>
+                               @* <br>*@
+                                <p> </p>
+                          </div>
+                          <div class="col-md-2">
+                              <strong>   <p>Deductions:</p></strong>
+                              @*  <br>*@
+                             @*   <p>  <strong> <p> @employeeno.g</p> </strong></p>*@
+                            </div>
+               
+                        }
+                        <div class="row">
+                            @if ((LeaveRosterData.LeaveTypeId == 2) || (LeaveRosterData.LeaveTypeId == 3) || (LeaveRosterData.LeaveTypeId == 4) || (LeaveRosterData.LeaveTypeId == 5))
+                            {
+                                <div class="col-md-3">
+                                    <p> No. of leave days applied for:<span style="color:red;">(*)</span></p>
+                                    <SfNumericTextBox Type="InputType.Text" @bind-Value="@LeaveRosterData.NumberofLeaveDaysAppliedFor" CssClass="form-control" Placeholder="Days applied for" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                    <p> <ValidationMessage For="@(() => LeaveRosterData.NumberofLeaveDaysAppliedFor)" /></p>
+                                </div>
+                                <div class="col-md-3">
+                                    <p style="margin-bottom:30px"> Last working day:<span style="color:red;">(*)</span></p>
+                                    <SfDatePicker @bind-Value="@(LeaveRosterData.LastWorkingDay)" Placeholder="Select Date" Format="dd/MM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                                    <p> <ValidationMessage For="@(() => LeaveRosterData.LastWorkingDay)" /></p>
+                                </div>
+                                <div class="col-md-3">
+                                    <p style="margin-bottom:30px"> Date of Resumption of work:<span style="color:red;">(*)</span></p>
+                                    <SfDatePicker @bind-Value="@(LeaveRosterData.DateofResumptionofWork)" Placeholder="Select Date" Format="dd/MM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                                    <p> <ValidationMessage For="@(() => LeaveRosterData.DateofResumptionofWork)" /></p>
+                                </div>
+                                <div class="col-md-3">
+                                    <p style="margin-bottom:30px"> Check box for Yes</p>
+                                    <SfCheckBox Label="Salary Requested in Advance" @bind-Checked="@LeaveRosterData.SalaryRequestedInAdvance">  </SfCheckBox>
+                                </div>
+                            }
+                        </div>
+                       <br />
+                         <div class="row">
+                          <div class="col-md-3">
+                             <p >Scheduled Start Date:<span style="color:red;">(*)</span></p>
+                            <SfDateTimePicker @bind-Value="@(LeaveRosterData.LeaveStartDate)" Enabled="true" ID="LeaveStartDate" FloatLabelType="FloatLabelType.Always"></SfDateTimePicker>
+                            </div>
+                         <div class="col-md-3">
+                            <p>Scheduled End Date:<span style="color:red;">(*)</span></p>
+                            <SfDateTimePicker @bind-Value="@(LeaveRosterData.LeaveEndDate)" Enabled="true" ID="LeaveEndDate"  FloatLabelType="FloatLabelType.Always"></SfDateTimePicker>
+                            </div>
+                         <div class="col-md-3">
+                            <p>Actual Start Date:</p>
+                            <SfDateTimePicker @bind-Value="@(LeaveRosterData.ActualLeaveStartDate)" Enabled="true" ID="ActualLeaveStartDate"  FloatLabelType="FloatLabelType.Always"></SfDateTimePicker>
+                            </div>
+                         <div class="col-md-3">
+                            <p>Actual End Date:</p>
+                                <SfDateTimePicker @bind-Value="@(LeaveRosterData.ActualLeaveEndDate)" Enabled="true" ID="ActualLeaveEndDate"  FloatLabelType="FloatLabelType.Always"></SfDateTimePicker>
+                          </div>
+                         </div>
+                        <div class="row">
+                            @if (LeaveRosterData.LeaveTypeId == 3)
+                            {
+                                <div class=" col-md-12">
+                                    <p class="alert-primary" style="padding:10px;">Please upload your Medical Certificate</p>
+                                    <SfUploader AutoUpload="true" ShowFileList="false">
+                                        <UploaderEvents ValueChange="OnLeaveRosterChange"></UploaderEvents>
+                                    </SfUploader>
+                                    <SfSpinner @ref="@UploadSickLeaveDocumentSpinner" Visible="false" Label="UpLoading document please wait.."></SfSpinner>
+                                </div>
+                            }
+                            <div class="col-md-12">
+                                @if (!string.IsNullOrEmpty(SickLeaveDocumentString))
+                                {
+                                    if (!string.IsNullOrEmpty(LeaveRosterData.SickLeaveDocumentExt) && LeaveRosterData.SickLeaveDocumentExt.ToLower().Contains("pdf"))
+                                    {
+                                        <embed src="@SickLeaveDocumentString" width="100%" height="600px" style="border: none;" frameborder="0" allowfullscreen="true" />
+                                    }
+                                    else
+                                    {
+                                        <img src="@SickLeaveDocumentString" class="img-thumbnail" height="500" width="100%" style="margin-bottom:10px; margin:10%; margin-right:auto;" />
+                                    }
+                                }
+                            </div>
+                        </div>
+                     </div>
+                    <br>
+                    <div class="form-group col-md-12">
+                 
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-12">
+                    @if (IsSaveDisabled == false)
+                    {
+                        if (LeaveRosterData.IsSubmitted== false)
+                        {
+                            if (UserRole.Contains("SUPER ADMINISTRATOR", StringComparison.CurrentCultureIgnoreCase)@* || UserRole.Contains("Head of Department", StringComparison.CurrentCultureIgnoreCase)*@)
+                            {
+                                <SfButton CssClass="btn btn-primary" style="float:left; margin-right:10px;" OnClick="@(e => OnSubmit(e, context as ALeaveRoster))">Confirm Roster</SfButton>
+                            }
+                            else if (UserRole.Contains("SUPER ADMINISTRATOR", StringComparison.CurrentCultureIgnoreCase))
+                            {
+                                <SfButton CssClass="btn btn-primary" style="float:left; margin-right:10px;" OnClick="@(e => OnSubmit(e, context as ALeaveRoster))">Submit Roster</SfButton>
+                            }
+                        }
+                     @*   <SfButton CssClass="btn btn-success" style="float:left;" OnClick="@(e => OnAdd(e, context as ALeaveRoster))">Save Roster</SfButton>*@
+                        <SfButton CssClass="btn btn-primary" style="float:left; margin-right:10px;" OnClick="@(e => OnSubmit(e, context as ALeaveRoster))">Submit Roster</SfButton>
+                    }
+                        <SfButton CssClass="btn btn-danger" style="float:right;" OnClick="@(e => OnClose(e))">Cancel Schedule</SfButton>
+                </div>
+            </div>
+       </EditorTemplate>
+ </ScheduleTemplates>
+    <ScheduleGroup EnableCompactView="false" Resources="@groupData"></ScheduleGroup>
+    <ScheduleResources>
+        <ScheduleResource TItem="ALeaveType" TValue="int[]" DataSource="@ResourceData" Field="LeaveTypeId" Title="Leave Types" Name="Leave Types" TextField="LeaveTypeDescription" IdField="LeaveTypeId" ColorField="MeetingTypeColor" AllowMultiple="true"></ScheduleResource>
+    </ScheduleResources>
+    <ScheduleEventSettings TValue="ALeaveRoster">
+        <ScheduleField>
+            <FieldSubject Title="Employee Name" Name="EmployeeName"></FieldSubject>
+            <FieldLocation Title="Position" Name="Position"></FieldLocation>
+            <FieldStartTime Title="Start Date" Name="LeaveStartDate"></FieldStartTime>
+            <FieldEndTime Title="End Date" Name="LeaveEndDate"></FieldEndTime>
+        </ScheduleField>
+        <SfDataManager AdaptorInstance="@typeof(LeaveRosterAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    </ScheduleEventSettings>
+    <ScheduleViews>
+        <ScheduleView Option="View.Day"></ScheduleView>
+        <ScheduleView Option="View.WorkWeek"></ScheduleView>
+        <ScheduleView Option="View.Month"></ScheduleView>
+        <ScheduleView Option="View.Year"></ScheduleView>
+    </ScheduleViews>
+</SfSchedule>
+
+@code {
+    #region Toasters
+    public static string? ToastContent { get; set; }
+    SfToast? ToastObj;
+    SfToast? DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+{
+        new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+        new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+        new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+        new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+    };
+    #endregion Toasters
+    #region Declarations
+    Query DepartmentChange { get; set; } = new();
+    bool IsEnabled { get; set; } = false;
+    bool IsSaveDisabled { get; set; } = false;
+    string[]? ToolbarMenu { get; set; }
+    string? RegisterError { get; set; }
+    public string? AccessToken { get; set; }
+    Query mainQuery { get; set; } = new();
+    private List<ALeaveType>? ResourceData { get; set; }
+    private string[] groupData = new string[] { "Leave Types" };
+    List<ADepartment>? DepartmentData { get; set; }
+    List<ALeaveType>? LeaveTypeData { get; set; }
+    SfSchedule<ALeaveRoster>? LeaveRosterRef;
+    private DateTime CurrentDate = DateTime.Now;
+    private ALeaveRoster? LeaveRosterData { get; set; }
+    List<ViewEmployeeLeaveRoster>? ViewLeaveRosterData { get; set; }
+    private static ViewEmployeeLeaveRoster? employeeno { get; set; }
+    EmployeeLeaveModel inputmodel { get; set; } = new EmployeeLeaveModel();
+    private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    string SickLeaveDocumentString { get; set; } = null;
+    string? UserRole { get; set; }
+    SfGrid<ASickLeaveDocuments>? SickLeaveDocumentGrid;
+    SfSpinner? UploadSickLeaveDocumentSpinner;
+    List<ADocumentType>? DocumenttypeData { get; set; } = new();
+    bool IsChildEnabled { get; set; } = false;
+    bool IsDataEntrant { get; set; } = false;
+    Employee EmployeeReviewData { get; set; } = new();
+    #endregion Declarations
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await _SystemSettings.GetLoginCredentials();
+            mainQuery = new();
+            mainQuery.AddParams("AccessToken", AccessToken).AddParams("BaseUrl", _ApiConfig.BaseUrl);
+
+            inputmodel = new();
+            //   inputmodel.BscMdl = new();
+            var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/GetLeavePrimaryDetails");
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode)
+            {
+                var _LeaveApplicationModel = JsonSerializer.Deserialize<EmployeeLeaveModel>(content, _options);
+                if (_LeaveApplicationModel != null)
+                {
+                    ViewLeaveRosterData = _LeaveApplicationModel.ViewEmployeeLeaveRosters;
+                    DepartmentData = _LeaveApplicationModel.Departments;
+                    LeaveTypeData = _LeaveApplicationModel.EmployeeLeaveType;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            RegisterError = $"Error: {ex.Message}";
+        }
+        await base.OnInitializedAsync();
+    }
+    public class LeaveRosterAdapter:DataAdaptor{
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        SystemSettings _SystemSettings;
+        ApiConfig _ApiConfig;
+        public IToastService toastService;
+        public LeaveRosterAdapter(HttpClient _http, IToastService ts  , SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            _SystemSettings = systemSettings;
+            _ApiConfig = apiConfig;
+            toastService = ts;
+        }
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<ALeaveRoster>();
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                string? AccessToken = null;
+                string? BaseUrl = null;
+                if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
+                {
+                    var val = dataManagerRequest.Params;
+
+                    if (val.FirstOrDefault(o => o.Key == "AccessToken").Value != null)
+                    {
+                        AccessToken = val.FirstOrDefault(o => o.Key == "AccessToken").Value.ToString();
+                    }
+                    if (val.FirstOrDefault(o => o.Key == "BaseUrl").Value != null)
+                    {
+                        BaseUrl = val.FirstOrDefault(o => o.Key == "BaseUrl").Value.ToString();
+                    }
+                }
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/GetLeaveRoster");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    data = JsonSerializer.Deserialize<List<ALeaveRoster>>(content, _options);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<ALeaveRoster>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                var val = (value as ALeaveRoster);
+
+                await _SystemSettings.GetLoginCredentials();
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                //if(_SystemSettings.UserRole){
+
+                //}
+                var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/AddLeaveRoster", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    toastService.ShowSuccess("Leave schedule was sucessfully saved");
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as ALeaveRoster);
+                if (val != null)
+                {
+                    if (val.LeaveRosterId == 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/UpdateLeaveRoster", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                    else
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/AddLeaveRoster", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+    }
+
+    #region Methods
+
+    public void OnDepartmentChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ADepartment> args)
+    {
+        if (args.ItemData != null)
+        {
+            DepartmentChange = new Query().Where(new WhereFilter() { Field = "DepartmentId", Operator = "equal", value = args.ItemData.DepartmentId, IgnoreCase = false, IgnoreAccent = false });
+        }
+    }
+    public void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewEmployeeLeaveRoster> args)
+    {
+        employeeno = args.ItemData;
+
+    }
+    private async void OnLeaveRosterChange(UploadChangeEventArgs args)
+    {
+
+        try
+        {
+            await UploadSickLeaveDocumentSpinner.ShowAsync();
+            foreach (var file in args.Files)
+            {
+                if (file.FileInfo.Size <= 5242880)
+                {
+                    file.Stream.Position = 0;
+                    if (file.FileInfo.Type.ToLower().Contains("pdf") || file.FileInfo.Type.ToLower().Contains("doc"))
+                    {
+                        string fileName = string.Empty;
+                        if (file.FileInfo.Type.Trim().Contains("doc"))
+                        {
+                            var a = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == LeaveRosterData.LeaveTypeId);
+                            fileName = a.LeaveTypeDescription + "_" + EmployeeReviewData.EmployeeNumber + ".pdf";
+                            //Create a new document
+                            Syncfusion.DocIO.DLS.WordDocument document;
+                            if (file.FileInfo.Type.Contains("doc") && !file.FileInfo.Type.Contains("docx"))
+                            {
+                                document = new Syncfusion.DocIO.DLS.WordDocument(file.Stream, Syncfusion.DocIO.FormatType.Doc);
+                            }
+                            else
+                            {
+                                document = new Syncfusion.DocIO.DLS.WordDocument(file.Stream, Syncfusion.DocIO.FormatType.Docx);
+                            }
+                            //Creates an instance of the DocToPDFConverter
+                            DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
+                            PdfDocument pdfDocument = render.ConvertToPDF(document);
+                            MemoryStream _ms = new MemoryStream();
+                            pdfDocument.Save(_ms);
+                            _ms.Position = 0;
+                            byte[] bytes = file.Stream.ToArray();
+                            string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                            ImageUpload m = new ImageUpload()
+                                {
+                                    ImageName = fileName,
+                                    ImageExt = file.FileInfo.Type.Trim(),
+                                    Imagebyte = bytes,
+                                    Rootfolder = "SickLeave"
+                                };
+                            var Requestresult = await _DocumentUploadModel.SaveDocument(m, AccessToken);
+                            if (Requestresult != null && Requestresult.IsSuccess)
+                            {
+                                var result = "data:application/pdf;base64," + base64;
+                                LeaveRosterData.SickLeaveDocumentName = fileName;
+                                LeaveRosterData.SickLeaveDocumentExt = "pdf";
+                                SickLeaveDocumentString = result;
+                                bytes = null;
+                                _ms.Close();
+                                _ms.Dispose();
+                                pdfDocument.Close();
+                                pdfDocument.Dispose();
+                                render.Dispose();
+                                document.Close();
+                                document.Dispose();
+                            }
+                            else if (Requestresult != null)
+                            {
+                                await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                            }
+                        }
+                        else
+                        {
+                            var a = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == LeaveRosterData.LeaveTypeId);
+                            fileName = a.LeaveTypeDescription + "_" + EmployeeReviewData.EmployeeNumber + ".pdf";
+                            MemoryStream ms = new MemoryStream();
+                            file.Stream.WriteTo(ms);
+                            ms.Position = 0;
+                            byte[] bytes = file.Stream.ToArray();
+                            string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                            ImageUpload m = new ImageUpload()
+                                {
+                                    ImageName = fileName,
+                                    ImageExt = file.FileInfo.Type.Trim(),
+                                    Imagebyte = bytes,
+                                    Rootfolder = "SickLeave"
+                                };
+                            var Requestresult = await _DocumentUploadModel.SaveDocument(m, AccessToken);
+                            if (Requestresult != null && Requestresult.IsSuccess)
+                            {
+                                var result = "data:application/pdf;base64," + base64;
+                                LeaveRosterData.SickLeaveDocumentName = file.FileInfo.Type.Trim();
+                                LeaveRosterData.SickLeaveDocumentExt = "pdf";
+                                SickLeaveDocumentString = result;
+                                bytes = null;
+                            }
+                            else if (Requestresult != null)
+                            {
+                                await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                            }
+                        }
+                    }
+                    else if (file.FileInfo.Type.ToLower().Contains("png") || file.FileInfo.Type.ToLower().Contains("gif") || file.FileInfo.Type.ToLower().Contains("jpeg"))
+                    {
+
+                        var a = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == LeaveRosterData.LeaveTypeId);
+                        string fileName = a.LeaveTypeDescription + "_" + EmployeeReviewData.EmployeeNumber + ".pdf";
+                        byte[] bytes = file.Stream.ToArray();
+                        string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+
+                        ImageUpload m = new ImageUpload()
+                            {
+                                ImageName = fileName,
+                                ImageExt = file.FileInfo.Type.Trim(),
+                                Imagebyte = bytes,
+                                Rootfolder = "SickLeave"
+                            };
+                        var Requestresult = await _DocumentUploadModel.SaveDocument(m, AccessToken);
+                        if (Requestresult != null && Requestresult.IsSuccess)
+                        {
+                            var result = "data:image/" + file.FileInfo.Type.Trim() + ";base64," + base64;
+                            LeaveRosterData.SickLeaveDocumentName = fileName;
+                            LeaveRosterData.SickLeaveDocumentExt = file.FileInfo.Type.Trim();
+                            SickLeaveDocumentString = result;
+                            bytes = null;
+                        }
+                        else if (Requestresult != null)
+                        {
+                            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                        }
+                    }
+                    else
+                    {
+                        await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = "Please ensure that the uploaded document is either a pdf or doc or docx or image(png/Jpeg/gif).", CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        finally
+        {
+            await UploadSickLeaveDocumentSpinner.HideAsync();
+            StateHasChanged();
+        }
+
+    }
+    private async Task<string> GetImageString(string imageUrl, string ext, string Rootfolder)
+    {
+        string result = null;
+        try
+        {
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                ImageUpload a = await _DocumentUploadModel.GetDocument(imageUrl, Rootfolder, AccessToken);
+
+                if (a != null)
+                {
+                    if (a.ImageExt.Contains("pdf"))
+                    {
+                        string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
+                        result = "data:application/pdf;base64," + base64String;
+                    }
+                    else
+                    {
+                        string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
+                        result = "data:image/" + a.ImageExt + ";base64," + base64String;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        return result;
+    }
+    private async Task OnAdd(MouseEventArgs args, ALeaveRoster data)
+    {
+        try
+        {
+            await LeaveRosterRef.AddEvent(data);
+            LeaveRosterRef.CloseEditor();
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.Show(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+
+    }
+    private async Task OnSubmit(MouseEventArgs args, ALeaveRoster data)
+    {
+        try
+        {
+
+            data.IsSubmitted = true;
+            data.SubmittedBy = _SystemSettings.Username;
+            data.SubmittedDate = DateTime.Now;
+            await LeaveRosterRef.AddEvent(data);
+            LeaveRosterRef.CloseEditor();
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.Show(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        finally{
+            StateHasChanged();
+        }
+    }
+
+    [Parameter]
+    public List<LeaveModel> Items { get; set; } = new List<LeaveModel>();
+    public class LeaveModel{
+        public int LeaveRosterId { get; set; }
+        public int? Employeeid { get; set; }
+        public string? LeaveRosterCreatedBy { get; set; }
+        public DateTime? LeaveRosterCreatedDate { get; set; }
+        public DateTime? ActualLeaveStartDate { get; set; }
+        public DateTime? ActualLeaveEndDate { get; set; }
+        public bool? IsApproved { get; set; }
+        public string? LeaveRosterApprovedBy { get; set; }
+        public DateTime? LeaveStartDate { get; set; }
+        public DateTime? LeaveEndDate { get; set; }
+        public int? DepartmentId { get; set; }
+        public bool? IsSubmitted { get; set; }
+        public int? LeaveTypeId { get; set; }
+        public bool? IsBlock { get; set; }
+        public int? LeaveDeductions { get; set; }
+        public int? NumberofLeaveDaysAppliedFor { get; set; }
+        public DateTime? LastWorkingDay { get; set; }
+        public DateTime? DateofResumptionofWork { get; set; }
+        public bool? SalaryRequestedInAdvance { get; set; }
+        public DateTime? LeaveDateApplied { get; set; }
+        public string? SickLeaveDocumentName { get; set; }
+        public string? SickLeaveDocumentExt { get; set; }
+        public DateTime? SubmittedDate { get; set; }
+        public string? SubmittedBy { get; set; }
+        public DateTime? LeaveRosterApprovedDate { get; set; }
+        public string? LeaveApplicationNumber { get; set; }
+    }
+    private async Task OnClose(MouseEventArgs args)
+    {
+        try
+        {
+            LeaveRosterRef.CloseEditor();
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.Show(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+
+    }
+    public void OnPopupOpen(Syncfusion.Blazor.Schedule.PopupOpenEventArgs<ALeaveRoster> args)
+    {
+        if (args.Type == Syncfusion.Blazor.Schedule.PopupType.Editor)
+        {
+            var data = _SystemSettings;
+            if (data != null)
+            {
+                ToolbarMenu = new string[] { "Add", "Edit", "Update", "Cancel", "ColumnChooser" };
+                IsChildEnabled = true;
+                IsEnabled = true;
+
+                if (args.Data.LeaveRosterId > 0)
+                {
+                    employeeno = ViewLeaveRosterData?.FirstOrDefault(o => o.Employeeid == args.Data.Employeeid);
+                    if (data.UserRole.ToUpper().Contains("SUPER ADMINISTRATOR"))
+                        {
+                            IsDataEntrant = true;
+                            IsSaveDisabled = false;
+                        }
+                        else
+                        {
+                            IsDataEntrant = false;
+                            IsEnabled = true;
+                            IsSaveDisabled = false;
+                        }
+                    }
+            }
+
+
+        }
+        if (args.Type == Syncfusion.Blazor.Schedule.PopupType.QuickInfo)
+        {
+            args.Cancel = true;
+        }
+    }
+
+    #endregion Methods
+
+    #region AClientDocument
+
+    public class SickLeaveDocumentAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        public IToastService toastService;
+        // public ClientModel _ClientModel;
+        SystemSettings _SystemSettings;
+        ApiConfig _ApiConfig;
+
+        public SickLeaveDocumentAdapter(HttpClient _http, IToastService ts, SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            _SystemSettings = systemSettings;
+            _ApiConfig = apiConfig;
+            toastService = ts;
+        }
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<ASickLeaveDocuments>();
+            try
+            {
+                int? EmployeeLeaveId = null;
+                string? AccessToken = null;
+                string? BaseUrl = null;
+                if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
+                {
+                    var val = dataManagerRequest.Params;
+                    if (val.FirstOrDefault(o => o.Key == "EmployeeLeaveId").Value != null)
+                    {
+                        EmployeeLeaveId = Convert.ToInt32(val.FirstOrDefault(o => o.Key == "EmployeeLeaveId").Value.ToString());
+                    }
+                    if (val.FirstOrDefault(o => o.Key == "AccessToken").Value != null)
+                    {
+                        AccessToken = val.FirstOrDefault(o => o.Key == "AccessToken").Value.ToString();
+                    }
+                    if (val.FirstOrDefault(o => o.Key == "BaseUrl").Value != null)
+                    {
+                        BaseUrl = val.FirstOrDefault(o => o.Key == "BaseUrl").Value.ToString();
+                    }
+                }
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AccessToken);
+                var response = await Http.GetAsync($"{BaseUrl}EmployeeLeave/GetSickLeaveDocument/{EmployeeLeaveId}");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    data = JsonSerializer.Deserialize<List<ASickLeaveDocuments>>(content, _options);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<ASickLeaveDocuments>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as ASickLeaveDocuments);
+                if(val != null)
+                {
+                    if (val.SickLeaveDocumentId == 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/UploadDocument", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
+                            if(data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                        var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/UpdateDocument", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
+                            if(data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+        public override async Task<object> RemoveAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            return value;
+        }
+        //public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        //{
+        //    try
+        //    {
+        //        var val = (value as AClientDocument);
+
+        //        if (val.ClientDocumentId == 0)
+        //        {
+        //            await _ClientModel.PostAClientDocument(val);
+        //            toastService.ShowSuccess("The Document was sucessfully added");
+
+        //        }
+        //        else
+        //        {
+        //            await _ClientModel.PutAClientDocument(val);
+        //            toastService.ShowSuccess("The Document was sucessfully added");
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        toastService.ShowError(ex.Message.ToString());
+        //    }
+
+        //    return value;
+        //}
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as ASickLeaveDocuments);
+                if (val != null)
+                {
+                    if (val.SickLeaveDocumentId == 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/UploadDocument", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/UpdateDocument", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+
+    }
+
+    
+    #endregion Director
+
+  
+}
+

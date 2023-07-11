@@ -1,0 +1,120 @@
+﻿@page "/MyApplicationsPage"
+@using HCMIS.DTOs;
+@using HCMIS.Interface;
+@inject IToastService toastService;
+@inject IJobApplications JobRepo;
+@inject SystemSettings _SystemSettings
+@inject NavigationManager Navigation
+<BreadcrumbPage CategoryName="Applications" PageName="My applications" />
+@*<h3>MyApplicationsPage</h3>*@
+@if(LoadingPageComplete)
+{
+    if(MyApplicationData != null && MyApplicationData.Count > 0)
+    {
+        var listData = MyApplicationData.Skip(SkipValue).Take(TakeValue).ToList();
+        <div class="row">
+            <div class="col-md-12">
+            <SfListView TValue="AppliedForJobDTO" DataSource="@listData" EnableVirtualization="false" CssClass="e-list-template">
+                <ListViewFieldSettings Id="AppliedForJobsId" Text="JobTitleDescription" GroupBy="DepartmentDescription" TValue="AppliedForJobDTO" />
+                <ListViewTemplates TValue="AppliedForJobDTO">
+                    <Template>
+                        @{
+                            var data = (context as AppliedForJobDTO);
+                        }
+                        <div class="row" style="margin:10px; border-color:gray; border-style:solid; border-width:1px;">
+                            <div class="col-md-9" style="padding:10px;">
+                                <h5>@data.ReferenceNumber @data.JobTitleDescription?.Replace("(1)","")</h5>
+                                <div class="row">
+                                        <div class="col-md-6">
+                                            <p>Department: @data.DepartmentDescription</p>
+                                            <p>Reports To: @data.ReportsToDesc</p>
+                                            <p>Job Type: @data.TypeDescription</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            @if (data.JobTypeId == 3)
+                                            {
+                                                <p>contract length: @data.ContractLength @data.ContractLengthTypeDesc</p>
+                                            }
+                                            <p>Salary Scale: @data.SalaryScaleDescription</p>
+                                            <p>Vacancies: @data.vacancies</p>
+                                        </div>
+                                 </div>
+                                
+                            </div>
+                            <div class="col-md-3" style="padding:10px;">
+                                    @if (data.ApplicationStatusId == 4)
+                                    {
+                                        <button class="btn btn-primary" @onclick=@(()=>{StartAmptituddeTest(data.JibTitleId,data.AppliedForJobsId);})><i class="oi oi-eye"></i> Start Aptitudde Test</button>
+                                    }
+                            </div>
+                        </div>
+                    </Template>
+                    <GroupTemplate>
+                        <div>
+                            <span class="category">@context.Text</span>
+                        </div>
+                    </GroupTemplate>
+                </ListViewTemplates>
+            </SfListView>
+            </div>
+            <div class="col-md-12">
+                <SfPager @ref="@Page" PageSize=5 NumericItemsCount=4 TotalItemsCount=@MyApplicationData.Count ItemClick="PaggerClick">
+                </SfPager>
+            </div>
+        </div>
+
+    }
+    else{
+
+        <p class="alert-info" style="padding:10px;">You have not yet applied for any job on this platform.</p>
+    }
+}
+else{
+    <div class="col-md-12">
+        <div class="loader">
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--text"></div>
+        </div>
+    </div>
+}
+@code {
+    SfPager? Page;
+    List<AppliedForJobDTO>? MyApplicationData{ get; set; }
+    bool LoadingPageComplete { get; set; } = false;
+    private int SkipValue { get; set; }
+    private int pageSize { get; set; }
+    private int TakeValue { get; set; } = 5;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        try
+        {
+            LoadingPageComplete = false;
+            await _SystemSettings.GetLoginCredentials();
+            MyApplicationData = await JobRepo.GetMyApplicationsAsync("null", _SystemSettings.StaffId.ToString());
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message, "Error");
+        }
+        finally{
+            LoadingPageComplete = true;
+            //StateHasChanged();
+        }
+    }
+    public void PaggerClick(Syncfusion.Blazor.Navigations.PagerItemClickEventArgs args)
+    {
+        SkipValue = (args.CurrentPage * Page.PageSize) - Page.PageSize;
+        TakeValue = Page.PageSize;
+        //StateHasChanged();
+    }
+    private void StartAmptituddeTest(int? JobTitleId, int? AppliedForJobsId)
+    {
+        Navigation.NavigateTo($"ApplicantAptituddeTestPage/{JobTitleId}/{AppliedForJobsId}");
+    }
+}

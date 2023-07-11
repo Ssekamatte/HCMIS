@@ -1,0 +1,343 @@
+﻿@page "/SupervisorApprovalPage"
+@using HCMIS.Model
+@using HCMIS.SHARED;
+@using HCMIS.SHARED.DTOs;
+@using HCMIS.ViewModel
+@using System.Text.Json
+@using System.Text.RegularExpressions
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject SystemSettings _SystemSettings
+@using System.Collections;
+@inject IToastService toastService;
+@using System.Globalization;
+
+<style>
+    /*Customize Scroll Bars*/
+    ::-webkit-scrollbar-thumb {
+        background-color: #888;
+        border-radius: 10px
+    }
+
+    ::-webkit-scrollbar {
+        background-color: white;
+    }
+
+    ::-webkit-scrollbar-button {
+        background-color: #bbbbbb;
+    }
+    /*Customize Scroll Bars*/
+
+    /*stick grid headers*/
+    .e-gridheader {
+        position: -webkit-sticky;
+        position: sticky;
+        top: 56px;
+        z-index: 1;
+    }
+    /*stick grid headers*/
+
+    .e-edit-dialog {
+        max-height: 95%;
+        max-width: 100%;
+        min-width: 100%;
+        min-height: 95%;
+    }
+
+    h6 {
+        color: ghostwhite;
+        background-color: red;
+        padding: 10px;
+        width: 100%;
+        font-size: 18px;
+    }
+
+    h4 {
+        color: black;
+        background-color: deepskyblue;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+
+    h3 {
+        color: black;
+        background-color: darkorange;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+
+    /*Change Cell Color */
+    .e-headercell.e-attr1 {
+        background: #ff4d00;
+        color: white;
+    }
+
+    .e-headercell.e-attr2 {
+        background: #FFFF00;
+        color: darkred;
+    }
+
+    .e-headercell.e-attr3 {
+        background: grey;
+        color: white;
+    }
+
+    /**/
+    #container {
+        position: relative;
+        height: 550px;
+    }
+
+    .e-spinner-pane.e-spin-overlay {
+        background-color: rgb(192,192,192);
+    }
+
+    /*Accordion Colors*/
+    .e-accordion {
+        border-radius: 6px 6px 6px 6px;
+        border: none !important;
+    }
+
+        /* header custom css*/
+        .e-accordion .e-acrdn-item .e-acrdn-header {
+            background-color: rgb(0, 204, 0);
+            border-radius: 6px 6px 6px 6px;
+        }
+
+            /*header on hover custom css*/
+            .e-accordion .e-acrdn-item .e-acrdn-header:hover {
+                background-color: rgb(0, 204, 0);
+            }
+
+        /*header on selected and expanded custom css*/
+        .e-accordion .e-acrdn-item.e-select.e-expand-state > .e-acrdn-header {
+            background: rgb(0, 204, 0);
+        }
+
+        .e-accordion .e-acrdn-item.e-select.e-selected.e-expand-state > .e-acrdn-header {
+            background: rgb(0, 204, 0);
+        }
+
+        .e-accordion .e-acrdn-item.e-expand-state.e-select:not(.e-selected) > .e-acrdn-header:focus {
+            background: rgb(0, 204, 0);
+        }
+
+        /*content custom css*/
+        .e-accordion .e-acrdn-item .e-acrdn-panel .e-acrdn-content {
+            background-color: whitesmoke;
+            border-radius: 6px 6px 6px 6px;
+        }
+
+        /*to remove the white line*/
+        .e-accordion .e-acrdn-item.e-select {
+            border-bottom: 1px solid white !important;
+            border-top: 1px solid white !important;
+        }
+        /*to change the accordion header color*/
+        .e-accordion .e-acrdn-item .e-acrdn-header .e-acrdn-header-content {
+            color: darkred;
+        }
+
+
+    .pp {
+        color: ghostwhite;
+        background-color: #00cc00;
+        padding: 10px;
+    }
+</style>
+
+<center>
+    <h5>
+        <strong>SUPERVISOR LEAVE APPLICATION PAGE</strong>
+    </h5>    
+</center>
+
+
+<SfGrid @ref="@DataGrid" TValue="ViewEmployeeLeaveDto" ID="Grid1" AllowPaging="true" AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Delete", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+        <Template>
+            @{
+                <div class="row">
+                    <div class="col-md-8">
+                        <center>
+                            <h5>
+                                <strong>SUPERVISOR LEAVE APPROVAL FORM</strong>
+                            </h5>
+                        </center>
+                    </div>
+                </div>
+                @if (EmployeeLeaveData != null)
+                {
+                    <div class="row">
+                        <div class="col-md-3">
+                        <p>Date of Application:</p>
+                        @*<p><b>@ApplicationData.SubmissionDate</b></p>*@
+                    </div>
+                    <div class="col-md-3">
+                        <p>EWPRS Application No:</p>
+                        @*<p><b>@ApplicationData.ApplicationReferenceNo</b></p>*@
+                    </div>
+                    <div class="col-md-3">
+                        <p>Type of Application:</p>
+                        @*<p><b>@ApplicationData.ApplicationTypeDescription</b></p>*@
+                    </div>
+                    <div class="col-md-3">
+                        <p>Category of Application:</p>
+                        @*<p><b>@ApplicationData.ApplicationTypeCategory</b></p>*@
+                    </div>
+                </div>
+                }
+            }
+        </Template>
+
+    </GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.FilterBar"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple"></GridSelectionSettings>
+    <GridEvents OnToolbarClick="@GridToolbarClick" TValue="ViewEmployeeLeaveDto"></GridEvents>
+    <SfDataManager AdaptorInstance="@typeof(SupervisorApprovalAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <GridColumns>
+      <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+    	<GridColumn Field=@nameof(ViewEmployeeLeaveDto.EmployeeLeaveId) HeaderText="EmployeeLeaveId" AllowEditing="false" IsPrimaryKey="true" Width="150"></GridColumn>
+        <GridColumn Field=@nameof(ViewEmployeeLeaveDto.EmployeeFullName) HeaderText="Employee"  Width="80"></GridColumn>
+        <GridColumn Field=@nameof(ViewEmployeeLeaveDto.LeaveTypeDescription) HeaderText="Leave Type" Width="80"></GridColumn>
+        <GridColumn Field=@nameof(ViewEmployeeLeaveDto.TotalDays) HeaderText="Days Applied" Width="80"></GridColumn>
+    </GridColumns>
+</SfGrid>
+
+@code {  
+    SfGrid<ViewEmployeeLeaveDto> DataGrid { get; set; }
+    /// <summary>
+    /// Event for Toolbar click for Grid Exporting
+    /// </summary>
+    public void GridToolbarClick(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+    	if (args.Item.Id == "Grid1_excelexport")
+        {
+            this.DataGrid.ExportToExcelAsync();
+        }
+    	if (args.Item.Id == "Grid1_pdfexport")
+        {
+            this.DataGrid.ExportToPdfAsync();
+        }
+    	if (args.Item.Id == "Grid1_csvexport")
+        {
+            this.DataGrid.ExportToCsvAsync();
+        }
+    }
+    
+
+    List<ViewEmployeeLeaveDto>? EmployeeLeaveData { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var responseemployeeleave = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/GetEmployeeLeaveData");
+            var contentemployeeleave = await responseemployeeleave.Content.ReadAsStringAsync();
+
+            if (responseemployeeleave.IsSuccessStatusCode)
+            {
+                EmployeeLeaveData = await Http.GetFromJsonAsync<List<ViewEmployeeLeaveDto>>
+                ($"{_ApiConfig.BaseUrl}EmployeeLeave/GetEmployeeLeaveData");
+            }
+        }
+        catch (Exception ex)
+        {
+            
+        }
+
+    }
+
+    #region LeaveRequest
+
+    public class SupervisorApprovalAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        SystemSettings _SystemSettings;
+        ApiConfig _ApiConfig;
+        public IToastService toastService;
+        private readonly NavigationManager Navigation;
+
+        public SupervisorApprovalAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+            , SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            Navigation = _Navigation;
+            _ApiConfig = apiConfig;
+            _SystemSettings = systemSettings;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            await _SystemSettings.GetLoginCredentials();
+
+            var data = new List<ViewEmployeeLeaveDto>();
+
+            string? AccessToken = _SystemSettings.AccessToken;
+            string? BaseUrl = _ApiConfig.BaseUrl;
+            int? EmployeeId = _SystemSettings.StaffId;
+            string? UserRoleId = _SystemSettings.UserRoleId;
+            string? UserRole = _SystemSettings.UserRole;
+
+            try
+            {
+                var response = await Http.GetAsync($"{BaseUrl}EmployeeLeave/GetEmployeeLeaveById?EmployeeId={EmployeeId}&UserRoleId={UserRoleId}&UserRole={UserRole}");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveDto>>(content, _options);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<ViewEmployeeLeaveDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+    }
+    #endregion SupervisorApproval
+}

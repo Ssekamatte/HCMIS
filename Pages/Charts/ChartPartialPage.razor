@@ -1,0 +1,193 @@
+﻿@using HCMIS.Model;
+@using Syncfusion.Blazor.Charts;
+@*<h3>ChartPartialPage</h3>*@
+<style>
+    .btn-link:focus {
+        border-color: transparent;
+    }
+</style>
+
+<style>
+    .btn-link:focus {
+        border-color: transparent;
+}
+</style>
+@if (SeriesDataSource != null && SeriesDataSource.Count > 0)
+{
+    <div class="row" style="background-color:rgb(255, 255, 255); margin:1px;">
+        <div class="col-md-12">
+            <SfTooltip Target="@Set_Btn_Id" Content="@TooltipContent" Position="Syncfusion.Blazor.Popups.Position.TopCenter" OpensOn="Auto" IsSticky="false">
+                <div id="@Btn_Id" style="float:right; cursor:pointer;" @onclick=@ExpandChart><span class="fa fa-expand"></span></div>
+            </SfTooltip>
+        </div>
+        <div class="col-md-12">
+            <SfChart Title="@SeriesTitle" Background="#caf0f8" Width="@Width" Theme="@theme" @ref=chart1 ID="@Id" EnableAutoIntervalOnBothAxis=true>
+                @*<ChartEvents OnDataLabelRender="labelRender"></ChartEvents>*@
+                <ChartArea><ChartAreaBorder Width="0"></ChartAreaBorder></ChartArea>
+                <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category" Interval="1"> @*LabelIntersectAction="@AxisLabelRotation"*@
+                    <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
+                    <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+                    <ChartAxisLabelStyle Size="10px" Color="@TextColor" />
+                </ChartPrimaryXAxis>
+                <ChartPrimaryYAxis Title="@SeriesDataSource[0].YAxisTitle" Visible="false">
+                    <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+                    <ChartAxisLineStyle Width="0"></ChartAxisLineStyle>
+                </ChartPrimaryYAxis>
+                <ChartSeriesCollection>
+                    @foreach (var item in SeriesDataSource)
+                    {
+                        if (item.Datasource != null && item.Datasource.Count > 0)
+                        {
+                            <ChartSeries TooltipMappingName="@(nameof(DashboardModel.ColumnX))" DataSource=@item.Datasource Name="@item.SeriesName"
+                             Fill="@item.SeriesColor" GroupName="@item.GroupBy" XName="@(nameof(DashboardModel.ColumnX))" ColumnSpacing="0.1"
+                             YName="@(nameof(DashboardModel.ColumnY))" Type="@item.ChartType" ColumnWidth="@item.ColumnWidth">
+                                <ChartMarker>
+                                    <ChartDataLabel Visible="true" Position="Syncfusion.Blazor.Charts.LabelPosition.Outer">
+                                        <ChartDataLabelFont FontWeight="@FontWeight" Color="@LabelColor"></ChartDataLabelFont>
+                                    </ChartDataLabel>
+                                </ChartMarker>
+                                @*<ChartMarker>
+                                    <ChartDataLabel Visible="true">
+                                        <Template>
+                                            @{
+                                                var data = context as ChartDataPointInfo;
+                                            }
+                                            <div style="background-color: aliceblue">@DataLabelMappingNamee</div>
+                                        </Template>
+                                    </ChartDataLabel>
+                                </ChartMarker>*@
+                                @*<ChartMarker>
+                                    <ChartDataLabel Visible="true" Position="Syncfusion.Blazor.Charts.LabelPosition.Outer">
+                                        <Template>
+                                            @{
+                                                var data = context as ChartDataPointInfo;
+                                            }
+                                            <table>
+                                                <tr>
+                                                    <td align="center" style="background-color: #C1272D; font-size: 14px; color: #E7C554; font-weight: bold; padding: 5px"> @DataLabelMappingNamee :</td>
+                                                    <td align="center" style="background-color: #C1272D; font-size: 14px; color: whitesmoke; font-weight: bold; padding: 5px">@DataLabelMappingNamee :</td>
+                                                </tr>
+                                            </table>
+                                        </Template>
+                                    </ChartDataLabel>
+                                </ChartMarker>*@
+                            </ChartSeries>
+                        }
+                    }
+                </ChartSeriesCollection>
+                <ChartLegendSettings Visible="true" EnableHighlight="true"></ChartLegendSettings>
+                <ChartTooltipSettings Header="<b>${point.tooltip}</b>" Enable="true" Shared="true"></ChartTooltipSettings>
+            </SfChart>
+        </div>
+    </div>
+}
+<SfDialog @ref=@ChartDialog Target=".page" Width="98%" Height="90vh" CloseOnEscape=true
+EnableResize=true Visible=false ShowCloseIcon=true IsModal=true AllowPrerender=false>
+    <DialogTemplates>
+        <Content>
+            @if (SeriesDataSource != null && SeriesDataSource.Count > 0 && loadDialog==true)
+            {
+                <SfChart Title="@SeriesTitle" Background="#caf0f8" Width="@Width" Height="auto" Theme="@theme" EnableAutoIntervalOnBothAxis=true>
+                @*<ChartEvents OnDataLabelRender="labelRender"></ChartEvents>*@
+                <ChartArea><ChartAreaBorder Width="0"></ChartAreaBorder></ChartArea>
+                <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category" Interval="1" LabelPosition="AxisPosition.Inside"> @*LabelIntersectAction="@AxisLabelRotation"*@
+                    <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
+                    <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+                        <ChartAxisLabelStyle Size="10px" Color="@TextColor" />
+                </ChartPrimaryXAxis>
+                <ChartPrimaryYAxis Title="@SeriesDataSource[0].YAxisTitle"  Visible="false">
+                    <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+                    <ChartAxisLineStyle Width="0"></ChartAxisLineStyle>
+                </ChartPrimaryYAxis>
+                <ChartSeriesCollection>
+                    @foreach (var item in SeriesDataSource)
+                    {
+                        if (item.Datasource != null && item.Datasource.Count > 0)
+                        {
+                            <ChartSeries TooltipMappingName="@(nameof(DashboardModel.ColumnX))" DataSource=@item.Datasource Name="@item.SeriesName"
+                             Fill="@item.SeriesColor" GroupName="@item.GroupBy" XName="@(nameof(DashboardModel.ColumnX))" ColumnSpacing="0.1"
+                             YName="@(nameof(DashboardModel.ColumnY))" Type="@item.ChartType" ColumnWidth="@item.ColumnWidth">
+                                <ChartMarker>
+                                    <ChartDataLabel Visible="true" Position="Syncfusion.Blazor.Charts.LabelPosition.Outer">
+                                            <ChartDataLabelFont FontWeight="@FontWeight" Color="@LabelColor"></ChartDataLabelFont>
+                                    </ChartDataLabel>
+                                </ChartMarker>
+                            </ChartSeries>
+                        }
+                    }
+                </ChartSeriesCollection>
+                <ChartLegendSettings Visible="true" EnableHighlight="true"></ChartLegendSettings>
+                <ChartTooltipSettings Header="<b>${point.tooltip}</b>" Enable="true" Shared="true"></ChartTooltipSettings>
+            </SfChart>
+            }
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+
+@code {
+    string TooltipContent = "Expand";
+
+    [Parameter]
+    public string SeriesTitle { get; set; }
+    [Parameter]
+    public List<SeriesModel> SeriesDataSource { get; set; }
+
+    [Parameter]
+    public string LabelColor { get; set; }
+
+    [Parameter]
+    public string TextColor { get; set; }
+
+    [Parameter]
+    public string FontWeight { get; set; }
+
+    [Parameter]
+    public string DataLabelMappingNamee  { get; set; }
+
+    [Parameter]
+    public Syncfusion.Blazor.Charts.LabelIntersectAction AxisLabelRotation { get; set; }
+    //public string AxisLabelRotation { get; set; } Syncfusion.Blazor.Grids.Action _previousAdd { get; set; }
+
+    bool loadDialog { get; set; } = false;
+
+    SfChart chart1;
+    SfDialog ChartDialog;
+    private Syncfusion.Blazor.Theme theme;
+    public string Width { get; set; } = "99%";
+    string Id { get; set; }
+    string Btn_Id { get; set; }
+    string Set_Btn_Id { get; set; }
+    
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        theme = Syncfusion.Blazor.Theme.Material;
+        Random rand = new Random();
+        Id = "Chart_" + rand.Next(1000, 2000000);
+        Btn_Id = "btn_" + rand.Next(1000, 2000000);
+        Set_Btn_Id = $"#{Btn_Id}";
+    }
+    private async Task ExpandChart()
+    {
+        if(ChartDialog != null)
+        {
+            loadDialog = true;
+            await ChartDialog.ShowAsync();
+            StateHasChanged();
+        }
+    }
+
+    void labelRender(TextRenderEventArgs args)
+    {
+        args.Text = args.Text + '%';
+    }
+
+}
+<style>
+    .ExpandIcon {
+        content: "\e81c";
+        font-size: 24px;
+        font-family: "e-sb-icons";
+    }
+</style>

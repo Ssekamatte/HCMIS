@@ -1,0 +1,378 @@
+﻿@page "/AppraisalReport"
+@using HCMIS.Data;
+@using HCMIS.SHARED.Data;
+@using HCMIS.Interface;
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject SystemSettings _SystemSettings
+@using HCMIS.SHARED.DTOs.Utilities;
+@using Syncfusion.XlsIO;
+@inject IReportService reportservice;
+@inject IToastService toastService;
+@inject Microsoft.JSInterop.IJSRuntime JS;
+
+<style>
+    .e-spinner-pane .e-spinner-inner .e-spin-bootstrap4 {
+        stroke: green;
+    }
+</style>
+
+<BreadcrumbPage CategoryName="APPRAISAL" PageName="REPORT" />
+
+<EditForm Model="@InputModel" OnValidSubmit="@OnSearchSubmit">
+    <DataAnnotationsValidator />
+    <div class="row" style="margin-bottom:10px;">
+        <div class="col-md-6">
+            <p>Review Date Range</p>
+            <div class="row">
+                <div class="col-md-6">
+                    <SfDatePicker @bind-Value="@(InputModel.StartDate)" Enabled="true" Placeholder="Start Date" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                </div>
+                <div class="col-md-6">
+                    <SfDatePicker @bind-Value="@(InputModel.EndDate)" Enabled="true" Placeholder="End Date" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                </div>
+            </div>
+        </div>
+        <div class="col col-md-6">
+            <p>Employee</p>
+            <SfMultiSelect @bind-Value="@InputModel.Employeeid" TValue="int?[]" TItem="ViewBscEmployeeDto" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
+                <MultiSelectFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></MultiSelectFieldSettings>
+            </SfMultiSelect>
+        </div>
+        <div class="col col-md-6">
+            <p>Appraisal Reason</p>
+            <SfMultiSelect @bind-Value="@InputModel.AppraisalReasonId" TValue="int?[]" TItem="AppraisalReasonDto" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@AppraisalData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Appraisal Reason" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
+                <MultiSelectFieldSettings Value="@nameof(AppraisalReasonDto.AppraisalReasonId)" Text="@nameof(AppraisalReasonDto.AppraisalReason)"></MultiSelectFieldSettings>
+            </SfMultiSelect>
+        </div>
+        <div class="col col-md-6">
+            <p>Financial Year</p>
+            <SfMultiSelect @bind-Value="@InputModel.FinancialYearId" TValue="int?[]" TItem="ViewFinancialYearDto" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@FinancialYearData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Year" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
+                <MultiSelectFieldSettings Value="@nameof(AFinancialYear.Id)" Text="@nameof(AFinancialYear.FinancialYear)"></MultiSelectFieldSettings>
+            </SfMultiSelect>
+        </div>
+        <div class="col col-md-6">
+            <p>Perspective</p>
+            <SfMultiSelect @bind-Value="@InputModel.BscPerspectiveTypeId" TValue="int?[]" TItem="ABscPerspectivesTypeDto" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@BscPerspectiveTypeData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
+                <MultiSelectFieldSettings Value="@nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeId)" Text="@nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeDescription)"></MultiSelectFieldSettings>
+            </SfMultiSelect>
+        </div>
+
+        @if (Downloadreport == false)
+        {
+            <div class="col col-md-6">
+                <SfButton Color="Color.Primary" ButtonType="BlazorStrap.ButtonType.Submit">Download Report</SfButton>
+                <SfButton Color="Color.Secondary" ButtonType="BlazorStrap.ButtonType.Button" @onclick="ClearSearchBtnClick">Clear Search</SfButton>
+            </div>
+
+        }
+
+        <div class="form-group col-md-12">
+            <SfSpinner @ref="DownloadingSpinner" Label="Downloading Report Please Wait....." Size="50"></SfSpinner>
+        </div>
+
+        @if (!string.IsNullOrEmpty(InputModel.Response))
+        {
+            <div class="col col-md-12" style="margin-top:10px;">
+                <div class="alert alert-success">@InputModel.Response</div>
+            </div>
+        }
+    </div>
+    <ValidationSummary />
+</EditForm>
+
+
+
+@code {
+    private UtilitiesSearchPanel InputModel = new UtilitiesSearchPanel();
+    SfSpinner? DownloadingSpinner;
+    bool Downloadreport { get; set; } = false;
+    string? filename { get; set; } = null;
+    List<ViewBscEmployeeDto>? EmployeeData { get; set; }
+    List<ViewFinancialYearDto>? FinancialYearData { get; set; }
+    List<AppraisalReasonDto>? AppraisalData { get; set; }
+    List<BscKpiDto>? KpiData { get; set; }
+    List<BscPerspectivesDto>? BscPerspectiveData { get; set; }
+    List<PerformanceDescriptorDto>? PerformanceDescriptorData { get; set; }
+    List<BscPerformanceMeasurementDto>? BscMeasurementData { get; set; }
+    List<BehavioralCompetenciesDto>? CompetenceData { get; set; }
+    List<ABscPerspectivesTypeDto>? BscPerspectiveTypeData { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {        
+        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+        var responseemployee = await Http.GetAsync($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+        var contentemployee = await responseemployee.Content.ReadAsStringAsync();        
+        var responsefinyear = await Http.GetAsync($"{_ApiConfig.BaseUrl}FinancialYear/list");
+        var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
+        var responsebsc = await Http.GetAsync($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetBSCData");
+        var contentbsc = await responsebsc.Content.ReadAsStringAsync();
+        var responseappraisal = await Http.GetAsync($"{_ApiConfig.BaseUrl}AppraisalReason/GetAppraisalReason");
+        var contentappraisal = await responseappraisal.Content.ReadAsStringAsync();
+        var responseKpi = await Http.GetAsync($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/GetKeyPerformanceIndicator");
+        var contentKpi = await responseKpi.Content.ReadAsStringAsync();
+        var responsebscperspective = await Http.GetAsync($"{_ApiConfig.BaseUrl}BscPerspectives/GetBscPerspectives");
+        var contentbscperspective = await responsebscperspective.Content.ReadAsStringAsync();
+        var responsebscmeasurement = await Http.GetAsync($"{_ApiConfig.BaseUrl}BscPerformanceMeasurement/GetBscPerformanceMeasurement");
+        var contentbscmeasurement = await responsebscmeasurement.Content.ReadAsStringAsync();        
+        var responseperformancedescriptor = await Http.GetAsync($"{_ApiConfig.BaseUrl}PerformanceDescriptor/GetPerformanceDescriptor");
+        var contentperformancedescriptor = await responseperformancedescriptor.Content.ReadAsStringAsync();
+        var responsecompetence = await Http.GetAsync($"{_ApiConfig.BaseUrl}BehavioralCompetencies/GetCompetence");
+        var contentcompetence = await responsecompetence.Content.ReadAsStringAsync();
+        var responsetarget = await Http.GetAsync($"{_ApiConfig.BaseUrl}TargetSetting/GetAllTargetData");
+        var contenttarget = await responsetarget.Content.ReadAsStringAsync();
+        var responsebscperspectivetype = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/BSCPerspectiveType");
+        var contentbscperspectivetype = await responsebscperspective.Content.ReadAsStringAsync();
+
+        if (responsebscperspectivetype.IsSuccessStatusCode)
+        {
+            BscPerspectiveTypeData = await Http.GetFromJsonAsync<List<ABscPerspectivesTypeDto>>
+            ($"{_ApiConfig.BaseUrl}Utilities/BSCPerspectiveType");
+        }
+
+        if (responseemployee.IsSuccessStatusCode)
+        {
+            EmployeeData = await Http.GetFromJsonAsync<List<ViewBscEmployeeDto>>
+            ($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+        }
+
+        if (responsefinyear.IsSuccessStatusCode)
+        {
+            FinancialYearData = await Http.GetFromJsonAsync<List<ViewFinancialYearDto>>
+            ($"{_ApiConfig.BaseUrl}FinancialYear/list");
+        }
+
+        if (responseappraisal.IsSuccessStatusCode)
+        {
+            AppraisalData = await Http.GetFromJsonAsync<List<AppraisalReasonDto>>
+            ($"{_ApiConfig.BaseUrl}AppraisalReason/GetAppraisalReason");
+        }
+
+        if (responseKpi.IsSuccessStatusCode)
+        {
+            KpiData = await Http.GetFromJsonAsync<List<BscKpiDto>>
+            ($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/GetKeyPerformanceIndicator");
+        }
+
+        if (responsebscperspective.IsSuccessStatusCode)
+        {
+            BscPerspectiveData = await Http.GetFromJsonAsync<List<BscPerspectivesDto>>
+            ($"{_ApiConfig.BaseUrl}BscPerspectives/GetBscPerspectives");
+        }
+
+        if (responsebscmeasurement.IsSuccessStatusCode)
+        {
+            BscMeasurementData = await Http.GetFromJsonAsync<List<BscPerformanceMeasurementDto>>
+            ($"{_ApiConfig.BaseUrl}BscPerformanceMeasurement/GetBscPerformanceMeasurement");
+        }
+
+        if (responseperformancedescriptor.IsSuccessStatusCode)
+        {
+            PerformanceDescriptorData = await Http.GetFromJsonAsync<List<PerformanceDescriptorDto>>
+            ($"{_ApiConfig.BaseUrl}PerformanceDescriptor/GetPerformanceDescriptor");
+        }
+
+        if (responsecompetence.IsSuccessStatusCode)
+        {
+            CompetenceData = await Http.GetFromJsonAsync<List<BehavioralCompetenciesDto>>
+            ($"{_ApiConfig.BaseUrl}BehavioralCompetencies/GetCompetence");
+        }
+    }
+
+    private async Task OnSearchSubmit()
+    {
+        filename = null;
+        Downloadreport = true;
+        await DownloadingSpinner.ShowAsync();
+        try
+        {
+            var data = await reportservice.GetAppraisal(InputModel);
+            if (data.Count > 0)
+            {
+                using (ExcelEngine excelEngine = new ExcelEngine())
+                {
+                    IApplication application = excelEngine.Excel;
+                    application.DefaultVersion = ExcelVersion.Excel2013;
+                    IWorkbook workbook = application.Workbooks.Create(1);
+                    IWorksheet worksheet = workbook.Worksheets[0];
+                    worksheet.Name = "Appraisal Report";
+
+                    #region Styles
+                    var headerStyle = workbook.Styles.Add("headerStyle");
+
+                    headerStyle.BeginUpdate();
+                    headerStyle.Color = Syncfusion.Drawing.Color.Black;
+                    headerStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+                    headerStyle.Font.Bold = true;
+                    headerStyle.Font.FontName = "Arial";
+                    headerStyle.Font.Size = 8f;
+                    headerStyle.Font.Color = ExcelKnownColors.White;
+
+                    headerStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    headerStyle.Borders.Color = ExcelKnownColors.White;
+                    headerStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+                    headerStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+                    headerStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+
+                    headerStyle.WrapText = true;
+
+                    headerStyle.EndUpdate();
+
+                    var Style = workbook.Styles.Add("bodyStyle");
+
+                    Style.BeginUpdate();
+                    Style.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+                    Style.VerticalAlignment = ExcelVAlign.VAlignTop;
+                    Style.Font.Bold = false;
+                    Style.Font.FontName = "Arial";
+                    Style.Font.Size = 8f;
+                    Style.Font.Color = ExcelKnownColors.Black;
+                    Style.WrapText = true;
+                    Style.Borders.Color = ExcelKnownColors.Black;
+                    Style.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+                    Style.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+                    Style.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+                    Style.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
+                    Style.EndUpdate();
+
+
+                    var CategoryStyle = workbook.Styles.Add("CategoryStyle");
+
+                    CategoryStyle.BeginUpdate();
+                    CategoryStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    CategoryStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 255, 255);
+                    CategoryStyle.Font.Bold = true;
+                    CategoryStyle.Font.FontName = "Arial";
+                    CategoryStyle.Font.Size = 20f;
+                    CategoryStyle.Font.Color = ExcelKnownColors.Brown;
+                    CategoryStyle.WrapText = true;
+                    CategoryStyle.Borders.Color = ExcelKnownColors.White;
+                    CategoryStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+                    CategoryStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+                    CategoryStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+                    CategoryStyle.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
+                    CategoryStyle.EndUpdate();
+
+                    var DivisionStyle = workbook.Styles.Add("DivisionStyle");
+
+                    DivisionStyle.BeginUpdate();
+                    DivisionStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    DivisionStyle.Color = Syncfusion.Drawing.Color.FromArgb(255, 0, 0); //RED
+                    DivisionStyle.Font.Bold = true;
+                    DivisionStyle.Font.FontName = "Arial";
+                    DivisionStyle.Font.Size = 8f;
+                    DivisionStyle.Font.Color = ExcelKnownColors.White;
+                    DivisionStyle.WrapText = true;
+                    DivisionStyle.Borders.Color = ExcelKnownColors.White;
+                    DivisionStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.None;
+                    DivisionStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.None;
+                    DivisionStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.None;
+                    DivisionStyle.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.None;
+                    DivisionStyle.EndUpdate();
+
+                    #endregion
+
+                    int row = 1;
+                    worksheet.Range["A" + row].Text = "Appraisal Report";
+                    worksheet.Range["A" + row + ":R" + row].CellStyle = CategoryStyle;
+                    worksheet.Range["A" + row + ":R" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    worksheet.Range["A" + row + ":R" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+                    worksheet.Range["A" + row].RowHeight = 30;
+                    worksheet.Range["A" + row + ":R" + row].Merge();
+                    row++;
+                    row++;
+
+                    //var yeardata = data.Select(o => o.YearPrepared).ToList().Distinct().OrderBy(o => o.Value).ToList();
+
+                    worksheet.Range[row, 1].Text = "#";
+                    worksheet.Range[row, 1].CellStyle = headerStyle;
+                    worksheet.Range[row, 1].ColumnWidth = 5;
+                    worksheet.Range[row, 1].WrapText = true;
+
+                    worksheet.Range[row, 2].Text = "Employee";
+                    worksheet.Range[row, 2].CellStyle = headerStyle;
+                    worksheet.Range[row, 2].ColumnWidth = 20;
+                    worksheet.Range[row, 2].WrapText = true;
+
+                    worksheet.Range[row, 3].Text = "Employee No.";
+                    worksheet.Range[row, 3].CellStyle = headerStyle;
+                    worksheet.Range[row, 3].ColumnWidth = 20;
+                    worksheet.Range[row, 3].WrapText = true;
+
+                    worksheet.Range[row, 4].Text = "Review Date";
+                    worksheet.Range[row, 4].CellStyle = headerStyle;
+                    worksheet.Range[row, 4].ColumnWidth = 20;
+                    worksheet.Range[row, 4].WrapText = true;
+
+                    worksheet.Range[row, 5].Text = "Product";
+                    worksheet.Range[row, 5].CellStyle = headerStyle;
+                    worksheet.Range[row, 5].ColumnWidth = 20;
+                    worksheet.Range[row, 5].WrapText = true;
+
+                    worksheet.Range[row, 6].Text = "Product Category";
+                    worksheet.Range[row, 6].CellStyle = headerStyle;
+                    worksheet.Range[row, 6].ColumnWidth = 20;
+                    worksheet.Range[row, 6].WrapText = true;
+
+                    row++;
+                    int count = 1;
+
+                    foreach (var item in data)
+                    {
+                            worksheet.Range[row,1].Text = count.ToString();
+                            worksheet.Range[row, 2].Text = item.FullName;
+                            worksheet.Range[row, 3].Text = item.EmployeeNumber;
+                            if (item.DateofReview.HasValue)
+                            {
+                                worksheet.Range[row, 4].Text = item.DateofReview.Value.ToString("dd/MM/yyyy");
+                            }
+                            //if (n.Year.HasValue)
+                            //{
+                            //    worksheet.Range["B" + row].Number = n.Year.Value;
+                            //}
+
+                            //worksheet.Range["C" + row].Text = n.Region;
+
+                        row += 1;
+                        count++;
+                    }
+
+
+                    MemoryStream ms = new MemoryStream();
+                    // Save and close the document.
+                    workbook.SaveAs(ms);
+                    //Reset the memory stream position.
+                    ms.Position = 0;
+                    string _filename = "Appraisal Report.xlsx";
+                    filename = _filename;
+                    JS.InvokeAsync<object>("saveAsFile", filename, Convert.ToBase64String(ms.ToArray()));
+                    ms.Dispose();
+                    workbook.Close();
+                    Downloadreport = false;
+                    InputModel.Response = "Report Downloaded Successfully";
+                }
+            }
+            else
+            {
+                InputModel.Response = "There were no records found that match the given search parameters";
+                Downloadreport = false;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.ToString());
+        }
+        finally
+        {
+            await DownloadingSpinner.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void ClearSearchBtnClick()
+    {
+        InputModel = new UtilitiesSearchPanel();
+    }
+}

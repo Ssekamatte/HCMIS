@@ -1,0 +1,486 @@
+﻿@page "/SurveyDeadlinePage"
+@using HCMIS.Model
+@using HCMIS.ViewModel
+@using System.Text.Json
+@using System.Text.RegularExpressions
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject SystemSettings _SystemSettings
+@using System.Collections;
+@using HCMIS.SHARED.DTOs.Training;
+@using HCMIS.SHARED.DTOs.BSC;
+@inject IToastService toastService;
+
+<style>
+    .e-edit-dialog {
+        max-height: 70%;
+        max-width: 80%;
+        min-width: 80%;
+        min-height: 70%;
+    }
+
+    h6 {
+        color: ghostwhite;
+        background-color: blue;
+        padding: 10px;
+        width: 100%;
+        font-size: 10px;
+    }
+
+    h4 {
+        color: black;
+        background-color: deepskyblue;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+
+    h3 {
+        color: black;
+        background-color: darkorange;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+
+
+    /**/
+    #container {
+        position: relative;
+        height: 550px;
+    }
+
+    .e-spinner-pane.e-spin-overlay {
+        background-color: rgb(192,192,192);
+    }
+</style>
+
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+
+<center>
+    <h5>
+        <strong>TRAINING NEEDS ASSESSMENT SURVEY DEADLINE DATE</strong>
+    </h5>
+</center>
+
+<center>
+    <h5>
+        <strong>TRAINING NEEDS ASSESSMENT SURVEY- @DateTime.Now.Year</strong>
+    </h5>
+</center>
+<div class="row">    
+    <SfGrid ID="Grid" @ref="AssessmentDeadlineGrid" TValue="TrainingAssessmentSurveyDeadlineDto"
+            Toolbar="@ToolbarMenu" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+            AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true">
+        <SfDataManager AdaptorInstance="@typeof(AssessmentDeadlineAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+        <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+        <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+        <GridEvents OnActionBegin="AssessmentActionBegin" OnActionComplete="AssessmentActionComplete" TValue="TrainingAssessmentSurveyDeadlineDto"></GridEvents>
+        <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog">
+            <HeaderTemplate>
+                @{
+                    var text = GetAssessmentHeader((context as TrainingAssessmentSurveyDeadlineDto));
+                    <div class="headerbandimg" />
+                    <span>@text</span>
+                }
+            </HeaderTemplate>
+            <Template>
+                @{
+                    Deadlinedata = (context as TrainingAssessmentSurveyDeadlineDto);
+                    <div>
+                        <div class="form-row">
+                            <div class="form-group col-md-6" hidden="hidden">
+                                <SfNumericTextBox ID="DeadlineId" @bind-Value="@(Deadlinedata.DeadlineId)" Placeholder="Deadline Id" Enabled="false" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                            </div>
+                            <div class="col-md-12">
+                                <p><h3>Provide a new Deadline<span style="color:red;">*</span></h3></p>
+                            </div>
+                            <div class="form-group col-md-12">
+                                <SfDatePicker @bind-Value="@(Deadlinedata.DeadlineDate)" Enabled="true" Placeholder="Deadline Date" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </Template>
+        </GridEditSettings>
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+        <GridPageSettings PageSize="20"></GridPageSettings>
+        <GridColumns>
+            <GridColumn Type="ColumnType.CheckBox" Width="20"></GridColumn>
+            <GridColumn Field=@nameof(TrainingAssessmentSurveyDeadlineDto.DeadlineId) HeaderText="Deadline Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="50"></GridColumn>
+            <GridColumn Field=@nameof(TrainingAssessmentSurveyDeadlineDto.DeadlineDate) HeaderText="Deadline Date" Format="dd/MMMM/yyyy" TextAlign="TextAlign.Justify" Width="60" ClipMode="ClipMode.EllipsisWithTooltip" Type="ColumnType.Date"></GridColumn>            
+        </GridColumns>
+    </SfGrid>
+</div>
+
+@code {
+    #region Toasters
+    public static string ToastContent { get; set; }
+    SfToast? ToastObj;
+    SfToast DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+        {
+            new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+            new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+            new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+            new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+        };
+    #endregion Toasters
+
+    private SfGrid<TrainingAssessmentSurveyDeadlineDto>? AssessmentDeadlineGrid;
+    private static TrainingAssessmentSurveyDeadlineDto? Deadlinedata { get; set; }
+
+    private List<object> ToolbarMenu = new List<object>() {
+        new ItemModel() { Text = "Capture Date", PrefixIcon = "e-add", Id = "Grid_add"},//Here Grid is SfGrid ID
+        new ItemModel(){ Text = "Edit Date", PrefixIcon= "e-edit", Id="Grid_edit"},
+        new ItemModel(){ Text = "Delete Date", PrefixIcon= "e-delete", Id="Grid_delete"},
+        new ItemModel(){ Text = "Update Date", PrefixIcon= "e-update", Id="Grid_update"},
+        new ItemModel(){ Text = "Cancel Date", PrefixIcon= "e-cancel", Id="Grid_cancel"}
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await _SystemSettings.GetLoginCredentials();
+
+        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+        var responseJobTitle = await Http.GetAsync($"{_ApiConfig.BaseUrl}HumanResource/GetJobTitle");
+        var content = await responseJobTitle.Content.ReadAsStringAsync();
+
+        ToolbarMenu = new List<object>(){
+        new ItemModel() { Text = "Capture Date", PrefixIcon = "e-add", Id = "Grid_add" },//Here Grid is SfGrid ID
+        new ItemModel() { Text = "Edit Date", PrefixIcon = "e-edit", Id = "Grid_edit" },
+        new ItemModel() { Text = "Delete Date", PrefixIcon = "e-delete", Id = "Grid_delete" },
+        new ItemModel() { Text = "Update Date", PrefixIcon = "e-update", Id = "Grid_update" },
+        new ItemModel() { Text = "Cancel Date", PrefixIcon = "e-cancel", Id = "Grid_cancel" }
+        };
+    }
+
+    #region AssessmentDeadlineAdapter
+    public class AssessmentDeadlineAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        SystemSettings _SystemSettings;
+        ApiConfig _ApiConfig;
+        public IToastService toastService;
+        private readonly NavigationManager Navigation;
+
+        public AssessmentDeadlineAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+            , SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            Navigation = _Navigation;
+            _ApiConfig = apiConfig;
+            _SystemSettings = systemSettings;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            await _SystemSettings.GetLoginCredentials();
+
+            var data = new List<TrainingAssessmentSurveyDeadlineDto>();
+
+            string? AccessToken = _SystemSettings.AccessToken;
+            string? BaseUrl = _ApiConfig.BaseUrl;
+
+            try
+            {
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AccessToken);
+                var response = await Http.GetAsync($"{BaseUrl}AssessmentSurveyDeadline/GetAllAssessmentDeadlines");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    data = JsonSerializer.Deserialize<List<TrainingAssessmentSurveyDeadlineDto>>(content, _options);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<TrainingAssessmentSurveyDeadlineDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as TrainingAssessmentSurveyDeadlineDto);
+                if (val != null)
+                {
+                    if (val.DeadlineId == 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}AssessmentSurveyDeadline/CreateAssessmentDeadline", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}AssessmentSurveyDeadline/UpdateAssessmentDeadline", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+
+        //public override async Task<object> RemoveAsync(DataManager dataManager, object value, string keyField, string key)
+        //{
+        //    //try
+        //    //{
+        //    //    int data = (int)value;
+        //    //    using (var dbContext = new MUCOBADIContext())
+        //    //    {
+        //    //        var exists = dbContext.AAdministrationPhase.FirstOrDefault(o => o.AdministrationPhaseId == data);
+        //    //        if (exists != null)
+        //    //        {
+        //    //            dbContext.AAdministrationPhase.Remove(exists);
+        //    //        }
+        //    //        await dbContext.SaveChangesAsync();
+        //    //    }
+        //    //}
+        //    //catch (Exception ex)
+        //    //{
+        //    //    toastService.ShowError(ex.Message.ToString());
+        //    //}
+
+
+        //    return value;
+        //}
+
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as TrainingAssessmentSurveyDeadlineDto);
+                if (val != null)
+                {
+                    if (val.DeadlineId == 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}AssessmentSurveyDeadline/CreateAssessmentDeadline", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}AssessmentSurveyDeadline/UpdateAssessmentDeadline", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+    }
+    public void AssessmentActionComplete(ActionEventArgs<TrainingAssessmentSurveyDeadlineDto> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            AssessmentDeadlineGrid.PreventRender(false);
+        }
+    }
+
+    public async void AssessmentActionBegin(ActionEventArgs<TrainingAssessmentSurveyDeadlineDto> Args)
+    {
+        var data = Args.Data;
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+        {
+            if (Args.Data.DeadlineDate == null)
+            {
+                toastService.ShowWarning( "Please provide a date!");
+                Args.Cancel = true;
+            }
+            
+            else
+            {
+                string? AccessToken = _SystemSettings.AccessToken;
+                string? BaseUrl = _ApiConfig.BaseUrl;
+                string Date = string.Empty;
+
+                if (Args.Data.DeadlineDate != null)
+                {
+                    Date = Args.Data.DeadlineDate.Value.ToString("dd/MM/yyyy");
+                }
+
+                try
+                {
+                    Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AccessToken);
+                    var response = await Http.GetAsync($"{BaseUrl}AssessmentSurveyDeadline/GetExistingDate/{Date}");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                         toastService.ShowWarning( "This Date ( " + Date + " ) Arleady Exists! Record will not be saved");  
+                        Args.Cancel = true;
+                    }                    
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }                
+            }
+        }
+    }
+
+    public string GetAssessmentHeader(TrainingAssessmentSurveyDeadlineDto Value)
+    {
+        if (Value.DeadlineId == 0 || Value.DeadlineId == null)
+        {
+            return "Add a new Deadline Date";
+        }
+        else
+        {
+            return "Edit the Date Details";
+        }
+    }
+
+    #endregion AssessmentDeadlineAdapter
+}

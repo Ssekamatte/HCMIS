@@ -1,0 +1,559 @@
+﻿@page "/AnnualLeaveRosterPage"
+@using System.Text.Json;
+@using HCMIS.SHARED.DTOs;
+@using Syncfusion.Blazor.Schedule
+@using static System.Net.WebRequestMethods;
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject SystemSettings _SystemSettings
+@using HCMIS.DTOs;
+@using System.Globalization;
+@inject IToastService toastService;
+
+<style>  
+    .e-dialog.e-control.e-popup {
+        padding: 3px;
+        min-width: 94%;
+    }
+    /*.e-dialog .e-lib .e-schedule-dialog .e-dlg-modal .e-popup .e-control .e-popup-open {
+            padding: 3px;
+            min-width: 94%;
+        }*/
+    .e-recurrenceeditor .e-editor {
+        display: -ms-flexbox;
+        display: flex;
+        -ms-flex-flow: row wrap;
+        flex-flow: row wrap;
+        margin-left: 1px;
+        margin-right: 1px;
+        /*max-width: 1240px;*/
+    }
+
+    h4 {
+        background-color: #007bff;
+        color: whitesmoke;
+        padding: 10px;
+    }
+
+    h5 {
+        color: black;
+        background-color: deepskyblue;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+
+    h6 {
+        color: ghostwhite;
+        background-color: red;
+        padding: 10px;
+        width: 100%;
+        font-size: 18px;
+    }
+
+    .e-schedule-dialog .e-footer-content {
+        margin-top: 4px;
+        display: none;
+    }
+
+    .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn-text {
+        color: black;
+    }
+</style>
+
+<SfSchedule TValue="ViewEmployeeLeaveRoster" @ref="@SheduleRef" Height="650px" @bind-SelectedDate="@CurrentDate"
+            ShowWeekend=false ShowWeekNumber=true >
+    <ScheduleEvents TValue="ViewEmployeeLeaveRoster" OnActionBegin="OnActionBegin" OnRenderCell="@OnRenderCell" OnPopupOpen="OnPopupOpen"></ScheduleEvents>
+    <ScheduleTemplates>
+        <EditorTemplate>
+            @{
+                LeaveRosterData = (context as ViewEmployeeLeaveRoster);                
+            }
+                        <input type="hidden" name="Id" class="e-field" value="@(LeaveRosterData.LeaveRosterId)" />
+                        <div class="row" style="margin-top: 15px; margin-bottom: 15px;">
+                            <h5>
+                                Kindly note that you are entitled to only 25 Working Leave Days Annually.
+                            </h5>
+                            <div class="col col-md-6">
+                                @if(RoasterCount!=null)
+                                {
+                                    <div><p>Current Leave Days </p> @RoasterCount.TotalDays</div>
+                                }
+                            </div>
+                            <div class="col col-md-6">
+                                <div><p>Days Selected </p> @LeaveDays</div>
+                                @*<div class="e-float-input e-control-wrapper">
+                                     <SfNumericTextBox ID="LeaveDays" Value="@(LeaveDays)" Placeholder="Leave Days" FloatLabelType="FloatLabelType.Always" Enabled="true">
+                                     </SfNumericTextBox>
+                                </div>*@
+                            </div>
+                            <div class="col col-md-6">                                
+                            <div><p>Total Days </p> @TotalDays</div>
+                            </div>
+
+                            <div class="col col-md-6">
+                                <SfDropDownList ID="Employeeid" @bind-Value="@(LeaveRosterData.Employeeid)" Enabled=@IsEnabled TItem="ViewBscEmployeeDto" AllowFiltering="true" TValue="int?" DataSource="@EmployeeData" Placeholder="Employee" FloatLabelType="FloatLabelType.Always">
+                                    <DropDownListFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></DropDownListFieldSettings>
+                                </SfDropDownList>
+                            </div>
+                            
+                            <div class="col col-md-6">
+                                <SfDateTimePicker @bind-Value="@(LeaveRosterData.ProposedLeaveStartDate)" Enabled=@IsEnabled ID="ProposedLeaveStartDate" Placeholder="Proposed Start Date" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Always"></SfDateTimePicker>
+                            </div>
+                            <div class="col col-md-6">                               
+                                <SfDateTimePicker @bind-Value="@(LeaveRosterData.ProposedLeaveEndDate)" Enabled=@IsEnabled ID="ProposedLeaveEndDate" Placeholder="Proposed End Date" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Always">
+                                    <DateTimePickerEvents TValue="DateTime?" ValueChange="OnChange"></DateTimePickerEvents>
+                                </SfDateTimePicker>
+                            </div>                             
+                        </div>
+                        @if (TotalDays<=25)
+                        {
+                            <SfButton CssClass="btn btn-primary" style="float:left; margin-right:10px;" OnClick="@(e => OnSubmit(e, context as ViewEmployeeLeaveRoster))">Confirm Schedule</SfButton>
+                        }
+                        else
+                        {
+                            <h6>
+                                You have exceeded the 25 working days allocated. Kindly reduce on the number of days.
+                            </h6>
+                        }
+                         @*<SfButton CssClass="btn btn-primary" style="float:left; margin-right:10px;" OnClick="@(e => OnSubmit(e, context as ViewEmployeeLeaveRoster))">Confirm Schedule</SfButton>*@
+                         <SfButton CssClass="btn btn-danger" style="float:right;" OnClick="@(e => OnClose(e))">Cancel Plan</SfButton>
+        </EditorTemplate>
+    </ScheduleTemplates>
+    <ScheduleEventSettings TValue="ViewEmployeeLeaveRoster" 
+        EnableMaxHeight="true" 
+        EnableIndicator="true"
+        EnableTooltip="true">
+        <SfDataManager AdaptorInstance="@typeof(AnnualLeaveRosterAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+        <ScheduleField>
+            <FieldSubject Title="Employee" Name="EmployeeDetails"></FieldSubject>
+            <FieldStartTime Title="Proposed Start Date" Name="ProposedLeaveStartDate"></FieldStartTime>
+            <FieldEndTime Title="Prosposed End Date" Name="ProposedLeaveEndDate"></FieldEndTime>
+            <FieldIsAllDay Title="Is all Day" Name="IsAllDay"></FieldIsAllDay>
+        </ScheduleField>
+    </ScheduleEventSettings>
+    <ScheduleViews>
+        <ScheduleView Option="View.Day"></ScheduleView>
+        <ScheduleView Option="View.Week"></ScheduleView>
+        <ScheduleView Option="View.WorkWeek"></ScheduleView>
+        <ScheduleView Option="View.Month"></ScheduleView>
+        <ScheduleView Option="View.Agenda"></ScheduleView>
+    </ScheduleViews>
+</SfSchedule>
+
+
+@code {
+    private DateTime CurrentDate = DateTime.Now;
+    private ViewEmployeeLeaveRoster LeaveRosterData { get; set; }
+    List<ViewBscEmployeeDto>? EmployeeData { get; set; }
+    List<APublicHolidays>? PublicHolidaysData { get; set; }
+    SfSchedule<ViewEmployeeLeaveRoster>? SheduleRef;
+    bool IsEnabled { get; set; } = true;
+    public string[] CellCustomClass = { "cell-custom-class" };
+    List<ViewUserManagementDto>? UsersData { get; set; }
+    List<ViewEmployeePlannedDays>? LeaveRosterCountData { get; set; }
+    public DateTime? StartDateValue { get; set; }
+    public static int LeaveDays { get; set; } = 0;
+    public static int PublicHolidays { get; set; } = 0;
+    public static int TotalDays { get; set; } = 0;
+    private static ViewEmployeePlannedDays RoasterCount { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+
+            var responseusers = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUsers");
+            var contentusers = await responseusers.Content.ReadAsStringAsync();
+            var responseemployee = await Http.GetAsync($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+            var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+            var responsepublicholiday = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetPublicHoliday");
+            var contentpublicholiday = await responsepublicholiday.Content.ReadAsStringAsync();
+            var responseleavedays = await Http.GetAsync($"{_ApiConfig.BaseUrl}Employeez/GetCountLeaveDays");
+            var contentleavedays = await responseleavedays.Content.ReadAsStringAsync();
+
+            if (responseemployee.IsSuccessStatusCode)
+            {
+                EmployeeData = await Http.GetFromJsonAsync<List<ViewBscEmployeeDto>>
+                ($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+            }
+
+            if (responsepublicholiday.IsSuccessStatusCode)
+            {
+                PublicHolidaysData = await Http.GetFromJsonAsync<List<APublicHolidays>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetPublicHoliday");
+            }
+            if (responseusers.IsSuccessStatusCode)
+            {
+                UsersData = await Http.GetFromJsonAsync<List<ViewUserManagementDto>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetUsers");
+            }
+            if (responseusers.IsSuccessStatusCode)
+            {
+                LeaveRosterCountData = await Http.GetFromJsonAsync<List<ViewEmployeePlannedDays>>
+                ($"{_ApiConfig.BaseUrl}Employeez/GetCountLeaveDays");
+            }            
+        }
+        catch(Exception ex)
+        {
+            //throw ex;  
+        }
+    }
+
+    protected async Task OnChange(ChangedEventArgs<DateTime?> value)
+    {
+
+        DateTime StartDate = Convert.ToDateTime(LeaveRosterData.ProposedLeaveStartDate);
+        DateTime EndDate = Convert.ToDateTime(LeaveRosterData.ProposedLeaveEndDate);
+        int numberOfDays2 = GetNumberOfDates(StartDate,EndDate);
+        GetNumberOfPublicHolidays(StartDate, EndDate);
+        LeaveDays = numberOfDays2 - PublicHolidays;
+
+        TotalDays = LeaveDays + RoasterCount.TotalDays.Value;
+    }
+
+    //Function to return number of days minus weekends
+    static int GetNumberOfDates(DateTime from, DateTime to)
+    {
+        if (to < from)
+            throw new ArgumentException("To cannot be smaller than from.", nameof(to));
+
+        if (to.Date == from.Date)
+            return 0;
+
+        int n = 0;
+        DateTime nextDate = from;
+        while(nextDate <= to.Date)
+        {
+            if (nextDate.DayOfWeek != DayOfWeek.Saturday && nextDate.DayOfWeek != DayOfWeek.Sunday)
+                n++;
+            nextDate = nextDate.AddDays(1); 
+        }
+
+        return n;
+    }
+
+    //Get number of public holidays
+    public int GetNumberOfPublicHolidays(DateTime from, DateTime to)
+    {
+        PublicHolidays = PublicHolidaysData.Where(o => o.HolidayDate >= from && o.HolidayDate <= to).Count();
+        return PublicHolidays;
+    }
+
+    private async Task OnSubmit(MouseEventArgs args, ViewEmployeeLeaveRoster data)
+    {
+        try
+        {
+            //var countdata = LeaveRosterCountData?.FirstOrDefault(o => o.Employeeid == _SystemSettings.StaffId);
+            RoasterCount = LeaveRosterCountData?.FirstOrDefault(o => o.Employeeid == _SystemSettings.StaffId);
+
+            if (RoasterCount != null && RoasterCount.TotalDays >= 25)
+            {
+                toastService.ShowWarning("Your leave days are " + RoasterCount.TotalDays);
+            }
+
+            else if (data.ProposedLeaveEndDate < data.ProposedLeaveStartDate)
+            {
+                toastService.ShowWarning("Your start date cannot be later than the end date.");
+            }
+
+            else
+            {
+                await SheduleRef.AddEvent(data);
+                SheduleRef.CloseEditor();
+            }
+
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.ToString());
+        }
+
+    }
+
+    private async Task OnClose(MouseEventArgs args)
+    {
+        try
+        {
+            SheduleRef.CloseEditor();
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.ToString());
+        }
+
+    }
+    public async void OnRenderCell(RenderCellEventArgs args)
+    {
+
+        //var item = args.Date;
+
+        //var responsepublicholiday = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetPublicHoliday");
+        //var contentpublicholiday = await responsepublicholiday.Content.ReadAsStringAsync();
+
+        //if (responsepublicholiday.IsSuccessStatusCode)
+        //{
+        //    PublicHolidaysData = await Http.GetFromJsonAsync<List<APublicHolidays>>
+        //    ($"{_ApiConfig.BaseUrl}Utilities/GetPublicHoliday");
+        //}
+
+        //var exist = PublicHolidaysData.FirstOrDefault(o=>o.Day == item.Day && o.Month == item.Month) ;
+
+        //if (exist != null)
+        //{
+        //    args.CssClasses = new List<string>(CellCustomClass);
+        //}
+    }
+
+    public async void OnPopupOpen(PopupOpenEventArgs<ViewEmployeeLeaveRoster> args)
+    {
+
+        if(LeaveRosterData.IsBlock == true && LeaveRosterData.IsBlock != null)
+        {
+            args.Cancel = true;
+        }
+        else
+        {
+            await _SystemSettings.GetLoginCredentials();
+            RoasterCount = LeaveRosterCountData?.FirstOrDefault(o => o.Employeeid == _SystemSettings.StaffId);
+            LeaveRosterData.Employeeid = _SystemSettings.StaffId;
+            StateHasChanged();
+
+            DateTime StartDate = Convert.ToDateTime(args.Data.ProposedLeaveStartDate);
+            DateTime EndDate = Convert.ToDateTime(args.Data.ProposedLeaveEndDate);
+            int numberOfDays2 = GetNumberOfDates(StartDate, EndDate);
+            GetNumberOfPublicHolidays(StartDate, EndDate);
+            LeaveDays = numberOfDays2 - PublicHolidays;
+
+            try
+            {
+                if (LeaveDays != 0)
+                {
+                    //LeaveDays = numberOfDays2 - PublicHolidays;
+                    TotalDays = LeaveDays + RoasterCount.TotalDays.Value;                    
+                    StateHasChanged();
+                }
+                else
+                {
+                    TotalDays = RoasterCount.TotalDays.Value;
+                    StateHasChanged();
+                }
+            }
+            catch(Exception ex)
+            {
+                
+            }
+            
+        }
+
+    }
+
+
+    public class AnnualLeaveRosterAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        SystemSettings _SystemSettings;
+        ApiConfig _ApiConfig;
+        public IToastService toastService;
+        private readonly NavigationManager Navigation;
+
+        public AnnualLeaveRosterAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+            , SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            Navigation = _Navigation;
+            _ApiConfig = apiConfig;
+            _SystemSettings = systemSettings;
+        }
+
+        public async override Task<object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {            
+            List<ViewEmployeeLeaveRoster> EventData = new List<ViewEmployeeLeaveRoster>();
+            await _SystemSettings.GetLoginCredentials();
+            int? Employeeid = _SystemSettings.StaffId;
+
+            await _SystemSettings.GetLoginCredentials();
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            HttpResponseMessage response = null;
+
+            if (!string.IsNullOrEmpty(_SystemSettings.UserRole) && _SystemSettings.UserRole.Contains("Administrator"))
+            {
+                response = await Http.GetAsync($"{_ApiConfig.BaseUrl}Employeez/GetEmployeeLeaverRoster");
+            }
+            else
+            {
+                response = await Http.GetAsync($"{_ApiConfig.BaseUrl}Employeez/GetEmployeeLeaverRosterUser?Employeeid={Employeeid}");
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                toastService.ShowError(response.ReasonPhrase);
+            }
+            EventData = JsonSerializer.Deserialize<List<ViewEmployeeLeaveRoster>>(content, _options);
+
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = EventData, Count = EventData.Count() } : (object)EventData;
+        }
+
+        public async override Task<object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                var val = (value as ViewEmployeeLeaveRoster);
+
+                if (val.LeaveRosterId == null)
+                {
+                    string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                    StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                    var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}Employeez/CreateEmployeeLeaverRoster", httpContent);
+                    if (result.IsSuccessStatusCode)
+                    {
+                        toastService.ShowSuccess("Record sucessfully added");
+                    }
+                    else
+                    {
+                        //toastService.ShowError(result.Content.);
+                    }
+                }
+
+                else
+                {
+                    string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                    StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                    var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}Employeez/UpdateEmployeeLeaverRoster", httpContent);
+                    if (result.IsSuccessStatusCode)
+                    {
+                        toastService.ShowSuccess("Record was sucessfully updated");
+                    }
+                    else
+                    {
+                        //toastService.ShowError(data.Message);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+
+        public async override Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                var val = (value as ViewEmployeeLeaveRoster);
+                await _SystemSettings.GetLoginCredentials();
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}Employeez/UpdateEmployeeLeaverRoster", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    toastService.ShowSuccess($"{val.Employeeid}  was sucessfully updated");
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+
+    }
+
+    private async void OnActionBegin(Syncfusion.Blazor.Schedule.ActionEventArgs<ViewEmployeeLeaveRoster> args)
+    {
+        try
+        {
+            if (args.ActionType == Syncfusion.Blazor.Schedule.ActionType.EventCreate)
+            {
+                var responseusers = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUsers");
+                var contentusers = await responseusers.Content.ReadAsStringAsync();
+                var responseemployee = await Http.GetAsync($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+                var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+                var responsepublicholiday = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetPublicHoliday");
+                var contentpublicholiday = await responsepublicholiday.Content.ReadAsStringAsync();
+                var responseleavedays = await Http.GetAsync($"{_ApiConfig.BaseUrl}Employeez/GetCountLeaveDays");
+                var contentleavedays = await responseleavedays.Content.ReadAsStringAsync();
+
+                if (responseemployee.IsSuccessStatusCode)
+                {
+                    EmployeeData = await Http.GetFromJsonAsync<List<ViewBscEmployeeDto>>
+                    ($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+                }
+
+                if (responsepublicholiday.IsSuccessStatusCode)
+                {
+                    PublicHolidaysData = await Http.GetFromJsonAsync<List<APublicHolidays>>
+                    ($"{_ApiConfig.BaseUrl}Utilities/GetPublicHoliday");
+                }
+                if (responseusers.IsSuccessStatusCode)
+                {
+                    UsersData = await Http.GetFromJsonAsync<List<ViewUserManagementDto>>
+                    ($"{_ApiConfig.BaseUrl}Utilities/GetUsers");
+                }
+                if (responseusers.IsSuccessStatusCode)
+                {
+                    LeaveRosterCountData = await Http.GetFromJsonAsync<List<ViewEmployeePlannedDays>>
+                    ($"{_ApiConfig.BaseUrl}Employeez/GetCountLeaveDays");
+                }
+            }
+            
+            if (args.ActionType == Syncfusion.Blazor.Schedule.ActionType.EventChange)
+            {
+                var responseusers = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUsers");
+                var contentusers = await responseusers.Content.ReadAsStringAsync();
+                var responseemployee = await Http.GetAsync($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+                var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+                var responsepublicholiday = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetPublicHoliday");
+                var contentpublicholiday = await responsepublicholiday.Content.ReadAsStringAsync();
+                var responseleavedays = await Http.GetAsync($"{_ApiConfig.BaseUrl}Employeez/GetCountLeaveDays");
+                var contentleavedays = await responseleavedays.Content.ReadAsStringAsync();
+
+                if (responseemployee.IsSuccessStatusCode)
+                {
+                    EmployeeData = await Http.GetFromJsonAsync<List<ViewBscEmployeeDto>>
+                    ($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+                }
+
+                if (responsepublicholiday.IsSuccessStatusCode)
+                {
+                    PublicHolidaysData = await Http.GetFromJsonAsync<List<APublicHolidays>>
+                    ($"{_ApiConfig.BaseUrl}Utilities/GetPublicHoliday");
+                }
+                if (responseusers.IsSuccessStatusCode)
+                {
+                    UsersData = await Http.GetFromJsonAsync<List<ViewUserManagementDto>>
+                    ($"{_ApiConfig.BaseUrl}Utilities/GetUsers");
+                }
+                if (responseusers.IsSuccessStatusCode)
+                {
+                    LeaveRosterCountData = await Http.GetFromJsonAsync<List<ViewEmployeePlannedDays>>
+                    ($"{_ApiConfig.BaseUrl}Employeez/GetCountLeaveDays");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+
+            throw;
+        }
+    }
+
+}
+
+<style>
+    .e-schedule .e-vertical-view .e-work-cells.cell-custom-class {
+        background: red !important;
+    }
+</style>

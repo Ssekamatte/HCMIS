@@ -1,0 +1,109 @@
+﻿@*<h3>CummulativeChartPartialPage</h3>*@
+@*@page "/CummulativeChartPartialPage"*@
+@using HCMIS.Model;
+
+
+@if (SeriesDataSource != null && SeriesDataSource.Count > 0)
+{
+    <div class="row" style="background-color:rgb(255, 255, 255); margin:1px;">
+        <div class="col-md-12">
+            <SfTooltip Target="@Set_Btn_Id" Content="@TooltipContent" Position="Syncfusion.Blazor.Popups.Position.TopCenter" OpensOn="Auto" IsSticky="false">
+                <div id="@Btn_Id" style="float:right; cursor:pointer;" @onclick=@ExpandChart><span class="fa fa-expand"></span></div>
+            </SfTooltip>
+        </div>
+        <div class="col-md-12">
+            <SfAccumulationChart EnableBorderOnMouseMove="false" EnableAnimation="true" Theme="@Theme">
+                <AccumulationChartTitleStyle FontFamily="Arial" FontWeight="regular" Color="#E27F2D" Size="50px"></AccumulationChartTitleStyle>
+
+                <AccumulationChartTooltipSettings Header="" Format="<b>${point.x}</b><br>Percentage: <b>${point.y}%</b>" Enable="true" Fill="#7bb4eb"></AccumulationChartTooltipSettings>
+                <AccumulationChartLegendSettings Visible="false"></AccumulationChartLegendSettings>
+                <AccumulationChartSeriesCollection>
+                    <AccumulationChartSeries DataSource="@SeriesDataSource" XName="ColumnX" YName="ColumnY" Radius="@Radius" Name="ColumnX" StartAngle="@StartAngle"
+                                         InnerRadius="0%" ExplodeIndex="0" Explode="true" ExplodeOffset="@ExplodeOffset">
+                        <AccumulationDataLabelSettings Visible="true" Name="DataLabelMappingName" Position="AccumulationLabelPosition.Outside">
+                            <AccumulationChartDataLabelFont FontWeight="600"></AccumulationChartDataLabelFont>
+                            <AccumulationChartConnector Length="20px" Type="ConnectorType.Curve"></AccumulationChartConnector>
+                        </AccumulationDataLabelSettings>
+                    </AccumulationChartSeries>
+                </AccumulationChartSeriesCollection>
+            </SfAccumulationChart>
+        </div>
+    </div>
+}
+<SfDialog @ref=@ChartDialog Target=".page" Width="98%" Height="80vh" CloseOnEscape=true
+          EnableResize=true Visible=false ShowCloseIcon=true IsModal=true AllowPrerender=false>
+    <DialogTemplates>
+        <Content>
+            @if (SeriesDataSource != null && SeriesDataSource.Count > 0 && loadDialog == true)
+            {
+                <SfAccumulationChart Background="#caf0f8" EnableBorderOnMouseMove="false" Title="@ChartTitle" EnableAnimation="true" Theme="@Theme">
+                    <AccumulationChartTooltipSettings Header="" Format="<b>${point.x}</b><br>Percentage: <b>${point.y}%</b>" Enable="true"></AccumulationChartTooltipSettings>
+                    <AccumulationChartLegendSettings Visible="false"></AccumulationChartLegendSettings>
+                    <AccumulationChartSeriesCollection>
+                        <AccumulationChartSeries DataSource="@SeriesDataSource" XName="ColumnX" YName="ColumnY" Radius="@Radius" Name="ColumnX" StartAngle="@StartAngle"
+                                             InnerRadius="0%" ExplodeIndex="0" Explode="true" ExplodeOffset="@ExplodeOffset">
+                            <AccumulationDataLabelSettings Visible="true" Name="DataLabelMappingName" Position="AccumulationLabelPosition.Outside">
+                                <AccumulationChartDataLabelFont FontWeight="600"></AccumulationChartDataLabelFont>
+                                <AccumulationChartConnector Length="20px" Type="ConnectorType.Curve"></AccumulationChartConnector>
+                            </AccumulationDataLabelSettings>
+                        </AccumulationChartSeries>
+                    </AccumulationChartSeriesCollection>
+                </SfAccumulationChart>
+            }
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    private Syncfusion.Blazor.Theme Theme { get; set; }
+    [Parameter]
+    public int ExplodeIndex { get; set; }
+    [Parameter]
+    public string ExplodeRadius { get; set; }
+    [Parameter]
+    public string Radius { get; set; }
+    [Parameter]
+    public int StartAngle { get; set; }
+    [Parameter]
+    public string InnerRadius{ get; set; }
+    [Parameter]
+    public bool Explode { get; set; }
+    [Parameter]
+    public string ExplodeOffset { get; set; }
+    [Parameter]
+    public string ChartTitle { get; set; }
+
+    bool loadDialog { get; set; } = false;
+    string? Id { get; set; }
+    string? Btn_Id { get; set; }
+    string? Set_Btn_Id { get; set; }
+    string TooltipContent = "Expand";
+    SfDialog? ChartDialog;
+    [Parameter]
+    public List<DashboardModel>? SeriesDataSource { get; set; }
+
+
+    protected override void OnInitialized()
+    {
+        Theme = Syncfusion.Blazor.Theme.Material;
+        Random rand = new Random();
+        Id = "Chart_" + rand.Next(1000, 2000000);
+        Btn_Id = "btn_" + rand.Next(1000, 2000000);
+        Set_Btn_Id = $"#{Btn_Id}";
+        //StartAngle = 70;
+        //Radius = "40%";
+        //PieChartPoints.RemoveRange(1, 4);
+        //PieChartPoints[4].Users = 25.39;
+        //PieChartPoints[1].DataLabelMappingName = "Safari<br> 4.73%";
+        //PieChartPoints[4].DataLabelMappingName = "Others: 25.39%";
+    }
+
+    private async Task ExpandChart()
+    {
+        if (ChartDialog != null)
+        {
+            loadDialog = true;
+            await ChartDialog.ShowAsync();
+        }
+    }
+}

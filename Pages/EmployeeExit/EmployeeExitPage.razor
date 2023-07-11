@@ -1,0 +1,569 @@
+﻿@page "/EmployeeExitP"
+@using HCMIS.Data
+@using HCMIS.Model
+@using HCMIS.Model.EmployeeExit;
+@using HCMIS.Services;
+@using HCMIS.ViewModel
+@using System.Text.Json
+@using System.Text.RegularExpressions
+@using System.Collections;
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject SystemSettings _SystemSettings
+@inject DocumentUploadModel _DocumentUploadModel;
+
+<style>
+    .e-edit-dialog {
+        max-height: 95%;
+        max-width: 100%;
+        min-width: 100%;
+        min-height: 95%;
+    }
+
+    h6 {
+        color: ghostwhite;
+        background-color: blue;
+        padding: 10px;
+        width: 100%;
+        font-size: 10px;
+    }
+
+    h4 {
+        color: black;
+        background-color: white;
+        padding: 8px;
+        .Continous width: 100%;
+        font-size: 13px;
+    }
+
+    .e-grid .e-gridcontent .e-rowcell.SubmittedApplications {
+        color: red;
+    }
+
+    .NotImplemented {
+        background-color: red;
+    }
+
+    .Appealedcases {
+        background-color: orangered;
+    }
+
+    .FullyImplemented {
+        background-color: lightseagreen;
+    }
+
+    .Actiontaken {
+        background-color: forestgreen;
+    }
+
+    .PartiallyImplemented {
+        background-color: yellow;
+    }
+
+    .Continous {
+        background-color: blue;
+    }
+
+    h3 {
+        color: ghostwhite;
+        background-color: darkblue;
+        padding: 10px;
+        width: 100%;
+    }
+</style>
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="width: 100%; color: darkblue; font-family: Cambria; padding: 5px; font: bolder;"><img src="/Image/logo.png" height="35" width="50" /> <stong>|Exit Interviews</stong></li>
+</ol>
+   <div style="margin:10px; width:100%;">
+    <EditForm Model="@inputmodel"  OnValidSubmit="@SaveProfile" class="row">
+ 
+    <div class="col-md-12">
+            <hr class="white-horizontal-line" />
+            <p class="alert alert-primary">
+                <b>In line with the provisions of the Human Resource Management Manual and in the interest of continuously improving the work experience in NHCC as it forges</b>
+                <br />
+
+                <b>
+                    ahead to recruit, motivate and retain talented individuals. This Exit interview  form has been designed for this purpose. Your thoughts and ideas would be appreciated and confidentiality is guaranteed
+                </b>
+                <br />
+             
+            </p>
+            <hr class="white-horizontal-line" />
+        </div>
+    <div class="col-md-12">
+        <h3>Personal Information</h3>
+    </div>     
+        <div class="col-md-12">
+            <div class="row">
+                <div class="col-md-8">
+                     <p>Employee Name:<span style="color:red;">(*)</span></p> 
+                    <SfDropDownList @bind-Value="@(inputmodel.EmployeeExitInterviewHeader.EmployeeId)" Enabled="true" TItem="ViewEmployeeDisplinary" TValue="int?"
+                    DataSource="@ViewEmployeeDisplinaryData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                        <DropDownListFieldSettings Value="@nameof(ViewEmployeeDisplinary.Employeeid)" Text="@nameof(ViewEmployeeDisplinary.EmployeeDetails)"></DropDownListFieldSettings>
+                        <DropDownListEvents TValue="int?" TItem="ViewEmployeeDisplinary" ValueChange="OnEmployeeChange"></DropDownListEvents>
+                    </SfDropDownList>
+                    <p> <ValidationMessage For="@(() => inputmodel.EmployeeExitInterviewHeader.EmployeeId)" /></p>
+                </div>
+                @if (employeeno != null)
+                {
+                    <div class="col-md-4">
+                        <strong><p>Employee Number:</p> </strong><br>
+                        @employeeno.EmployeeNumber
+                    </div>
+
+                    <div class="col-md-3">
+                        <strong><p>Desgnation:</p> </strong><br>
+                    </div>
+                    <div class="col-md-3">
+                        @employeeno.JobDescription
+                    </div>
+                    <div class="col-md-3">
+                        <strong><p>Duration at NHCC:</p> </strong><br>
+                    </div>
+                    <div class="col-md-3">
+                        @employeeno.DurationatWork
+                    </div>
+                    <br />
+                    <div class="col-md-3">
+                        <strong><p> Department:</p> </strong><br>
+                    </div>
+                    <div class="col-md-3">
+                        @employeeno.DepartmentDescription
+                    </div>
+                    <div class="col-md-3">
+                        <strong><p> Date Joined:</p> </strong><br>
+                    </div>
+                    <div class="col-md-3">
+                        @if (employeeno.DateJoined.HasValue)
+                        {
+                            @employeeno.DateJoined.Value.ToString("dd/MM/yyyy");
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="col-md-12">
+            <h3>Other Details</h3>
+        </div>
+        <div class="col-md-6">
+            <label>1.Briefly explain the primary reasons for leaving the Company </label>
+            <SfTextBox Type="InputType.Text" @bind-Value="@inputmodel.EmployeeExitInterviewHeader.ReasonsForLeavingTheCompany" CssClass="form-control" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+            <p> <ValidationMessage For="@(() => inputmodel.EmployeeExitInterviewHeader.ReasonsForLeavingTheCompany)" /></p>
+        </div>
+        <div class="col-md-6">
+            <label>2.What did you find most satisfying about your job?</label>
+            <SfTextBox Type="InputType.Text" @bind-Value="@inputmodel.EmployeeExitInterviewHeader.SatisfyingAboutYourJob" CssClass="form-control" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+            <p> <ValidationMessage For="@(() => inputmodel.EmployeeExitInterviewHeader.SatisfyingAboutYourJob)" /></p>
+        </div>
+        <div class="col-md-12">
+            <hr class="white-horizontal-line" />
+            <p class="alert alert-primary">
+                <b>3.Please rate the following aspects of the Company overall. Use the 1 – 5 scale below</b>
+                <br />
+            </p>
+            <hr class="white-horizontal-line" />
+            <SfGrid @ref=@spExitGrid TValue="spEmployeeExitInterviewResult" DataSource="@inputmodel.InterviewRatingDetails"
+                    AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true" Width="auto"
+                    AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true">
+                <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+                <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                <GridPageSettings PageSize="15"></GridPageSettings>
+                <GridEvents CellSaved="OnDetailCellSave" CellSelected=@OnDetailCellSelectHandler TValue="spEmployeeExitInterviewResult"></GridEvents>
+                <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Batch" ShowConfirmDialog=false></GridEditSettings>
+                <GridColumns>
+                    <GridColumn Field=@nameof(spEmployeeExitInterviewResult.EmployeExitRatingID) HeaderText="Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" ShowInColumnChooser="false" Visible="false" Width="70"></GridColumn>
+                    <GridColumn Field=@nameof(spEmployeeExitInterviewResult.AspectDescription) HeaderText="Aspect" Visible="true" Width="140" AllowEditing=false ClipMode="ClipMode.EllipsisWithTooltip"></GridColumn>
+                    <GridColumn HeaderText="Poor">
+                        <GridColumns>
+                            <GridColumn Field=@nameof(spEmployeeExitInterviewResult.PoorRating) HeaderText="Rate" AllowEditing=@IsEnabled EditType="EditType.BooleanEdit" Visible="true" Width="70" ClipMode="ClipMode.EllipsisWithTooltip"></GridColumn>
+                            <GridColumn Field=@nameof(spEmployeeExitInterviewResult.PoorRatingComments) HeaderText="Comments" AllowEditing=@IsEnabled Visible="true" Width="200" ClipMode="ClipMode.EllipsisWithTooltip">
+                                <EditTemplate Context="PoorContext">
+                                    <SfTextBox Multiline=true ID="PoorRatingComments" @bind-Value="@((PoorContext as spEmployeeExitInterviewResult).PoorRatingComments)"
+                                               Placeholder="Enter Comment" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                </EditTemplate>
+                            </GridColumn>
+                        </GridColumns>
+                    </GridColumn>
+                    <GridColumn HeaderText="Fair">
+                        <GridColumns>
+                            <GridColumn Field=@nameof(spEmployeeExitInterviewResult.FairRating) HeaderText="Rate" AllowEditing=@IsEnabled EditType="EditType.BooleanEdit" Visible="true" Width="70" ClipMode="ClipMode.EllipsisWithTooltip"></GridColumn>
+                            <GridColumn Field=@nameof(spEmployeeExitInterviewResult.PoorRatingComments) HeaderText="Comments" AllowEditing=@IsEnabled Visible="true" Width="200" ClipMode="ClipMode.EllipsisWithTooltip">
+                                <EditTemplate Context="FairContext">
+                                    <SfTextBox Multiline=true ID="FairRatingComments" @bind-Value="@((FairContext as spEmployeeExitInterviewResult).FairRatingComments)"
+                                               Placeholder="Enter Comment" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                </EditTemplate>
+                            </GridColumn>
+                        </GridColumns>
+                    </GridColumn>
+                    <GridColumn HeaderText="Good">
+                        <GridColumns>
+                            <GridColumn Field=@nameof(spEmployeeExitInterviewResult.GoodRating) HeaderText="Rate" AllowEditing=@IsEnabled EditType="EditType.BooleanEdit" Visible="true" Width="70" ClipMode="ClipMode.EllipsisWithTooltip"></GridColumn>
+                            <GridColumn Field=@nameof(spEmployeeExitInterviewResult.GoodRatingComments) HeaderText="Comments" AllowEditing=@IsEnabled Visible="true" Width="200" ClipMode="ClipMode.EllipsisWithTooltip">
+                                <EditTemplate Context="GoodContext">
+                                    <SfTextBox Multiline=true ID="GoodRatingComments" @bind-Value="@((GoodContext as spEmployeeExitInterviewResult).GoodRatingComments)"
+                                               Placeholder="Enter Comment" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                </EditTemplate>
+                            </GridColumn>
+                        </GridColumns>
+                    </GridColumn>
+                    <GridColumn HeaderText="Very Good">
+                        <GridColumns>
+                            <GridColumn Field=@nameof(spEmployeeExitInterviewResult.VeryGoodRating) HeaderText="Rate" AllowEditing=@IsEnabled EditType="EditType.BooleanEdit" Visible="true" Width="70" ClipMode="ClipMode.EllipsisWithTooltip"></GridColumn>
+                            <GridColumn Field=@nameof(spEmployeeExitInterviewResult.VeryGoodRatingComments) HeaderText="Comments" AllowEditing=@IsEnabled Visible="true" Width="200" ClipMode="ClipMode.EllipsisWithTooltip">
+                                <EditTemplate Context="VeryGoodContext">
+                                    <SfTextBox Multiline=true ID="VeryGoodRatingComments" @bind-Value="@((VeryGoodContext as spEmployeeExitInterviewResult).VeryGoodRatingComments)"
+                                               Placeholder="Enter Comment" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                </EditTemplate>
+                            </GridColumn>
+                        </GridColumns>
+                    </GridColumn>
+                    <GridColumn HeaderText="Excellent">
+                        <GridColumns>
+                            <GridColumn Field=@nameof(spEmployeeExitInterviewResult.ExecellentRating) HeaderText="Rate" AllowEditing=@IsEnabled EditType="EditType.BooleanEdit" Visible="true" Width="70" ClipMode="ClipMode.EllipsisWithTooltip"></GridColumn>
+                            <GridColumn Field=@nameof(spEmployeeExitInterviewResult.ExecellentRatingComments) HeaderText="Comments" AllowEditing=@IsEnabled Visible="true" Width="200" ClipMode="ClipMode.EllipsisWithTooltip">
+                                <EditTemplate Context="ExecellentContext">
+                                    <SfTextBox Multiline=true ID="ExecellentRatingComments" @bind-Value="@((ExecellentContext as spEmployeeExitInterviewResult).ExecellentRatingComments)"
+                                               Placeholder="Enter Comment" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                </EditTemplate>
+                            </GridColumn>
+                        </GridColumns>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </div>
+       
+        <div class="form-group col-md-10">
+            <p>4.Were there any company policies or procedures that made your work more difficult? If any please elaborate<span style="color:red;">(*)</span></p>
+            <SfTextBox Type="InputType.Text" @bind-Value="@inputmodel.EmployeeExitInterviewHeader.CompanyPoliciesMadeWorkDifficult" CssClass="form-control"  Enabled=true FloatLabelType="FloatLabelType.Never"></SfTextBox>
+            <p> <ValidationMessage For="@(() => inputmodel.EmployeeExitInterviewHeader.CompanyPoliciesMadeWorkDifficult)" /></p>
+        </div>
+         <div class="form-group col-md-2">
+            <p style="margin-bottom:29px;">Yes/No<span style="color:red;">(*)</span></p>
+            <SfDropDownList @bind-Value="@(inputmodel.EmployeeExitInterviewHeader.CompanyPoliciesMadeWorkDifficultYesNoId)" Enabled="true" TItem="AYesNo" TValue="int?" DataSource="@YesNoData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                <DropDownListFieldSettings Value="@nameof(AYesNo.YesNoId)" Text="@nameof(AYesNo.YesNoDescription)"></DropDownListFieldSettings>
+            </SfDropDownList>
+            <p> <ValidationMessage For="@(() => inputmodel.EmployeeExitInterviewHeader.CompanyPoliciesMadeWorkDifficultYesNoId)" /></p>
+        </div>
+        <div class="form-group col-md-10">
+            <p>5.Would you recommend this company to a friend as a good place to work?<span style="color:red;">(*)</span></p>
+            <SfTextBox Type="InputType.Text" @bind-Value="@inputmodel.EmployeeExitInterviewHeader.RecommendThisCompanyToAFriend" CssClass="form-control" Enabled=true FloatLabelType="FloatLabelType.Never"></SfTextBox>
+            <p> <ValidationMessage For="@(() => inputmodel.EmployeeExitInterviewHeader.RecommendThisCompanyToAFriend)" /></p>
+        </div>
+        <div class="form-group col-md-2">
+            <p style="margin-bottom:29px;">Yes/No<span style="color:red;">(*)</span></p>
+            <SfDropDownList @bind-Value="@(inputmodel.EmployeeExitInterviewHeader.RecommendThisCompanyToAFriendYesNoid)" Enabled="true" TItem="AYesNo" TValue="int?" DataSource="@YesNoData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                <DropDownListFieldSettings Value="@nameof(AYesNo.YesNoId)" Text="@nameof(AYesNo.YesNoDescription)"></DropDownListFieldSettings>
+            </SfDropDownList>
+            <p> <ValidationMessage For="@(() => inputmodel.EmployeeExitInterviewHeader.RecommendThisCompanyToAFriendYesNoid)" /></p>
+        </div>
+        <div class="form-group col-md-12">
+            <p>6.What would you like to see changed that in your view would make the company a better place to be?<span style="color:red;">(*)</span></p>
+            <SfTextBox Type="InputType.Text" @bind-Value="@inputmodel.EmployeeExitInterviewHeader.ChangesToMakeCompanyABetterPlaceToBe" CssClass="form-control" Enabled=true FloatLabelType="FloatLabelType.Never"></SfTextBox>
+            <p> <ValidationMessage For="@(() => inputmodel.EmployeeExitInterviewHeader.ChangesToMakeCompanyABetterPlaceToBe)" /></p>
+        </div>
+    </EditForm>
+   </div>
+@code {
+    #region Toasters
+    public static string? ToastContent { get; set; }
+    SfToast? ToastObj;
+    SfToast? DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+        {
+            new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+            new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+            new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+            new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+        };
+    #endregion Toasters
+    bool IsEnabled { get; set; } = false;
+    SfGrid<spEmployeeExitInterviewResult>? spExitGrid;
+    private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    // EmployeeExitInterview inputmodel { get; set; } = new();
+    InterviewExitDTO inputmodel { get; set; }
+    //EmployeeExitInterview exitModel {get;set;}
+    //EmployeeExitRating ratingModel{ get; set; }
+
+    private SfGrid<EmployeeExitModel>? EmployeeExitGrid;
+    List<AYesNo>? YesNoData { get; set; }
+    SfSpinner? SavingSpinner;
+    string? RegisterError { get; set; }
+    string? RegisterSuccess { get; set; }
+    List<AExitRatingAspects>? ExitRatingAspectData { get; set; }
+    [Parameter]
+    public string? AccessToken { get; set; }
+    Query mainQuery { get; set; } = new();
+    public Query ChildQuery = new Query();
+    private static ViewEmployeeDisplinary? employeeno { get; set; }
+    List<ViewEmployeeDisplinary>? ViewEmployeeDisplinaryData { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            inputmodel = new();
+            inputmodel.EmployeeExitRatingHeader = new();
+            inputmodel.InterviewRatingDetails = new();
+            inputmodel.EmployeeExitInterviewHeader = new();
+            var tasks = new List<Task>();
+            tasks.Add(Task.Run(async () =>
+            {
+                //Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeExit/GetExitInterviewDataList");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    var _ExitModel = JsonSerializer.Deserialize<EmployeeExitPrimaryData>(content, _options);
+
+                    if (_ExitModel != null)
+                    {
+                        YesNoData = _ExitModel.YesNos;
+                        ViewEmployeeDisplinaryData = _ExitModel.viewExit;
+     
+                    }
+                }
+            }));
+            }
+        catch (Exception)
+        {
+            
+            throw;
+        }
+        await base.OnInitializedAsync();
+    }
+    public void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewEmployeeDisplinary> args)
+    {
+        employeeno = args.ItemData;
+    }
+    private async Task SaveProfile()
+    {
+        try
+        {
+            await SavingSpinner.ShowAsync();
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(inputmodel);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}NonStaff", httpContent);
+            if (result.IsSuccessStatusCode)
+            {
+                var content = await result.Content.ReadAsStringAsync();
+                var data = JsonSerializer.Deserialize<Response>(content, _options);
+                if (data != null)
+                {
+                    if (data.IsSuccess)
+                    {
+                        RegisterSuccess = $"Success: {data.Message}";
+                    }
+                    else
+                    {
+                        RegisterError = $"Error: {data.Message}";
+                    }
+                }
+            }
+            else
+            {
+                RegisterError = $"Error: {result.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            RegisterError = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            await SavingSpinner.HideAsync();
+        }
+    }
+    public class ExitInterviewAdapter : DataAdaptor
+    {
+        private readonly JsonSerializerOptions _options;
+        SystemSettings _SystemSettings;
+        private readonly IExitInterviewService _data;
+        HttpClient Http;
+        public ExitInterviewAdapter(SystemSettings systemSettings, IExitInterviewService data, HttpClient _http)
+        {
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            _SystemSettings = systemSettings;
+            this._data = data;
+            Http = _http;
+
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<EmployeeExitModel>();
+            try
+            {
+                data = (await _data.GetEmployeeExitList()).ToList();
+            }
+            catch (Exception ex)
+            {
+            }
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<EmployeeExitModel>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                var val = (value as EmployeeExitModel);
+                if (val != null)
+                {
+                    var result = await _data.AddEmployeeExitModel(val);
+                }
+            }
+            catch (Exception ex)
+            {
+                //toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                var val = (value as EmployeeExitModel);
+                if (val != null)
+                {
+                    var result = await _data.UpdateEmployeeExitModel(val);
+                }
+            }
+            catch (Exception ex)
+            {
+            }
+            return value;
+        }
+    }
+    public async Task OnExitInterviewActionBegin(ActionEventArgs<EmployeeExitModel> args)
+    {
+        try
+        {
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+                if (args.RowData.EmployeeExitRatingHeader == null)
+                {
+                    args.RowData.EmployeeExitRatingHeader = new();
+                    if (args.RowData.EmployeeExitRatingHeader == null)
+                    {
+                        args.RowData.EmployeeExitRatingHeader = new();
+                    }
+                }
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+            {
+                args.RowData.EmployeeExitInterviewHeader = new();
+                args.RowData.EmployeeExitRatingHeader = new();
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.BatchSave)
+            {
+                await ToastObj.Show(new ToastModel { Title = "Warning!", Content = "Before saing batch", CssClass = "e-toast-warning", Icon = "e-warning toast-icons" });
+            }
+
+        }
+        catch (Exception ex)
+        {
+            ToastObj?.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+    }
+    public async Task OnExitInterviewActionComplete(ActionEventArgs<EmployeeExitModel> args)
+    {
+        //await ToastObj.Show(new ToastModel { Title = "Warning!", Content = "Child Action Complete", CssClass = "e-toast-warning", Icon = "e-warning toast-icons" });
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            EmployeeExitGrid?.PreventRender(false);
+        }
+    }
+    private async Task OnExitInterviewBatchSave(BeforeBatchSaveArgs<EmployeeExitModel> args)
+    {
+        try
+        {
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.Show(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+    }
+    public async Task CellSelectHandler(CellSelectEventArgs<EmployeeExitModel> args)
+    {
+        //get selected cell index
+        var CellIndexes = await EmployeeExitGrid.GetSelectedRowCellIndexes();
+        //get the row and cell index
+        var CurrentEditRowIndex = CellIndexes[0].Item1;
+        var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+        //get the available fields
+        var fields = await EmployeeExitGrid.GetColumnFieldNames();
+        // edit the selected cell using the cell index and column name
+        await EmployeeExitGrid.EditCell(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+    }
+
+    private void OnDetailCellSave(CellSaveArgs<spEmployeeExitInterviewResult> args)
+    {
+        spExitGrid.EndEdit();
+    }
+    public async Task OnDetailCellSelectHandler(CellSelectEventArgs<spEmployeeExitInterviewResult> args)
+    {
+        //get selected cell index
+        var CellIndexes = await spExitGrid.GetSelectedRowCellIndexes();
+
+        //get the row and cell index
+        var CurrentEditRowIndex = CellIndexes[0].Item1;
+        var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+        //get the available fields
+        var fields = await spExitGrid.GetColumnFieldNames();
+        // edit the selected cell using the cell index and column name
+        await spExitGrid.EditCell(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+    }
+
+}

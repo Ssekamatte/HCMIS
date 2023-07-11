@@ -1,0 +1,147 @@
+﻿@*@page "/RegistrationPage"*@
+@using HCMIS.SHARED.DTOs;
+@using HCMIS.Interface;
+@using HCMIS.SHARED;
+@using HCMIS.SHARED.Models;
+@inject IAuthenticationService AccountService;
+@inject IToastService toastService;
+@inject IUtilityRepository PrimaryRepo;
+@inject NavigationManager NavManager;
+
+@*<h3>RegistrationPage</h3>*@
+<div class="row">
+    <div class="col-md-12">
+        @*<BreadcrumbPage CategoryName="Account" PageName="Registration" />*@
+    </div>
+    <div class="col-md-12">
+        <EditForm Model="@inputModel" class="row" style="margin-left:10%; margin-right:10%;" OnValidSubmit="@RegisterUser">
+            <div class="form-group col-md-6">
+                <p>Employee:<span style="color:red;">*</span></p>
+                @*<label class="label" style="float:left;">Employee<span style="color:red;">*</span></label>*@
+                <SfDropDownList @bind-Value="@(inputModel.Employeeid)" Enabled="true" TItem="ViewBscEmployeeDto" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                       <DropDownListFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></DropDownListFieldSettings>
+                       <DropDownListEvents TValue="int?" TItem="ViewBscEmployeeDto" ValueChange="OnEmployeeChange"></DropDownListEvents>
+                </SfDropDownList>
+            </div>
+            <div class="form-group col-md-6">
+                <p>Email:<span style="color:red;">*</span></p>
+                @*<label class="label" for="ConfirmPassword" style="float:left;">Email<span style="color:red;">*</span></label>*@
+                <input type="email" name="Email" id="Email"  @bind-value="@inputModel.Email" class="form-control" placeholder="Email" required>
+            </div>
+            <div class="form-group col-md-6">
+                <p>UserName:<span style="color:red;">*</span></p>
+                @*<label class="label" for="UserName" style="float:left;">User Name<span style="color:red;">*</span></label>*@
+                <input type="text" name="UserName" readonly id="UserName" @bind-value="@inputModel.Username" class="form-control" placeholder="User Name" required>
+            </div>
+            <div class="form-group col-md-6">
+                <p>User Role:<span style="color:red;">*</span></p>
+                @*<label class="label" for="UserRole" style="float:left;">User Role<span style="color:red;">*</span></label>*@
+                <SfDropDownList @bind-Value="inputModel.UserRole" TValue="string" TItem="AspNetRoles" Width="100%" DataSource="@UserRoleData" Placeholder="User Role" FloatLabelType="FloatLabelType.Never" AllowFiltering="true">
+                    <DropDownListFieldSettings Text="@(nameof(AspNetRoles.Name))" Value="@nameof(AspNetRoles.Name)"></DropDownListFieldSettings>
+                    @*<DropDownListEvents TItem="AspNetRoles" TValue="string" ValueChange="OnAspNetRoleChange"></DropDownListEvents>*@
+                </SfDropDownList>
+            </div>
+            <div class="form-group col-md-6">
+                <p>Password:<span style="color:red;">*</span></p>
+                @*<label class="label" for="Password" style="float:left;">Password<span style="color:red;">*</span></label>*@
+                <input type="password" @bind-value="@inputModel.Password" readonly class="form-control" placeholder="Password" required>
+            </div>
+            <div class="form-group col-md-6">
+                <p>Confirm Password:<span style="color:red;">*</span></p>
+                @*<label class="label" for="ConfirmPassword" style="float:left;">Confirm Password<span style="color:red;">*</span></label>*@
+                <input type="password" @bind-value="@inputModel.ConfirmPassword" readonly class="form-control" placeholder="Confirm Password" required>
+            </div>
+            <div class="form-group col-md-12">
+                <SfSpinner @ref=@RegSpinner Label="Registering the user please wait" Size="40" Visible=false></SfSpinner>
+            </div>
+            <div class="form-group col-md-6">
+            </div>
+            <div class="form-group col-md-6">
+                <button type="submit" class="form-control btn btn-primary rounded submit px-3" style="margin-top:10px;">Register User</button>
+            </div>
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+        </EditForm>
+    </div>
+</div>
+@code {
+    RegisterModel inputModel { get; set; } = new RegisterModel();
+    SfSpinner? RegSpinner;
+    List<ViewBscEmployeeDto>? EmployeeData { get; set; }
+    List<AspNetRoles>? UserRoleData { get; set; }
+    RegisterModel? model { get; set; } = new();
+
+    //private void OnContactChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, AContacts> args)
+    //{
+    //    if (args.ItemData != null)
+    //    {
+    //        inputModel.Email = args.ItemData.OfficialEmail;
+    //        inputModel.Username = args.ItemData.OfficialEmail;
+    //    }
+    //}
+
+    //OnAspNetRoleChange
+    private void OnAspNetRoleChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<string?, AspNetRoles> args)
+    {
+        if (args.ItemData != null)
+        {
+
+        }
+    }
+
+    public void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,ViewBscEmployeeDto> args)
+    {
+        if (args.ItemData != null)
+        {
+            inputModel.Email = args.ItemData.EmailAddress;
+            inputModel.Username = args.ItemData.EmailAddress;
+            
+        }
+    }
+
+    private async Task RegisterUser()
+    {
+        try
+        {
+            await RegSpinner.ShowAsync();
+            inputModel.url = NavManager.BaseUri;
+            var data = await AccountService.RegisterUser(inputModel);
+            if (data.IsSuccess == false)
+            {
+                toastService.ShowError(data.Message);
+            }
+            else
+            {
+                toastService.ShowSuccess(data.Message);
+                inputModel = new RegisterModel();
+                inputModel.Password = AccountService.RandomPassword();
+                inputModel.ConfirmPassword = inputModel.Password;
+                inputModel.url = NavManager.BaseUri;
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message);
+        }
+        finally
+        {
+            await RegSpinner.HideAsync();
+        }
+    }
+    
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        @*
+        
+        FacilityData = await PrimaryRepo.GetViewFacilities();
+        *@
+        inputModel.url = NavManager.BaseUri;
+        inputModel = new RegisterModel();
+        inputModel.Password = AccountService.RandomPassword();
+        inputModel.ConfirmPassword = inputModel.Password;
+        UserRoleData = await AccountService.GetUserRoles();
+        EmployeeData = await PrimaryRepo.GetEmployees();
+    }
+}

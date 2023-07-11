@@ -1,0 +1,1119 @@
+﻿@page "/EmployeeResponse"
+@using HCMIS.Data
+@using HCMIS.Model
+@using HCMIS.ViewModel
+@using System.Text.Json
+@using System.Text.RegularExpressions
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject SystemSettings _SystemSettings
+@inject DocumentUploadModel _DocumentUploadModel;
+@using System.Collections;
+<style>
+    .e-dialog {
+        max-height: 98%;
+        max-width: 100%;
+        min-width: 90%;
+        position: absolute;
+    }
+
+    .test {
+        .alert alert-primary;
+        line-height: 100px;
+    }
+</style>
+@{
+    var Template = (new string[] { "EmployeeDetails" });
+}
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="width: 100%; color: darkblue; font-family: Cambria; padding: 5px; font: bolder;"><img src="/Image/logonhcc.png" height="35" width="50" /> <stong>|Employee Response</stong></li>
+</ol>
+<SfGrid @ref="EmployeeDisplinaryGrid" TValue="DisplinaryModel"
+        Toolbar="@(new string[] {"Edit","Delete","Update","Cancel","ColumnChooser", "Search"})" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+        AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true">
+          <SfDataManager AdaptorInstance="@typeof(DisplinaryResponseAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <GridGroupSettings ShowGroupedColumn="false" ShowUngroupButton="false" ShowToggleButton="false" Columns=@Template>
+                 <CaptionTemplate>
+                @{
+                    var employee = (context as CaptionTemplateContext);
+                if (employee!=null)
+                {
+                     <div>@employee.Field : @employee.Key - @employee.Count Disciplinary Incidences</div>
+                }
+                }
+               </CaptionTemplate>
+            </GridGroupSettings>
+    <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+    <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+    <GridEvents OnActionBegin="OnResponseActionBegin" OnActionComplete="@OnResponseActionComplete" TValue="DisplinaryModel"></GridEvents>
+    <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="@DialogParams">
+       @*      <HeaderTemplate>
+                    @{
+                var text = GetResponseHeader((context as DisplinaryModel).EmployeeDisplinaryHeader);
+                        <div class="headerbandimg" />
+
+                        <span>@text</span>
+                    }
+                </HeaderTemplate>*@
+                  <Template Context="ResponseContext">
+                  @{
+                HeaderReviewData = (ResponseContext as DisplinaryModel);
+                EmployeeDisplinaryData = (ResponseContext as DisplinaryModel).EmployeeDisplinaryHeader;
+                @if (EmployeeDisplinaryData != null)
+                {
+                      <div class="row">
+                          <div class="form-row">
+                          <div class="row">
+                          <div class="col-md-12">
+                          <center><strong><p class="alert alert-primary"> DISCIPLINARY FORM</p></strong>  </center>
+                           </div>       
+                          </div>
+                          </div>
+                          <br>
+                              <div class="col-md-6">
+                                    <div class="row">
+                                    <div class="col-md-8">
+                                    <strong> <p>Employee Name:<span style="color:red;">(*)</span></p> </strong>
+                                        <SfDropDownList @bind-Value="@(EmployeeDisplinaryData.EmployeeId)" Enabled="false" TItem="ViewEmployeeDisplinary" TValue="int?" DataSource="@ViewEmployeeDisplinaryData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                         <DropDownListFieldSettings Value="@nameof(ViewEmployeeDisplinary.Employeeid)" Text="@nameof(ViewEmployeeDisplinary.EmployeeDetails)"></DropDownListFieldSettings>
+                                         <DropDownListEvents TValue="int?" TItem="ViewEmployeeDisplinary" ValueChange="OnEmployeeChange"></DropDownListEvents>
+                                        </SfDropDownList>
+                                        <p> <ValidationMessage For="@(() => EmployeeDisplinaryData.EmployeeId)" /></p>
+                                    </div>
+                                @if (employeeno != null)
+                                {
+                                        <div class="col-md-4">
+                                        <strong><p>Employee Number:</p> </strong><br>
+                                        @employeeno.EmployeeNumber
+                                        </div>
+
+                                          <div class="col-md-3">
+                                          <strong><p>Designation:</p> </strong><br>
+                                        </div>
+                                        <div class="col-md-3"> 
+                                        @employeeno.JobTitleDescription
+                                        </div>
+                                         <div class="col-md-3">
+                                          <strong><p>Duration at NHCC:</p> </strong><br>
+                                        </div>
+                                        <div class="col-md-3"> 
+                                        @employeeno.DurationatWork
+                                        </div>
+                                        <br />
+                                        <div class="col-md-3">
+                                         <strong><p> Department:</p> </strong><br>
+                                        </div>
+                                        <div class="col-md-3">
+                                        @employeeno.DepartmentDescription
+                                         </div>
+                                        <div class="col-md-3">
+                                         <strong><p> Date Joined:</p> </strong><br>
+                                        </div>
+                                        <div class="col-md-3">
+                                        @if (employeeno.DateJoined.HasValue)
+                                        {
+                                            @employeeno.DateJoined.Value.ToString("dd/MM/yyyy")
+                                            ;
+                                        }     
+                                        </div>
+                                }
+                                    </div>
+                                    </div>
+                                 <div class="col-md-6">
+                                     <div class="row">
+                                @if (EmployeeDisplinaryData.EmployeeId != null)
+                                {
+                                  <PreviousCasesPage EmployeeId="@EmployeeDisplinaryData.EmployeeId.Value" AccessToken="@_SystemSettings.AccessToken" DisplinaryReasonData="@DisplinaryReasonData" />
+                                }
+
+                                      </div>
+                                 </div>
+                          @*Suuususus*@
+                               <div class="col-md-12">
+                            @*From here*@
+                                       <SfTab @ref="Tab" CssClass="BlazorTab" Height="auto" LoadOn="ContentLoad.Demand">
+                                       <TabItems>
+                                        <TabItem>
+                                                <ChildContent>
+                                                    <TabHeader Text="Displinary Information"></TabHeader>
+                                                </ChildContent>
+                                                    <ContentTemplate>
+                                                    <div style="margin:10px;">
+                                                     <div class="form-row">
+                                                      <div class="col-md-12" hidden>
+                                                      <SfNumericTextBox @bind-Value="@(EmployeeDisplinaryData.DisplinaryId)" Enabled="false" Placeholder="DisplinaryId" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                                                     </div>
+                                                 <div class="row">
+                                                          <div class="form-group col-md-6">
+                                                            <strong>  <p class="alert alert-primary">OFFICIAL USE</p> </strong>
+                                                              <div class="row">
+                                                                <div class="form-group col-md-4">
+                                                                    <p>Incident Ref-Number:<span style="color:red;">(*)</span></p>
+                                                                  <SfTextBox Multiline="false" @bind-Value="@(EmployeeDisplinaryData.EmployeeDisplinaryNumber)" Enabled="false"  FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                                 </div>
+                                                                   <div class="form-group col-md-4">
+                                                                  <p>Officer's Name:<span style="color:red;">(*)</span></p>
+                                                                  <SfTextBox Multiline="false" @bind-Value="@(EmployeeDisplinaryData.DisplinedBy)" Enabled="false"  FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                                </div>
+                                                                  <div class="form-group col-md-4">
+                                                                    <p>Officer's Designation:<span style="color:red;">(*)</span></p>
+                                                                  <SfTextBox Multiline="false" @bind-Value="@(EmployeeDisplinaryData.OfficersDesignation)" Enabled="false"  FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                                 </div>
+                                                              </div>
+                                                           <div class="row">
+                                                              <div class="form-group col-md-12">
+                                                                  <p>Offence / Nature of complaint<span style="color:red;">(*)</span></p>
+                                                                    <SfDropDownList @bind-Value="@(EmployeeDisplinaryData.DisplinaryReasonId)" Enabled="false" TItem="ADisplinaryReason" TValue="int?" DataSource="@DisplinaryReasonData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                                     <DropDownListFieldSettings Value="@nameof(ADisplinaryReason.DisplinaryReasonId)" Text="@nameof(ADisplinaryReason.DisplinaryReasonDescription)"></DropDownListFieldSettings>
+                                                                    </SfDropDownList>
+                                                                    <p><ValidationMessage For="@(() => EmployeeDisplinaryData.DisplinaryReasonId)" /></p>
+                                                               </div>
+                                                                 <div class="form-group col-md-12">
+                                                                  <label>Offence  Details<span style="color:red;">(*)</span></label>
+                                                                    <SfTextBox Multiline="true" @bind-Value="@(EmployeeDisplinaryData.DisplinaryReason)" Enabled="false" Placeholder="Displinary  Details" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                               </div>
+                                                               <div class="form-group col-md-4">
+                                                                <p>Date of Incident <span style="color:red;">(*)</span></p>
+                                                                   <SfDatePicker @bind-Value="@(EmployeeDisplinaryData.DisplinaryDate)" Placeholder="Select Date" Enabled="false" Format="dd/MM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                                                                  <p> <ValidationMessage For="@(() => EmployeeDisplinaryData.DisplinaryDate)" /></p>
+                                                               </div>
+                                                                <div class="form-group col-md-4">
+                                                                   <p>Previous Warnings <span style="color:red;">(*)</span></p>
+                                                                    <SfDropDownList @bind-Value="@(EmployeeDisplinaryData.DisplinaryWarningId)" Enabled="false" TItem="ADisplinaryWarning" TValue="int?" DataSource="@DisplinaryWarningData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                                      <DropDownListFieldSettings Value="@nameof(ADisplinaryWarning.DisplinaryWarningId)" Text="@nameof(ADisplinaryWarning.WarningDescription)"></DropDownListFieldSettings>
+                                                                    </SfDropDownList>
+                                                                    <p><ValidationMessage For="@(() => EmployeeDisplinaryData.DisplinaryWarningId)" /></p>
+                                                               </div>
+                                                                  <div class="form-group col-md-4"> 
+                                                               <p>Category of Offence<span style="color:red;">(*)</span></p>
+                                                                  <SfDropDownList @bind-Value="@(EmployeeDisplinaryData.DisplinaryCategoryId)" Enabled="false" TItem="ADisplinaryCategory" TValue="int?" DataSource="@DisplinaryCategoryData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                                        <DropDownListFieldSettings Value="@nameof(ADisplinaryCategory.DisplinaryCategoryId)" Text="@nameof(ADisplinaryCategory.DisplinaryCategoryDescription)"></DropDownListFieldSettings>
+                                                                        </SfDropDownList>
+                                                                     <p><ValidationMessage For="@(() => EmployeeDisplinaryData.DisplinaryCategoryId)" /></p>
+                                                               </div>
+                                                           </div>
+                                                            @*1st From here*@
+                                                          <div class="row">
+                                                                <div class="form-group col-md-6">  
+                                                                   <SfCheckBox Label="Is Visible" @bind-Checked="@EmployeeDisplinaryData.IsVisible"></SfCheckBox>
+                                                                </div>
+                                                                   <div class="form-group col-md-6">  
+                                                                   <SfCheckBox Label="Case Investigated" @bind-Checked="@EmployeeDisplinaryData.CaseInvestigated"></SfCheckBox>
+                                                                </div>
+                                                                <br><br>
+                                                                @*2nd From here*@
+                                                             <div class="form-group col-md-12">
+                                                                        <SfDialog @ref="AppealDialog" Target=".main" Width="80%" Visible="false" ShowCloseIcon="true" AllowPrerender="true" IsModal="true">
+                                                                            <DialogTemplates>
+                                                                                <Header>Appeal Disciplinary Committee Decision</Header>
+                                                                                <Content>
+                                                                                @if (DisplinaryAppealViewData != null)
+                                                                                {
+                                                                                  <div> 
+                                                                                    <p>Write Appeal </p>
+                                                                                   <SfTextBox Multiline="true" @bind-Value="@(DisplinaryAppealViewData.AppealDescription)" Enabled="true" Placeholder="Enter Appeal" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                                                   </div>
+                                                                                }
+                                                                                </Content>
+                                                                                <FooterTemplate>
+                                                                                    <SfButton CssClass="e-primary" @onclick="@ReferedToBoard">Send Appeal</SfButton>
+                                                                                    <SfButton CssClass="e-danger" @onclick="CancelAppeal">Cancel Appeal</SfButton>
+                                                                                </FooterTemplate>
+                                                                            </DialogTemplates>
+                                                                        </SfDialog>
+                                                                    </div>
+                                                           </div>
+                                                          
+                                                                     @if ( EmployeeDisplinaryData.DisplinaryReasonId != null && EmployeeDisplinaryData.CaseStatusId == null)
+                                                                    {
+                                                                        <div class="form-group col-md-12">
+                                                                            <SfUploader AutoUpload="true" ShowFileList="false">
+                                                                                <UploaderEvents ValueChange="OnReasonChange"></UploaderEvents>
+                                                                            </SfUploader>
+                                                                            <SfSpinner @ref="@UploadReasonSpinner" Visible="false" Label="UpLoading document please wait.."></SfSpinner>
+                                                                        </div>
+                                                                    }
+                                                                    <div class="form-group col-md-12">
+                                                                        @if (!string.IsNullOrEmpty(ReasonDocumentString))
+                                                                        {
+                                                                            if (!string.IsNullOrEmpty(EmployeeDisplinaryData.OfficialDocumentExt)  &&  !string.IsNullOrEmpty(EmployeeDisplinaryData.OfficialDocumentName) &&  EmployeeDisplinaryData.OfficialDocumentName.ToLower().Contains("pdf"))
+                                                                            {
+                                                                                <embed src="@ReasonDocumentString" width="100%" height="600px" style="border: none;" frameborder="0" allowfullscreen="true" />
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                <img src="@ReasonDocumentString" class="img-thumbnail" height="500" width="100%" style="margin-bottom:10px; margin:10%; margin-right:auto;" />
+                                                                            }
+                                                                        }
+                                                                    </div>
+                                                       </div>
+                                                        @*Employee Here*@
+                                                   <div class="form-group col-md-6">
+                                                            <strong>  <p class="alert alert-primary">EMPLOYEE RESPONSE</p> </strong>
+                                                                <div class="form-group col-md-12">
+                                                                  <label>Employee Statement<span style="color:red;">(*)</span></label>
+                                                                <SfTextBox Multiline="true" @bind-Value="@(EmployeeDisplinaryData.EmployeeResponse)" Enabled="true"  FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                               </div>
+                                                            @if (EmployeeDisplinaryData.DisplinaryReasonId != null)
+                                                            {
+                                                                <div class="form-group col-md-12">
+                                                                    <SfUploader AutoUpload="true" ShowFileList="false">
+                                                                        <UploaderEvents ValueChange="OnResponseChange"></UploaderEvents>
+                                                                    </SfUploader>
+                                                                    <SfSpinner @ref="@UploadReasonSpinner" Visible="false" Label="UpLoading document please wait.."></SfSpinner>
+                                                                </div>
+                                                            }
+                                                            <div class="form-group col-md-12">
+                                                                @if (!string.IsNullOrEmpty(ResponseDocumentString))
+                                                                {
+                                                                    if (!string.IsNullOrEmpty(EmployeeDisplinaryData.EmployeeDocumentExt) && !string.IsNullOrEmpty(EmployeeDisplinaryData.EmployeeDocumentName) && EmployeeDisplinaryData.EmployeeDocumentName.ToLower().Contains("pdf"))
+                                                                    {
+                                                                        <embed src="@ResponseDocumentString" width="100%" height="600px" style="border: none;" frameborder="0" allowfullscreen="true" />
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <img src="@ResponseDocumentString" class="img-thumbnail" height="500" width="100%" style="margin-bottom:10px; margin:10%; margin-right:auto;" />
+                                                                    }
+                                                                }
+                                                            </div>
+                                                       </div>
+                                                      </div>
+                                                     </div>
+                                                    </div>
+                                                    </ContentTemplate>
+                                         </TabItem>
+                                    @if (EmployeeDisplinaryData.CaseStatusId == 5)
+                                         {
+                                                <TabItem>
+                                                        <ChildContent>
+                                                            <TabHeader Text="Action Information"></TabHeader>
+                                                        </ChildContent>
+                                                        <ContentTemplate>
+                                                     <div style="margin:10px;">
+                                                     <div class="form-row">
+                                                             <div class="form-group col-md-12">
+                                                                 <p>Action Taken<span style="color:red;">(*)</span></p>
+                                                                    <SfDropDownList @bind-Value="@(EmployeeDisplinaryData.DisplinaryActionId)" Enabled="false" TItem="ADisplinaryAction" TValue="int?" DataSource="@DisplinaryData" Placeholder="Please select Disciplinary action" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                                    <DropDownListFieldSettings Value="@nameof(ADisplinaryAction.DisplinaryActionId)" Text="@nameof(ADisplinaryAction.DisplinaryActionDescription)"></DropDownListFieldSettings>
+                                                                    </SfDropDownList>
+                                                                    <p><ValidationMessage For="@(() => EmployeeDisplinaryData.DisplinaryActionId)" /></p>
+                                                              </div>
+                                                               <div class="form-group col-md-12">
+                                                                   <p>Displinary Action Details:<span style="color:red;">(*)</span></p>
+                                                                  <SfTextBox Multiline="false" @bind-Value="@(EmployeeDisplinaryData.DisplinaryActionDetails)" Enabled="false"  FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                               </div>
+                                                     </div>
+                                                     </div>
+                                                        </ContentTemplate>
+                                                    </TabItem>
+
+                                         }
+                                                 
+
+                                       </TabItems>
+                                     </SfTab>
+                                   </div>
+                             </div>
+                }
+                      }
+
+                  </Template>
+                       <FooterTemplate Context="Responsefootercontext">
+                         <div>
+                              <SfButton @onclick="@SaveCase" CssClass="e-success">Save</SfButton>
+                          
+                        @if (EmployeeDisplinaryData != null)
+                        {
+                            if (!string.IsNullOrEmpty(EmployeeDisplinaryData.EmployeeResponse) && EmployeeDisplinaryData.CaseStatusId != 5)
+                            {
+                           <SfButton @onclick="SubmitResponse"  CssClass="e-success">Submit Response</SfButton>
+                            }
+                            if (EmployeeDisplinaryData.CaseStatusId == 5)
+                            {
+                                <SfButton @onclick="AppealCase" CssClass="e-danger">Appeal Decision</SfButton>
+                            }
+                        }
+                               <SfButton  CssClass="e-success">Cancel</SfButton>
+                          </div>
+                      </FooterTemplate>
+    </GridEditSettings>
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+              <GridPageSettings PageSize="20"></GridPageSettings>
+            <GridColumns>
+              <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn>
+        <GridColumn Field=@nameof(DisplinaryModel.EmployeeDisplinaryId) HeaderText="EmployeeDisplinaryId" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+              <GridColumn HeaderText="EMPLOYEE NAME" Width="100">
+                <Template>
+                @{
+                    var data = (context as DisplinaryModel);
+                    string displayvalue = string.Empty;
+                    if (data != null)
+                    {
+                        var _data = data.EmployeeDisplinaryHeader;
+                        if (_data != null)
+                        {
+                            if (ViewEmployeeDisplinaryData != null)
+                            {
+                                var Ename = ViewEmployeeDisplinaryData.FirstOrDefault(o => o.Employeeid == _data.EmployeeId);
+                                if (Ename != null)
+                                {
+                                    displayvalue = Ename.EmployeeDetails;
+                                }
+                            }
+                        }
+                    }
+                    <p>@displayvalue</p>
+                }
+            </Template>
+             </GridColumn>
+             <GridColumn HeaderText="DISCIPLINARY INCIDENCE" Width="100">
+            <Template>
+                @{
+                    var data = (context as DisplinaryModel);
+                    string displayvalue = string.Empty;
+                    if (data != null)
+                    {
+                        var _data = data.EmployeeDisplinaryHeader;
+                        if (_data != null)
+                        {
+                            if (DisplinaryReasonData != null)
+                            {
+                                var Ename = DisplinaryReasonData.FirstOrDefault(o => o.DisplinaryReasonId == _data.DisplinaryReasonId);
+                                if (Ename != null)
+                                {
+                                    displayvalue = Ename.DisplinaryReasonDescription;
+                                }
+                            }
+                        }
+                    }
+                    <p>@displayvalue</p>
+                }
+            </Template>
+        </GridColumn>
+             <GridColumn HeaderText="INCIDENT DATE" Width="100">
+               <Template>
+                    @{
+                        var data = (context as DisplinaryModel);
+                        DateTime displayvalue = DateTime.MinValue;
+                        if (data != null)
+                        {
+                            var _data = data.EmployeeDisplinaryHeader;
+                            if (_data != null)
+                            {
+                                displayvalue = _data.DisplinaryDate.Value;
+                            }
+                        }
+                        <p>@displayvalue</p>
+                    }
+                </Template>
+        </GridColumn>
+            </GridColumns>
+    </SfGrid>
+@code {
+    #region Toasters
+    public static string? ToastContent { get; set; }
+    SfToast? ToastObj;
+    SfToast? DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+        {
+            new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+            new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+            new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+            new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+        };
+    #endregion Toasters
+  //   private ADisplinaryAppeal? DisplinaryAppealViewData { get; set; } = new();
+    #region Declarations
+   private DisplinaryModel? HeaderReviewData;
+    public int EmployeeId { get; set; }
+    //[Parameter]
+    //public List<EmployeeDisplinary>? PreviousCasesData  { get; set; }
+    public List<EmployeeDisplinary>? PreviousCasesData { get; set; }
+    //  public List<ADisplinaryReason>? PreviousDisplinaryIncidences {}
+    SfTab? Tab;
+    SfDialog? ReferedDialog;
+    SfDialog? AppealDialog;
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "60%" };
+    private ADisplinaryRefered? DisplinaryReferedViewData { get; set; } = new();
+    private ADisplinaryAppeal? DisplinaryAppealViewData { get; set; } = new();
+    private EmployeeDisplinary? EmployeeDisplinaryData { get; set; }
+    Query mainQuery { get; set; } = new();
+    private static ViewEmployeeDisplinary? employeeno { get; set; }
+    private SfGrid<DisplinaryModel>? EmployeeDisplinaryGrid;
+    List<ViewEmployeeDisplinary>? ViewEmployeeDisplinaryData { get; set; }
+    List<ADisplinaryAction>? DisplinaryData { get; set; }
+    List<ADepartment>? DepartmentData { get; set; }
+    List<ADisplinaryReason>? DisplinaryReasonData { get; set; }
+    List<ADisplinaryCategory>? DisplinaryCategoryData { get; set; }
+    List<ADisplinaryWarning>? DisplinaryWarningData { get; set; }
+    public Query ChildQuery = new Query();
+    public string? AccessToken { get; set; }
+    string? RegisterError { get; set; }
+    string? RegisterSuccess { get; set; }
+    EmployeeDisplinaryModel inputmodel { get; set; } = new EmployeeDisplinaryModel();
+    private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    SfSpinner? UploadReasonSpinner;
+    string? ReasonDocumentString { get; set; } = null;
+    SfSpinner? UploadResponseSpinner;
+    string? ResponseDocumentString { get; set; } = null;
+    SfDialog? ComfirmationDialog;
+    string ComfirmationString { get; set; } = null;
+    SfSpinner? SavingSpinner = new();
+    #endregion Declarations
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        try
+        {
+            await _SystemSettings.GetLoginCredentials();
+            //  mainQuery = new();
+            ChildQuery = new();
+            //    mainQuery.AddParams("AccessToken", _SystemSettings.AccessToken).AddParams("BaseUrl",_ApiConfig.BaseUrl);
+            ChildQuery.AddParams("AccessToken", _SystemSettings.AccessToken).AddParams("BaseUrl", _ApiConfig.BaseUrl);
+
+            inputmodel = new();
+            // inputmodel.EmpDisplinary = new();
+            var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeDisplinary/GetEmployeeDisplinaryDataList");
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode)
+            {
+                var _EmployeeDisplinaryModel = JsonSerializer.Deserialize<EmployeeDisplinaryModel>(content, _options);
+
+                if (_EmployeeDisplinaryModel != null)
+                {
+                    ViewEmployeeDisplinaryData = _EmployeeDisplinaryModel.ViewEmployeeDisplinaryDetails;
+                    DisplinaryData = _EmployeeDisplinaryModel.DisplinaryAction;
+                    //DepartmentData = _EmployeeDisplinaryModel.Departments;
+                    DisplinaryReasonData = _EmployeeDisplinaryModel.DisplinaryReason;
+                    DisplinaryCategoryData = _EmployeeDisplinaryModel.DisplinaryCategories;
+                    DisplinaryWarningData = _EmployeeDisplinaryModel.DisplinaryWarnings;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            RegisterError = $"Error: {ex.Message}";
+        }
+    }
+    #region DisplinaryAdapater
+    public class DisplinaryResponseAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        public IToastService toastService;
+        SystemSettings _SystemSettings;
+        ApiConfig _ApiConfig;
+        public DisplinaryResponseAdapter(HttpClient _http, IToastService ts, SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            _SystemSettings = systemSettings;
+            _ApiConfig = apiConfig;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<DisplinaryModel>();
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                HttpResponseMessage response;
+                if (!string.IsNullOrEmpty(_SystemSettings.UserRole) && _SystemSettings.UserRole.Contains("Administrator"))
+                {
+                    response = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeDisplinary/GetDisplinaryCasesSubmittedForEmployeeResponseList");
+                }
+                else
+                {
+                    response = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeDisplinary/GetEmployeeDisplinaryCases/{_SystemSettings.StaffId}");
+                }
+                var content = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    toastService.ShowError(response.ReasonPhrase);
+                }
+                data = JsonSerializer.Deserialize<List<DisplinaryModel>>(content, _options);
+
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<DisplinaryModel>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                var val = (value as DisplinaryModel);
+
+                await _SystemSettings.GetLoginCredentials();
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeDisplinary/SaveDisciplinaryRecord", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    toastService.ShowSuccess("Response was sucessfully submitted");
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                var val = (value as DisplinaryModel);
+                await _SystemSettings.GetLoginCredentials();
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeDisplinary/SaveDisciplinaryRecord", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    toastService.ShowSuccess("Response  was sucessfully submitted");
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+    }
+    public void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewEmployeeDisplinary> args)
+    {
+        employeeno = args.ItemData;
+    }
+    private async void OnReasonChange(UploadChangeEventArgs args)
+    {
+
+        try
+        {
+            await UploadReasonSpinner.ShowAsync();
+            foreach (var file in args.Files)
+            {
+                if (file.FileInfo.Size <= 5242880)
+                {
+                    file.Stream.Position = 0;
+                    if (file.FileInfo.Type.ToLower().Contains("pdf") || file.FileInfo.Type.ToLower().Contains("doc"))
+                    {
+                        string fileName = string.Empty;
+                        if (file.FileInfo.Type.Trim().Contains("doc"))
+                        {
+                            var ttt = employeeno;
+                            var a = DisplinaryReasonData.FirstOrDefault(o => o.DisplinaryReasonId == EmployeeDisplinaryData.DisplinaryReasonId);
+                            ///    fileName = a.DisplinaryReasonDescription + "_" + DateTime.Now + ".pdf";
+                            fileName = ttt.EmployeeDetails + "_" + "DisplinaryCase" + "_" + DateTime.Now.ToString("dd_MM_yyyy") + ".pdf";
+                            //fileName = "DisplinaryCase" + "_" + DateTime.Now + ".pdf";
+                            //Create a new document
+                            Syncfusion.DocIO.DLS.WordDocument document;
+                            if (file.FileInfo.Type.Contains("doc") && !file.FileInfo.Type.Contains("docx"))
+                            {
+                                document = new Syncfusion.DocIO.DLS.WordDocument(file.Stream, Syncfusion.DocIO.FormatType.Doc);
+                            }
+                            else
+                            {
+                                document = new Syncfusion.DocIO.DLS.WordDocument(file.Stream, Syncfusion.DocIO.FormatType.Docx);
+                            }
+                            //Creates an instance of the DocToPDFConverter
+                            DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
+                            PdfDocument pdfDocument = render.ConvertToPDF(document);
+                            MemoryStream _ms = new MemoryStream();
+                            pdfDocument.Save(_ms);
+                            _ms.Position = 0;
+                            byte[] bytes = file.Stream.ToArray();
+                            string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                            ImageUpload m = new ImageUpload()
+                                {
+                                    ImageName = fileName,
+                                    ImageExt = file.FileInfo.Type.Trim(),
+                                    Imagebyte = bytes,
+                                    Rootfolder = "DisplinaryCaseProof"
+                                };
+                            var Requestresult = await _DocumentUploadModel.SaveDocument(m, AccessToken);
+                            if (Requestresult != null && Requestresult.IsSuccess)
+                            {
+                                var result = "data:application/pdf;base64," + base64;
+                                EmployeeDisplinaryData.OfficialDocumentName = fileName;
+                                EmployeeDisplinaryData.OfficialDocumentExt = "pdf";
+                                ReasonDocumentString = result;
+                                bytes = null;
+                                _ms.Close();
+                                _ms.Dispose();
+                                pdfDocument.Close();
+                                pdfDocument.Dispose();
+                                render.Dispose();
+                                document.Close();
+                                document.Dispose();
+                            }
+                            else if (Requestresult != null)
+                            {
+                                await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                            }
+                        }
+                        else
+                        {
+                            var ttt = employeeno;
+                            var a = DisplinaryReasonData.FirstOrDefault(o => o.DisplinaryReasonId == EmployeeDisplinaryData.DisplinaryReasonId);
+                            // fileName = a.DisplinaryReasonDescription + "_" + DateTime.Now + ".pdf";
+                            fileName = ttt.EmployeeDetails + "_" + "DisplinaryCase" + "_" + DateTime.Now.ToString("dd_MM_yyyy") + ".pdf";
+                            MemoryStream ms = new MemoryStream();
+                            file.Stream.WriteTo(ms);
+                            ms.Position = 0;
+                            byte[] bytes = file.Stream.ToArray();
+                            string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                            ImageUpload m = new ImageUpload()
+                                {
+                                    ImageName = fileName,
+                                    ImageExt = file.FileInfo.Type.Trim(),
+                                    Imagebyte = bytes,
+                                    Rootfolder = "DisplinaryCaseProof"
+                                };
+                            var Requestresult = await _DocumentUploadModel.SaveDocument(m, AccessToken);
+                            if (Requestresult != null && Requestresult.IsSuccess)
+                            {
+                                var result = "data:application/pdf;base64," + base64;
+                                EmployeeDisplinaryData.OfficialDocumentName = fileName;
+                                EmployeeDisplinaryData.OfficialDocumentExt = "pdf";
+                                ReasonDocumentString = result;
+                                bytes = null;
+                            }
+                            else if (Requestresult != null)
+                            {
+                                await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                            }
+                        }
+                    }
+                    else if (file.FileInfo.Type.ToLower().Contains("png") || file.FileInfo.Type.ToLower().Contains("gif") || file.FileInfo.Type.ToLower().Contains("jpeg"))
+                    {
+
+                        var ttt = employeeno;
+                        var a = DisplinaryReasonData.FirstOrDefault(o => o.DisplinaryReasonId == EmployeeDisplinaryData.DisplinaryReasonId);
+                        //  string fileName = a.DisplinaryReasonDescription + "_" + DateTime.Now + ".pdf";
+                        string fileName = ttt.EmployeeDetails + "_" + "DisplinaryCase" + "_" + DateTime.Now.ToString("dd_MM_yyyy") + ".pdf";
+                        byte[] bytes = file.Stream.ToArray();
+                        string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+
+                        ImageUpload m = new ImageUpload()
+                            {
+                                ImageName = fileName,
+                                ImageExt = file.FileInfo.Type.Trim(),
+                                Imagebyte = bytes,
+                                Rootfolder = "DisplinaryCaseProof"
+                            };
+                        var Requestresult = await _DocumentUploadModel.SaveDocument(m, AccessToken);
+                        if (Requestresult != null && Requestresult.IsSuccess)
+                        {
+                            var result = "data:image/" + file.FileInfo.Type.Trim() + ";base64," + base64;
+                            EmployeeDisplinaryData.OfficialDocumentName = fileName;
+                            EmployeeDisplinaryData.OfficialDocumentExt = file.FileInfo.Type.Trim();
+                            ReasonDocumentString = result;
+                            bytes = null;
+                        }
+                        else if (Requestresult != null)
+                        {
+                            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                        }
+                    }
+                    else
+                    {
+                        await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = "Please ensure that the uploaded document is either a pdf or doc or docx.", CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        finally
+        {
+            await UploadReasonSpinner.HideAsync();
+            StateHasChanged();
+        }
+
+    }
+ 
+    private async void OnResponseChange(UploadChangeEventArgs args)
+    {
+
+        try
+        {
+            await UploadReasonSpinner.ShowAsync();
+            foreach (var file in args.Files)
+            {
+                if (file.FileInfo.Size <= 5242880)
+                {
+                    file.Stream.Position = 0;
+                    if (file.FileInfo.Type.ToLower().Contains("pdf") || file.FileInfo.Type.ToLower().Contains("doc"))
+                    {
+                        string fileName = string.Empty;
+                        if (file.FileInfo.Type.Trim().Contains("doc"))
+                        {
+                            var ttt = employeeno;
+                            var a = DisplinaryReasonData.FirstOrDefault(o => o.DisplinaryReasonId == EmployeeDisplinaryData.DisplinaryReasonId);
+                            ///    fileName = a.DisplinaryReasonDescription + "_" + DateTime.Now + ".pdf";
+                            fileName = ttt.EmployeeDetails + "_" + "DisciplinaryStatement" + "_" + DateTime.Now.ToString("dd_MM_yyyy") + ".pdf";
+                            //fileName = "DisplinaryCase" + "_" + DateTime.Now + ".pdf";
+                            //Create a new document
+                            Syncfusion.DocIO.DLS.WordDocument document;
+                            if (file.FileInfo.Type.Contains("doc") && !file.FileInfo.Type.Contains("docx"))
+                            {
+                                document = new Syncfusion.DocIO.DLS.WordDocument(file.Stream, Syncfusion.DocIO.FormatType.Doc);
+                            }
+                            else
+                            {
+                                document = new Syncfusion.DocIO.DLS.WordDocument(file.Stream, Syncfusion.DocIO.FormatType.Docx);
+                            }
+                            //Creates an instance of the DocToPDFConverter
+                            DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
+                            PdfDocument pdfDocument = render.ConvertToPDF(document);
+                            MemoryStream _ms = new MemoryStream();
+                            pdfDocument.Save(_ms);
+                            _ms.Position = 0;
+                            byte[] bytes = file.Stream.ToArray();
+                            string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                            ImageUpload m = new ImageUpload()
+                                {
+                                    ImageName = fileName,
+                                    ImageExt = file.FileInfo.Type.Trim(),
+                                    Imagebyte = bytes,
+                                    Rootfolder = "ResponseToDisplinaryCase"
+                                };
+                            var Requestresult = await _DocumentUploadModel.SaveDocument(m, AccessToken);
+                            if (Requestresult != null && Requestresult.IsSuccess)
+                            {
+                                var result = "data:application/pdf;base64," + base64;
+                                EmployeeDisplinaryData.EmployeeDocumentName = fileName;
+                                EmployeeDisplinaryData.EmployeeDocumentExt = "pdf";
+                                ResponseDocumentString = result;
+                                bytes = null;
+                                _ms.Close();
+                                _ms.Dispose();
+                                pdfDocument.Close();
+                                pdfDocument.Dispose();
+                                render.Dispose();
+                                document.Close();
+                                document.Dispose();
+                            }
+                            else if (Requestresult != null)
+                            {
+                                await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                            }
+                        }
+                        else
+                        {
+                            var ttt = employeeno;
+                            var a = DisplinaryReasonData.FirstOrDefault(o => o.DisplinaryReasonId == EmployeeDisplinaryData.DisplinaryReasonId);
+                            // fileName = a.DisplinaryReasonDescription + "_" + DateTime.Now + ".pdf";
+                            fileName = ttt.EmployeeDetails + "_" + "DisciplinaryStatement" + "_" + DateTime.Now.ToString("dd_MM_yyyy") + ".pdf";
+                            MemoryStream ms = new MemoryStream();
+                            file.Stream.WriteTo(ms);
+                            ms.Position = 0;
+                            byte[] bytes = file.Stream.ToArray();
+                            string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                            ImageUpload m = new ImageUpload()
+                                {
+                                    ImageName = fileName,
+                                    ImageExt = file.FileInfo.Type.Trim(),
+                                    Imagebyte = bytes,
+                                    Rootfolder = "ResponseToDisplinaryCase"
+                                };
+                            var Requestresult = await _DocumentUploadModel.SaveDocument(m, AccessToken);
+                            if (Requestresult != null && Requestresult.IsSuccess)
+                            {
+                                var result = "data:application/pdf;base64," + base64;
+                                EmployeeDisplinaryData.EmployeeDocumentName = fileName;
+                                EmployeeDisplinaryData.EmployeeDocumentExt = "pdf";
+                                ResponseDocumentString = result;
+                                bytes = null;
+                            }
+                            else if (Requestresult != null)
+                            {
+                                await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                            }
+                        }
+                    }
+                    else if (file.FileInfo.Type.ToLower().Contains("png") || file.FileInfo.Type.ToLower().Contains("gif") || file.FileInfo.Type.ToLower().Contains("jpeg"))
+                    {
+
+                        var ttt = employeeno;
+                        var a = DisplinaryReasonData.FirstOrDefault(o => o.DisplinaryReasonId == EmployeeDisplinaryData.DisplinaryReasonId);
+                        //  string fileName = a.DisplinaryReasonDescription + "_" + DateTime.Now + ".pdf";
+                        string fileName = ttt.EmployeeDetails + "_" + "DisciplinaryStatement" + "_" + DateTime.Now.ToString("dd_MM_yyyy") + ".pdf";
+                        byte[] bytes = file.Stream.ToArray();
+                        string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+
+                        ImageUpload m = new ImageUpload()
+                            {
+                                ImageName = fileName,
+                                ImageExt = file.FileInfo.Type.Trim(),
+                                Imagebyte = bytes,
+                                Rootfolder = "ResponseToDisplinaryCase"
+                            };
+                        var Requestresult = await _DocumentUploadModel.SaveDocument(m, AccessToken);
+                        if (Requestresult != null && Requestresult.IsSuccess)
+                        {
+                            var result = "data:image/" + file.FileInfo.Type.Trim() + ";base64," + base64;
+                            EmployeeDisplinaryData.EmployeeDocumentName = fileName;
+                            EmployeeDisplinaryData.EmployeeDocumentExt = file.FileInfo.Type.Trim();
+                            ResponseDocumentString = result;
+                            bytes = null;
+                        }
+                        else if (Requestresult != null)
+                        {
+                            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                        }
+                    }
+                    else
+                    {
+                        await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = "Please ensure that the uploaded document is either a pdf or doc or docx.", CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        finally
+        {
+            await UploadReasonSpinner.HideAsync();
+            StateHasChanged();
+        }
+
+    }
+     
+    public string GetResponseHeader(DisplinaryModel Value)
+    {
+        if (Value.EmployeeDisplinaryId == 0)
+        {
+            return "Add Response to disciplinary ";
+        }
+        else
+        {
+            //if(.EmployeeDisplinaryHeader != null)
+            return "Case number:" + Value.EmployeeDisplinaryHeader.EmployeeDisplinaryNumber;
+        }
+    }
+    public void OnResponseActionBegin(ActionEventArgs<DisplinaryModel> args)
+    {
+        try
+        {
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+
+                employeeno = ViewEmployeeDisplinaryData.FirstOrDefault(o => o.Employeeid == args.RowData.EmployeeDisplinaryHeader.EmployeeId);
+                if (args.RowData.aDisplinaryAppeals == null)
+                {
+                    args.RowData.aDisplinaryAppeals = new List<ADisplinaryAppeal>();
+                }
+                if (args.RowData.aDisplinaryRefereds == null)
+                {
+                    args.RowData.aDisplinaryRefereds = new List<ADisplinaryRefered>();
+                }
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+            {
+                args.RowData.EmployeeDisplinaryHeader = new EmployeeDisplinary();
+                args.RowData.aDisplinaryAppeals = new List<ADisplinaryAppeal>();
+                args.RowData.aDisplinaryRefereds = new List<ADisplinaryRefered>();
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+            {
+                if (string.IsNullOrEmpty(args.Data.EmployeeDisplinaryHeader.EmployeeResponse))
+                {
+                    ToastObj.ShowAsync(new ToastModel { Title = "Warning!", Content = "Please record your statment or response before submitting.", CssClass = "e-toast-warning", Icon = "e-warning toast-icons" });
+                    args.Cancel = true;
+                }
+ 
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+    }
+    public async Task OnResponseActionComplete(ActionEventArgs<DisplinaryModel> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            EmployeeDisplinaryGrid.PreventRender(false);
+             ResponseDocumentString = await GetImageString(args.RowData.EmployeeDisplinaryHeader.EmployeeDocumentName, args.RowData.EmployeeDisplinaryHeader.EmployeeDocumentExt, "ResponseToDisplinaryCase");
+            ReasonDocumentString = await GetImageString(args.RowData.EmployeeDisplinaryHeader.OfficialDocumentName, args.RowData.EmployeeDisplinaryHeader.OfficialDocumentExt, "DisplinaryCaseProof");
+
+        }
+
+    }
+  
+    private async Task AppealCase()
+    {
+        try
+        {
+            DisplinaryAppealViewData = new();
+            DisplinaryAppealViewData.EmployeeDisplinaryId = EmployeeDisplinaryData.DisplinaryId;
+            ComfirmationString = "Are you sure you want to appeal?";
+            await AppealDialog.ShowAsync();
+        }
+        catch (Exception)
+        {
+
+            throw;
+        }
+
+    }
+    private async Task ReferedToBoard()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(DisplinaryAppealViewData?.AppealDescription))
+            {
+                await ToastObj.Show(new ToastModel { Title = "Error!", Content = "Please enter reason for appealing decision before you proceed", CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+            }
+            else
+            {
+                EmployeeDisplinaryData.CaseStatusId = 1;
+                DisplinaryAppealViewData.AppealCreatedBy = _SystemSettings.AccountHolderName;
+                DisplinaryAppealViewData.AppealCreatedDate = DateTime.Now;
+                HeaderReviewData.aDisplinaryAppeals.Add(DisplinaryAppealViewData);
+                await this.ToastObj.ShowAsync(new ToastModel { Title = "Success!", Content = "Appeal has been successfully submitted.", CssClass = "e-toast-success", Icon = "e-success toast-icons" });
+                await ReferedDialog.HideAsync();
+                await EmployeeDisplinaryGrid.EndEditAsync();
+            }
+            //await ReferedDialog.ShowAsync();
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.Show(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+    private async Task CancelAppeal()
+    {
+        try
+        {
+
+        }
+        catch (Exception ex)
+        {
+
+            await ToastObj.Show(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+    }
+     private async Task SaveCase()
+    {
+        await EmployeeDisplinaryGrid.EndEditAsync();
+      
+    }
+    private async Task SubmitResponse()
+    {
+        EmployeeDisplinaryData.CaseStatusId = 4;
+        EmployeeDisplinaryData.EmployeeResponseDate = DateTime.Now;
+        await EmployeeDisplinaryGrid.EndEditAsync();
+    }
+    private async Task<string> GetImageString(string imageUrl, string ext, string Rootfolder)
+    {
+        string? result = null;
+        try
+        {
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                ImageUpload a = await _DocumentUploadModel.GetDocument(imageUrl, Rootfolder, _SystemSettings.AccessToken);
+
+                if (a != null)
+                {
+                    if (a.Imagebyte != null)
+                    {
+                        if (!string.IsNullOrEmpty(a.ImageExt) && a.ImageExt.Contains("pdf"))
+                        {
+                            string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
+                            result = "data:application/pdf;base64," + base64String;
+                        }
+                        else if (!string.IsNullOrEmpty(a.ImageExt))
+                        {
+                            string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
+                            result = "data:image/" + a.ImageExt + ";base64," + base64String;
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        return result;
+    }
+    #endregion DisplinaryDapater
+}

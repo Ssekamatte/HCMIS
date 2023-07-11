@@ -1,0 +1,571 @@
+﻿@inherits LayoutComponentBase
+@using HCMIS.Model
+@using HCMIS.Interface;
+@inject AppState AppState
+@implements IDisposable
+@inject SystemSettings _SystemSettings
+@inject NavigationManager Navigation;
+@inject ILocalStorageService localStore;
+@inject IJSRuntime JsRuntime
+@inject IAuthenticationService IAuthService;
+
+
+<AuthorizeView>
+    <Authorized>
+        <div class="page" style="background-color: ghostwhite; flex-direction: column;">
+            <main>
+                <BlazoredToasts Position="Blazored.Toast.Configuration.ToastPosition.TopRight"
+                                Timeout="10"
+                                IconType="Blazored.Toast.IconType.FontAwesome"
+                                SuccessClass="success-toast-override"
+                                SuccessIcon="fa fa-check"
+                                ErrorIcon="fa fa-times"
+                                InfoIcon="fa fa-info"
+                                WarningIcon="fa fa-warning" />
+
+                <div class="control-container">
+                    <SfAppBar ColorMode="AppBarColor.Dark" IsSticky=true Created="OnAppbarCreated">
+                        <SfMenu TValue="MenuItem" ShowItemOnClick=false>
+                            <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
+                            <MenuItems>
+                                <MenuItem Url="/DASHBOARD" Text="DASHBOARD" IconCss="e-icons e-chart-insert-column"></MenuItem>
+                                @if (!string.IsNullOrEmpty(_SystemSettings.UserRole)
+                                && ((_SystemSettings.UserRole.Contains("SUPER ADMINISTRATOR", StringComparison.CurrentCultureIgnoreCase)
+                                || _SystemSettings.UserRole.Contains("ADMINISTRATOR", StringComparison.CurrentCultureIgnoreCase))))
+                                {
+                                    <MenuItem Text="HR" IconCss="e-icons calculated-member">
+                                        <MenuItems>
+                                            <MenuItem Url="/OrganisationStructurePage" Text="ORGANISATION STRUCTURE" IconCss="e-icons user-defined"></MenuItem>
+                                            <MenuItem Url="/AptitudeTestPage" Text="APTITUDE TEST" IconCss="e-icons e-edit"></MenuItem>
+                                        </MenuItems>
+                                    </MenuItem>
+                                    <MenuItem Text="APPLICATION" IconCss="e-icons e-open">
+                                        <MenuItems>
+                                            <MenuItem Url="/SubmittedApplicationPage" Text="NEWLY SUBMITTED" IconCss="e-icons notes"></MenuItem>
+                                            <MenuItem Url="/InterviewApplicationPage" Text="ORAL INTERVIEWS" IconCss="e-icons circle-check"></MenuItem>
+                                            <MenuItem Url="/FinalApplicationAssessmentPage" Text="FINAL REVIEW" IconCss="e-icons shapes"></MenuItem>
+                                        </MenuItems>
+                                    </MenuItem>
+                                    <MenuItem Text="EMPLOYEES" IconCss="e-icons user">
+                                        <MenuItems>
+                                            <MenuItem Url="/EmployeeRegistrationNewPage" Text="EMPLOYEE REGISTRATION" IconCss="e-icons user"></MenuItem>
+                                            <MenuItem Url="/DisplinaryPage" Text="DISCIPLINARY" IconCss="e-icons chart-polar"></MenuItem>
+                                            <MenuItem Text="EMPLOYEE LEAVE" IconCss="e-icons people">
+                                                <MenuItems>
+                                                    <MenuItem Url="/AnnualLeavePlanPage" Text="ANNUAL LEAVE ROSTER" IconCss="e-icons time-zone"></MenuItem>
+                                                    <MenuItem Url="/EmployeeLeaveRequestPage" Text="LEAVE REQUEST" IconCss="e-icons e-edit"></MenuItem>
+                                                </MenuItems>
+                                            </MenuItem>
+                                            <MenuItem Url="/EmployeeExitsPage" Text="SEPARATION OF SERVICE" IconCss="e-icons people"></MenuItem>
+                                        </MenuItems>
+                                    </MenuItem>
+                                    <MenuItem Text="LEARNING AND DEVELOPMENT" IconCss="e-icons month-agenda">
+                                        <MenuItems>
+                                            <MenuItem Url="/SurveyDeadlinePage" Text="SET DEADLINE" IconCss="e-icons settings"></MenuItem>
+                                            <MenuItem Url="/AssessmentSurveyPage" Text="ASSESSMENT SURVEY" IconCss="e-icons location"></MenuItem>
+                                            <MenuItem Text="CPD" IconCss="e-icons zoom-to-fit">
+                                                <MenuItems>
+                                                    <MenuItem Url="/CPDPage" Text="CPD" IconCss="e-icons circle-check"></MenuItem>
+                                                    <MenuItem Url="/CPDSummaryPage" Text="CPD SUMMARY" IconCss="e-icons export"></MenuItem>
+                                                </MenuItems>
+                                            </MenuItem>
+                                            <MenuItem Url="/GeneralInternalPage" Text="GENERAL INTERNAL" IconCss="e-icons check-large"></MenuItem>
+                                            <MenuItem Url="/SubscriptionPage" Text="SUBSCRIPTION" IconCss="e-icons drag-and-drop"></MenuItem>
+                                            <MenuItem Url="/TrainingEvaluationFormPage" Text="TRAINING EVALUATION" IconCss="e-icons line-small"></MenuItem>
+                                        </MenuItems>
+                                    </MenuItem>
+
+                                    <MenuItem Text="PERFOMANCE APPRAISAL" IconCss="e-icons decrease-indent">
+                                        <MenuItems>
+                                            <MenuItem Url="/BSCKeyPerformanceIndicatorsPage" Text="SET TARGETS" IconCss="e-icons settings"></MenuItem>
+                                            <MenuItem Url="/AppraisalFormPage" Text="APPRAISAL" IconCss="e-icons shapes"></MenuItem>
+                                        </MenuItems>
+                                    </MenuItem>
+                                    <MenuItem Text="REPORTS" IconCss="e-icons page-column-one">
+                                        <MenuItems>
+                                            <MenuItem Url="/AppraisalReport" Text="PERFOMANCE APPRAISAL" IconCss="e-icons multiple-comment"></MenuItem>
+                                            <MenuItem Url="/LeaveRequestReportPage" Text="LEAVE REQUEST" IconCss="e-icons e-edit"></MenuItem>
+                                        </MenuItems>
+                                    </MenuItem>
+                                    <MenuItem Text="UTILITIES" IconCss="e-icons settings">
+                                        <MenuItems>
+                                            <MenuItem Url="/AccountManagementPage" Text="ACCOUNT MANAGEMENT" IconCss="e-icons group-icon"></MenuItem>
+                                            <MenuItem Url="/ChangePasswordPage" Text="CHANGE PASSWORD" IconCss="e-icons key"></MenuItem>
+                                            <MenuItem Url="/PrimaryData" Text="PRIMARY DATA" IconCss="e-icons drag-and-drop"></MenuItem>
+                                        </MenuItems>
+                                    </MenuItem>
+                                }
+                                else if (!string.IsNullOrEmpty(_SystemSettings.UserRole)
+                                && ((_SystemSettings.UserRole.Contains("OFFICER", StringComparison.CurrentCultureIgnoreCase))))
+                                {
+                                    <MenuItem Text="EMPLOYEES" IconCss="e-icons ">
+                                        <MenuItems>
+                                            <MenuItem Url="/DisplinaryPage" Text="DISPLINARY" IconCss="e-icons bullet"></MenuItem>
+                                            <MenuItem Text="EMPLOYEE LEAVE" IconCss="e-icons people">
+                                                <MenuItems>
+                                                    <MenuItem Url="/AnnualLeavePlanPage" Text="ANNUAL LEAVE ROSTER" IconCss="e-icons time-zone"></MenuItem>
+                                                    <MenuItem Url="/EmployeeLeaveRequestPage" Text="LEAVE REQUEST" IconCss="e-icons e-edit"></MenuItem>
+                                                </MenuItems>
+                                            </MenuItem>
+                                            <MenuItem Url="/EmployeeExitsPage" Text="SEPARATION OF SERVICE" IconCss="e-icons people"></MenuItem>
+                                        </MenuItems>
+                                    </MenuItem>
+                                    <MenuItem Text="LEARNING AND DEVELOPMENT" IconCss="e-icons month-agenda">
+                                        <MenuItems>
+                                            <MenuItem Url="/SurveyDeadlinePage" Text="SET DEADLINE" IconCss="e-icons settings"></MenuItem>
+                                            <MenuItem Url="/AssessmentSurveyPage" Text="ASSESSMENT SURVEY" IconCss="e-icons location"></MenuItem>
+                                            <MenuItem Text="CPD" IconCss="e-icons ">
+                                                <MenuItems>
+                                                    <MenuItem Url="/CPDPage" Text="CPD" IconCss="e-icons circle-check"></MenuItem>
+                                                    <MenuItem Url="/CPDSummaryPage" Text="CPD SUMMARY" IconCss="e-icons export"></MenuItem>
+                                                </MenuItems>
+                                            </MenuItem>
+                                            <MenuItem Url="/GeneralInternalPage" Text="GENERAL INTERNAL" IconCss="e-icons check-large"></MenuItem>
+                                            <MenuItem Url="/SubscriptionPage" Text="SUBSCRIPTION" IconCss="e-icons drag-and-drop"></MenuItem>
+                                            <MenuItem Url="/TrainingEvaluationFormPage" Text="TRAINING EVALUATION" IconCss="e-icons line-small"></MenuItem>
+                                        </MenuItems>
+                                    </MenuItem>
+
+                                    <MenuItem Text="PERFOMANCE APPRAISAL" IconCss="e-icons decrease-indent">
+                                        <MenuItems>
+                                            <MenuItem Url="/BSCKeyPerformanceIndicatorsPage" Text="SET TARGETS" IconCss="e-icons settings"></MenuItem>
+                                            <MenuItem Url="/AppraisalFormPage" Text="APPRAISAL" IconCss="e-icons shapes"></MenuItem>
+                                        </MenuItems>
+                                    </MenuItem>
+                                }
+
+                                else
+                                {
+                                    <MenuItem Text="JOBS" IconCss="e-icons ">
+                                        <MenuItems>
+                                            <MenuItem Url="/AvailableJobsPage" Text="AVAILABLE JOBS" IconCss="e-icons "></MenuItem>
+                                            <MenuItem Url="/MyApplicationsPage" Text="MY APPLICATIONS" IconCss="e-icons "></MenuItem>
+                                        </MenuItems>
+                                    </MenuItem>
+                                }
+                                <MenuItem Text="@_SystemSettings.AccountHolderName" HtmlAttributes="@LogoutHtmlAttribute">
+                                    <MenuItems>
+                                        <MenuItem Url="/ChangePasswordPage" Text="CHANGE PASSWORD" IconCss="e-icons hyperlink-edit"></MenuItem>
+                                        <MenuItem Id="LogOutButton" Text="LOGOUT" IconCss="e-icons circle-close"></MenuItem>
+                                    </MenuItems>
+                                </MenuItem>
+                            </MenuItems>
+                        </SfMenu>
+                        <AppBarSpacer></AppBarSpacer>
+
+                        <SfButton CssClass="e-custom" @onclick="LogOutUser" Disabled="@disable" Content="LOGOUT"></SfButton>
+
+                    </SfAppBar>
+                </div>
+                <SfSidebar HtmlAttributes="@HtmlAttribute" Target=".e-main-content" Width="220px" DockSize="0px" EnableDock="true" @bind-IsOpen="SidebarToggle" Type="@SidebarType.Push">
+                    <ChildContent>
+                        <div class="main-menu">
+                            <div>
+                                <div style="text-align: center;" class="text-content"> Sidebar </div>
+                            </div>
+                        </div>
+                    </ChildContent>
+                </SfSidebar>
+                <article class="content px-4">
+                    @Body
+                </article>
+                @*Scroll To Top Button*@
+                <div class="row">
+                    <div class="col-lg-12 control-section">
+                        <button onclick="topFunction()" @ref="ScrollToTop" id="btn" title="Go to top">Scroll To Top</button>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <BlazoredToasts Position="Blazored.Toast.Configuration.ToastPosition.BottomRight"
+                        Timeout="10"
+                        IconType="Blazored.Toast.IconType.FontAwesome"
+                        SuccessClass="success-toast-override"
+                        SuccessIcon="fa fa-check"
+                        ErrorIcon="fa fa-times"
+                        InfoIcon="fa fa-info"
+                        WarningIcon="fa fa-warning" />
+        <style>
+            .particles-js-canvas-el {
+                display: block;
+            }
+        </style>
+        @Body
+    </NotAuthorized>
+</AuthorizeView>
+
+<style>
+    #btn {
+        display: none;
+        /*display: block;*/
+        position: fixed;
+        bottom: 20px;
+        right: 30px;
+        z-index: 10000; /*99*/
+        font-size: 18px;
+        border: none;
+        outline: none;
+        background-color: red;
+        color: white;
+        cursor: pointer;
+        padding: 15px;
+        border-radius: 4px;
+    }
+
+        #btn:hover {
+            background-color: #555;
+        }
+
+    .blazored-toast-container {
+        z-index: 4000;
+    }
+
+    .e-toast-container {
+        z-index: 4000;
+    }
+
+    .control-container .e-btn.e-inherit {
+        margin: 0 3px;
+        /*width: 100%;*/
+    }
+
+    .content {
+        padding-top: 1.1rem;
+    }
+
+    .logo-style {
+        padding: 2px;
+    }
+
+    /*Change Font */
+    .e-menu-wrapper .e-menu .e-menu-item .e-menu-url, .e-menu-container .e-menu .e-menu-item .e-menu-url {
+        color: ghostwhite;
+    }
+
+    /*Change App Bar Color */
+    .e-menu-wrapper .e-menu, .e-menu-container .e-menu {
+        background-color: black;
+        color: white;
+    }
+
+    /*Assign Black To The Container on The Menu*/
+    .e-appbar > div:first-child {
+        display: -ms-flexbox;
+        display: flex;
+        -ms-flex-align: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        background-color: #212121;
+    }
+
+    /*Icons*/
+    /*More Icons Here. - Use Icons list - Bootstrap 5
+          https://blazor.syncfusion.com/documentation/appearance/icons
+        */
+    .e-icons {
+        color: #00ffff;
+        font-size: 26px;
+    }
+
+    .e-file::before {
+        content: '\e7cb';
+        color: ghostwhite;
+    }
+
+    .e-search:before {
+        content: '\e724';
+    }
+
+    .e-upload:before {
+        content: '\e769';
+    }
+
+    .e-font:before {
+        content: '\e80e';
+    }
+
+    .e-edit::before {
+        content: '\e78f';
+    }
+
+    .e-open::before {
+        content: '\e70f';
+    }
+
+    .e-save::before {
+        content: '\e74d';
+    }
+
+    .e-cut::before {
+        content: '\e73f';
+    }
+
+    .e-copy::before {
+        content: '\e77b';
+    }
+
+    .e-paste::before {
+        content: '\e739';
+    }
+
+    .e-chart-insert-column:before {
+        font-size: x-large;
+        content: '\e845';
+    }
+
+    /*calculated-member*/
+    .calculated-member:before {
+        content: '\e798';
+    }
+
+    /*calculated-member*/
+    .user-defined:before {
+        content: '\e709';
+    }
+
+    /*hyperlink-edit*/
+    .hyperlink-edit:before {
+        content: '\e722';
+    }
+
+    /*group-icon*/
+    .group-icon:before {
+        content: '\e724';
+    }
+
+    /*line-small*/
+    .line-small:before {
+        content: '\e725';
+    }
+
+    /*drag-and-drop*/
+    .drag-and-drop:before {
+        content: '\e726';
+    }
+
+    /*check-large*/
+    .check-large:before {
+        content: '\e727';
+    }
+
+    /*shapes*/
+    .shapes:before {
+        content: '\e728';
+    }
+
+    /*decrease-indent*/
+    .decrease-indent:before {
+        content: '\e72a';
+    }
+
+    /*circle-check*/
+    .circle-check:before {
+        content: '\e72b';
+    }
+
+    /*notes*/
+    .notes:before {
+        content: '\e72d';
+    }
+
+    /*export*/
+    .export:before {
+        content: '\e72e';
+    }
+
+    /*location*/
+    .location:before {
+        content: '\e756';
+    }
+
+    /*month-agenda*/
+    .month-agenda:before {
+        content: '\e75b';
+    }
+
+    /*print*/
+    .print:before {
+        content: '\e75d';
+    }
+
+    /*bullet-6*/
+    .bullet-6:before {
+        content: '\e763';
+    }
+
+    /*repeat*/
+    .repeat:before {
+        content: '\e772';
+    }
+
+    /*user*/
+    .user:before {
+        content: '\e7b4';
+    }
+
+    /*people*/
+    .people:before {
+        content: '\e7b9';
+    }
+
+    /*close*/
+    .close:before {
+        content: '\e7e7';
+    }
+
+    /*time-zone*/
+    .time-zone:before {
+        content: '\e804';
+    }
+
+    /*settings*/
+    .settings:before {
+        content: '\e880';
+    }
+
+    /*circle-close*/
+    .circle-close:before {
+        content: '\e878';
+    }
+
+    /*page-column-one*/
+    .page-column-one:before {
+        content: '\e8b9';
+    }
+
+    /*multiple-comment*/
+    .multiple-comment:before {
+        content: '\e8bc';
+    }
+
+    /*key*/
+    .key:before {
+        content: '\e77f';
+    }
+
+    /*mark-for-redaction*/
+    .mark-for-redaction:before {
+        content: '\e7bc';
+    }
+
+    /*chart-polar*/
+    .chart-polar:before {
+        content: '\e7e2';
+    }
+
+    /*zoom-to-fit*/
+    .zoom-to-fit:before {
+        content: '\e657';
+    }
+
+    /*Change Icon Colors*/
+    .e-menu-wrapper .e-menu .e-menu-item .e-menu-icon, .e-menu-container .e-menu .e-menu-item .e-menu-icon {
+        font-size: larger; /*Dashboard Icon*/
+        color: ghostwhite;
+    }
+
+    /*Change Icons Font Size*/
+    .e-menu-wrapper .e-menu .e-menu-item .e-menu-icon, .e-menu-container .e-menu .e-menu-item .e-menu-icon {
+        font-size: larger;
+        color: ghostwhite;
+    }
+
+    /*Change Color of Dropdown Arrows on Menu*/
+    .e-menu-wrapper .e-menu .e-menu-item .e-caret, .e-menu-container .e-menu .e-menu-item .e-caret {
+        color: lightgreen;
+    }
+
+    /*Icons*/
+
+    .e-custom {
+        display: none;
+        border-radius: 25px;
+        height: 48px;
+        width: 48px;
+    }
+
+    /*Push LogOut To Right*/
+    .e-menu-wrapper .e-menu, .e-menu-container .e-menu {
+        background-color: black;
+        color: white;
+        width: 100%;
+    }
+
+    /*Manage Records in Grid Font Size*/
+    .e-grid .e-unboundcelldiv .e-icons:not(.e-btn-icon) {
+        color: #605e5c;
+        font-size: inherit;
+    }
+
+</style>
+
+@code {
+    private Boolean disable = true;
+    public ElementReference ScrollToTop;
+
+    Dictionary<string, object> HtmlAttribute = new Dictionary<string, object>()
+    {
+    {"class", "sidebar-treeview" }
+    };
+    Dictionary<string, object> MenuHtmlAttribute = new Dictionary<string, object>()
+    {
+    {"style", "z-index: 100;" }
+    };
+    Dictionary<string, object> LogoutHtmlAttribute = new Dictionary<string, object>()
+    {
+    {"class", "Menu-logout" },{"style","float:right;"}
+    };
+
+    public bool SidebarToggle = false;
+    string NameText = string.Empty;
+    public void SideMenu()
+    {
+        SidebarToggle = !SidebarToggle;
+    }
+
+    protected async override void OnInitialized()
+    {
+        await _SystemSettings.GetLoginCredentials();
+        AppState.OnChange += StateHasChanged;
+        NameText = _SystemSettings.AccountHolderName;
+    }
+
+    private async Task OnAppbarCreated()
+    {
+        await _SystemSettings.GetLoginCredentials();
+        NameText = _SystemSettings.AccountHolderName;
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+
+    private async Task itemSelected(MenuEventArgs<MenuItem> args)
+    {
+        //Selected menu item
+        if (args.Item.Id == "LogOutButton")
+        {
+            //await localStore.ClearAsync();
+            //AppState.LoggedIn = false;
+            IAuthService.Logout();
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    public async void LogOutUser()
+    {
+        await localStore.ClearAsync();
+        AppState.LoggedIn = false;
+        Navigation.NavigateTo("/");
+    }
+
+    private async void OnButtonClick()
+    {
+        await JsRuntime.InvokeVoidAsync("OnScrollEvent");
+    }
+}

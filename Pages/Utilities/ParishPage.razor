@@ -1,0 +1,647 @@
+﻿@*@page "/ParishPage"*@
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using System.Collections;
+@using System.IO;
+@using HCMIS.SHARED.Data;
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager navigation;
+@inject SystemSettings _SystemSettings;
+@using HCMIS.SHARED.DTOs.BSC;
+@using HCMIS.SHARED.DTOs.Utilities;
+@using HCMIS.ViewModel;
+@inject IToastService toastService;
+
+<style>
+    /*For Actual Application*/
+    /*.e-edit-dialog {
+            max-height: 30%;
+            max-width: 60%;
+            min-width: 50%;
+            min-height: 20%;
+        }*/
+
+    .headerbandimg {
+        background-image: url(/image/comesalogo.png);
+        background-size: 20px;
+        background-repeat: no-repeat;
+        width: 20px;
+        height: 20px;
+        margin-right: 5px;
+        vertical-align: top;
+        display: inline-block;
+        color: whitesmoke;
+    }
+
+    .pp {
+        color: ghostwhite;
+        background-color: #2ecc71;
+        padding: 10px;
+    }
+    /*Increase font size for Multi Line Text Box Place Holder*/
+    .e-multi-line-input label.e-float-text {
+        font-size: 17px !important;
+    }
+</style>
+
+@{
+    var Div = (new string[] { "DistrictDescription", "SubCountyDescription"});
+}
+
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="color: brown;">
+        <strong>
+            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
+        </strong>| PARISH
+    </li>
+</ol>
+
+<div class="form-row">
+    <div class="form-group col-md-12">
+        <SfAccordion ExpandMode="ExpandMode.Single">
+            <AccordionItems>
+                <AccordionItem Expanded="false">
+                    <HeaderTemplate>Search Panel</HeaderTemplate>
+                    <ContentTemplate>
+                        <div style="padding:10px;">
+                            <EditForm Model="@InputModel" OnValidSubmit="@SearchRecords">
+                                <div class="row">                                    
+                                    <div class="col-md-3">
+                                        <p>District</p>
+                                        <SfMultiSelect @bind-Value="@InputModel.DistrictId"  TValue="int?[]" TItem="ADistrict" AllowFiltering="true" Placeholder="Please select" Mode="@VisualMode.CheckBox" DataSource="@DistrictData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search District" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+                                            <MultiSelectFieldSettings Value="@nameof(ADistrict.DistrictId)" Text="@nameof(ADistrict.DistrictDescription)"></MultiSelectFieldSettings>
+                                            <MultiSelectEvents TValue="int?[]" TItem="ADistrict" ValueChange="OnDistrictChange"></MultiSelectEvents>
+                                        </SfMultiSelect>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <p>Subcounty</p>
+                                        <SfMultiSelect @bind-Value="@InputModel.SubcountyId" Enabled="@isSubcountyEnabled" Query="@DistricttQuery" TValue="int?[]" TItem="ASubCounty" AllowFiltering="true" Placeholder="Please select" Mode="@VisualMode.CheckBox" DataSource="@SubCountyData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Subcounty" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+                                            <MultiSelectFieldSettings Value="@nameof(ASubCounty.SubCountyId)" Text="@nameof(ASubCounty.SubCountyDescription)"></MultiSelectFieldSettings>
+                                            <MultiSelectEvents TValue="int?[]" TItem="ASubCounty" ValueChange="OnSubcountyChange"></MultiSelectEvents>
+                                        </SfMultiSelect>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <p>Parish</p>
+                                        <SfMultiSelect @bind-Value="@InputModel.ParishId" Enabled="@isParishEnabled" Query="@SubcountyQuery" TValue="int?[]" TItem="ViewAparish" AllowFiltering="true" Placeholder="Please select" Mode="@VisualMode.CheckBox" DataSource="@ParishData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Parish" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+                                            <MultiSelectFieldSettings Value="@nameof(ViewAparish.ParishId)" Text="@nameof(ViewAparish.ParishDesc)"></MultiSelectFieldSettings>
+                                        </SfMultiSelect>                                        
+                                    </div>
+                                    <div class="col-md-12">
+                                        <SfButton class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Search</SfButton>
+                                        <SfButton class="btn btn-danger" data-ripple="true" @onclick="ClearSearchBtnClick">Clear Search</SfButton>
+                                    </div>
+                                    <div class="form-group col-md-12">
+                                        <DataAnnotationsValidator />
+                                        <ValidationSummary />
+                                    </div>
+                                </div>
+                            </EditForm>
+                        </div>
+                    </ContentTemplate>
+                </AccordionItem>
+            </AccordionItems>
+        </SfAccordion>
+
+    </div>
+</div>
+
+<SfGrid @ref="@DataGrid" TValue="ViewAparish" Query="@MainQuery" ID="Grid1" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Delete", "Cancel", "Update","ExcelExport","PdfExport","CsvExport"})">
+    <GridGroupSettings Columns="@Div" ShowDropArea="false">
+        <CaptionTemplate>
+            @{
+                var dvn = (context as CaptionTemplateContext);
+                string _field = string.Empty;
+               
+                if (dvn.Field.Contains("District"))
+                {
+                    _field = "District";
+                }
+                else if (dvn.Field.Contains("SubCounty"))
+                {
+                    _field = "Subcounty";
+                }
+                <div><p class="pp"><strong>@_field: @dvn.Key</strong></p></div>
+            }
+
+        </CaptionTemplate>
+    </GridGroupSettings>
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+        <HeaderTemplate>
+            @{
+                var text = GetParishHeader((context as ViewAparish));
+                    <div class="headerbandimg">
+                        <span>@text</span>
+                    </div>
+            }
+        </HeaderTemplate>
+        <Template Context="ParishContext">
+            @{
+                var KpiData = (ParishContext as ViewAparish);
+                @if (KpiData != null)
+                {
+                            <div class="row">
+                                <div class="col-md-12" hidden>
+                                    <SfNumericTextBox @bind-Value="@(KpiData.ParishId)" Enabled="false" Placeholder="Parish Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                                </div>
+                                <div class="form-group col-md-12">
+                                    <p>District<span style="color:red;">*</span></p>
+                                        <SfDropDownList ID="DistrictId" @bind-Value="@(KpiData.DistrictId)" TItem="ADistrict" AllowFiltering="true" TValue="int?" DataSource="@DistrictData" FloatLabelType="FloatLabelType.Always">
+                                            <DropDownListFieldSettings Value="@nameof(ADistrict.DistrictId)" Text="@nameof(ADistrict.DistrictDescription)"></DropDownListFieldSettings>
+                                            <DropDownListEvents TItem="ADistrict" TValue="int?" ValueChange="ChangeDistrict"></DropDownListEvents>
+                                        </SfDropDownList>
+                                </div>
+                                <div class="form-group col-md-12">
+                                    <p>Subcounty<span style="color:red;">*</span></p>
+                                        <SfDropDownList ID="SubCountyId" @bind-Value="@(KpiData.SubCountyId)" TItem="ASubCounty" AllowFiltering="true" TValue="int?" DataSource="@SubCountyData" Enabled="@EnableSubcountyDropDown" FloatLabelType="FloatLabelType.Always" Query="DistricttQuery">
+                                        <DropDownListFieldSettings Value="@nameof(ASubCounty.SubCountyId)" Text="@nameof(ASubCounty.SubCountyDescription)"></DropDownListFieldSettings>
+                                        <DropDownListEvents TItem="ASubCounty" TValue="int?" ValueChange="ChangeSubcounty"></DropDownListEvents>
+                                        </SfDropDownList>
+                                  </div>
+                                <div class="col-md-12">
+                                    <p>Parish<span style="color:red;">*</span></p>
+                                    <SfTextBox Multiline=false @bind-Value="@(KpiData.ParishDesc)" Width="100%" FloatLabelType="FloatLabelType.Never"  Enabled="@ParishTextBox"></SfTextBox>
+                                </div>
+                            </div>
+                }
+            }
+        </Template>
+
+    </GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.FilterBar"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+    <SfDataManager AdaptorInstance="@typeof(ParishAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+    <GridEvents 
+        OnActionBegin="OnParishActionBegin"
+        OnActionComplete="OnParishActionComplete"
+        TValue="ViewAparish">
+    </GridEvents>
+    <GridColumns>
+        <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+        <GridColumn Field=@nameof(ViewAparish.ParishId) HeaderText="ParishId" AllowEditing="false" IsPrimaryKey="true" Width="150" Visible="false"></GridColumn>
+        <GridColumn Field=@nameof(ViewAparish.DistrictDescription) HeaderText="District" Width="150"></GridColumn>
+        <GridColumn Field=@nameof(ViewAparish.SubCountyDescription) HeaderText="Subcounty" Width="150"></GridColumn>
+        <GridColumn Field=@nameof(ViewAparish.ParishDesc) HeaderText="Parish" Width="150"></GridColumn>
+    </GridColumns>
+</SfGrid>
+
+
+@code {
+    SfGrid<ViewAparish>? DataGrid { get; set; }
+    List<ADistrict>? DistrictData { get; set; }
+    List<ASubCounty>? SubCountyData { get; set; }
+    List<ViewAparish>? ParishData { get; set; }
+    List<ViewAparish>? ParishDataSearch { get; set; }
+    public bool EnableSubcountyDropDown = false;
+    public Query DistricttQuery { get; set; } = null;
+    public Query SubcountyQuery { get; set; } = null;
+    public bool ParishTextBox = false;
+    private UtilitiesSearchPanel InputModel = new();
+    Query MainQuery { get; set; } = new();
+    bool isSubcountyEnabled { get; set; } = false;
+    bool isParishEnabled { get; set; } = false;
+
+    /// <summary>
+    /// Event for Toolbar click for Grid Exporting
+    /// </summary>
+    public void GridToolbarClick(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Id == "Grid1_excelexport")
+        {
+            this.DataGrid.ExportToExcelAsync();
+        }
+        if (args.Item.Id == "Grid1_pdfexport")
+        {
+            this.DataGrid.ExportToPdfAsync();
+        }
+        if (args.Item.Id == "Grid1_csvexport")
+        {
+            this.DataGrid.ExportToCsvAsync();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await _SystemSettings.GetLoginCredentials();
+        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+
+        var responsedistrict = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetDistrict");
+        var contentdistrict = await responsedistrict.Content.ReadAsStringAsync();
+
+        var responsesubcounty = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetSubcounty");
+        var contentsubcounty = await responsesubcounty.Content.ReadAsStringAsync();
+
+        var responseparish = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetParishDropDown");
+        var contentparish = await responseparish.Content.ReadAsStringAsync();
+
+        //var responseparishsearch = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetParishSearch");
+        //var contentparishsearch = await responseparish.Content.ReadAsStringAsync();
+
+        if (responsedistrict.IsSuccessStatusCode)
+        {
+            DistrictData = await Http.GetFromJsonAsync<List<ADistrict>>
+            ($"{_ApiConfig.BaseUrl}Utilities/GetDistrict");
+        }
+
+        if (responsesubcounty.IsSuccessStatusCode)
+        {
+            SubCountyData = await Http.GetFromJsonAsync<List<ASubCounty>>
+            ($"{_ApiConfig.BaseUrl}Utilities/GetSubcounty");
+        }
+
+        if (responseparish.IsSuccessStatusCode)
+        {
+            ParishData = await Http.GetFromJsonAsync<List<ViewAparish>>
+            ($"{_ApiConfig.BaseUrl}Utilities/GetParishDropDown");
+        }
+
+        //if (responseparishsearch.IsSuccessStatusCode)
+        //{
+        //    ParishDataSearch = await Http.GetFromJsonAsync<List<ViewAparish>>
+        //    ($"{_ApiConfig.BaseUrl}Utilities/GetParishSearch");
+        //}        
+    }
+
+    public void OnDistrictChange(Syncfusion.Blazor.DropDowns.MultiSelectChangeEventArgs<int?[]> args)
+    {
+        if (args.Value != null)
+        {
+            isSubcountyEnabled = true;
+            List<WhereFilter> filterList = new List<WhereFilter>();
+            foreach (var item in args.Value)
+            {
+                filterList.Add(new WhereFilter() { Field = "DistrictId", Operator = "equal", value = item, IgnoreCase = true });
+            }
+
+            var orWhere = WhereFilter.Or(filterList);
+            DistricttQuery = new Query().Where(orWhere);
+        }
+        else
+        {
+            DistricttQuery = new Query();
+        }
+    }
+
+    public void OnSubcountyChange(Syncfusion.Blazor.DropDowns.MultiSelectChangeEventArgs<int?[]> args)
+    {
+        if (args.Value != null)
+        {
+            isParishEnabled = true;
+            List<WhereFilter> filterList = new List<WhereFilter>();
+            foreach (var item in args.Value)
+            {
+                filterList.Add(new WhereFilter() { Field = "SubCountyId", Operator = "equal", value = item, IgnoreCase = true });
+            }
+
+            var orWhere = WhereFilter.Or(filterList);
+            SubcountyQuery = new Query().Where(orWhere);
+        }
+        else
+        {
+            SubcountyQuery = new Query();
+        }
+    }
+
+    private void SearchRecords()
+    {
+        try
+        {
+
+            MainQuery = new Query();
+            if (InputModel.DistrictId != null)
+            {
+                MainQuery.AddParams("DistrictId", string.Join(",", InputModel.DistrictId));
+            }
+            if (InputModel.SubcountyId != null)
+            {
+                MainQuery.AddParams("SubcountyId", string.Join(",", InputModel.SubcountyId));
+            }
+            if (InputModel.ParishId != null)
+            {
+                MainQuery.AddParams("ParishId", string.Join(",", InputModel.ParishId));
+            }
+        }
+
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+    }
+
+    private void ClearSearchBtnClick()
+    {
+        InputModel = new();
+        MainQuery = new Query();
+    }
+
+    public void ChangeDistrict(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,ADistrict> args)
+    {
+        this.EnableSubcountyDropDown = true;
+        this.DistricttQuery = new Query().Where(new WhereFilter() { Field = "DistrictId", Operator = "equal", value = args.Value, IgnoreCase = false, IgnoreAccent = false });
+    }
+
+    public void ChangeSubcounty(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ASubCounty> args)
+    {
+        this.ParishTextBox = true;
+    }
+
+    #region Parish Region
+    public class ParishAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        ApiConfig _ApiConfig;
+        SystemSettings _SystemSettings;
+        private readonly JsonSerializerOptions _options;
+        public IToastService toastService;
+        private readonly NavigationManager Navigation;
+        public ParishAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+            , SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            Navigation = _Navigation;
+            _ApiConfig = apiConfig;
+            _SystemSettings = systemSettings;
+
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<ViewAparish>();
+            HttpResponseMessage response;
+            try
+            {
+                string DistrictId = null;
+                string SubcountyId = null;
+                string ParishId = null;
+
+                if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
+                {
+                    var val = dataManagerRequest.Params;
+
+                    if (val.FirstOrDefault(o => o.Key == "DistrictId").Value != null)
+                    {
+                        DistrictId = val.FirstOrDefault(o => o.Key == "DistrictId").Value.ToString();
+                    }
+
+                    if (val.FirstOrDefault(o => o.Key == "SubcountyId").Value != null)
+                    {
+                        SubcountyId = val.FirstOrDefault(o => o.Key == "SubcountyId").Value.ToString();
+                    }
+
+                    if (val.FirstOrDefault(o => o.Key == "ParishId").Value != null)
+                    {
+                        ParishId = val.FirstOrDefault(o => o.Key == "ParishId").Value.ToString();
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(DistrictId) || !string.IsNullOrEmpty(SubcountyId) || !string.IsNullOrEmpty(ParishId))
+                {
+                    response = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetParishSearch?DistrictId={DistrictId}&SubcountyId={SubcountyId}&ParishId={ParishId}");
+                }
+                else
+                {
+                    response = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetParish");                        
+                }
+
+                 var content = await response.Content.ReadAsStringAsync();
+                 if (!response.IsSuccessStatusCode)
+                 {
+                        toastService.ShowError(response.ReasonPhrase);
+                 }
+                 data = JsonSerializer.Deserialize<List<ViewAparish>>(content, _options);
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<ViewAparish>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                var val = (value as ViewAparish);
+
+                if (val.ParishId == 0)
+                {
+                    string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                    StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                    var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}Utilities/CreateParish", httpContent);
+                    if (result.IsSuccessStatusCode)
+                    {
+                        toastService.ShowSuccess(val.ParishDesc + " was sucessfully added");
+                    }
+                    else
+                    {
+                        // toastService.ShowError(result.Content.);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                var val = (value as ViewAparish);
+                await _SystemSettings.GetLoginCredentials();
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}Utilities/UpdateParish", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    toastService.ShowSuccess($"{val.ParishDesc}  was sucessfully updated");
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+    }
+
+    public async void OnParishActionComplete(ActionEventArgs<ViewAparish> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) ||
+        args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            DataGrid.PreventRender(false);
+        }
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+        {
+
+            var responsedistrict = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetDistrict");
+            var contentdistrict = await responsedistrict.Content.ReadAsStringAsync();
+
+            var responsesubcounty = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetSubcounty");
+            var contentsubcounty = await responsesubcounty.Content.ReadAsStringAsync();
+
+            var responseparish = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetParishDropDown");
+            var contentparish = await responseparish.Content.ReadAsStringAsync();
+
+            //var responseparishsearch = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetParishSearch");
+            //var contentparishsearch = await responseparishsearch.Content.ReadAsStringAsync();
+
+            if (responsedistrict.IsSuccessStatusCode)
+            {
+                DistrictData = await Http.GetFromJsonAsync<List<ADistrict>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetDistrict");
+            }
+
+            if (responsesubcounty.IsSuccessStatusCode)
+            {
+                SubCountyData = await Http.GetFromJsonAsync<List<ASubCounty>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetSubcounty");
+            }
+
+            if (responseparish.IsSuccessStatusCode)
+            {
+                ParishData = await Http.GetFromJsonAsync<List<ViewAparish>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetParishDropDown");
+            }
+
+            //if (responseparishsearch.IsSuccessStatusCode)
+            //{
+            //    ParishDataSearch = await Http.GetFromJsonAsync<List<ViewAparish>>
+            //    ($"{_ApiConfig.BaseUrl}Utilities/GetParishSearch");
+            //}
+        }
+    }
+
+    public async void OnParishActionBegin(ActionEventArgs<ViewAparish> args)
+    {
+        try
+        {
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+                this.EnableSubcountyDropDown = true;
+                this.ParishTextBox = true;
+                this.DistricttQuery = new Query().Where(new WhereFilter() { Field = "DistrictId", Operator = "equal", value = args.RowData.DistrictId, IgnoreCase = false, IgnoreAccent = false });
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+            {
+                if (args.Data.DistrictId == 0)
+                {
+                    toastService.ShowWarning("Please choose a District");
+                    args.Cancel = true;
+                }
+
+                if (args.Data.SubCountyId == 0)
+                {
+                    toastService.ShowWarning("Please choose a Subcounty");
+                    args.Cancel = true;
+                }
+
+                else if (string.IsNullOrEmpty(args.Data.ParishDesc))
+                {
+                    toastService.ShowWarning("Please enter the Parish.");
+                    args.Cancel = true;
+                }
+
+                else
+                {
+                    var countdata = ParishData?
+                    .FirstOrDefault(o => o.DistrictId == args.Data.DistrictId
+                        && o.SubCountyId == args.Data.SubCountyId 
+                        && o.ParishDesc.Trim().ToLower() == args.Data.ParishDesc.Trim().ToLower());
+
+                    var districtname = DistrictData?
+                    .FirstOrDefault(o => o.DistrictId == args.Data.DistrictId);
+
+                    var subcountyname = SubCountyData?
+                    .FirstOrDefault(o => o.SubCountyId == args.Data.SubCountyId);
+
+                    if (countdata != null)
+                    {
+                        toastService.ShowWarning("This parish " + args.Data.ParishDesc + " already exists in the subcounty " + subcountyname.SubCountyDescription + " in the district " + districtname.DistrictDescription + ". Record will not be saved.");
+                        args.Cancel = true;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+    }
+
+
+    public string GetParishHeader(ViewAparish Value)
+    {
+        if (Value.ParishId == 0)
+        {
+            return "Add a new Parish";
+        }
+        else
+        {
+            return "Edit Details for " + Value.ParishDesc;
+        }
+    }
+
+    #endregion Parish Region
+}
+
+

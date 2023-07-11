@@ -1,0 +1,585 @@
+﻿@page "/AssessmentSurveyPage"
+@using HCMIS.Model
+@using HCMIS.ViewModel
+@using System.Text.Json
+@using System.Text.RegularExpressions
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject SystemSettings _SystemSettings
+@using System.Collections;
+@using HCMIS.SHARED.DTOs.Training;
+@using HCMIS.SHARED.DTOs.BSC;
+@inject IToastService toastService;
+
+<style>
+/*    .e-edit-dialog {
+        max-height: 70%;
+        max-width: 80%;
+        min-width: 80%;
+        min-height: 70%;
+    }*/
+
+    .e-edit-dialog {
+        max-height: 98%;
+        max-width: 98%;
+        min-width: 98%;
+        min-height: 98%;
+    }
+
+    h6 {
+        color: ghostwhite;
+        background-color: blue;
+        padding: 10px;
+        width: 100%;
+        font-size: 10px;
+    }
+
+    h4 {
+        color: black;
+        background-color: deepskyblue;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+
+    h3 {
+        color: black;
+        background-color: darkorange;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+
+
+    /**/
+    #container {
+        position: relative;
+        height: 550px;
+    }
+
+    .e-spinner-pane.e-spin-overlay {
+        background-color: rgb(192,192,192);
+    }
+</style>
+
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+
+<center>
+    <h5>
+        <strong>TRAINING NEEDS ASSESSMENT SURVEY- @DateTime.Now.Year</strong>
+    </h5>
+</center>
+    <div class="row">
+        <div class="col-md-12">
+            <h4>Introduction</h4>
+            <h3>
+                To enable the Human Resource and Administration 
+                department arrange appropriate Skills enhancement 
+                training programmes, you are requested to participate 
+                in the Training Needs Assessment Survey. Kindly respond
+                by <strong>@DeadlineDate</strong>, to enable us consolidate the
+                training calendar for <strong>@DeadlineYear</strong> 
+            </h3>
+        </div>
+    <SfGrid ID="Grid" @ref="AssessmentSurveyGrid" TValue="TrainingAssessmentSurveyDto"
+            Toolbar="@ToolbarMenu" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+            AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true">
+        <SfDataManager AdaptorInstance="@typeof(AssessmentAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+        <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+        <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+        <GridEvents OnActionBegin="AssessmentActionBegin" OnActionComplete="AssessmentActionComplete" TValue="TrainingAssessmentSurveyDto"></GridEvents>
+        <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog">
+            <HeaderTemplate>
+                @{
+                    var text = GetAssessmentHeader((context as TrainingAssessmentSurveyDto));
+                    <div class="headerbandimg" />
+                    <span>@text</span>
+                }
+            </HeaderTemplate>
+            <Template>
+                @{
+                    assessmentdata = (context as TrainingAssessmentSurveyDto);
+                    <div>
+                        <div class="row">
+                            <div class="col-md-6" hidden="hidden">
+                                <SfNumericTextBox ID="AssessmentId" @bind-Value="@(assessmentdata.AssessmentId)" Placeholder="Assessment Id" Enabled="false" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                            </div>
+                            <div class="col-md-6">
+                                <p><h3>Employee<span style="color:red;">*</span></h3></p>
+                                <SfDropDownList @bind-Value="@(assessmentdata.Employeeid)" Enabled="true" TItem="ViewBscEmployeeDto" TValue="int?" DataSource="@EmployeeData" Placeholder="Choose Employee" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                    <DropDownListFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></DropDownListFieldSettings>
+                                    <DropDownListEvents TValue="int?" TItem="ViewBscEmployeeDto" ValueChange="OnEmployeeChange"></DropDownListEvents>
+                                </SfDropDownList>
+                            </div>
+                            @if (employeeno != null)
+                            {
+                                <div class="col-md-6">
+                                    <p><h3>Gender</h3></p>
+                                    <strong>@employeeno.GenderDesc</strong>
+                                </div>
+                            }
+                            <div class="col-md-6">
+                                <p><h3>1.What is your current Job Role/Designation?<span style="color:red;">*</span></h3></p>
+                                <SfDropDownList @bind-Value="@(assessmentdata.JobTitleId)" Enabled="false" TItem="JobTitleDto" TValue="int?" DataSource="@JobTitleData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true"
+                                 FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                    <DropDownListFieldSettings Value="@nameof(AJobTitle.JobTitleId)" Text="@nameof(AJobTitle.JobTitleDescription)"></DropDownListFieldSettings>
+                                </SfDropDownList>
+                            </div>
+
+                            <div class="col-md-6">
+                                <p><h3>2.Mention key performance or development gap(s) of your job, in which you would like to receive training or instruction during the year</h3></p>
+                                <SfTextBox Multiline="true" ID="PerformanceDevelopmentGaps" @bind-Value="@(assessmentdata.PerformanceDevelopmentGaps)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                            </div>
+
+                            <div class="col-md-6">
+                                <p><h3>3.Which training intervention, will help you propose to close the performance gap mentioned in above</h3></p>
+                                <SfTextBox Multiline="true" ID="TrainingIntervention" @bind-Value="@(assessmentdata.TrainingIntervention)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                            </div>
+
+                            <div class="col-md-6">
+                                <p><h3>4.What is the best training approach that you would recommend during the year</h3></p>
+                                <SfTextBox Multiline="true" ID="BestTrainingApproach" @bind-Value="@(assessmentdata.BestTrainingApproach)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                            </div>
+                        </div>
+                    </div>
+                    
+                }
+            </Template>
+        </GridEditSettings>
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+        <GridPageSettings PageSize="20"></GridPageSettings>
+        <GridColumns>
+            <GridColumn Type="ColumnType.CheckBox" Width="20"></GridColumn>
+            <GridColumn Field=@nameof(TrainingAssessmentSurveyDto.AssessmentId) HeaderText="Assessment Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="50"></GridColumn>
+            <GridForeignColumn Field=@nameof(TrainingAssessmentSurveyDto.JobTitleId)
+                               HeaderText="Job Title"
+                               Width="180"
+                               AllowEditing="true"
+                               ForeignKeyField="@(nameof(JobTitleDto.JobTitleId))"
+                               ForeignKeyValue="@(nameof(JobTitleDto.JobTitleDescription))"
+                               ForeignDataSource="@JobTitleData"
+                               AllowFiltering="true"
+                               IsFrozen="false">
+            </GridForeignColumn>
+            <GridColumn Field=@nameof(TrainingAssessmentSurveyDto.PerformanceDevelopmentGaps) HeaderText="Performance/Development Gaps" TextAlign="TextAlign.Left" Width="100"></GridColumn>
+            <GridColumn Field=@nameof(TrainingAssessmentSurveyDto.TrainingIntervention) HeaderText="Training Intervention" TextAlign="TextAlign.Left" Width="100"></GridColumn>
+            <GridColumn Field=@nameof(TrainingAssessmentSurveyDto.BestTrainingApproach) HeaderText="Training Intervention" TextAlign="TextAlign.Left" Width="100"></GridColumn>
+        </GridColumns>
+    </SfGrid>
+</div>
+@code {
+    #region Toasters
+    public static string ToastContent { get; set; }
+    SfToast? ToastObj;
+    SfToast DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+        {
+            new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+            new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+            new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+            new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+        };
+    #endregion Toasters
+
+    private SfGrid<TrainingAssessmentSurveyDto>? AssessmentSurveyGrid;
+    private static TrainingAssessmentSurveyDto? assessmentdata { get; set; }
+    List<JobTitleDto>? JobTitleData { get; set; }
+    TrainingAssessmentSurveyDeadlineDto? DeadlineData { get; set; }
+    string DeadlineDate = string.Empty;
+    int DeadlineYear = 2021;
+    List<ViewBscEmployeeDto>? EmployeeData { get; set; }
+
+    Query mainQuery { get; set; } = new();
+    [Parameter]
+    public string? AccessToken { get; set; }
+    string? ErrorMessage { get; set; } = null;
+    private static ViewBscEmployeeDto employeeno { get; set; }
+
+    private List<object> ToolbarMenu = new List<object>() {
+        new ItemModel() { Text = "Capture Survey", PrefixIcon = "e-add", Id = "Grid_add"},//Here Grid is SfGrid ID
+        new ItemModel(){ Text = "Edit Survey", PrefixIcon= "e-edit", Id="Grid_edit"},
+        new ItemModel(){ Text = "Delete Survey", PrefixIcon= "e-delete", Id="Grid_delete"},
+        new ItemModel(){ Text = "Update Survey", PrefixIcon= "e-update", Id="Grid_update"},
+        new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await _SystemSettings.GetLoginCredentials();
+
+        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+        var responseJobTitle = await Http.GetAsync($"{_ApiConfig.BaseUrl}HumanResource/GetJobTitle");
+        var contentJobTitle = await responseJobTitle.Content.ReadAsStringAsync();
+
+        var responseemployee = await Http.GetAsync($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+        var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+
+        if (responseJobTitle.IsSuccessStatusCode && responseemployee.IsSuccessStatusCode)
+        {
+            JobTitleData = await Http.GetFromJsonAsync<List<JobTitleDto>>
+            ($"{_ApiConfig.BaseUrl}HumanResource/GetJobTitle");
+
+            EmployeeData = await Http.GetFromJsonAsync<List<ViewBscEmployeeDto>>
+            ($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+
+            DeadlineData = await Http.GetFromJsonAsync<TrainingAssessmentSurveyDeadlineDto>
+            ($"{_ApiConfig.BaseUrl}AssessmentSurveyDeadline/GetAssessmentDeadline");
+            if (DeadlineData != null && DeadlineData.DeadlineDate.HasValue)
+            {
+                DeadlineDate = DeadlineData.DeadlineDate.Value.ToString("dd/MMMM/yyyy");
+                DeadlineYear = DeadlineData.DeadlineDate.Value.Year;
+            }
+        }
+
+        ToolbarMenu = new List<object>(){
+        new ItemModel() { Text = "Capture Survey", PrefixIcon = "e-add", Id = "Grid_add" },//Here Grid is SfGrid ID
+        new ItemModel() { Text = "Edit Survey", PrefixIcon = "e-edit", Id = "Grid_edit" },
+        new ItemModel() { Text = "Delete Survey", PrefixIcon = "e-delete", Id = "Grid_delete" },
+        new ItemModel() { Text = "Update Survey", PrefixIcon = "e-update", Id = "Grid_update" },
+        new ItemModel() { Text = "Cancel Changes", PrefixIcon = "e-cancel", Id = "Grid_cancel" }
+        };
+
+        //Set employeeno to null on initialize
+        employeeno = null;
+    }
+
+    #region AssessmentAdapter Adapter
+    public class AssessmentAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        SystemSettings _SystemSettings;
+        ApiConfig _ApiConfig;
+        public IToastService toastService;
+        private readonly NavigationManager Navigation;
+
+        public AssessmentAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+            ,SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            Navigation = _Navigation;
+            _ApiConfig = apiConfig;
+            _SystemSettings = systemSettings;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            await _SystemSettings.GetLoginCredentials();
+
+            var data = new List<TrainingAssessmentSurveyDto>();
+
+            string? AccessToken = _SystemSettings.AccessToken;
+            string? BaseUrl = _ApiConfig.BaseUrl;
+
+            try
+            {
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AccessToken);
+                var response = await Http.GetAsync($"{BaseUrl}AssessmentSurvey/GetAssessmentSurvey");
+                var content = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    data = JsonSerializer.Deserialize<List<TrainingAssessmentSurveyDto>>(content, _options);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<TrainingAssessmentSurveyDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as TrainingAssessmentSurveyDto);
+                if (val != null)
+                {
+                    if (val.AssessmentId == 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}AssessmentSurvey/CreateAssessmentSurvey", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}AssessmentSurvey/UpdateAssessmentSurvey", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+
+        //public override async Task<object> RemoveAsync(DataManager dataManager, object value, string keyField, string key)
+        //{
+        //    //try
+        //    //{
+        //    //    int data = (int)value;
+        //    //    using (var dbContext = new MUCOBADIContext())
+        //    //    {
+        //    //        var exists = dbContext.AAdministrationPhase.FirstOrDefault(o => o.AdministrationPhaseId == data);
+        //    //        if (exists != null)
+        //    //        {
+        //    //            dbContext.AAdministrationPhase.Remove(exists);
+        //    //        }
+        //    //        await dbContext.SaveChangesAsync();
+        //    //    }
+        //    //}
+        //    //catch (Exception ex)
+        //    //{
+        //    //    toastService.ShowError(ex.Message.ToString());
+        //    //}
+
+
+        //    return value;
+        //}
+
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as TrainingAssessmentSurveyDto);
+                if (val != null)
+                {
+                    if (val.AssessmentId == 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}AssessmentSurvey/CreateAssessmentSurvey", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}AssessmentSurvey/UpdateAssessmentSurvey", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+    }
+
+    public void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,ViewBscEmployeeDto> args)
+    {
+        employeeno = args.ItemData;
+        assessmentdata.JobTitleId = args.ItemData.DepartmentId;
+    }
+    
+    public void AssessmentActionComplete(ActionEventArgs<TrainingAssessmentSurveyDto> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            AssessmentSurveyGrid.PreventRender(false);
+        }
+    }
+
+    public async void AssessmentActionBegin(ActionEventArgs<TrainingAssessmentSurveyDto> Args)
+    {
+        var data = Args.Data;
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+        {            
+            if (Args.Data.Employeeid == null )
+            {
+                toastService.ShowWarning("Please Choose Emplooyee!");
+                Args.Cancel = true;
+            }
+
+            else if (Args.Data.JobTitleId==null)
+            {
+                toastService.ShowWarning("Please select the job title!");
+                Args.Cancel = true;
+            }            
+
+            else
+            {
+                //using (var dbContext = new COMESAContext())
+                //{
+                //    var name = dbContext.AComesatreaty.FirstOrDefault(o => o.ChapterNo == Args.Data.ChapterNo && o.ChapterTitle == Args.Data.ChapterTitle
+                //    && o.ArticleNo == Args.Data.ArticleNo && o.ArticleTitle == Args.Data.ArticleTitle && o.ArticleDecsription == Args.Data.ArticleDecsription);
+
+                //    if (name != null && (name.ComesatreatyId != Args.Data.ComesatreatyId))
+                //    {
+                //        await this.ToastObj.Show(new ToastModel { Title = "Error!", Content = "This Treaty with ChapterNumber  ( " + name.ChapterNo + " ) Arleady Exists! Record will not be saved", CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                //        Args.Cancel = true;
+                //    }
+                //}
+            }
+        }
+    
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+        {
+            employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
+        }
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+        {
+            employeeno = null; ;
+        }
+    }
+    
+    public string GetAssessmentHeader(TrainingAssessmentSurveyDto Value)
+    {
+        if (Value.AssessmentId == 0 || Value.AssessmentId == null)
+        {
+            return "Add a new Training Assessment Survey";
+        }
+        else
+        {
+            return "Edit Details for " + Value.AssessmentId;
+        }
+    }
+
+    #endregion AssessmentAdapter
+
+}

@@ -1,0 +1,674 @@
+﻿@page "/AptitudeTestPage"
+@using HCMIS.Interface;
+@using HCMIS.Repository
+@using HCMIS.ViewModel
+@using System.Text.Json
+@using System.Collections
+@inject HttpClient http;
+@inject ISettingsRepository settingsRepo;
+<style>
+    h3{
+        color:ghostwhite;
+        background-color:darkslategray;
+        padding:10px;
+        width:100%;
+    }
+    label {
+        margin-top:6px;
+        margin-bottom:6px;
+    }
+</style>
+<PageTitle>Aptitude Tests</PageTitle>
+
+<BreadcrumbPage CategoryName="Human Resource" PageName="Aptitude Tests" />
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+
+    </div>
+    <div class="col-md-12">
+        <SfGrid @ref=@AptituddeTestHeaderGrid TValue="AptituddeTestModel" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+                AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true"
+                Toolbar="@(new string[] {"Add","Edit","Update","Cancel","ColumnChooser"})">
+            <SfDataManager AdaptorInstance="@typeof(AptituddeTestAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+            <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+            <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+            <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+            <GridPageSettings PageSize="20"></GridPageSettings>
+            <GridEvents OnActionComplete="@OnAptituddeTestActionComplete" OnActionBegin="@OnAptituddeTestActionBegin" TValue="AptituddeTestModel"></GridEvents>
+            <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
+                <Template>
+                    @{
+                        HeaderReviewData = (context as AptituddeTestModel)?.Aptituddetestheader;
+                        if((context as AptituddeTestModel).Aptituddetestquestions == null)
+                        {
+                            (context as AptituddeTestModel).Aptituddetestquestions = new();
+                        }
+                        if(HeaderReviewData != null){
+                                    <div class="row" style="margin:10px;">
+                                        <div class="col-md-12" hidden>
+                                            <SfNumericTextBox @bind-Value="@(HeaderReviewData.AptituddeTestHeaderId)" Enabled="false" Placeholder="Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label>Department</label>
+                                            <SfDropDownList @bind-Value="@(HeaderReviewData.DepartmentId)" Enabled="true" TItem="ADepartment" TValue="int?" DataSource="@DepartmentData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                <DropDownListFieldSettings Value="@nameof(ADepartment.DepartmentId)" Text="@nameof(ADepartment.DepartmentDescription)"></DropDownListFieldSettings>
+                                                <DropDownListEvents TItem="ADepartment" TValue="int?" ValueChange="@DepartmentValueChangeHandler"></DropDownListEvents>
+                                            </SfDropDownList>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label>Job Title</label>
+                                            <SfDropDownList @bind-Value="@(HeaderReviewData.JobTitleId)"  Query="@(JobTitleChildQuery)" Enabled="true" TItem="AJobTitle" TValue="int?" DataSource="@JobTitleData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                <DropDownListFieldSettings Value="@nameof(AJobTitle.JobTitleId)" Text="@nameof(AJobTitle.JobTitleDescription)"></DropDownListFieldSettings>
+                                            </SfDropDownList>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label>Pass mark</label>
+                                            <SfNumericTextBox @bind-Value="@(HeaderReviewData.PassMark)" Enabled="true" Placeholder="Pass mark" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label>Summary</label>
+                                            <SfRichTextEditor Height="200px" ShowCharCount="true" @bind-Value="@(HeaderReviewData.TestSummary)" Placeholder="Type something..." EnableResize=true EditorMode="EditorMode.HTML">
+                                                <RichTextEditorQuickToolbarSettings Link="@Link" />
+                                                <RichTextEditorToolbarSettings Type="@Tooltype" Items="@Tools" Enable=true   EnableFloating="true" />
+                                            </SfRichTextEditor>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label>Duration</label>
+                                            <SfNumericTextBox @bind-Value="@(HeaderReviewData.TestDuration)" Enabled="true" Placeholder="Pass mark" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label>Duration Type</label>
+                                            <SfDropDownList @bind-Value="@(HeaderReviewData.DurationTypeId)" Enabled="true" TItem="ADurationType" TValue="int?" DataSource="@DurationTypeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                <DropDownListFieldSettings Value="@nameof(ADurationType.DurationTypeId)" Text="@nameof(ADurationType.DurationTypeDesc)"></DropDownListFieldSettings>
+                                            </SfDropDownList>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label>No of Question per session</label>
+                                            <SfNumericTextBox @bind-Value="@(HeaderReviewData.NoOfQuestionsPerSession)" Enabled="true" Placeholder="Enter No" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <h3>Aptitudde Question</h3>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <SfGrid @ref=@AptituddeTestQuestionGrid TValue="AptituddeTestQuestionModel" DataSource="@((context as AptituddeTestModel)?.Aptituddetestquestions)" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+                                            AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true"
+                                            Toolbar="@(new string[] {"Add","Edit","Update","Cancel","ColumnChooser"})">
+                                                <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+                                                <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+                                                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                                                <GridPageSettings PageSize="20"></GridPageSettings>
+                                                <GridEvents OnActionComplete="@OnQuestionActionComplete" OnActionBegin="@OnQuestionActionBegin" TValue="AptituddeTestQuestionModel"></GridEvents>
+                                                <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
+                                                    <Template Context="QuestionContext">
+                                                @{
+                                                    QuestionReviewData = (QuestionContext as AptituddeTestQuestionModel)?.Aptituddetestquestions;
+                                                    if((QuestionContext as AptituddeTestQuestionModel).Aptituddetestquestionanswers == null)
+                                                    {
+                                                        (QuestionContext as AptituddeTestQuestionModel).Aptituddetestquestionanswers=new();
+                                                    }
+                                                    if (QuestionReviewData != null)
+                                                    {
+                                                                        <div class="row" style="margin:10px;">
+                                                                            <div class="col-md-12" hidden>
+                                                                                <SfNumericTextBox @bind-Value="@(QuestionReviewData.AptituddeTestQuestionId)" Enabled="false" Placeholder="Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                                                                            </div>
+                                                                            <div>
+                                                                                <label>Dificulty Level</label>
+                                                                                <SfDropDownList @bind-Value="@(QuestionReviewData.DifficultyLevelId)" Enabled="true" TItem="ADifficultyLevel" TValue="int?" DataSource="@DifficultyLevelData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                                                    <DropDownListFieldSettings Value="@nameof(ADifficultyLevel.DifficultyLevelId)" Text="@nameof(ADifficultyLevel.DifficultyLevelDesc)"></DropDownListFieldSettings>
+                                                                                </SfDropDownList>
+                                                                            </div>
+                                                                            <div class="col-md-12">
+                                                                                <p>Question</p>
+                                                                                <SfRichTextEditor Height="200px" ShowCharCount="true" @bind-Value="@(QuestionReviewData.Question)" Placeholder="Type something..." EnableResize=true EditorMode="EditorMode.HTML">
+                                                                                    <RichTextEditorQuickToolbarSettings Link="@Link" />
+                                                                                    <RichTextEditorToolbarSettings Type="@Tooltype" Items="@Tools" Enable=true   EnableFloating="true" />
+                                                                                </SfRichTextEditor>
+                                                                            </div>
+                                                                            <div class="col-md-4">
+                                                                                <label>Score</label>
+                                                                                <SfNumericTextBox @bind-Value="@(QuestionReviewData.QuestionMark)" Enabled="true" Placeholder="Score" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                                                            </div>
+                                                                            <div class="col-md-4" style="padding-top:15px;">
+                                                                                <SfCheckBox @bind-Checked=@QuestionReviewData.IsAmultiselectQuestion Label="Allows Multiple answers" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After" />
+                                                                            </div>
+                                                                            <div class="col-md-12">
+                                                                                <h3>Answers</h3>
+                                                                            </div>
+                                                                            <div>
+                                                                                <SfGrid @ref=@AptituddeTestAnswerGrid TValue="AptituddeTestQuestionAnswers" DataSource="@((QuestionContext as AptituddeTestQuestionModel)?.Aptituddetestquestionanswers)" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+                                                                    AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true"
+                                                                    Toolbar="@(new string[] {"Add","Edit","Update","Cancel","ColumnChooser"})">
+                                                                                <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+                                                                                <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+                                                                                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                                                                                <GridPageSettings PageSize="20"></GridPageSettings>
+                                                                                    <GridEvents OnActionComplete="@OnAnswerActionComplete" OnActionBegin="@OnAnswerActionBegin" TValue="AptituddeTestQuestionAnswers"></GridEvents>
+                                                                                <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
+                                                                                        <Template Context="AnswerContext">
+                                                                                        @{
+                                                                             AnswerReviewData = (AnswerContext as AptituddeTestQuestionAnswers);
+                                                                            if (AnswerReviewData != null)
+                                                                            {
+                                                                                                        <div class="row" style="margin:10px;">
+                                                                                                            <div class="col-md-12" hidden>
+                                                                                                                <SfNumericTextBox @bind-Value="@(AnswerReviewData.AptituddeTestQuestionAnswersId)" Enabled="false" Placeholder="Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                                                                                                            </div>
+                                                                                                            <div class="col-md-12">
+                                                                                                                <p>Question</p>
+                                                                                                                <SfTextBox Multiline="true" @bind-Value="@(AnswerReviewData.Answer)" Enabled="true" Placeholder="Enter Question" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                                                                            </div>
+                                                                                                            <div class="col-md-4" style="padding-top:15px;">
+                                                                                                                <SfCheckBox @bind-Checked=@AnswerReviewData.IsCorrectAnswer Label="Is the Correct Answer?" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After" />
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                            }
+                                                                                        }
+                                                                                    </Template>
+                                                                                </GridEditSettings>
+                                                                                <GridColumns>
+                                                                                    <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                                                                                    <GridColumn Field=@nameof(AptituddeTestQuestionAnswers.AptituddeTestQuestionAnswersId) HeaderText="Id" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+                                                                                    <GridColumn Field=@nameof(AptituddeTestQuestionAnswers.Answer) HeaderText="Question" Width="200" AllowFiltering="false"></GridColumn>
+                                                                                        <GridColumn Field=@nameof(AptituddeTestQuestionAnswers.IsCorrectAnswer) HeaderText="Is Correct Answer" Width="120" AllowFiltering="false"></GridColumn>
+                                                                                </GridColumns>
+                                                                            </SfGrid>
+                                                                            </div>
+                                                                        </div>
+                                                    }
+                                                        }
+                                                    </Template>
+                                                </GridEditSettings>
+                                                <GridColumns>
+                                                    <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                                                    <GridColumn Field=@nameof(AptituddeTestQuestionModel.AptituddeTestQuestionId) HeaderText="Id" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+                                                    <GridColumn HeaderText="Question" Width="200" AllowFiltering="false">
+                                                        <Template Context="QuestionContext">
+                                                            @{
+                                                        string? result = string.Empty;
+                                                            var data = (QuestionContext as AptituddeTestQuestionModel)?.Aptituddetestquestions;
+                                                            if(data != null){
+                                                                result = data.Question;
+                                                            }
+                                                                        <p>@((MarkupString)@result)</p>
+                                                            }
+                                                        </Template>
+                                                    </GridColumn>
+                                                    <GridColumn HeaderText="Dificulty Level" Width="150" AllowFiltering="false">
+                                                        <Template Context="QuestionContext">
+                                                        @{
+                                                    string? result = string.Empty;
+                                                        var data = (QuestionContext as AptituddeTestQuestionModel)?.Aptituddetestquestions;
+                                                    if(data != null){
+                                                        if(DifficultyLevelData != null){
+                                                                var _data = DifficultyLevelData.FirstOrDefault(o => o.DifficultyLevelId == data.DifficultyLevelId);
+                                                            if(_data != null){
+                                                                result = _data.DifficultyLevelDesc;
+                                                            }
+                                                        }
+                                                    }
+                                                                    <p>@result</p>
+                                                        }
+                                                    </Template>
+                                                </GridColumn>
+                                                    <GridColumn HeaderText="Score" Width="120" AllowFiltering="false">
+                                                        <Template Context="QuestionContext">
+                                                            @{
+                                                        string? result = string.Empty;
+                                                        var data = (QuestionContext as AptituddeTestQuestionModel)?.Aptituddetestquestions;
+                                                        if (data != null)
+                                                        {
+                                                            result =$"{data.QuestionMark}";
+                                                        }
+                                                                        <p>@result</p>
+                                                            }
+                                                        </Template>
+                                                    </GridColumn>
+                                                    <GridColumn HeaderText="Allows Multiple answers" Width="120" AllowFiltering="false">
+                                                        <Template Context="QuestionContext">
+                                                            @{
+                                                        string? result = string.Empty;
+                                                        var data = (QuestionContext as AptituddeTestQuestionModel)?.Aptituddetestquestions;
+                                                        if (data != null)
+                                                        {
+                                                            result = data.IsAmultiselectQuestion.ToString();
+                                                        }
+                                                                        <p>@result</p>
+                                                            }
+                                                        </Template>
+                                                    </GridColumn>
+                                                </GridColumns>
+                                            </SfGrid>
+                                        </div>
+                                    </div>
+                        }
+                    }
+                </Template>
+            </GridEditSettings>
+            <GridColumns>
+                <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                <GridColumn Field=@nameof(AptituddeTestModel.AptituddeTestHeaderId) HeaderText="Id" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+                <GridForeignColumn Field=@nameof(AptituddeTestModel.DepartmentId) HeaderText="Department" Width="150" ForeignKeyField="@(nameof(ADepartment.DepartmentId))" ForeignKeyValue="@(nameof(ADepartment.DepartmentDescription))" ForeignDataSource="@DepartmentData"></GridForeignColumn>
+                <GridForeignColumn Field=@nameof(AptituddeTestModel.JobTitleId) HeaderText="Job Title" Width="150" ForeignKeyField="@(nameof(AJobTitle.JobTitleId))" ForeignKeyValue="@(nameof(AJobTitle.JobTitleDescription))" ForeignDataSource="@JobTitleData"></GridForeignColumn>
+                <GridColumn HeaderText="Test Duration" Width="150" AllowFiltering="false">
+                    <Template>
+                        @{
+                            string? result = string.Empty;
+                            var data = (context as AptituddeTestModel)?.Aptituddetestheader;
+                            if(data != null){
+                                if(DurationTypeData != null){
+                                    var _duration = DurationTypeData.FirstOrDefault(o=> o.DurationTypeId== data.DurationTypeId);
+                                    if(_duration != null){
+                                        result = $"{data.TestDuration} {_duration.DurationTypeDesc}";
+                                    }
+                                }
+                            }
+                                    <p>@result</p>
+                        }
+                    </Template>
+                </GridColumn>
+                <GridColumn HeaderText="No of Question per session" Width="120" AllowFiltering="false">
+                    <Template>
+                        @{
+                            string? result = string.Empty;
+                            var data = (context as AptituddeTestModel)?.Aptituddetestheader;
+                            if (data != null)
+                            {
+                                result = $"{data.NoOfQuestionsPerSession}";
+                            }
+                                    <p>@result</p>
+                        }
+                    </Template>
+                </GridColumn>
+            </GridColumns>
+        </SfGrid>
+    </div>
+    <div class="col-md-12">
+    </div>
+</div>
+
+@code {
+    #region Toasters
+    public static string? ToastContent { get; set; }
+    SfToast? ToastObj;
+    SfToast? DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+        {
+            new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+            new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+            new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+            new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+        };
+    #endregion Toasters
+    private SfGrid<AptituddeTestModel>? AptituddeTestHeaderGrid;
+    private SfGrid<AptituddeTestQuestionModel>? AptituddeTestQuestionGrid;
+    private SfGrid<AptituddeTestQuestionAnswers>? AptituddeTestAnswerGrid;
+    private AptituddeTestHeader? HeaderReviewData { get; set; }
+    private AptituddeTestQuestions? QuestionReviewData { get; set; }
+    private AptituddeTestQuestionAnswers? AnswerReviewData { get; set; }
+    Query JobTitleChildQuery { get; set; } = new Query();
+
+    private List<ADepartment>? DepartmentData { get; set; }
+    private List<AJobTitle>? JobTitleData { get; set; }
+    private List<ADurationType>? DurationTypeData{ get; set; }
+    private List<ADifficultyLevel>? DifficultyLevelData { get; set; }
+    private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "80vh", Width = "96%" };
+
+    private ToolbarType Tooltype = ToolbarType.MultiRow;
+    private List<ToolbarItemModel> Tools = new List<ToolbarItemModel>()
+    {
+        new ToolbarItemModel() { Command = ToolbarCommand.Bold },
+        new ToolbarItemModel() { Command = ToolbarCommand.Italic },
+        new ToolbarItemModel() { Command = ToolbarCommand.Underline },
+        new ToolbarItemModel() { Command = ToolbarCommand.StrikeThrough },
+        new ToolbarItemModel() { Command = ToolbarCommand.FontName },
+        new ToolbarItemModel() { Command = ToolbarCommand.FontSize },
+        new ToolbarItemModel() { Command = ToolbarCommand.FontColor },
+        new ToolbarItemModel() { Command = ToolbarCommand.BackgroundColor },
+        new ToolbarItemModel() { Command = ToolbarCommand.LowerCase },
+        new ToolbarItemModel() { Command = ToolbarCommand.UpperCase },
+        new ToolbarItemModel() { Command = ToolbarCommand.Separator },
+        new ToolbarItemModel() { Command = ToolbarCommand.Formats },
+        new ToolbarItemModel() { Command = ToolbarCommand.Alignments },
+        new ToolbarItemModel() { Command = ToolbarCommand.OrderedList },
+        new ToolbarItemModel() { Command = ToolbarCommand.UnorderedList },
+        new ToolbarItemModel() { Command = ToolbarCommand.Outdent },
+        new ToolbarItemModel() { Command = ToolbarCommand.Indent },
+        new ToolbarItemModel() { Command = ToolbarCommand.Separator },
+        new ToolbarItemModel() { Command = ToolbarCommand.CreateLink },
+        //new ToolbarItemModel() { Command = ToolbarCommand.Image },
+        new ToolbarItemModel() { Command = ToolbarCommand.Separator },
+        new ToolbarItemModel() { Command = ToolbarCommand.ClearFormat },
+        //new ToolbarItemModel() { Command = ToolbarCommand.Print },
+        new ToolbarItemModel() { Command = ToolbarCommand.SourceCode },
+        new ToolbarItemModel() { Command = ToolbarCommand.Separator },
+        new ToolbarItemModel() { Command = ToolbarCommand.Undo },
+        new ToolbarItemModel() { Command = ToolbarCommand.Redo }
+    };
+    private List<LinkToolbarItemModel> Link = new List<LinkToolbarItemModel>()
+    {
+        new LinkToolbarItemModel() { Command = LinkToolbarCommand.Open },
+        new LinkToolbarItemModel() { Command = LinkToolbarCommand.Edit },
+        new LinkToolbarItemModel() { Command = LinkToolbarCommand.UnLink }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            string? accessToken = await settingsRepo.GetAccessToken();
+            http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            var tasks = new List<Task>();
+            tasks.Add(Task.Run(async () =>
+            {
+                var response = await http.GetAsync($"Utilities/GetDepartment");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
+                }
+            }));
+            tasks.Add(Task.Run(async () =>
+           {
+               var response = await http.GetAsync($"Utilities/GetDurationType");
+               var content = await response.Content.ReadAsStringAsync();
+               if (response.IsSuccessStatusCode)
+               {
+                   DurationTypeData = JsonSerializer.Deserialize<List<ADurationType>>(content, _options);
+               }
+           }));
+           tasks.Add(Task.Run(async () =>
+           {
+                var response = await http.GetAsync($"Utilities/GetDifficultyLevel");
+               var content = await response.Content.ReadAsStringAsync();
+               if (response.IsSuccessStatusCode)
+               {
+                    DifficultyLevelData = JsonSerializer.Deserialize<List<ADifficultyLevel>>(content, _options);
+               }
+           }));
+            tasks.Add(Task.Run(async () =>
+            {
+                var response = await http.GetAsync($"HumanResource/GetJobTitle");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
+                }
+            }));
+            Task t = Task.WhenAll(tasks);
+            await t;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            //throw;
+        }
+
+        await base.OnInitializedAsync();
+    }
+    private void DepartmentValueChangeHandler(ChangeEventArgs<int?, ADepartment> args)
+    {
+        if (args.ItemData != null)
+        {
+            JobTitleChildQuery = new Query().Where(new WhereFilter() { Field = "DepartmentId", Operator = "equal", value = args.ItemData.DepartmentId, IgnoreCase = false, IgnoreAccent = false });
+        }
+    }
+
+    public class AptituddeTestAdapter : DataAdaptor
+    {
+        private IToastService toastService;
+        private IAptituddeTestReopsitory reopsitory;
+        private readonly JsonSerializerOptions _options;
+        public AptituddeTestAdapter(IToastService ts, IAptituddeTestReopsitory _reopsitory)
+        {
+            toastService = ts;
+            reopsitory = _reopsitory;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        }
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<AptituddeTestModel>();
+            try
+            {
+                data = await reopsitory.GetAllAptituddeTests();
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<AptituddeTestModel>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                var val = (value as AptituddeTestModel);
+                var result = await reopsitory.SaveAptituddeTest(val);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                    if (data != null)
+                    {
+                        if (data.IsSuccess)
+                        {
+                            toastService.ShowSuccess(data.Message);
+                        }
+                        else
+                        {
+                            toastService.ShowError(data.Message);
+                        }
+                    }
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                var val = (value as AptituddeTestModel);
+                var result = await reopsitory.SaveAptituddeTest(val);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                    if (data != null)
+                    {
+                        if (data.IsSuccess)
+                        {
+                            toastService.ShowSuccess(data.Message);
+                        }
+                        else
+                        {
+                            toastService.ShowError(data.Message);
+                        }
+                    }
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+    }
+    public async Task OnAptituddeTestActionComplete(ActionEventArgs<AptituddeTestModel> args)
+    {
+        try
+        {
+            if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+            {
+                AptituddeTestHeaderGrid?.PreventRender(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+
+    }
+    public async Task OnAptituddeTestActionBegin(ActionEventArgs<AptituddeTestModel> args)
+    {
+        try
+        {
+            if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add))
+            {
+                args.RowData.Aptituddetestheader = new();
+                args.RowData.Aptituddetestquestions = new();
+            }
+            else if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+            {
+                JobTitleChildQuery = new Query().Where(new WhereFilter() { Field = "DepartmentId", Operator = "equal", value = args.RowData.DepartmentId, IgnoreCase = false, IgnoreAccent = false });
+                if (args.RowData.Aptituddetestquestions==null){
+                    args.RowData.Aptituddetestquestions = new();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+
+    }
+
+    public async Task OnQuestionActionComplete(ActionEventArgs<AptituddeTestQuestionModel> args)
+    {
+        try
+        {
+            if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+            {
+                AptituddeTestQuestionGrid?.PreventRender(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+
+    }
+    public async Task OnQuestionActionBegin(ActionEventArgs<AptituddeTestQuestionModel> args)
+    {
+        try
+        {
+            if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add))
+            {
+                args.RowData.Aptituddetestquestions = new();
+                args.RowData.Aptituddetestquestionanswers = new();
+                Random random = new Random();
+                int id = random.Next(-100, -1);
+                args.RowData.Aptituddetestquestions.AptituddeTestQuestionId = id;
+                args.RowData.AptituddeTestQuestionId = id;
+            }
+            else if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+            {
+                if (args.RowData.Aptituddetestquestionanswers == null)
+                {
+                    args.RowData.Aptituddetestquestionanswers = new();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+
+    }
+    public async Task OnAnswerActionComplete(ActionEventArgs<AptituddeTestQuestionAnswers> args)
+    {
+        try
+        {
+            if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+            {
+                AptituddeTestAnswerGrid?.PreventRender(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+
+    }
+    public async Task OnAnswerActionBegin(ActionEventArgs<AptituddeTestQuestionAnswers> args)
+    {
+        try
+        {
+            if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add))
+            {
+                Random random = new Random();
+                int id = random.Next(-100, -1);
+                args.RowData.AptituddeTestQuestionAnswersId = id;
+                args.RowData.AptituddeTestQuestionId = QuestionReviewData?.AptituddeTestQuestionId;
+            }
+            else if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+            {
+                
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+
+    }
+}

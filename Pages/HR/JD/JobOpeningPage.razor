@@ -1,0 +1,576 @@
+﻿@using System.Text.Json
+@using System.Collections
+@inject HttpClient Http
+@inject AppState AppState
+@inject ApiConfig _ApiConfig;
+@inject NavigationManager Navigation
+@inject SystemSettings _SystemSettings
+
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+<SfGrid @ref="@DataGrid" TValue="JobOpening" ID="JobOpeningGrid" AllowPaging="true" AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Delete", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+        <Template>
+            @{
+                var JobOpeningReviewData = (context as JobOpening);
+                @if(JobOpeningReviewData != null){
+                    <div class="row">
+                        <div class="col-md-12" hidden>
+                            <SfNumericTextBox @bind-Value="@(JobOpeningReviewData.JobOpeningId)" ID="JobOpeningId" TValue="int" Width="100%" Format="N0" Placeholder="Job Description Id" Step="1" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                        </div>
+                        <div class="col-md-12">
+                            <p>Job Title</p>
+                            <SfDropDownList @bind-Value="@(JobOpeningReviewData.JobDescriptionId)" TItem="ViewJobDescriptionOpening" TValue="int?" Width="100%" PopupHeight="230px" AllowFiltering=true IgnoreAccent=true DataSource="@JobDescriptionData">
+                                <DropDownListFieldSettings GroupBy="@(nameof(ViewJobDescriptionOpening.DepartmentDescription))" Text="@(nameof(ViewJobDescriptionOpening.JobTitleDescription))" Value="@(nameof(ViewJobDescriptionOpening.JobDescriptionId))"></DropDownListFieldSettings>
+                            </SfDropDownList>
+                        </div>
+                        <div  class="col-md-12">
+                            <p>Reference Number</p>
+                            <SfTextBox @bind-Value="@(JobOpeningReviewData.ReferenceNumber)" Width="100%" Placeholder="Ref No." FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                        </div>
+                        <div class="col-md-6">
+                            <p>Applications Opening Date</p>
+                            <SfDateTimePicker @bind-Value="@(JobOpeningReviewData.ApplicationOpeningDate)" TValue="DateTime?" Placeholder="Choose a Date" Format="dd/MM/yyyy hh:mm:ss tt">
+                            </SfDateTimePicker>
+                        </div>
+                        <div class="col-md-6">
+                            <p>Applications Closing Date</p>
+                            <SfDateTimePicker @bind-Value="@(JobOpeningReviewData.ApplicationClosingDate)" TValue="DateTime?" Placeholder="Choose a Date" Format="dd/MM/yyyy hh:mm:ss tt">
+                            </SfDateTimePicker>
+                        </div>
+                    </div>
+                }
+            }
+        </Template>
+    </GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple"></GridSelectionSettings>
+    <GridEvents OnToolbarClick="@GridToolbarClick" TValue="JobOpening"></GridEvents>
+    <SfDataManager AdaptorInstance="@typeof(JobOpeningAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <GridColumns>
+      <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+    	<GridColumn Field=@nameof(JobOpening.JobOpeningId) HeaderText="JobOpeningId" Visible=false AllowEditing="false" IsPrimaryKey="true" Width="150"></GridColumn>
+        <GridForeignColumn Field=@nameof(JobOpening.JobDescriptionId) HeaderText="Department" AllowEditing="false" Width="150" ForeignDataSource="@JobDescriptionData" ForeignKeyField="@nameof(ViewJobDescriptionOpening.JobDescriptionId)" ForeignKeyValue="@nameof(ViewJobDescriptionOpening.DepartmentDescription)"></GridForeignColumn>
+        <GridForeignColumn Field=@nameof(JobOpening.JobDescriptionId) HeaderText="Title" AllowEditing="false" Width="150" ForeignDataSource="@JobDescriptionData" ForeignKeyField="@nameof(ViewJobDescriptionOpening.JobDescriptionId)" ForeignKeyValue="@nameof(ViewJobDescriptionOpening.JobTitleDescription)"></GridForeignColumn>
+        <GridColumn Field=@nameof(JobOpening.ReferenceNumber) HeaderText="Reference Number" Visible=true AllowEditing="false" Width="150"></GridColumn>
+        <GridColumn Field=@nameof(JobOpening.ApplicationOpeningDate) HeaderText="Application Opening Date" AllowEditing="false"  Width="150" Format="dd/MM/yyyy hh:mm:ss tt"></GridColumn>
+        <GridColumn Field=@nameof(JobOpening.ApplicationClosingDate) HeaderText="Application Closing Date" AllowEditing="false"  Width="150" Format="dd/MM/yyyy hh:mm:ss tt"></GridColumn>
+    </GridColumns>
+</SfGrid>
+@if(ErrorMessage != null){
+    <p class="alert alert-danger">@ErrorMessage</p>
+}
+@code {
+    SfGrid<JobOpening>? DataGrid { get; set; }
+    /// <summary>
+    /// Event for Toolbar click for Grid Exporting
+    /// </summary>
+    public void GridToolbarClick(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Id == "JobOpeningGrid_excelexport")
+        {
+            this.DataGrid.ExportToExcelAsync();
+        }
+        if (args.Item.Id == "JobOpeningGrid_pdfexport")
+        {
+            this.DataGrid.ExportToPdfAsync();
+        }
+        if (args.Item.Id == "JobOpeningGrid_csvexport")
+        {
+            this.DataGrid.ExportToCsvAsync();
+        }
+    }
+
+    string? ErrorMessage { get; set; } = null;
+    SfToast? ToastObj;
+    private string ToastPosition = "Right";
+    List<ViewJobDescriptionOpening>? JobDescriptionData{ get; set; }
+     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    protected override async Task OnInitializedAsync()
+    {
+        try{
+            await _SystemSettings.GetLoginCredentials();
+            if (string.IsNullOrEmpty(_SystemSettings.AccessToken))
+            {
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                var tasks = new List<Task>();
+                tasks.Add(Task.Run(async () =>
+               {
+                   Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                   var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}HumanResource/GetJobDescriptionOpening");
+                   var content = await response.Content.ReadAsStringAsync();
+                   if (response.IsSuccessStatusCode)
+                   {
+                       JobDescriptionData = JsonSerializer.Deserialize<List<ViewJobDescriptionOpening>>(content, _options);
+                   }
+               }));
+                Task t = Task.WhenAll(tasks);
+                await t;
+            }
+
+        }
+        catch(Exception ex)
+        {
+            ErrorMessage=$"Error: {ex.Message}";
+        }
+        await base.OnInitializedAsync();
+        StateHasChanged();
+    }
+    public class JobOpeningAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        SystemSettings _SystemSettings;
+        ApiConfig _ApiConfig;
+        public IToastService toastService;
+        //private UserManagement _userManagement;
+        public JobOpeningAdapter(HttpClient _http, IToastService ts/*, UserManagement userManagement*/
+        , SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            _SystemSettings = systemSettings;
+            _ApiConfig = apiConfig;
+            //_userManagement = userManagement;
+            toastService = ts;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<JobOpening>();
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}HumanResource/GetJobOpening");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    data = JsonSerializer.Deserialize<List<JobOpening>>(content, _options);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<JobOpening>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as JobOpening);
+                if (val != null)
+                {
+                    if (val.JobOpeningId == 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}HumanResource/PostJobOpening", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}HumanResource/PutJobOpening", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+        public override async Task<object> RemoveAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            //try
+            //{
+            //    int data = (int)value;
+            //    using (var dbContext = new MUCOBADIContext())
+            //    {
+            //        var exists = dbContext.AAdministrationPhase.FirstOrDefault(o => o.AdministrationPhaseId == data);
+            //        if (exists != null)
+            //        {
+            //            dbContext.AAdministrationPhase.Remove(exists);
+            //        }
+            //        await dbContext.SaveChangesAsync();
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    toastService.ShowError(ex.Message.ToString());
+            //}
+
+
+            return value;
+        }
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as JobOpening);
+                if (val != null)
+                {
+                    if (val.JobOpeningId == 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}HumanResource/PostJobOpening", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}HumanResource/PutJobOpening", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+        public override async Task<object> BatchUpdateAsync(DataManager dm, object Changed, object Added, object Deleted, string KeyField, string Key, int? dropIndex)
+        {
+            object? products = null;
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                if (Changed != null)
+                {
+                    products = Changed;
+                    foreach (var val in (List<JobOpening>)Changed)
+                    {
+                        if (val != null)
+                        {
+                            if (val.JobOpeningId == 0)
+                            {
+                                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                                var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}HumanResource/PostJobOpening", httpContent);
+                                if (result.IsSuccessStatusCode)
+                                {
+                                    var content = await result.Content.ReadAsStringAsync();
+                                    var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                                    if (data != null)
+                                    {
+                                        if (data.IsSuccess)
+                                        {
+                                            toastService.ShowSuccess(data.Message);
+                                        }
+                                        else
+                                        {
+                                            toastService.ShowError(data.Message);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    toastService.ShowError(result.ReasonPhrase);
+                                }
+
+                            }
+                            else
+                            {
+                                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                                var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}HumanResource/PutJobOpening", httpContent);
+                                if (result.IsSuccessStatusCode)
+                                {
+                                    var content = await result.Content.ReadAsStringAsync();
+                                    var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                                    if (data != null)
+                                    {
+                                        if (data.IsSuccess)
+                                        {
+                                            toastService.ShowSuccess(data.Message);
+                                        }
+                                        else
+                                        {
+                                            toastService.ShowError(data.Message);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    toastService.ShowError(result.ReasonPhrase);
+                                }
+                            }
+                        }
+                    }
+
+                }
+                if (Added != null)
+                {
+                    products = Added;
+                    foreach (var val in (List<JobOpening>)Added)
+                    {
+                        if (val != null)
+                        {
+                            if (val.JobOpeningId == 0)
+                            {
+                                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                                var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}HumanResource/PostJobOpening", httpContent);
+                                if (result.IsSuccessStatusCode)
+                                {
+                                    var content = await result.Content.ReadAsStringAsync();
+                                    var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                                    if (data != null)
+                                    {
+                                        if (data.IsSuccess)
+                                        {
+                                            toastService.ShowSuccess(data.Message);
+                                        }
+                                        else
+                                        {
+                                            toastService.ShowError(data.Message);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    toastService.ShowError(result.ReasonPhrase);
+                                }
+
+                            }
+                            else
+                            {
+                                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                                var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}HumanResource/PutJobOpening", httpContent);
+                                if (result.IsSuccessStatusCode)
+                                {
+                                    var content = await result.Content.ReadAsStringAsync();
+                                    var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                                    if (data != null)
+                                    {
+                                        if (data.IsSuccess)
+                                        {
+                                            toastService.ShowSuccess(data.Message);
+                                        }
+                                        else
+                                        {
+                                            toastService.ShowError(data.Message);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    toastService.ShowError(result.ReasonPhrase);
+                                }
+                            }
+                        }
+                    }
+
+                }
+                if (Deleted != null)
+                {
+                    products = Deleted;
+                    //foreach (var rec in (List<OrderDetails>)Deleted)
+                    //{
+                    //    Orders.Remove(Orders.Where(or => or.OrderID == rec.OrderID).FirstOrDefault());
+                    //}
+
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return products;
+        }
+    }
+    public async Task OnJobOpeningComplete(ActionEventArgs<JobOpening> args)
+    {
+        try
+        {
+            if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+            {
+                DataGrid.PreventRender(false);
+            }
+            else if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+            {
+                
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+
+    }
+    public async Task OnJobOpeningActionBegin(ActionEventArgs<JobOpening> args)
+    {
+        try
+        {
+            if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+            {
+
+            }
+            else if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+            {
+                
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        finally
+        {
+            
+        }
+    }
+}

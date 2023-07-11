@@ -1,0 +1,360 @@
+﻿@page "/RelationshipPage"
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using System.Collections;
+@using System.IO;
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager navigation;
+@inject SystemSettings _SystemSettings;
+@using HCMIS.SHARED.DTOs.BSC;
+@using HCMIS.SHARED.DTOs.Utilities;
+@using HCMIS.ViewModel;
+@inject IToastService toastService;
+
+<style>
+    .element.style {
+        max-height: 531px;
+        z-index: 1001;
+        left: 0px;
+        top: 0px;
+        width: 1000px;
+        position: relative;
+    }
+
+    /*Change Cell Color */
+    .e-headercell.e-attr1 {
+        background: #964B00;
+        color: white;
+    }
+
+    .e-headercell.e-attr2 {
+        background: #FFFF00;
+        color: darkred;
+    }
+
+    .e-headercell.e-attr3 {
+        background: grey;
+        color: white;
+    }
+
+    .pp {
+        color: ghostwhite;
+        background-color: #2ecc71;
+        padding: 10px;
+    }
+</style>
+
+<center>
+    <h5>
+        <strong>PUBLIC HOLIDAYS</strong>
+    </h5>
+</center>
+
+<SfGrid @ref="@RelationshipGrid" ID="Grid" TValue="ARelationshipDto" AllowPaging="true"
+        AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
+        AllowSorting="true" Toolbar="@ToolbarMenu">
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+    <SfDataManager AdaptorInstance="@typeof(RelationshipAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <GridEvents OnActionComplete="@RelationshipActionComplete" OnActionBegin="@RelationshipActionBegin" TValue="ARelationshipDto"></GridEvents>
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog" Dialog="DialogParams">
+        <HeaderTemplate>
+            @{
+                var text = GetHolidayHeader((context as ARelationshipDto));
+                <div class="headerbandimg">
+                    <span>@text</span>
+                </div>
+            }
+        </HeaderTemplate>
+        <Template Context="BankContext">
+            @{
+                RelationshipData = (BankContext as ARelationshipDto);
+                @if (RelationshipData != null)
+                {
+                    <div class="row">
+                        <div class="col-md-12" hidden>
+                            <SfNumericTextBox @bind-Value="@(RelationshipData.RelationshipId)" Enabled="false" Placeholder="Relationship Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                        </div>
+
+
+                        <div class="col-md-12">
+                            <p>Relation<span style="color:red;">*</span></p>
+                            <SfTextBox Multiline="false" @bind-Value="@(RelationshipData.RelationshipName)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                        </div>
+                    </div>
+                }
+            }
+        </Template>
+    </GridEditSettings>
+    <GridColumns>
+        <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn>
+        <GridColumn Field=@nameof(ARelationshipDto.RelationshipId)
+                    Visible=false
+                    HeaderText="Relationship Id"
+                    AllowEditing="false"
+                    IsPrimaryKey="true">
+        </GridColumn>
+        <GridColumn Field=@nameof(ARelationshipDto.RelationshipName)
+                    HeaderText="Relation"
+                    TextAlign="TextAlign.Justify"
+                    Width="80"
+                    ClipMode="ClipMode.EllipsisWithTooltip"
+                    Type="ColumnType.String"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+        </GridColumn>
+    </GridColumns>
+</SfGrid>
+
+@code {
+    SfGrid<ARelationshipDto>? RelationshipGrid;
+    private static ARelationshipDto? RelationshipData { get; set; }
+    public bool? radiovalue;
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "65%" };
+    List<ARelationshipDto>? RelationshipCountData { get; set; }
+
+    private List<object> ToolbarMenu = new List<object>()
+    {
+        new ItemModel() { Text = "Add Relationship", PrefixIcon = "e-add", Id = "Grid_add"},
+        new ItemModel(){ Text = "Edit Relationship", PrefixIcon= "e-edit", Id="Grid_edit"},
+        //new ItemModel(){ Text = "Delete Training Plan", PrefixIcon= "e-delete", Id="Grid_delete"},
+        new ItemModel(){ Text = "Update Relationship", PrefixIcon= "e-update", Id="Grid_update"},
+        new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await _SystemSettings.GetLoginCredentials();
+        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+
+        var responsebankcount = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetRelationship");
+        var bankcount = await responsebankcount.Content.ReadAsStringAsync();
+
+        if (responsebankcount.IsSuccessStatusCode)
+        {
+            RelationshipCountData = await Http.GetFromJsonAsync<List<ARelationshipDto>>
+            ($"{_ApiConfig.BaseUrl}Utilities/GetRelationship");
+        }
+    }
+
+    #region RelationshipAdapter
+    public class RelationshipAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        ApiConfig _ApiConfig;
+        SystemSettings _SystemSettings;
+        private readonly JsonSerializerOptions _options;
+        public IToastService toastService;
+        private readonly NavigationManager Navigation;
+        public RelationshipAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+            , SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            Navigation = _Navigation;
+            _ApiConfig = apiConfig;
+            _SystemSettings = systemSettings;
+
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<ARelationshipDto>();
+            try
+            {
+                var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetRelationship");
+                var content = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    toastService.ShowError(response.ReasonPhrase);
+                }
+                data = JsonSerializer.Deserialize<List<ARelationshipDto>>(content, _options);
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<ARelationshipDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                var val = (value as ARelationshipDto);
+
+                if (val.RelationshipId == 0)
+                {
+                    string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                    StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                    var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}Utilities/CreateRelationship", httpContent);
+                    if (result.IsSuccessStatusCode)
+                    {
+                        toastService.ShowSuccess("Record sucessfully added");
+                    }
+                    else
+                    {
+                        //toastService.ShowError(result.Content.);
+                    }
+                }
+                else
+                {
+                    string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                    StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                    var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}Utilities/UpdateRelationship", httpContent);
+                    if (result.IsSuccessStatusCode)
+                    {
+                        toastService.ShowSuccess("Record sucessfully saved");
+                    }
+                    else
+                    {
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                var val = (value as ARelationshipDto);
+                await _SystemSettings.GetLoginCredentials();
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}Utilities/UpdateRelationship", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    toastService.ShowSuccess("Record sucessfully updated");
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+
+
+    }
+
+    public async void RelationshipActionComplete(ActionEventArgs<ARelationshipDto> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add)
+        || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            RelationshipGrid.PreventRender(false);
+        }
+
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+        {
+            var responsebankcount = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetRelationship");
+            var bankcount = await responsebankcount.Content.ReadAsStringAsync();
+
+            if (responsebankcount.IsSuccessStatusCode)
+            {
+                RelationshipCountData = await Http.GetFromJsonAsync<List<ARelationshipDto>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetRelationship");
+            }
+        }
+    }
+
+    public async void RelationshipActionBegin(ActionEventArgs<ARelationshipDto> Args)
+    {
+        var data = Args.Data;
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+        {
+            if (Args.Data.RelationshipName == null)
+            {
+                toastService.ShowWarning("Please enter the relationship !");
+                Args.Cancel = true;
+            }
+            else
+            {
+                var countdata = RelationshipCountData?
+                .FirstOrDefault(o => o.RelationshipName.Trim().ToLower() 
+                == Args.Data.RelationshipName.Trim().ToLower()); 
+
+                if (countdata != null)
+                {
+                    toastService.ShowWarning("This relationship has arleady been captured in the database as " + countdata.RelationshipName + ". Record Not Saved");
+                    Args.Cancel = true;
+                }
+            }
+        }
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+        {
+
+        }
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+        {
+
+        }
+    }
+
+
+    public string GetHolidayHeader(ARelationshipDto Value)
+    {
+        if (Value.RelationshipId == 0)
+        {
+            return "Add a new Relationship";
+        }
+        else
+        {
+            return "Edit " + Value.RelationshipName;
+        }
+    }
+
+    #endregion RelationshipAdapter
+}

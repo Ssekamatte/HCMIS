@@ -1,0 +1,265 @@
+﻿@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using HCMIS.ViewModel
+@using System.Collections
+@inject HttpClient Http
+@inject SystemSettings _SystemSettings
+@inject ApiConfig _ApiConfig;
+@inject AppState AppState
+@inject NavigationManager Navigation
+@inject DocumentUploadModel _DocumentUploadModel;
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+<SfGrid @ref="@ADisplinaryCaseStatusGrid" TValue="ADisplinaryCaseStatus" AllowPaging="true"
+        AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
+        AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Delete", "Cancel", "Update", "Search"})">
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+    <SfDataManager AdaptorInstance="@typeof(ADisplinaryCaseStatusAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <GridEvents TValue="ADisplinaryCaseStatus"></GridEvents>
+    <GridEvents OnActionComplete="@OnADisplinaryCaseStatusActionComplete" OnActionBegin="@OnADisplinaryCaseStatusActionBegin" TValue="ADisplinaryCaseStatus"></GridEvents>
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog" Dialog="DialogParams">
+        <HeaderTemplate>
+            @{
+                var text = GetADisplinaryCaseStatusHeader((context as ADisplinaryCaseStatus));
+                <div class="headerbandimg">
+                    <span>@text</span>
+                </div>
+            }
+        </HeaderTemplate>
+        <Template Context="ADisplinaryCaseStatusContext">
+            @{
+                var ADisplinaryCaseStatusReviewData = (ADisplinaryCaseStatusContext as ADisplinaryCaseStatus);
+                @if (ADisplinaryCaseStatusReviewData != null)
+                {
+                    <div class="row">
+                        <div class="col-md-12" hidden>
+                            <SfNumericTextBox @bind-Value="@(ADisplinaryCaseStatusReviewData.CaseStatusId)" Enabled="false" Placeholder="CaseStatusId" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                        </div>
+                        <div class="col-md-12">
+                            <label>Disciplinary Case Statues</label>
+                            <SfTextBox Multiline=true @bind-Value="@(ADisplinaryCaseStatusReviewData.CaseStatusDescription)" Placeholder="Disciplinary Case Status Description" Width="100%" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                        </div>
+
+                    </div>
+                }
+            }
+        </Template>
+    </GridEditSettings>
+    <GridColumns>
+        <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn>
+        <GridColumn Field=@nameof(ADisplinaryCaseStatus.CaseStatusId) Visible=false HeaderText="DisplinaryWarningId" AllowEditing="false" IsPrimaryKey="true" Width="150"></GridColumn>
+        <GridColumn Field=@nameof(ADisplinaryCaseStatus.CaseStatusDescription) Visible=true HeaderText="DISCIPLINE  CASE STATUSES" AllowEditing="false" Width="150"></GridColumn>
+    </GridColumns>
+</SfGrid>
+
+@code {
+    #region Toasters
+    public static string? ToastContent { get; set; }
+    SfToast? ToastObj;
+    SfToast? DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+        {
+            new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+            new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+            new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+            new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+        };
+    #endregion Toasters
+
+    #region Declarations
+    SfGrid<ADisplinaryCaseStatus>? ADisplinaryCaseStatusGrid;
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "60%" };
+    #endregion Declarations
+
+    #region DisplinaryAdapter
+    public class ADisplinaryCaseStatusAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        public IToastService toastService;
+        SystemSettings _SystemSettings;
+        ApiConfig _ApiConfig;
+        public ADisplinaryCaseStatusAdapter(HttpClient _http, IToastService ts, SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            _SystemSettings = systemSettings;
+            _ApiConfig = apiConfig;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<ADisplinaryCaseStatus>();
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeDisplinary/GetCaseStatuses");
+                var content = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+
+                    toastService.ShowError(response.ReasonPhrase);
+                }
+                data = JsonSerializer.Deserialize<List<ADisplinaryCaseStatus>>(content, _options);
+
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<ADisplinaryCaseStatus>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                var val = (value as ADisplinaryCaseStatus);
+
+                await _SystemSettings.GetLoginCredentials();
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeDisplinary/SaveDisplinaryCaseStatus", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    toastService.ShowSuccess($"The {val.CaseStatusDescription} was sucessfully saved");
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                var val = (value as ADisplinaryCaseStatus);
+                await _SystemSettings.GetLoginCredentials();
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeDisplinary/SaveDisplinaryCaseStatus", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    toastService.ShowSuccess($"The {val.CaseStatusDescription} was sucessfully saved");
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+    }
+    public void OnADisplinaryCaseStatusActionBegin(ActionEventArgs<ADisplinaryCaseStatus> args)
+    {
+        try
+        {
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+            {
+                if (string.IsNullOrEmpty(args.Data.CaseStatusDescription))
+                {
+                    ToastObj.ShowAsync(new ToastModel { Title = "Warning!", Content = "Please fill in the Disciplinary Case Status before saving this record.", CssClass = "e-toast-warning", Icon = "e-warning toast-icons" });
+                    args.Cancel = true;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        //finally { StateHasChanged(); }
+    }
+    public void OnADisplinaryCaseStatusActionComplete(ActionEventArgs<ADisplinaryCaseStatus> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            ADisplinaryCaseStatusGrid.PreventRender(false);
+        }
+    }
+    public string GetADisplinaryCaseStatusHeader(ADisplinaryCaseStatus Value)
+    {
+        if (Value.CaseStatusId == 0)
+        {
+            return "Add a New Disciplinary Case Status";
+        }
+        else
+        {
+            return "Edit Details for " + Value.CaseStatusDescription;
+        }
+    }
+    #endregion DisplinaryAdapter
+
+}

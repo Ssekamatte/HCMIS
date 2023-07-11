@@ -1,0 +1,2244 @@
+﻿@page "/EmployeeRegistrationNewPage"
+@using HCMIS.SHARED.DTOs.Utilities;
+@using HCMIS.SHARED.Data
+@using HCMIS.SHARED
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using HCMIS.ViewModel
+@using System.Collections;
+@using System.Net.Mail;
+@inject HttpClient Http
+@inject ApiConfig _ApiConfig;
+@inject NavigationManager Navigation
+@inject SystemSettings _SystemSettings
+@inject DocumentUploadModel _DocumentUploadModel;
+@inject IToastService toastService;
+
+<style>
+    .e-dialog {
+        max-height: 98%;
+        max-width: 100%;
+        min-width: 90%;
+        position: absolute;
+    }
+
+    .test {
+        .alert alert-primary;
+        line-height: 100px;
+    }
+
+    /*Change Cell Color */
+    .e-headercell.e-attr1 {
+        background: #ff4d00;
+        color: white;
+    }
+
+    .e-headercell.e-attr2 {
+        background: #FFFF00;
+        color: darkred;
+    }
+
+    .e-headercell.e-attr3 {
+        background: grey;
+        color: white;
+    }
+
+    .e-checkbox-wrapper .e-frame+.e-label, .e-css.e-checkbox-wrapper .e-frame+.e-label {
+    margin-left: 8px;
+    display: none;
+}
+/*eicon*/
+
+.e-search:before {
+        content: '\e993';
+    }
+
+/*Disable Grid on Load and Enable it on DataBound*/
+    .e-grid[disable="yes"] {
+        opacity: .5;
+        pointer-events: none;
+        -ms-touch-action: none;
+        touch-action: none;
+        cursor: no-drop;
+    }
+
+     /*hide the Default Grid spinner */
+    .e-grid .e-spinner-pane {
+        display: none;
+    }
+
+    /*to remove the edit button alone*/
+    .e-removeEditcommand .e-unboundcell .e-unboundcelldiv button.e-Editbutton {
+        display: none;
+    }
+
+    /*to remove the delete button alone*/
+    .e-removeDeletecommand .e-unboundcell .e-unboundcelldiv button.e-Deletebutton {
+        display: none;
+    }
+
+</style>
+
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="color: brown;">
+        <strong>
+            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
+        </strong>| EMPLOYEE REGISTRATION
+    </li>
+</ol>
+
+@if (!string.IsNullOrEmpty(_SystemSettings.UserRole)
+&& _SystemSettings.UserRole.Contains("Administrator"))
+{
+<div class="form-row">
+    <div class="col-md-12">
+        <SfAccordion ExpandMode="ExpandMode.Single">
+            <AccordionItems>
+                <AccordionItem Expanded="true">
+                    <HeaderTemplate>Search Panel</HeaderTemplate>
+                    <ContentTemplate>
+                        <div style="padding:10px;">
+                            <EditForm Model="@SearchModel" OnValidSubmit="@SearchRecords">
+                                <div class="form-row">
+                                    <div class="col-md-6">
+                                        <p>Employee</p>   
+                                        <SfMultiSelect @bind-Value="@SearchModel.Employeeid" TValue="int?[]" TItem="EmployeeDto" 
+                                            AllowFiltering="true" Placeholder="Please select" 
+                                            Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" 
+                                            ShowSelectAll="true" 
+                                            EnableSelectionOrder="true" 
+                                            ShowDropDownIcon="true" 
+                                            FilterBarPlaceholder="Search Employee" 
+                                            FloatLabelType="FloatLabelType.Never" 
+                                            PopupHeight="350px"
+                                            FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"> 
+                                            <MultiSelectFieldSettings Text="@nameof(EmployeeDto.LastName)" Value="@nameof(EmployeeDto.Employeeid)"></MultiSelectFieldSettings> 
+                                            <MultiSelectTemplates TItem="EmployeeDto"> 
+                                                <ValueTemplate Context="NameContext"> 
+                                                    <span class='name'>@((NameContext as EmployeeDto).FirstName) @((NameContext as EmployeeDto).LastName)</span>
+                                                </ValueTemplate> 
+                                                <ItemTemplate Context="ItemContext"> 
+                                                    <span class='name'>@((ItemContext as EmployeeDto).FirstName) @((ItemContext as EmployeeDto).LastName)</span> 
+                                                </ItemTemplate> 
+                                            </MultiSelectTemplates> 
+                                        </SfMultiSelect> 
+
+                                        @*<SfMultiSelect @bind-Value="@SearchModel.Employeeid" TValue="int?[]" TItem="EmployeeDto" 
+                                        AllowFiltering="true" Placeholder="Please select" 
+                                        Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" 
+                                        ShowSelectAll="true" 
+                                        EnableSelectionOrder="true" 
+                                        ShowDropDownIcon="true" 
+                                        FilterBarPlaceholder="Search Employee" 
+                                        FloatLabelType="FloatLabelType.Never" 
+                                        PopupHeight="350px"
+                                        FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                            <MultiSelectFieldSettings Value="@nameof(EmployeeDto.Employeeid)" Text="@nameof(EmployeeDto.LastName)"></MultiSelectFieldSettings>                                         
+                                        </SfMultiSelect>*@
+                                    </div>
+                                    <div class="col-md-6">
+                                        <SfButton class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Search</SfButton>
+                                        <SfButton class="btn btn-danger" data-ripple="true" @onclick="ClearSearchBtnClick">Clear Search</SfButton>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <DataAnnotationsValidator />
+                                        <ValidationSummary/>
+                                    </div>
+                                </div>
+                            </EditForm>
+                        </div>
+                    </ContentTemplate>
+            	</AccordionItem>
+            </AccordionItems>
+        </SfAccordion>
+
+    </div>
+</div>
+}
+
+<SfSpinner @ref="SpinnerObj" Label="Loading Please Wait....." Size="50">
+        @*Render custom spinner component.*@
+</SfSpinner>
+
+<SfGrid @ref="EmployeeModelGrid" TValue="EmployeeDto"  @attributes="@GridAttributes" ID="GridMain" Query="@mainQuery"
+        Toolbar="@ToolbarMenu" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+        AllowPaging="true" AllowFiltering="false" GridLines="GridLine.Both" AllowSelection="true">
+    <SfDataManager AdaptorInstance="@typeof(EmployeeRecordNewAdapter)" Adaptor="Adaptors.CustomAdaptor">
+    </SfDataManager>    
+    <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+    <GridSearchSettings IgnoreCase="true" Fields="@( new string[] { "FirstName", "LastName" } )"></GridSearchSettings>
+    <GridEvents 
+        OnActionBegin="OnEmployeeDtoActionBegin" 
+        OnActionComplete="@OnEmployeeDtoActionComplete"  
+        CommandClicked="OnCommandClicked"
+        OnLoad="LoadHandler" 
+        DataBound="DataBound"
+        TValue="EmployeeDto">
+    </GridEvents>
+    <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" ShowDeleteConfirmDialog="false" Dialog="@DialogParams">
+        <HeaderTemplate>
+            @{
+                var text = GetEmployeeHeader((context as EmployeeDto));
+                <div class="headerbandimg">
+                    <span>@text</span>
+                </div>
+            }
+        </HeaderTemplate>
+        <Template Context="EmployeeContext">
+            @{
+                EmployeeReviewData = (EmployeeContext as EmployeeDto);
+                
+                <div class="row" style="padding:15px;">
+                         <div class="col-md-12">
+                                <center><p class="alert alert-primary"> <b>EMPLOYEE DATA FORM</b></P></center>
+                         </div>
+                         <div class="col-md-12">
+                                <p class="alert alert-primary"> <b>Personal Details</b></p>
+                         </div>
+                         <div class="col-md-12" hidden>
+                          <SfNumericTextBox @bind-Value="@(EmployeeReviewData.Employeeid)" Enabled="false" Placeholder="Employeeid" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                         </div>
+
+                         <div class=" col-md-8">
+                              <div class="row">
+                                  <div class="col-md-4">
+                                     <p>First Name <span style="color:red;">*</span> </p>
+                                     <SfTextBox Multiline="false" @bind-Value="@(EmployeeReviewData.FirstName)" Enabled="true" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                  </div>
+                                  <div class="col-md-4">
+                                      <p>Middle Name</p>
+                                      <SfTextBox Multiline="false" @bind-Value="@(EmployeeReviewData.MiddleName)" Enabled="true" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                  </div>
+                                  <div class="col-md-4">
+                                      <p>Last Name <span style="color:red;">*</span></p>
+                                      <SfTextBox Multiline="false" @bind-Value="@(EmployeeReviewData.LastName)" Enabled="true" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                  </div>
+                                  <div class="col-md-4">
+                                      <p>Gender <span style="color:red;">*</span></p>
+                                      <SfDropDownList @bind-Value="@(EmployeeReviewData.GenderId)" Enabled="true" TItem="AGenderDto" TValue="int?" DataSource="@GenderData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                        <DropDownListFieldSettings Value="@nameof(AGenderDto.GenderId)" Text="@nameof(AGenderDto.GenderDesc)"></DropDownListFieldSettings>
+                                      </SfDropDownList>
+                                  </div>
+                                  <div class="col-md-4">
+                                       <p>Date of Birth <span style="color:red;">*</span></p>
+                                       <SfDatePicker @bind-Value="@(EmployeeReviewData.DoB)" Format="dd/MM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                                  </div>
+                                  <div class="col-md-4">
+                                       <p >Marital Status <span style="color:red;">*</span></p>
+                                       <SfDropDownList @bind-Value="@(EmployeeReviewData.MaritalStatusId)" Enabled="true" TItem="AMaritalStatusDto" TValue="int?" DataSource="@MaritalStatusData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                            <DropDownListFieldSettings Value="@nameof(AMaritalStatusDto.MaritalStatusId)" Text="@nameof(AMaritalStatusDto.MaritalStatusDescription)"></DropDownListFieldSettings>
+                                       </SfDropDownList>
+                                  </div>
+                                  <div class="col-md-4">
+                                       <p>Mobile Number <span style="color:red;">*</span></p>
+                                        <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.MobileNumber" CssClass="form-control" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                  </div>
+                                  <div class="col-md-4">
+                                       <p>P.O BOX Number</p>
+                                       <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.PoboxNumber" CssClass="form-control" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                  </div>
+                                  <div class="col-md-4">
+                                       <p style="margin-bottom:29px;">Nationality <span style="color:red;">*</span></p>
+                                       <SfDropDownList @bind-Value="@(EmployeeReviewData.CoutryId)" Enabled="true" TItem="ACountryDto" TValue="int?" DataSource="@CountryData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                            <DropDownListFieldSettings Value="@nameof(ACountryDto.CoutryId)" Text="@nameof(ACountryDto.CountryDesc)"></DropDownListFieldSettings>
+                                       </SfDropDownList>
+                                  </div>
+                             </div>
+                         </div>
+
+                         <div class="col-md-4">
+                             @if (!string.IsNullOrEmpty(EmployeeReviewData.FirstName) && !string.IsNullOrEmpty(EmployeeReviewData.LastName))
+                             {
+                                 if (!string.IsNullOrEmpty(ProfilePicString))
+                                 {
+                                    <img src="@ProfilePicString" class="img-thumbnail" height="190" width="150" style="margin-bottom:4px; margin-left:20%; margin-right:auto;" />
+                                 }
+                                 else
+                                 {
+                                    <img src="/Image/blank-profile-picture.png" class="img-thumbnail" height="190" width="150" style="margin-bottom:4px; margin-left:20%; margin-right:auto;" />
+                                 }
+                                 <div class="col-md-12">
+                                 <p class="alert-primary" style="padding:10px;">Upload  png or Jpeg image</p>
+                                     <SfUploader AutoUpload="true" ShowFileList="false">
+                                        <UploaderEvents ValueChange="OnImageChange"></UploaderEvents>
+                                     </SfUploader>
+                                     <SfSpinner @ref="@UploadImageSpinner" Visible="false" Label="Uploading Image Please Wait.."></SfSpinner>
+                                 </div>
+                             }
+                        </div>
+
+                        @if (EmployeeReviewData.CoutryId == 259)
+                        {
+                                <div class="col-md-12">
+                                    <p class="alert alert-primary"><b>Place of Origin</b></p>
+                                </div>
+                                 <div class="col-md-3">
+                                    <p style="margin-bottom:29px;">District <span style="color:red;">*</span></p>
+                                    <SfDropDownList @bind-Value="@(EmployeeReviewData.PlaceofOriginDistrictId)" Enabled="true" TItem="ADistrict" TValue="int?" DataSource="@DistrictData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                        <DropDownListFieldSettings Value="@nameof(ADistrict.DistrictId)" Text="@nameof(ADistrict.DistrictDescription)" ></DropDownListFieldSettings>
+                                         <DropDownListEvents TValue="int?" TItem="ADistrict" ValueChange="OnDistrictChange"></DropDownListEvents>
+                                    </SfDropDownList>
+                                </div>
+                                <div class="col-md-3">
+                                    <p style="margin-bottom:29px;">Subcounty <span style="color:red;">*</span></p>
+                                    <SfDropDownList @bind-Value="@(EmployeeReviewData.PlaceofOriginSubCountyId)" Query=@(new Query().Where(new WhereFilter() { Field = "DistrictId", Operator = "equal", value = EmployeeReviewData.PlaceofOriginDistrictId, IgnoreCase = false, IgnoreAccent = false }))  Enabled="@isSubcountyEnabled"  TItem="ASubCounty" TValue="int?" DataSource="@SubCountyData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                        <DropDownListFieldSettings Value="@nameof(ASubCounty.SubCountyId)" Text="@nameof(ASubCounty.SubCountyDescription)"></DropDownListFieldSettings>
+                                        <DropDownListEvents TValue="int?" TItem="ASubCounty" ValueChange="OnSubCountyChange"></DropDownListEvents>
+                                    </SfDropDownList>
+                                </div>
+                                <div class="col-md-3">
+                                      <p style="margin-bottom:29px;">Parish <span style="color:red;">*</span></p>
+                                      <SfDropDownList @bind-Value="@(EmployeeReviewData.PlaceofOriginParishId)" Query=@(new Query().Where(new WhereFilter() { Field = "SubCountyId", Operator = "equal", value = EmployeeReviewData.PlaceofOriginSubCountyId, IgnoreCase = false, IgnoreAccent = false }))  Enabled="@isParishEnabled" TItem="ViewAparish" TValue="int?" DataSource="@ParishData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" EnableVirtualization="true">
+                                        <DropDownListFieldSettings Value="@nameof(ViewAparish.ParishId)" Text="@nameof(ViewAparish.ParishDesc)"></DropDownListFieldSettings>
+                                       <DropDownListEvents TValue="int?" TItem="ViewAparish" ValueChange="OnParishChange"></DropDownListEvents>
+                                      </SfDropDownList>
+                                </div>
+                                   <div class=" col-md-3">
+                                    <p style="margin-bottom:29px;">Village <span style="color:red;">*</span></p>
+                                    @*<SfDropDownList @bind-Value="@(EmployeeReviewData.PlaceofOriginVillageId)" Query=@(new Query().Where(new WhereFilter() { Field = "ParishId", Operator = "equal", value = EmployeeReviewData.PlaceofOriginParishId, IgnoreCase = false, IgnoreAccent = false })) Enabled="@isVillageEnabled" TItem="ViewAvillage" TValue="int?" DataSource="@VillageData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">*@
+                                    <SfDropDownList @bind-Value="@(EmployeeReviewData.PlaceofOriginVillageId)" Query="@ParishChange" Enabled="@isVillageEnabled" TItem="ViewAvillage" TValue="int?" DataSource="@VillageData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" EnableVirtualization="true">
+                                        <DropDownListFieldSettings Value="@nameof(ViewAvillage.VillageId)" Text="@nameof(ViewAvillage.ViallgeDescription)"></DropDownListFieldSettings>
+                                    </SfDropDownList>
+                                </div>
+                        }
+                         
+                        <div class="col-md-12">
+                              <p class="alert alert-primary"><b>Place of Residence</b></p>
+                         </div>
+                            <div class="col-md-3">
+                                <p style="margin-bottom:29px;">District <span style="color:red;">*</span></p>
+                                    <SfDropDownList @bind-Value="@(EmployeeReviewData.PlaceofResidenceDistrictId)" Enabled="true" TItem="ADistrict" TValue="int?" DataSource="@DistrictData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                        <DropDownListFieldSettings Value="@nameof(ADistrict.DistrictId)" Text="@nameof(ADistrict.DistrictDescription)" ></DropDownListFieldSettings>
+                                         <DropDownListEvents TValue="int?" TItem="ADistrict" ValueChange="OnRDistrictChange"></DropDownListEvents>
+                                    </SfDropDownList>
+                            </div>
+                            <div class="col-md-3">
+                                    <p style="margin-bottom:29px;">Subcounty <span style="color:red;">*</span></p>
+                                    <SfDropDownList @bind-Value="@(EmployeeReviewData.PlaceofResidenceSubCountyId)" Query=@(new Query().Where(new WhereFilter() { Field = "DistrictId", Operator = "equal", value = EmployeeReviewData.PlaceofResidenceDistrictId, IgnoreCase = false, IgnoreAccent = false }))  Enabled="@isSubcountyREnabled"  TItem="ASubCounty" TValue="int?" DataSource="@SubCountyData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                        <DropDownListFieldSettings Value="@nameof(ASubCounty.SubCountyId)" Text="@nameof(ASubCounty.SubCountyDescription)"></DropDownListFieldSettings>
+                                        <DropDownListEvents TValue="int?" TItem="ASubCounty" ValueChange="OnRSubCountyChange"></DropDownListEvents>
+                                    </SfDropDownList>
+                            </div>
+                            <div class="col-md-3">
+                                      <p style="margin-bottom:29px;">Parish <span style="color:red;">*</span></p>
+                                      <SfDropDownList @bind-Value="@(EmployeeReviewData.PlaceofResidenceParishId)" Query=@(new Query().Where(new WhereFilter() { Field = "SubCountyId", Operator = "equal", value = EmployeeReviewData.PlaceofResidenceSubCountyId, IgnoreCase = false, IgnoreAccent = false }))  Enabled="@isParishREnabled" TItem="ViewAparish" TValue="int?" DataSource="@ParishData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                        <DropDownListFieldSettings Value="@nameof(ViewAparish.ParishId)" Text="@nameof(ViewAparish.ParishDesc)"></DropDownListFieldSettings>
+                                       <DropDownListEvents TValue="int?" TItem="ViewAparish" ValueChange="OnRParishChange"></DropDownListEvents>
+                                      </SfDropDownList>
+                             </div>
+                             <div class=" col-md-3">
+                                    <p style="margin-bottom:29px;">Village <span style="color:red;">*</span></p>
+                                    @*<SfDropDownList @bind-Value="@(EmployeeReviewData.PlaceofResidenceVillageId)" Query=@(new Query().Where(new WhereFilter() { Field = "ParishId", Operator = "equal", value = EmployeeReviewData.PlaceofResidenceParishId, IgnoreCase = false, IgnoreAccent = false })) Enabled="@isVillageEnabled" TItem="ViewAvillage" TValue="int?" DataSource="@VillageData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">*@
+                                    <SfDropDownList @bind-Value="@(EmployeeReviewData.PlaceofResidenceVillageId)" Query="@ParishRChange" Enabled="@isVillageREnabled" TItem="ViewAvillage" TValue="int?" DataSource="@VillageData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                        <DropDownListFieldSettings Value="@nameof(ViewAvillage.VillageId)" Text="@nameof(ViewAvillage.ViallgeDescription)"></DropDownListFieldSettings>
+                                    </SfDropDownList>
+                             </div>
+                             <div class="col-md-12">
+                                <p class="alert alert-primary"><b>Employee Family</b></p>
+                            </div>
+                            <div class="col-md-12">
+                            <p><b>Employee Parents</b></p>
+                        </div>
+                        <div class="col-md-4">
+                                <p>Father's Name<span style="color:red;">*</span></p>
+                                <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.EmployeFatherName" CssClass="form-control" Enabled=true FloatLabelType="FloatLabelType.Never"></SfTextBox>                                
+                         </div>
+                            <div class="col-md-2">
+                                <p>Is Alive?</p>
+                                 <SfCheckBox Label="Is Alive?" @bind-Checked="@EmployeeReviewData.EmployeFatherIsLive"></SfCheckBox>
+                             </div>
+                              <div class="col-md-4">
+                                <p>Mother's Name<span style="color:red;">*</span></p>
+                                <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.EmployeMotherName" CssClass="form-control" Enabled=true FloatLabelType="FloatLabelType.Never"></SfTextBox>                                 
+                            </div>
+                        <div class="col-md-2">
+                        <p>Is Alive?</p>
+                            <SfCheckBox Label="Is Alive?" @bind-Checked="@EmployeeReviewData.EmployeMotherIsLive"></SfCheckBox>
+                        </div>
+                    <div class="col-md-12">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <p><b>Employee Spouse(s)</b></p>
+                                    </div>
+                                    @* Employee Spouse*@
+                                    <div class="col-md-12">
+
+                                         <SfGrid
+                                             @ref="AEmployeeSpouseGrid"
+                                                DataSource="@EmployeeReviewData.EmployeeSpouse"
+                                                EnableStickyHeader=true
+                                                TValue="EmployeeSpouseDto"
+                                                AllowGrouping="true" 
+                                                ShowColumnChooser="true" 
+                                                AllowTextWrap="true"
+                                                AllowPaging="true"
+                                                AllowFiltering="true"
+                                                GridLines="GridLine.Both"
+                                                AllowSelection="true"
+                                                Toolbar="@(new List<string>() {"Add", "Edit", "Delete", "Cancel", "Update","Search"})">
+                                            <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Both"
+                                                                   Type="Syncfusion.Blazor.Grids.SelectionType.Single">
+                                            </GridSelectionSettings>
+                                            <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+                                            <GridEditSettings AllowAdding="true" AllowDeleting="true" AllowEditing="true"
+                                                ShowConfirmDialog="false" Mode="@EditMode.Batch"
+                                                NewRowPosition="NewRowPosition.Bottom">
+                                            </GridEditSettings>
+                                            <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                                            <GridPageSettings PageSize="20"></GridPageSettings>
+
+                                            <GridEvents 
+                                                        CellSelected="SpouseCellSelectHandler"
+                                                        TValue="EmployeeSpouseDto">
+                                            </GridEvents>
+
+                                          <GridColumns>
+                                               <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                                               <GridColumn 
+                                                   Field=@nameof(EmployeeSpouseDto.EmployeeSpouseId) 
+                                                   HeaderText="EmployeeSpouseId" 
+                                                   TextAlign="TextAlign.Left" 
+                                                   IsPrimaryKey="true" 
+                                                   IsIdentity="true" 
+                                                   Visible="false" Width="100"
+                                                   CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+                                               </GridColumn>
+                                               <GridColumn 
+                                                   Field=@nameof(EmployeeSpouseDto.EmployeeId) 
+                                                   HeaderText="Employee Id" 
+                                                   Width="100" 
+                                                   Visible="false"
+                                                   CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+                                               </GridColumn>
+                                               <GridColumn 
+                                                   Field=@nameof(EmployeeSpouseDto.FirstName) 
+                                                   HeaderText="First Name" 
+                                                   Width="100"
+                                                   CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+                                               </GridColumn>
+                                               <GridColumn 
+                                                   Field=@nameof(EmployeeSpouseDto.MiddleName) 
+                                                   HeaderText="Middle Name" 
+                                                   Width="100"
+                                                   CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+                                               </GridColumn>
+                                               <GridColumn 
+                                                   Field=@nameof(EmployeeSpouseDto.LastName) 
+                                                   HeaderText="Last Name" 
+                                                   Width="100"
+                                                   CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+                                               </GridColumn>
+                                          </GridColumns>   
+                                       </SfGrid>
+                                      </div>
+                                  </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <p><b>Employee Children</b></p>
+                                    </div>
+                                    @* Employee Children*@
+                                       <div class="col-md-12">
+                                         <SfGrid 
+                                         @ref="AEmployeeChildrenGrid"
+                                                DataSource="@EmployeeReviewData.AEmployeeChildren"
+                                                EnableStickyHeader=true
+                                                TValue="AEmployeeChildrenDto"
+                                                AllowGrouping="true" 
+                                                ShowColumnChooser="true" 
+                                                AllowTextWrap="true"
+                                                AllowPaging="true"
+                                                AllowFiltering="true"
+                                                GridLines="GridLine.Both"
+                                                AllowSelection="true"
+                                                Toolbar="@(new List<string>() {"Add", "Edit", "Delete", "Cancel", "Update","Search"})">
+                                            <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Both"
+                                                                   Type="Syncfusion.Blazor.Grids.SelectionType.Single">
+                                            </GridSelectionSettings>
+                                            <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+                                            <GridEditSettings AllowAdding="true" AllowDeleting="true" AllowEditing="true"
+                                                ShowConfirmDialog="false" Mode="@EditMode.Batch"
+                                                NewRowPosition="NewRowPosition.Bottom">
+                                            </GridEditSettings>
+                                            <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                                            <GridPageSettings PageSize="20"></GridPageSettings>
+
+                                            <GridEvents 
+                                                        CellSelected="ChildrenCellSelectHandler"
+                                                        TValue="AEmployeeChildrenDto">
+                                            </GridEvents>
+                                         
+                                          <GridColumns>
+                                               <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                                               <GridColumn Field=@nameof(AEmployeeChildrenDto.EmployeeKidsId) HeaderText="EmployeeKidsId" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+                                               <GridColumn 
+                                                   Field=@nameof(AEmployeeChildrenDto.FirstName) 
+                                                   HeaderText="First Name" 
+                                                   Width="100"
+                                                   CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+                                               </GridColumn>
+                                               <GridColumn 
+                                                   Field=@nameof(AEmployeeChildrenDto.MiddleName) 
+                                                   HeaderText="Middle Name" 
+                                                   Width="100"
+                                                   CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+                                               </GridColumn>
+                                               <GridColumn 
+                                                   Field=@nameof(AEmployeeChildrenDto.LastName) 
+                                                   HeaderText="Last Name" 
+                                                   Width="100"
+                                                   CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+                                               </GridColumn>
+                                               <GridColumn Field=@nameof(AEmployeeChildrenDto.DateOfBirth) 
+                                                        HeaderText="Date of Birth" 
+                                                        EditType="EditType.DatePickerEdit" 
+                                                        Format="dd/MMMM/yyyy" 
+                                                        Type="ColumnType.Date" 
+                                                        Width="100"
+                                                        AllowEditing="true"
+                                                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">                                            
+                                               </GridColumn> 
+                                          </GridColumns>   
+                                       </SfGrid>
+                                      </div>
+                                  </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                            <p><b>Employee Next of Kin</b></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p>Next of Kin Name<span style="color:red;">*</span></p>
+                            <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.NextofKinName" CssClass="form-control" Enabled=true FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                            
+                        </div>
+                        <div class="col-md-3">
+                            <p>Next of Kin Phone Number<span style="color:red;">*</span></p>
+                            <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.NextofKinTelephoneNumber" CssClass="form-control" Enabled=true FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                            
+                        </div>
+                        <div class="col-md-3">
+                            <p style="margin-bottom:29px;">Relationship<span style="color:red;">*</span></p>
+                            <SfDropDownList @bind-Value="@(EmployeeReviewData.NextofKinRelationShipId)" Enabled="true" TItem="ARelationshipDto" TValue="int?" DataSource="@ARelationshipData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                <DropDownListFieldSettings Value="@nameof(ARelationshipDto.RelationshipId)" Text="@nameof(ARelationshipDto.RelationshipName)"></DropDownListFieldSettings>
+                            </SfDropDownList>                            
+                        </div>
+
+                        <div class="col-md-12">
+                             <p><b>Employee Person to be contacted in case of emergency</b></p>
+                        </div>
+
+                        <div class="col-md-6">
+                                <p>Contact Person Name<span style="color:red;">*</span></p>
+                                <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.ContactPersonName" CssClass="form-control" Enabled=true FloatLabelType="FloatLabelType.Never"></SfTextBox>                               
+                        </div>
+                        <div class="col-md-3">
+                                <p>Contact Person Phone Number<span style="color:red;">*</span></p>
+                                   <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.ContactPersonTelephoneNumber" CssClass="form-control" Enabled=true FloatLabelType="FloatLabelType.Never"></SfTextBox>                               
+                        </div>
+                        <div class="col-md-3">
+                             <p  style="margin-bottom:29px;">Relationship<span style="color:red;">*</span></p>
+                               <SfDropDownList @bind-Value="@(EmployeeReviewData.ContactPersonRelationShipId)" Enabled="true" TItem="ARelationshipDto" TValue="int?" DataSource="@ARelationshipData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                <DropDownListFieldSettings Value="@nameof(ARelationshipDto.RelationshipId)" Text="@nameof(ARelationshipDto.RelationshipName)"></DropDownListFieldSettings>
+                               </SfDropDownList>
+                        </div>
+
+                        <div class="col-md-12"> 
+                            <div class="row">
+                                <div class="col-md-12">
+                                 <p class="alert alert-primary"><b>Schools, Colleges and Institutions Attended (Start with the most recent):</b></p>
+                                </div>
+
+                                @*Employee Qualifcation *@
+                                 <div class="col-md-12">
+                                 <SfGrid 
+                                         @ref="QualificationGrid"
+                                                DataSource="@EmployeeReviewData.EmployeeQualification"
+                                                EnableStickyHeader=true
+                                                TValue="EmployeeQualificationDto"
+                                                AllowGrouping="true" 
+                                                ShowColumnChooser="true" 
+                                                AllowTextWrap="true"
+                                                AllowPaging="true"
+                                                AllowFiltering="true"
+                                                GridLines="GridLine.Both"
+                                                AllowSelection="true"
+                                                Toolbar="@(new List<string>() {"Add", "Edit", "Delete", "Cancel", "Update","Search"})">
+                                            <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Both"
+                                                                   Type="Syncfusion.Blazor.Grids.SelectionType.Single">
+                                            </GridSelectionSettings>
+                                            <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+                                            <GridEditSettings AllowAdding="true" AllowDeleting="true" AllowEditing="true"
+                                                ShowConfirmDialog="false" Mode="@EditMode.Batch"
+                                                NewRowPosition="NewRowPosition.Bottom">
+                                            </GridEditSettings>
+                                            <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                                            <GridPageSettings PageSize="20"></GridPageSettings>
+
+                                            <GridEvents 
+                                                        CellSelected="QualificationCellSelectHandler"
+                                                        TValue="EmployeeQualificationDto">
+                                            </GridEvents>
+                                         
+                                          <GridColumns>
+                                               <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                                               <GridColumn Field=@nameof(EmployeeQualificationDto.QualificationId) HeaderText="Qualification Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+                                               <GridColumn 
+                                                   Field=@nameof(EmployeeQualificationDto.InstitutionName) 
+                                                   HeaderText="Institution" 
+                                                   Width="100"
+                                                   CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+                                               </GridColumn>
+                                               <GridForeignColumn Field=@nameof(EmployeeQualificationDto.LevelofEducationId)
+                                                       HeaderText="Education Level"
+                                                       Width="80"
+                                                       AllowEditing="true"
+                                                       ForeignKeyField="@(nameof(ALevelofEducationDto.LevelofEducationId))"
+                                                       ForeignKeyValue="@(nameof(ALevelofEducationDto.LevelofEducationDesc))"
+                                                       ForeignDataSource="@LevelofEducationData"
+                                                       AllowFiltering="false"
+                                                       IsFrozen="false"
+                                                       CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+                                                </GridForeignColumn>
+                                               <GridForeignColumn Field=@nameof(EmployeeQualificationDto.DegreeClassId)
+                                                       HeaderText="Degree Class"
+                                                       Width="80"
+                                                       AllowEditing="true"
+                                                       ForeignKeyField="@(nameof(ADegreeClassDto.DegreeClassId))"
+                                                       ForeignKeyValue="@(nameof(ADegreeClassDto.DegreeClassDesc))"
+                                                       ForeignDataSource="@DegreeClassData"
+                                                       AllowFiltering="false"
+                                                       IsFrozen="false"
+                                                       CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+                                                </GridForeignColumn>
+                                                <GridColumn 
+                                                   Field=@nameof(EmployeeQualificationDto.QualificationAttained) 
+                                                   HeaderText="Award/Qualification Attained" 
+                                                   Width="80"
+                                                   CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+                                               </GridColumn>
+                                               <GridColumn Field=@nameof(EmployeeQualificationDto.StartDate) 
+                                                        HeaderText="From" 
+                                                        EditType="EditType.DatePickerEdit" 
+                                                        Format="dd/MMMM/yyyy" 
+                                                        Type="ColumnType.Date" 
+                                                        Width="80"
+                                                        AllowEditing="true"
+                                                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">                                            
+                                               </GridColumn> 
+                                               <GridColumn Field=@nameof(EmployeeQualificationDto.IsCurrent)  
+                                                   HeaderText="Current" 
+                                                   DisplayAsCheckBox="true" 
+                                                   Width="150">
+                                               </GridColumn>
+                                               <GridColumn Field=@nameof(EmployeeQualificationDto.EndDate) 
+                                                        HeaderText="To" 
+                                                        EditType="EditType.DatePickerEdit" 
+                                                        Format="dd/MMMM/yyyy" 
+                                                        Type="ColumnType.Date" 
+                                                        Width="80"
+                                                        AllowEditing="true"
+                                                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">                                            
+                                               </GridColumn> 
+                                               @*<GridColumn HeaderText="Manage Records" Width="150"
+                                               CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})"> 
+                                                    <GridCommandColumns> 
+                                                        <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { Content="Edit" , IconCss = "e-icons e-edit", CssClass = "e-flat" })"></GridCommandColumn>
+                                                        <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {Content="Delete" , IconCss = "e-icons e-delete", CssClass = "e-flat" })"></GridCommandColumn>
+                                                        </GridCommandColumn>
+                                                    </GridCommandColumns> 
+                                               </GridColumn>*@  
+                                          </GridColumns>   
+                                       </SfGrid>
+                                 </div>
+                            </div>
+                        </div>
+                
+                        <div class="col-md-12">
+                        <p class="alert alert-primary"><b>Administration Particulars</b></p>
+                        </div>
+                        <div class="col-md-3" hidden>
+                                <p>Employee Number <span style="color:red;">*</span></p>
+                                <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.EmployeeNumber" CssClass="form-control" Enabled=false FloatLabelType="FloatLabelType.Never"></SfTextBox>                               
+                        </div>
+                        <div class="col-md-3">
+                                  <p>NSSF Number</p>
+                                  <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.Nssfno" CssClass="form-control" FloatLabelType="FloatLabelType.Never"></SfTextBox>                                
+                        </div>
+                        <div class="col-md-3">
+                                <p>Tax Identification Number</p>
+                                <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.UraTinNo" CssClass="form-control" FloatLabelType="FloatLabelType.Never"></SfTextBox>                                
+                        </div>
+                        <div class="col-md-3">
+                                  <p>Official Email Address <span style="color:red;">*</span></p>
+                                   <SfTextBox 
+                                       Type="Syncfusion.Blazor.Inputs.InputType.Email" 
+                                       @bind-Value="@EmployeeReviewData.EmailAddress" 
+                                       CssClass="form-control" 
+                                       FloatLabelType="FloatLabelType.Never">
+                                   </SfTextBox>                                   
+                        </div>
+                        <div class="col-md-3">
+                             <p  style="margin-bottom:29px;">Identification</p>
+                              <SfDropDownList @bind-Value="@(EmployeeReviewData.IdentificationTypeId)" Enabled="true" TItem="AIdentificationTypeDto" TValue="int?" DataSource="@IdentificationTypeData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true">
+                               <DropDownListFieldSettings Value="@nameof(AIdentificationTypeDto.IdentificationTypeId)" Text="@nameof(AIdentificationTypeDto.IdentificationTypeDesc)"></DropDownListFieldSettings>
+                              </SfDropDownList>                                 
+                        </div>
+                        <div class="col-md-3">
+                                <p> NIN Number<span style="color:red;">*</span></p>
+                                <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.NationalIdentificationNumber" CssClass="form-control" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                               
+                        </div>
+                        <div class="col-md-3">
+                                  <p>Official Phone Number</p>
+                                   <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.OfficialPhoneNumber" CssClass="form-control" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                   
+                        </div>
+                        <div class="col-md-3">
+                              <p  style="margin-bottom:29px;">Designation</p>
+                              <SfDropDownList @bind-Value="@(EmployeeReviewData.JobDescriptionId)" Enabled="true" TItem="JobDescriptionDto" TValue="int?" DataSource="@JobDescriptionData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true">
+                               <DropDownListFieldSettings Value="@nameof(JobDescriptionDto.JobDescriptionId)" Text="@nameof(JobDescriptionDto.JobDescription1)"></DropDownListFieldSettings>
+                              </SfDropDownList>                                 
+                        </div>
+                        <div class="col-md-3">
+                              <p  style="margin-bottom:29px;">Employee Level <span style="color:red;">*</span></p>
+                              <SfDropDownList @bind-Value="@(EmployeeReviewData.EmployeeLevelId)" Enabled="true" TItem="AEmployeeLevelDto" TValue="int?" DataSource="@EmployeeLevelData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true">
+                               <DropDownListFieldSettings Value="@nameof(AEmployeeLevelDto.EmployeeLevelId)" Text="@nameof(AEmployeeLevelDto.EmployeeLevelDesc)"></DropDownListFieldSettings>
+                                </SfDropDownList>
+                                 
+                        </div>
+                        <div class="col-md-3">
+                                <p  style="margin-bottom:29px;">Date of Appointment <span style="color:red;">*</span></p>
+                                <SfDatePicker @bind-Value="@(EmployeeReviewData.DateJoined)" Format="dd/MMMM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                                 
+                             </div>
+                        <div class="col-md-3">
+                                <p  style="margin-bottom:29px;">Bank (Where salary should be deposited) <span style="color:red;">*</span></p>
+                                <SfDropDownList @bind-Value="@(EmployeeReviewData.BankId)" Enabled="true" TItem="ABankDto" TValue="int?" DataSource="@BankData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                    <DropDownListFieldSettings Value="@nameof(ABankDto.BankId)" Text="@nameof(ABankDto.BankDesc)"></DropDownListFieldSettings>
+                                </SfDropDownList>
+                                
+                        </div>
+                        <div class="col-md-3">
+                                <p>Bank Branch<span style="color:red;">*</span></p>
+                                <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.BankBranch" CssClass="form-control" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                
+                        </div>
+                        <div class="col-md-3">
+                                <p>Account Number<span style="color:red;">*</span></p>
+                                <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.BankAccountNumber" CssClass="form-control" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                
+                        </div>
+
+                        
+                </div>
+            }
+        </Template>
+        <FooterTemplate>  
+            @if (SaveButtons == false)
+            {
+                @*<SfButton CssClass="e-success" OnClick="@onSubmitForm">Save Form</SfButton>
+            <SfButton CssClass="e-danger" OnClick="DialogCancelBtnclicked">Cancel</SfButton>*@
+
+                <button type="button" class="btn btn-success" @onclick="@onSubmitForm">Save Record</button>
+                <button type="button" class="btn btn-danger" @onclick="@DialogCancelBtnclicked">Cancel</button>
+            }  
+        </FooterTemplate>
+    </GridEditSettings>
+    <GridColumns>
+        <GridColumn Type="ColumnType.CheckBox" Width="20"></GridColumn>
+        <GridColumn 
+            Field=@nameof(EmployeeDto.Employeeid) 
+            Visible=false 
+            HeaderText="Employee Id" 
+            AllowEditing="false" 
+            IsPrimaryKey="true"
+            Width="80">
+        </GridColumn>
+        <GridColumn 
+            Field=@nameof(EmployeeDto.EmployeeNumber) 
+            Visible=true 
+            HeaderText="EMPLOYEE NUMBER" 
+            AllowEditing="false"
+            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})"
+            Width="80">
+        </GridColumn>
+        <GridColumn HeaderText="EMPLOYEE NAME" TextAlign="TextAlign.Center" Width="80"
+        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+            <Template>
+                @{
+                    var employeedata = (context as EmployeeDto);
+                    string lastname = string.Empty;
+                    string lmiddlename = string.Empty;
+                    string firstname = string.Empty;
+                    if (employeedata != null)
+                    {
+                       lastname = employeedata.LastName;
+                       lmiddlename = employeedata.MiddleName;
+                       firstname = employeedata.FirstName;
+                    }
+                    <p>@lastname  @lmiddlename  @firstname</p>
+                }
+            </Template>
+        </GridColumn>
+
+        @*Super Administrator, Administrator and CHRO*@
+       
+        @*@if (!string.IsNullOrEmpty(UserRole) 
+        && (UserRole.Contains("f9e6ea81-9577-4622-b159-17f7ea11aca1", StringComparison.CurrentCultureIgnoreCase)
+        || UserRole.Contains("f9e6ea81-9577-4622-b159-17f7ea11aca2", StringComparison.CurrentCultureIgnoreCase)
+        || (UserJobTitleId != null && UserJobTitleId == 44)))
+        {*@
+
+        <GridColumn HeaderText="MANAGE RECORDS" Visible="@hide"
+        TextAlign="TextAlign.Center" 
+        Width="80"
+        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})"> 
+            <GridCommandColumns> 
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { Content="Edit" , IconCss = "e-icons e-edit", CssClass = "e-flat" })"  Title="Edit Record"></GridCommandColumn>
+                @*<GridCommandColumn ButtonOption="@(new CommandButtonOptions() { Content="Summary" , IconCss = "e-icons e-search", CssClass = "e-flat" })"  Title="View Summary"></GridCommandColumn>*@
+                <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {Content="Delete" , IconCss = "e-icons e-delete", CssClass = "e-flat"})"  Title="Delete Record"></GridCommandColumn>
+            </GridCommandColumns> 
+        </GridColumn>
+
+        @*<GridColumn 
+            Field = "@(nameof(EmployeeDto.FirstName) + "." + nameof(EmployeeDto.LastName))" 
+            HeaderText = "Employee" 
+            Width = "100" >
+        </GridColumn>*@
+    </GridColumns>
+</SfGrid>
+
+<div>
+    <SfDialog @ref="@LoadingDialogue"
+              ID="LoadingDialog"
+              Height="auto"
+              Width="20%"
+              AllowDragging="true"
+              Target=".mainbody"
+              ShowCloseIcon="false"
+              IsModal=true
+              Visible="false">
+        <DialogTemplates>
+            <Content>
+                <div style="padding:25px">
+                    <div class="loader">
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        @*<div class="loader-Loading-text"></div>*@
+                        <div class="loader-Saving-text"></div>
+                    </div>
+                </div>
+            </Content>
+            <FooterTemplate>
+
+            </FooterTemplate>
+        </DialogTemplates>
+    </SfDialog>
+</div>
+
+@*Confirm Deletion*@
+                        
+                        <div class="form-group col-md-12">
+                            <SfDialog @ref="@ConfirmationDeleteDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+                                <DialogTemplates>
+                                    <Content>
+                                        @((MarkupString)@ConfirmationText)
+                                    </Content>
+                                </DialogTemplates>
+                                <DialogButtons>
+                                    <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationApproveYes" />
+                                    <DialogButton Content="No" OnClick="@ComfirmationApproveNo" />
+                                </DialogButtons>
+                            </SfDialog>
+                        </div>
+@*Saving Dialogue*@
+<div class="form-group col-md-12">
+        <SfDialog Width="80%" Height="20vh" AllowDragging=true EnableResize=true
+        CloseOnEscape=false IsModal=true ShowCloseIcon=false
+                  Target=".mainbody" @ref=@SavingDialog Visible=false>
+            <DialogTemplates>
+                <Content>
+                    <div class="dialogContent">
+                        <div class="loader">
+							<div class="loader--dot"></div>
+							<div class="loader--dot"></div>
+							<div class="loader--dot"></div>
+							<div class="loader--dot"></div>
+							<div class="loader--dot"></div>
+							<div class="loader--dot"></div>
+                            <div class="loader-Saving-text"></div>
+						</div>
+                        @*<p>Saving Record please wait......</p>*@
+                    </div>
+                </Content>
+            </DialogTemplates>
+        </SfDialog>
+</div>
+
+@*High Level Summary*@
+<SfDialog Width="470" @bind-Visible="@IsVisible" ShowCloseIcon="true" IsModal="false" Target="#GridMain">
+    <DialogTemplates>
+        <Header>Employee Summary</Header>
+        <Content>
+            @{
+                <div style="display:inline-flex;padding-bottom:15px">
+                    @if (RowDetails != null)
+                    {
+                        @*<div style="float:left;padding:45px;padding-top:48px"><img class="photo" src="@UriHelper.ToAbsoluteUri($"{SampleService.WebAssetsPath}images/data-grid/{RowDetails?.EmployeeId}.png")" alt="@RowDetails?.EmployeeId" /></div>*@
+                    }
+                    <div style="padding-top:20px">
+                        <div style="padding-bottom:10px;padding-left:10px;">
+                            <span style="font-size:large;font-weight: bold">@RowDetails?.FirstName @RowDetails?.LastName</span>
+                        </div>
+                        <div>
+                            <span class="position">@RowDetails?.JobDescriptionId</span>
+                        </div>
+                        <div style="padding-top:10px;">
+                            <table class="table">
+                                <tr>
+                                    <th>Date Joined </th>
+                                    <td>@RowDetails?.DateJoined?.ToString("dd/MM/yyyy")</td>
+                                </tr>
+                                <tr>
+                                    <th>Department </th>
+                                    <td>@RowDetails?.DepartmentId</td>
+                                </tr>
+                                <tr>
+                                    <th>Employee Number</th>
+                                    <td>@RowDetails?.EmployeeNumber</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </Content>
+    </DialogTemplates>
+    <DialogPositionData X="@Xvalue" Y="@Yvalue"></DialogPositionData>
+</SfDialog>
+
+@code {
+    #region Declarations
+
+    SfGrid<EmployeeDto>? EmployeeModelGrid { get; set; }
+    SfGrid<EmployeeSpouseDto>? AEmployeeSpouseGrid { get; set; }
+    SfGrid<AEmployeeChildrenDto>? AEmployeeChildrenGrid { get; set; }
+    SfGrid<EmployeeQualificationDto>? QualificationGrid { get; set; }
+    Query mainQuery { get; set; } = new();
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "95%" };
+    private static EmployeeDto? EmployeeReviewData { get; set; }
+    List<AGenderDto>? GenderData { get; set; }
+    List<AMaritalStatusDto>? MaritalStatusData { get; set; }
+    List<ACountryDto>? CountryData { get; set; }
+    List<JobDescriptionDto>? JobDescriptionData { get; set; }
+    List<AEmployeeLevelDto>? EmployeeLevelData { get; set; }
+    List<ALevelofEducationDto>? LevelofEducationData { get; set; }
+    List<EmployeeDto>? EmployeeData { get; set; }
+    List<ARelationshipDto>? ARelationshipData { get; set; }
+    List<ADegreeClassDto>? DegreeClassData { get; set; }
+    List<AIdentificationTypeDto>? IdentificationTypeData { get; set; }
+    List<ABankDto>? BankData { get; set; }
+    EmployeeRegistrationModel inputmodel { get; set; } = new EmployeeRegistrationModel();
+    string? RegisterError { get; set; }
+    [Parameter]
+    public string? AccessToken { get; set; }
+    string UserRole { get; set; } 
+    public static int UserJobTitleId { get; set; } = 0;
+    string? ProfilePicString { get; set; } = null;
+    SfSpinner? UploadImageSpinner;
+    string? CVString { get; set; } = null;
+    Query SubCountyChange { get; set; } = new();
+    Query ParishChange { get; set; } = new();
+    Query DistrictChange { get; set; } = new();
+    Query VillageChange { get; set; } = new();
+    Query SubRCountyChange { get; set; } = new();
+    Query ParishRChange { get; set; } = new();
+    Query DistrictRChange { get; set; } = new();
+    Query VillageRChange { get; set; } = new();
+
+    List<ADistrict>? DistrictData { get; set; }
+    List<ViewAparish>? ParishData { get; set; }
+    List<ASubCounty>? SubCountyData { get; set; }
+    List<ViewAvillage>? VillageData { get; set; }
+    bool isSubcountyEnabled { get; set; } = false;
+    bool isParishEnabled { get; set; } = false;
+    bool isVillageEnabled { get; set; } = false;
+    bool isSubcountyREnabled { get; set; } = false;
+    bool isParishREnabled { get; set; } = false;
+    bool isVillageREnabled { get; set; } = false;
+    SfDialog? LoadingDialogue;
+    SfDialog SavingDialog { get; set; }
+    public bool IsVisible { get; set; } = false;
+    private static EmployeeDto RowDetails { get; set; }
+    private string Xvalue = "center";
+    private string Yvalue = "center";
+    SfSpinner? SpinnerObj;
+    private Dictionary<string, object> GridAttributes { get; set; } = new Dictionary<string, object>();
+    string target { get; set; } = "#container";
+    bool hide = false;
+    SfDialog ConfirmationDeleteDialogue;
+    string ConfirmationText { get; set; }
+    EmployeeDto selectedemployee {get;set;}
+    private UtilitiesSearchPanel SearchModel = new();
+    SfMultiSelect<int[],EmployeeDto> EmployeeObj;
+    bool SaveButtons { get; set; } = false;
+
+    #endregion Declarations
+
+    private List<object> ToolbarMenu = new List<object>()
+     {
+            new ItemModel() { Text = "Add Employee", PrefixIcon = "e-add", Id = "GridMain_add"},
+            new ItemModel(){ Text = "Edit Employee", PrefixIcon= "e-edit", Id="GridMain_edit"},
+            //new ItemModel(){ Text = "Delete Employee", PrefixIcon= "e-delete", Id="Grid_delete"},
+            new ItemModel(){ Text = "Update Employee", PrefixIcon= "e-update", Id="GridMain_update"},
+            new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="GridMain_cancel"}
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await _SystemSettings.GetLoginCredentials();
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            RowDetails = null;
+
+            var responseemployee = await Http.GetAsync($"{_ApiConfig.BaseUrl}Employeez/GetMasterList");
+            var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+            if (responseemployee.IsSuccessStatusCode)
+            {
+                EmployeeData = await Http.GetFromJsonAsync<List<EmployeeDto>>
+                ($"{_ApiConfig.BaseUrl}Employeez/GetMasterList");
+            }
+
+            var responsegender = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetEmployeeLevel");
+            var contentemployeegender = await responsegender.Content.ReadAsStringAsync();
+            if (responsegender.IsSuccessStatusCode)
+            {
+                GenderData = await Http.GetFromJsonAsync<List<AGenderDto>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetGender");
+            }
+
+            var responseemployeelevel = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetEmployeeLevel");
+            var contentemployeelevel = await responseemployeelevel.Content.ReadAsStringAsync();
+            if (responseemployeelevel.IsSuccessStatusCode)
+            {
+                EmployeeLevelData = await Http.GetFromJsonAsync<List<AEmployeeLevelDto>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetEmployeeLevel");
+            }
+
+            var responsemaritalstatus = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetMaritalStatus");
+            var contentmaritalstatus = await responsemaritalstatus.Content.ReadAsStringAsync();
+            if (responsemaritalstatus.IsSuccessStatusCode)
+            {
+                MaritalStatusData = await Http.GetFromJsonAsync<List<AMaritalStatusDto>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetMaritalStatus");
+            }
+
+            var responsecountry = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetCountry");
+            var contentcountry = await responsecountry.Content.ReadAsStringAsync();
+            if (responsecountry.IsSuccessStatusCode)
+            {
+                CountryData = await Http.GetFromJsonAsync<List<ACountryDto>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetCountry");
+            }
+
+            var responseuserrole = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUserRoleId");
+            var contentuserrole = await responseuserrole.Content.ReadAsStringAsync();            
+            if (responseuserrole.IsSuccessStatusCode)
+            {
+                UserRole = contentuserrole;
+            }
+
+            var responseuserjobtitleid = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUserJobTitleId");
+            var contentuserjobtitleid = await responseuserjobtitleid.Content.ReadAsStringAsync();
+            if (responseuserjobtitleid.IsSuccessStatusCode)
+            {
+                UserJobTitleId = Convert.ToInt32(contentuserjobtitleid);
+            }
+
+            var responsedistrict = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetDistrict");
+            var contentdistrict = await responsedistrict.Content.ReadAsStringAsync();
+            if (responsedistrict.IsSuccessStatusCode)
+            {
+                DistrictData = await Http.GetFromJsonAsync<List<ADistrict>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetDistrict");
+            }
+
+            var responsesubcounty = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetSubcounty");
+            var contentsubcounty = await responsesubcounty.Content.ReadAsStringAsync();
+            if (responsesubcounty.IsSuccessStatusCode)
+            {
+                SubCountyData = await Http.GetFromJsonAsync<List<ASubCounty>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetSubcounty");
+            }
+
+            var responseparish = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetParishDropDown");
+            var contentparish = await responseparish.Content.ReadAsStringAsync();
+            if (responseparish.IsSuccessStatusCode)
+            {
+                ParishData = await Http.GetFromJsonAsync<List<ViewAparish>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetParishDropDown");
+            }
+
+            //var responsevillage = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetVillageDropDown");
+            //var contentvillage = await responsevillage.Content.ReadAsStringAsync();
+            //if (responsevillage.IsSuccessStatusCode)
+            //{
+            //    VillageData = await Http.GetFromJsonAsync<List<ViewAvillage>>
+            //    ($"{_ApiConfig.BaseUrl}Utilities/GetVillageDropDown");
+            //} 
+
+            var responserelationship = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetRelationship");
+            var contentrelationship = await responserelationship.Content.ReadAsStringAsync();
+            if (responserelationship.IsSuccessStatusCode)
+            {
+                ARelationshipData = await Http.GetFromJsonAsync<List<ARelationshipDto>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetRelationship");
+            }
+
+            var responseEducationLevel = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetLevelofEducation");
+            var contentEducationLevel = await responseEducationLevel.Content.ReadAsStringAsync();
+            if (responseEducationLevel.IsSuccessStatusCode)
+            {
+                LevelofEducationData = await Http.GetFromJsonAsync<List<ALevelofEducationDto>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetLevelofEducation");
+            }
+
+            var responseDegreeClass = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetDegreeClass");
+            var contentDegreeClass = await responseDegreeClass.Content.ReadAsStringAsync();
+            if (responseDegreeClass.IsSuccessStatusCode)
+            {
+                DegreeClassData = await Http.GetFromJsonAsync<List<ADegreeClassDto>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetDegreeClass");
+            }
+
+            var responseIdentificationType = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetIdentificationType");
+            var contentIdentificationType = await responseIdentificationType.Content.ReadAsStringAsync();
+            if (responseIdentificationType.IsSuccessStatusCode)
+            {
+                IdentificationTypeData = await Http.GetFromJsonAsync<List<AIdentificationTypeDto>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetIdentificationType");
+            }
+
+            var responseBank = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetBank");
+            var contentBank = await responseBank.Content.ReadAsStringAsync();
+            if (responseBank.IsSuccessStatusCode)
+            {
+                BankData = await Http.GetFromJsonAsync<List<ABankDto>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetBank");
+            }
+
+            var responseJobDescription = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetJobDescription");
+            var contentJobDescription = await responseJobDescription.Content.ReadAsStringAsync();
+            if (responseJobDescription.IsSuccessStatusCode)
+            {
+                JobDescriptionData = await Http.GetFromJsonAsync<List<JobDescriptionDto>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetJobDescription");
+            }
+
+
+            //if ((!string.IsNullOrEmpty(_SystemSettings.UserRole) != null &&
+            //(_SystemSettings.UserRole.Contains("Administrator"))) 
+            //|| (UserJobTitleId == 44))
+            //{
+            //        hide = true;
+            //        ToolbarMenu = new List<object>()
+            //        {
+            //            new ItemModel() { Text = "Add Employee", PrefixIcon = "e-add", Id = "GridMain_add"},
+            //            new ItemModel(){ Text = "Edit Employee", PrefixIcon= "e-edit", Id="GridMain_edit"},
+            //            //new ItemModel(){ Text = "Delete Employee", PrefixIcon= "e-delete", Id="Grid_delete"},
+            //            new ItemModel(){ Text = "Update Employee", PrefixIcon= "e-update", Id="GridMain_update"},
+            //            new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="GridMain_cancel"}
+            //        };
+            //}
+            //else
+            //{
+            //        hide = false;
+            //        ToolbarMenu = new List<object>()
+            //        {
+            //            //new ItemModel() { Text = "Add Employee", PrefixIcon = "e-add", Id = "GridMain_add"},
+            //            new ItemModel(){ Text = "Edit Employee", PrefixIcon= "e-edit", Id="GridMain_edit"},
+            //            //new ItemModel(){ Text = "Delete Employee", PrefixIcon= "e-delete", Id="Grid_delete"},
+            //            new ItemModel(){ Text = "Update Employee", PrefixIcon= "e-update", Id="GridMain_update"},
+            //            new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="GridMain_cancel"}
+            //        };
+            //}
+        }
+        catch (Exception ex)
+        {
+            RegisterError = $"Error: {ex.Message}";
+        }
+    }
+
+    bool IsValid(string email)
+    {
+        var trimmedEmail = email.Trim();
+
+        if (trimmedEmail.EndsWith(".")) 
+        {
+            return false;
+        }
+        try 
+        {
+            var addr = new System.Net.Mail.MailAddress(email);
+            return addr.Address == trimmedEmail;
+        }
+        catch 
+        {
+            return false;
+        }
+    }
+
+    public bool IsValid1(string emailaddress)
+    {
+        try
+        {
+            MailAddress m = new MailAddress(emailaddress);
+
+            return true;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+
+    private void SearchRecords()
+    {
+        try
+        {
+            mainQuery = new Query();
+            if (SearchModel.Employeeid != null)
+            {
+                mainQuery.AddParams("Employeeid", string.Join(",", SearchModel.Employeeid));
+            }
+        }
+
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+    }
+
+    private void ClearSearchBtnClick()
+    {
+        SearchModel = new();
+        mainQuery = new Query();
+    }
+
+    public async Task onSubmitForm()
+    {
+        try
+        {
+            if (AEmployeeSpouseGrid != null)
+            {
+                await AEmployeeSpouseGrid.EndEditAsync();
+                //await AEmployeeSpouseGrid.AddRecord();
+            }
+
+            if (AEmployeeChildrenGrid != null)
+            {
+                await AEmployeeChildrenGrid.EndEditAsync();
+                // AEmployeeChildrenGrid.AddRecord();
+            }       
+
+            if (QualificationGrid != null)
+            {
+                await QualificationGrid.EndEditAsync();
+            }
+
+            if (EmployeeModelGrid != null)
+            {
+                await EmployeeModelGrid.EndEditAsync();
+            }            
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    public async void DialogCancelBtnclicked()
+    {
+        if (AEmployeeChildrenGrid != null)
+        {
+            await AEmployeeChildrenGrid.CloseEdit();
+        }
+
+        if (AEmployeeSpouseGrid != null)
+        {
+            await AEmployeeSpouseGrid.CloseEdit();
+        }
+
+        if (EmployeeModelGrid != null)
+        {
+            await EmployeeModelGrid.CloseEdit();
+        }
+    }
+
+    public async Task OnCommandClicked(CommandClickEventArgs<EmployeeDto> args)
+    {
+
+        if(args.CommandColumn.ButtonOption.Content == "Delete")
+        {
+            try
+            {
+                selectedemployee = args.RowData;
+                ConfirmationText = "<p>Are you sure you want to delete this record ( " + args.RowData.FirstName + " "+ args.RowData.MiddleName +" "+ args.RowData.LastName + " ) ! </p>";
+                await this.ConfirmationDeleteDialogue.Show();                
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            finally
+            {
+                StateHasChanged();
+            }
+
+        }
+
+        if (args.CommandColumn.ButtonOption.Content == "Summary")
+        {
+            RowDetails = args.RowData;
+            IsVisible = true;
+        }
+
+    }
+
+    private async void ComfirmationApproveYes()
+    {
+        try
+        {
+            await this.ConfirmationDeleteDialogue.HideAsync(); 
+            if (EmployeeModelGrid != null)
+            {
+                await EmployeeModelGrid.EndEditAsync();
+            }
+
+            if (AEmployeeChildrenGrid != null)
+            {
+                await AEmployeeChildrenGrid.EndEditAsync();
+            } 
+
+            if (QualificationGrid != null)
+            {
+                await QualificationGrid.EndEditAsync();
+            }
+
+            if (EmployeeModelGrid != null)
+            {
+                await EmployeeModelGrid.EndEditAsync();
+            } 
+
+            int? employeeid = null;
+
+            if(selectedemployee.Employeeid != null)
+            {
+                employeeid = selectedemployee.Employeeid;
+            }
+
+            await SavingDialog.ShowAsync();
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(selectedemployee);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}Employeez/DeleteEmployee?employeeid={employeeid}", httpContent);
+
+            if (result.IsSuccessStatusCode)
+            {
+                try
+                {  
+                    EmployeeModelGrid.Refresh();
+                    toastService.ShowSuccess("Record Successfully Deleted");
+                }
+                catch(Exception ex)
+                {
+
+                }
+                finally
+                {                        
+                    await SavingDialog.HideAsync();
+                }
+
+            }
+            else
+            {                
+                toastService.ShowError("Record Not Deleted");
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private void ComfirmationApproveNo()
+    {
+        this.ConfirmationDeleteDialogue.Hide();
+    }
+
+
+    public async void LoadHandler()
+    {
+        SpinnerObj.ShowAsync();
+        GridAttributes.Add("disable", "yes");
+
+        await _SystemSettings.GetLoginCredentials();
+        if (!string.IsNullOrEmpty(_SystemSettings.UserRole) != null &&
+            _SystemSettings.UserRole.Contains("Administrator"))
+        {
+            hide = true;
+        }
+        else 
+        {
+            hide = false;
+        }
+    }
+    public async void DataBound()
+    {
+        GridAttributes["disable"] = "no";
+        SpinnerObj.HideAsync();
+    }
+
+    #region Employee
+    public class EmployeeRecordNewAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        public IToastService toastService;
+        SystemSettings _SystemSettings;
+        ApiConfig _ApiConfig;
+        public EmployeeRecordNewAdapter(HttpClient _http, IToastService ts, SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            _SystemSettings = systemSettings;
+            _ApiConfig = apiConfig;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<EmployeeDto>();
+            try
+            {
+                string Employeeid = null;
+
+                if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
+                {
+                    var val = dataManagerRequest.Params;
+
+                    if (val.FirstOrDefault(o => o.Key == "Employeeid").Value != null)
+                    {
+                        Employeeid = val.FirstOrDefault(o => o.Key == "Employeeid").Value.ToString();
+                    }
+                }
+
+                await _SystemSettings.GetLoginCredentials();
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                //var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}Employeez/GetEmployeeList");
+                var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}Employeez/GetEmployeeList?Employeeid={Employeeid}");
+                var content = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    toastService.ShowError(response.ReasonPhrase);
+                }
+                data = JsonSerializer.Deserialize<List<EmployeeDto>>(content, _options);
+
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            finally
+            {
+
+            }
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<EmployeeDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as EmployeeDto);
+                if (val != null)
+                {
+                    if (val.Employeeid == 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}Employeez/CreateEmployeeDetails", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as EmployeeDto);
+                if (val != null)
+                {
+                    if (val.Employeeid != 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}Employeez/UpdateEmployeeDetails", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+
+
+        //public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        //{
+        //    try
+        //    {
+        //        var val = (value as EmployeeDto);
+        //        await _SystemSettings.GetLoginCredentials();
+        //        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+        //        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+        //        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+        //        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}Employeez/SaveEmployeeRecord", httpContent);
+        //        if (result.IsSuccessStatusCode)
+        //        {
+        //            toastService.ShowSuccess($"{val.EmployeeHeader.FirstName}'s record was sucessfully updated");
+        //        }
+        //        else
+        //        {
+        //            //  toastService.ShowError(result.ReasonPhrase);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        toastService.ShowError(ex.Message.ToString());
+        //    }
+
+        //    return value;
+        //}
+
+    }
+
+    public async void OnEmployeeDtoActionBegin(ActionEventArgs<EmployeeDto> args)
+    {
+        try
+        {
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+                SaveButtons = false;
+                if (args.RowData.AEmployeeChildren == null)
+                {
+                    args.RowData.AEmployeeChildren = new List<AEmployeeChildrenDto>();
+                }
+                if (args.RowData.EmployeeSpouse == null)
+                {
+                    args.RowData.EmployeeSpouse = new List<EmployeeSpouseDto>();
+                }
+                if (args.RowData.EmployeeQualification == null)
+                {
+                    args.RowData.EmployeeQualification = new List<EmployeeQualificationDto>();
+                }
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+            {
+                SaveButtons = false;
+                args.RowData.AEmployeeChildren = new List<AEmployeeChildrenDto>();
+                args.RowData.EmployeeSpouse = new List<EmployeeSpouseDto>();
+                args.RowData.EmployeeQualification = new List<EmployeeQualificationDto>();
+                //args.RowData.EmployeeHeader = new Employee();
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+            {
+                try
+                {                  
+                    if (string.IsNullOrEmpty(args.Data.FirstName))
+                    {
+                        toastService.ShowWarning("Please fill in Employee First Name before saving this record.");
+                        args.Cancel = true;
+                    }
+                    else if (string.IsNullOrEmpty(args.Data.LastName))
+                    {
+                        toastService.ShowWarning("Please fill in Employee Last Name before saving this record.");
+                        args.Cancel = true;
+                    }
+                    else if (args.Data.GenderId == null)
+                    {
+                        toastService.ShowWarning("Please select the gender.");
+                        args.Cancel = true;
+                    }
+                    else if (args.Data.DoB == null)
+                    {
+                        toastService.ShowWarning("Please enter the Date of Birth.");
+                        args.Cancel = true;
+                    }
+                    else if (args.Data.MaritalStatusId == null)
+                    {
+                        toastService.ShowWarning("Please select the marital status.");
+                        args.Cancel = true;
+                    }
+                    else if (args.Data.MobileNumber == null)
+                    {
+                        toastService.ShowWarning("Please enter the mobile number.");
+                        args.Cancel = true;
+                    }
+                    else if (args.Data.CoutryId == null)
+                    {
+                        toastService.ShowWarning("Please select the Employee Country of origin before saving this record.");
+                        args.Cancel = true;
+                    }
+                    else if (args.Data.PlaceofResidenceDistrictId == null)
+                    {
+                        toastService.ShowWarning("Please select the Employee District of Residence before saving this record.");
+                        args.Cancel = true;
+                    }
+                    else if (args.Data.PlaceofResidenceSubCountyId == null)
+                    {
+                        toastService.ShowWarning("Please select the Employee SubCounty of Residence before saving this record.");
+                        args.Cancel = true;
+                    }
+                    else if (args.Data.PlaceofResidenceParishId == null)
+                    {
+                        toastService.ShowWarning("Please select the Employee Parish of Residence before saving this record.");
+                        args.Cancel = true;
+                    }
+
+                    else if (string.IsNullOrEmpty(args.Data.EmployeFatherName))
+                    {
+                        toastService.ShowWarning("Please fill in Employee Father's Name before saving this record.");
+                        args.Cancel = true;
+                    }
+                    else if (string.IsNullOrEmpty(args.Data.EmployeMotherName))
+                    {
+                        toastService.ShowWarning("Please fill in Employee Mother's Name before saving this record.");
+                        args.Cancel = true;
+                    }
+                    else if (string.IsNullOrEmpty(args.Data.NextofKinName))
+                    {
+                        toastService.ShowWarning("Please fill in Employee Next of Kin's Name before saving this record.");
+                        args.Cancel = true;
+                    }
+                    else if (string.IsNullOrEmpty(args.Data.NextofKinTelephoneNumber))
+                    {
+                        toastService.ShowWarning("Please fill in  Next of Kin Phone Number  before saving this record.");
+                        args.Cancel = true;
+                    }
+                    else if (args.Data.NextofKinRelationShipId == null)
+                    {
+                        toastService.ShowWarning("Please select the Next of Kin Relationship with Employee before saving this record.");
+                        args.Cancel = true;
+                    }
+                    else if (string.IsNullOrEmpty(args.Data.ContactPersonName))
+                    {
+                        toastService.ShowWarning("Please fill in Employee Contact Person's Name before saving this record.");
+                        args.Cancel = true;
+                    }
+                    else if (string.IsNullOrEmpty(args.Data.NextofKinTelephoneNumber))
+                    {
+                        toastService.ShowWarning("Please fill in  Contact Person Phone Number  before saving this record.");
+                        args.Cancel = true;
+                    }
+                    else if (args.Data.ContactPersonRelationShipId == null)
+                    {
+                        toastService.ShowWarning("Please select the Contact Person Relationship with Employee before saving this record.");
+                        args.Cancel = true;
+                    }
+                    else if (args.Data.EmailAddress == null)
+                    {
+                        toastService.ShowWarning("Please provide the official email address.");
+                        args.Cancel = true;
+                    }
+                    
+                    else if (!string.IsNullOrEmpty(args.Data.EmailAddress) && 
+                    IsValid(args.Data.EmailAddress) == false)
+                    {
+                        toastService.ShowWarning("Please enter a valid email address.");
+                        args.Cancel = true;
+                    }
+                    
+                    else if (args.Data.JobDescriptionId == null)
+                    {
+                        toastService.ShowWarning("Please select the designation.");
+                        args.Cancel = true;
+                    }
+                    else if (args.Data.EmployeeLevelId == null)
+                    {
+                        toastService.ShowWarning("Please select the employee level.");
+                        args.Cancel = true;
+                    }
+
+                    else
+                    {
+                        var countdata = EmployeeData?
+                        .FirstOrDefault(o => o.FirstName.Trim().ToLower()
+                        == args.Data.FirstName.Trim().ToLower()
+                        && o.LastName.Trim().ToLower()
+                        == args.Data.LastName.Trim().ToLower()
+                        && o.EmailAddress.Trim().ToLower()
+                        == args.Data.EmailAddress.Trim().ToLower()
+                        );
+
+                        if (countdata != null && (countdata.Employeeid != args.Data.Employeeid))
+                        {
+                            toastService.ShowWarning("This employee has arleady been registered in the system as " + countdata.LastName + " " + countdata.FirstName + ". Record Not Saved");
+                            args.Cancel = true;
+                        }
+                        else
+                        {
+                            SaveButtons = true;
+                            await LoadingDialogue.ShowAsync();
+                        }
+                        
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
+                finally
+                {
+                    //SaveButtons = false;
+                    await LoadingDialogue.HideAsync();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            
+        }
+    }
+
+    public async Task OnEmployeeDtoActionComplete(ActionEventArgs<EmployeeDto> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add)
+        || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            EmployeeModelGrid.PreventRender(false);
+            ProfilePicString = await GetImageString(args.RowData.Photograph, args.RowData.PhotographExt, "ProfilePic");
+        }
+
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+        {
+            var responseemployee = await Http.GetAsync($"{_ApiConfig.BaseUrl}Employeez/GetMasterList");
+            var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+            if (responseemployee.IsSuccessStatusCode)
+            {
+                EmployeeData = await Http.GetFromJsonAsync<List<EmployeeDto>>
+                ($"{_ApiConfig.BaseUrl}Employeez/GetMasterList");
+            }
+         }
+    }
+   
+    //Enable cell edit on single click
+    public async Task ChildrenCellSelectHandler(CellSelectEventArgs<AEmployeeChildrenDto> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await AEmployeeChildrenGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await AEmployeeChildrenGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await AEmployeeChildrenGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
+    public async Task SpouseCellSelectHandler(CellSelectEventArgs<EmployeeSpouseDto> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await AEmployeeSpouseGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await AEmployeeSpouseGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await AEmployeeSpouseGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
+    public async Task QualificationCellSelectHandler(CellSelectEventArgs<EmployeeQualificationDto> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await QualificationGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await QualificationGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await QualificationGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
+    public string GetEmployeeHeader(EmployeeDto Value)
+    {
+        if (Value.Employeeid == 0)
+        {
+            return "Add a new Employee";
+        }
+        else
+        {
+            return "Edit " + Value.FirstName + " " + Value.MiddleName + " " + Value.LastName + " Details";
+        }
+    }
+    #endregion Employee
+
+    #region image
+    private async void OnImageChange(UploadChangeEventArgs args)
+    {
+        try
+        {
+            await UploadImageSpinner.ShowAsync();
+            foreach (var file in args.Files)
+            {
+                if (file.FileInfo.Size <= 5242880)
+                {
+                    file.Stream.Position = 0;
+                    if (file.FileInfo.Type.ToLower().Contains("png") || file.FileInfo.Type.ToLower().Contains("gif") || file.FileInfo.Type.ToLower().Contains("jpeg") || file.FileInfo.Type.ToLower().Contains("jpg"))
+                    {
+                        string fileName = "Profile_" + EmployeeReviewData.FirstName + "_" + EmployeeReviewData.LastName + "_" + EmployeeReviewData.Employeeid + "." + file.FileInfo.Type.Trim();
+                        byte[] bytes = file.Stream.ToArray();
+                        string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                        ImageUpload m = new ImageUpload()
+                            {
+                                ImageName = fileName,
+                                ImageExt = file.FileInfo.Type.Trim(),
+                                Imagebyte = bytes,
+                                Rootfolder = "ProfilePic"
+                            };
+                        var Requestresult = await _DocumentUploadModel.SaveDocument(m, _SystemSettings.AccessToken);
+                        if (Requestresult != null && Requestresult.IsSuccess)
+                        {
+                            var result = "data:image/" + file.FileInfo.Type.Trim() + ";base64," + base64;
+                            EmployeeReviewData.Photograph = fileName;
+                            EmployeeReviewData.PhotographExt = file.FileInfo.Type.Trim();
+                            ProfilePicString = result;
+                            bytes = null;
+                        }
+                        else if (Requestresult != null)
+                        {
+                            toastService.ShowWarning(Requestresult.Message);
+                        }
+                    }
+                    else
+                    {
+                        toastService.ShowWarning("Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg).");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await UploadImageSpinner.HideAsync();
+            StateHasChanged();
+        }
+
+    }
+    private async Task<string> GetImageString(string imageUrl, string ext, string Rootfolder)
+    {
+        string? result = null;
+        try
+        {
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                ImageUpload a = await _DocumentUploadModel.GetDocument(imageUrl, Rootfolder, _SystemSettings.AccessToken);
+
+                if (a != null)
+                {
+                    if (a.Imagebyte != null)
+                    {
+                        if (!string.IsNullOrEmpty(a.ImageExt) && a.ImageExt.Contains("pdf"))
+                        {
+                            string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
+                            result = "data:application/pdf;base64," + base64String;
+                        }
+                        else if (!string.IsNullOrEmpty(a.ImageExt))
+                        {
+                            string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
+                            result = "data:image/" + a.ImageExt + ";base64," + base64String;
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        return result;
+    }
+    private async void OnCVChange(UploadChangeEventArgs args)
+    {
+        try
+        {
+            await UploadImageSpinner.ShowAsync();
+            foreach (var file in args.Files)
+            {
+                if (file.FileInfo.Size <= 5242880)
+                {
+                    file.Stream.Position = 0;
+                    if (file.FileInfo.Type.ToLower().Contains("pdf") || file.FileInfo.Type.ToLower().Contains("doc"))
+                    {
+
+                        string fileName = string.Empty;
+                        if (file.FileInfo.Type.Trim().Contains("doc"))
+                        {
+                    
+                            fileName = "CV_" + EmployeeReviewData.FirstName + "_" + EmployeeReviewData.LastName + "_" + EmployeeReviewData.Employeeid + ".pdf";
+
+                            //Create a new document
+                            Syncfusion.DocIO.DLS.WordDocument document;
+                            if (file.FileInfo.Type.Contains("doc") && !file.FileInfo.Type.Contains("docx"))
+                            {
+                                document = new Syncfusion.DocIO.DLS.WordDocument(file.Stream, Syncfusion.DocIO.FormatType.Doc);
+                            }
+                            else
+                            {
+                                document = new Syncfusion.DocIO.DLS.WordDocument(file.Stream, Syncfusion.DocIO.FormatType.Docx);
+                            }
+                            //Creates an instance of the DocToPDFConverter
+                            DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
+                            PdfDocument pdfDocument = render.ConvertToPDF(document);
+
+                            MemoryStream _ms = new MemoryStream();
+                            pdfDocument.Save(_ms);
+                            _ms.Position = 0;
+
+                            byte[] bytes = file.Stream.ToArray();
+                            string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+
+                            ImageUpload m = new ImageUpload()
+                                {
+                                    ImageName = fileName,
+                                    ImageExt = file.FileInfo.Type.Trim(),
+                                    Imagebyte = bytes,
+                                    Rootfolder = "CV"
+                                };
+
+
+                            var Requestresult = await _DocumentUploadModel.SaveDocument(m, _SystemSettings.AccessToken);
+                            if (Requestresult != null && Requestresult.IsSuccess)
+                            {
+                                var result = "data:application/pdf;base64," + base64;
+                                EmployeeReviewData.Photograph = fileName;
+                                EmployeeReviewData.PhotographExt = "pdf";
+                                CVString = result;
+
+                                bytes = null;
+                                _ms.Close();
+                                _ms.Dispose();
+                                pdfDocument.Close();
+                                pdfDocument.Dispose();
+                                render.Dispose();
+                                document.Close();
+                                document.Dispose();
+                            }
+                            else if (Requestresult != null)
+                            {
+                                toastService.ShowWarning(Requestresult.Message);
+                            }
+                        }
+                        else
+                        {
+
+                            fileName = "CV_" + EmployeeReviewData.FirstName + "_" + EmployeeReviewData.LastName + "_" + EmployeeReviewData.Employeeid + ".pdf";
+                            MemoryStream ms = new MemoryStream();
+                            file.Stream.WriteTo(ms);
+                            ms.Position = 0;
+                            byte[] bytes = file.Stream.ToArray();
+                            string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+
+                            ImageUpload m = new ImageUpload()
+                                {
+                                    ImageName = fileName,
+                                    ImageExt = file.FileInfo.Type.Trim(),
+                                    Imagebyte = bytes,
+                                    Rootfolder = "CV"
+                                };
+
+                            var Requestresult = await _DocumentUploadModel.SaveDocument(m, _SystemSettings.AccessToken);
+                            if (Requestresult != null && Requestresult.IsSuccess)
+                            {
+                                var result = "data:application/pdf;base64," + base64;
+                                EmployeeReviewData.Photograph = fileName;
+                                EmployeeReviewData.PhotographExt = file.FileInfo.Type.Trim();
+                                CVString = result;
+                                bytes = null;
+                            }
+                            else if (Requestresult != null)
+                            {
+                                toastService.ShowWarning(Requestresult.Message);
+                            }
+                        }
+                    }
+                    else if (file.FileInfo.Type.ToLower().Contains("png") || file.FileInfo.Type.ToLower().Contains("gif") || file.FileInfo.Type.ToLower().Contains("jpeg"))
+                    {
+
+                        string fileName = "CV_" + EmployeeReviewData.FirstName + "_" + EmployeeReviewData.LastName + "_" + EmployeeReviewData.Employeeid + "." + file.FileInfo.Type.Trim();
+
+                        byte[] bytes = file.Stream.ToArray();
+                        string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+
+                        ImageUpload m = new ImageUpload()
+                            {
+                                ImageName = fileName,
+                                ImageExt = file.FileInfo.Type.Trim(),
+                                Imagebyte = bytes,
+                                Rootfolder = "CV"
+                            };
+
+                        var Requestresult = await _DocumentUploadModel.SaveDocument(m, _SystemSettings.AccessToken);
+                        if (Requestresult != null && Requestresult.IsSuccess)
+                        {
+                            var result = "data:image/" + file.FileInfo.Type.Trim() + ";base64," + base64;
+                            EmployeeReviewData.Photograph = fileName;
+                            EmployeeReviewData.PhotographExt = file.FileInfo.Type.Trim();
+                            CVString = result;
+                            bytes = null;
+                        }
+                        else if (Requestresult != null)
+                        {
+                            toastService.ShowWarning(Requestresult.Message);
+                        }
+                    }
+                    else
+                    {
+                        toastService.ShowWarning("Please ensure that the uploaded document is an image(png/Jpeg/gif).");
+                    }
+
+                    //Save infor into the DB
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await UploadImageSpinner.HideAsync();
+            StateHasChanged();
+        }
+
+    }
+    #endregion Image
+
+    #region ChangeMethods
+    public void OnDistrictChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ADistrict> args)
+    {
+        if (args.ItemData != null)
+        {
+            isSubcountyEnabled = true;
+        }
+    }
+    public void OnSubCountyChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ASubCounty> args)
+    {
+        if (args.ItemData != null)
+        {
+            isParishEnabled = true;
+        }
+    }
+    public async void OnParishChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,ViewAparish> args)
+    {
+        if (args.ItemData != null)
+        {
+            isVillageEnabled= true;
+            var responsevillage = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
+            var contentvillage = await responsevillage.Content.ReadAsStringAsync();
+            if (responsevillage.IsSuccessStatusCode)
+            {
+                VillageData = await Http.GetFromJsonAsync<List<ViewAvillage>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
+            } 
+            ParishChange = new Query().Where(new WhereFilter() { Field = "ParishId", Operator = "equal", value = args.ItemData.ParishId, IgnoreCase = false, IgnoreAccent = false });
+        }
+    }
+
+    public void OnRDistrictChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ADistrict> args)
+    {
+        if (args.ItemData != null)
+        {
+            isSubcountyREnabled = true;
+        }
+    }
+    public void OnRSubCountyChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ASubCounty> args)
+    {
+        if (args.ItemData != null)
+        {            
+            isParishREnabled = true;  
+        }
+    }
+    public async void OnRParishChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,ViewAparish> args)
+    {
+        if (args.ItemData != null)
+        {
+            isVillageREnabled= true;
+            var responsevillage = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
+            var contentvillage = await responsevillage.Content.ReadAsStringAsync();
+            if (responsevillage.IsSuccessStatusCode)
+            {
+                VillageData = await Http.GetFromJsonAsync<List<ViewAvillage>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
+            } 
+            ParishRChange = new Query().Where(new WhereFilter() { Field = "ParishId", Operator = "equal", value = args.ItemData.ParishId, IgnoreCase = false, IgnoreAccent = false });
+        }
+    }
+
+    #endregion ChangeMethods
+
+}

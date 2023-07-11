@@ -1,0 +1,454 @@
+﻿@page "/CPDSummaryPage"
+@using HCMIS.Model
+@using HCMIS.ViewModel
+@using System.Text.Json
+@using System.Text.RegularExpressions
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject AppState AppState
+@inject NavigationManager Navigation
+@inject SystemSettings _SystemSettings
+@using System.Collections;
+@using HCMIS.SHARED.DTOs.Training;
+@inject IToastService toastService;
+
+<style>
+    .e-edit-dialog {
+        max-height: 98%;
+        max-width: 98%;
+        min-width: 98%;
+        min-height: 98%;
+    }
+
+    h6 {
+        color: ghostwhite;
+        background-color: blue;
+        padding: 10px;
+        width: 100%;
+        font-size: 10px;
+    }
+
+    h4 {
+        color: black;
+        background-color: deepskyblue;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+
+    h3 {
+        color: black;
+        background-color: darkorange;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+    /*Change Grid Header Color */
+    .e-headercell.e-attr1 {
+        background: #964B00;
+        color: white;
+    }
+</style>
+
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+
+<center>
+    <h5>
+        <strong>CONTINOUS PROFFESSIONAL DEVELOPMENTS (CPD's) PLAN</strong>
+    </h5>
+</center>
+
+<SfGrid @ref="@DataGrid" TValue="TrainingCpdsummaryDto" ID="Grid" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowSelection="true" AllowSorting="true" Toolbar="@ToolbarMenu">
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+        <Template>
+            @{
+                <center>
+                    <h5>
+                        <strong>CONTINOUS PROFFESSIONAL DEVELOPMENTS (CPD's) PLAN</strong>
+                    </h5>
+                </center>
+                CPDData = (context as TrainingCpdsummaryDto);
+                <div>
+                    <div class="row">
+                        <div class="col-md-4" hidden="hidden">
+                            <SfNumericTextBox ID="Id" @bind-Value="@(CPDData.SummaryId)" Placeholder="Summary Id" Enabled="false" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                        </div>
+                        <div class="col-md-6">
+                            <p><h3>Financial Year<span style="color:red;">*</span></h3></p>
+                            <SfDropDownList @bind-Value="@(CPDData.FinancialYearId)" Enabled="true" TItem="AFinancialYear" TValue="int?" DataSource="@FinancialYearData" Placeholder="Choose Financial Year" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                <DropDownListFieldSettings Value="@nameof(AFinancialYear.Id)" Text="@nameof(AFinancialYear.FinancialYear)"></DropDownListFieldSettings>
+                            </SfDropDownList>
+                        </div>
+                        <div class="col-md-6">
+                            <p><h3>Staff Category<span style="color:red;">*</span></h3></p>
+                            <SfDropDownList @bind-Value="@(CPDData.StaffCategoryId)" Enabled="true" TItem="AStaffCategoryDto" TValue="int?" DataSource="@StaffCategoryData" Placeholder="Select Category" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                <DropDownListFieldSettings Value="@nameof(AStaffCategoryDto.StaffCategoryId)" Text="@nameof(AStaffCategoryDto.StaffCategoryDescription)"></DropDownListFieldSettings>
+                            </SfDropDownList>
+                        </div>                 
+                        <div class="col-md-6">
+                            <p><h3>Number of Staff</h3></p>
+                            <SfNumericTextBox ID="StaffNo" @bind-Value="@(CPDData.StaffNo)" Enabled="true" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                        </div>
+                        <div class="col-md-6">
+                            <p><h3>Number of CPDs Planned</h3></p>
+                            <SfNumericTextBox ID="CpdsPlannedNo" @bind-Value="@(CPDData.CpdsPlannedNo)" Enabled="true" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                        </div>
+                        <div class="col-md-6">
+                            <p><h3>Estimated Rate Per CPD</h3></p>
+                            <SfNumericTextBox ID="EstimatedCpdrate" @bind-Value="@(CPDData.EstimatedCpdrate)" Enabled="true" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                        </div>
+                    </div>
+                </div>
+            }
+        </Template>
+
+    </GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.FilterBar"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple"></GridSelectionSettings>
+    <GridEvents OnActionBegin="CPDActionBegin" TValue="TrainingCpdsummaryDto"></GridEvents>
+    <SfDataManager AdaptorInstance="@typeof(CPDSummaryAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <GridColumns>
+      <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+    	<GridColumn Field=@nameof(TrainingCpdsummaryDto.SummaryId) HeaderText="SummaryId" AllowEditing="false" IsPrimaryKey="true" Visible="false" Width="150"></GridColumn>
+        <GridForeignColumn Field=@nameof(TrainingCpdsummaryDto.StaffCategoryId)
+                           HeaderText="Staff Category"
+                           Width="150"
+                           AllowEditing="true"
+                           ForeignKeyField="@(nameof(AStaffCategoryDto.StaffCategoryId))"
+                           ForeignKeyValue="@(nameof(AStaffCategoryDto.StaffCategoryDescription))"
+                           ForeignDataSource="@StaffCategoryData" AllowFiltering="true"
+                           CustomAttributes="@(new Dictionary<string,
+                           object>(){ { "class", "e-attr1" }})">
+        </GridForeignColumn>
+        <GridForeignColumn Field=@nameof(TrainingCpdsummaryDto.FinancialYearId)
+                           HeaderText="Financial Year"
+                           Width="150"
+                           AllowEditing="true"
+                           ForeignKeyField="@(nameof(AFinancialYear.Id))"
+                           ForeignKeyValue="@(nameof(AFinancialYear.FinancialYear))"
+                           ForeignDataSource="@FinancialYearData" AllowFiltering="true"
+                           CustomAttributes="@(new Dictionary<string,
+                           object>(){ { "class", "e-attr1" }})">
+        </GridForeignColumn>
+        <GridColumn Field=@nameof(TrainingCpdsummaryDto.StaffNo) HeaderText="No.Staff"  Width="150"
+                    CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"></GridColumn>
+        <GridColumn Field=@nameof(TrainingCpdsummaryDto.CpdsPlannedNo) HeaderText="No.CPDs Planned"  Width="150"
+                    CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"></GridColumn>
+        <GridColumn Field=@nameof(TrainingCpdsummaryDto.EstimatedCpdrate) HeaderText="Estimated CPD Rate"  Width="150"
+                    CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"></GridColumn>
+    </GridColumns>
+</SfGrid>
+
+
+
+@code {  
+    SfGrid<TrainingCpdsummaryDto>? DataGrid { get; set; }
+    private static TrainingCpdsummaryDto? CPDData { get; set; }
+    List<AStaffCategoryDto>? StaffCategoryData { get; set; }
+    List<AFinancialYear>? FinancialYearData { get; set; }
+
+    #region Toasters
+    public static string ToastContent { get; set; }
+    SfToast? ToastObj;
+    SfToast DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+        {
+            new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+            new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+            new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+            new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+        };
+    #endregion Toasters
+
+    private List<object> ToolbarMenu = new List<object>()
+    {
+        new ItemModel() { Text = "Capture Summary", PrefixIcon = "e-add", Id = "Grid_add"},
+        new ItemModel(){ Text = "Edit Summary", PrefixIcon= "e-edit", Id="Grid_edit"},
+        new ItemModel(){ Text = "Delete Summary", PrefixIcon= "e-delete", Id="Grid_delete"},
+        new ItemModel(){ Text = "Update Summary", PrefixIcon= "e-update", Id="Grid_update"},
+        new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await _SystemSettings.GetLoginCredentials();
+        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+        var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetStaffCategory");
+        var content = await response.Content.ReadAsStringAsync();
+        var responsefinancialyear = await Http.GetAsync($"{_ApiConfig.BaseUrl}FinancialYear/list");
+        var contentfinancialyear = await responsefinancialyear.Content.ReadAsStringAsync();
+
+        if (response.IsSuccessStatusCode && responsefinancialyear.IsSuccessStatusCode)
+        {
+            StaffCategoryData = await Http.GetFromJsonAsync<List<AStaffCategoryDto>>
+            ($"{_ApiConfig.BaseUrl}Utilities/GetStaffCategory");
+
+            FinancialYearData = await Http.GetFromJsonAsync<List<AFinancialYear>>
+            ($"{_ApiConfig.BaseUrl}FinancialYear/list");
+        }
+    }
+
+    #region CPDSummaryAdapter 
+
+    public class CPDSummaryAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        SystemSettings _SystemSettings;
+        ApiConfig _ApiConfig;
+        public IToastService toastService;
+        private readonly NavigationManager Navigation;
+
+        public CPDSummaryAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+            , SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            Navigation = _Navigation;
+            _ApiConfig = apiConfig;
+            _SystemSettings = systemSettings;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            await _SystemSettings.GetLoginCredentials();
+
+            var data = new List<TrainingCpdsummaryDto>();
+
+            string? AccessToken = _SystemSettings.AccessToken;
+            string? BaseUrl = _ApiConfig.BaseUrl;
+
+            try
+            {
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AccessToken);
+                var response = await Http.GetAsync($"{BaseUrl}TrainingCpdSummary/GetTrainingCpdSummary");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    data = JsonSerializer.Deserialize<List<TrainingCpdsummaryDto>>(content, _options);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<TrainingCpdsummaryDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as TrainingCpdsummaryDto);
+                if (val != null)
+                {
+                    if (val.SummaryId == 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}TrainingCpdSummary/CreateTrainingCpdSummary", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}TrainingCpdSummary/UpdateTrainingCpdSummary", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as TrainingCpdsummaryDto);
+                if (val != null)
+                {
+                    if (val.SummaryId == 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}TrainingCpdSummary/CreateTrainingCpdSummary", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}TrainingCpdSummary/UpdateTrainingCpdSummary", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }    
+    }
+
+    public async void CPDActionBegin(ActionEventArgs<TrainingCpdsummaryDto> Args)
+    {
+        var data = Args.Data;
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+        {
+            if (Args.Data.FinancialYearId == null)
+            {
+                toastService.ShowWarning("Please select the financial year.");
+                Args.Cancel = true;
+            }
+            else if (Args.Data.StaffCategoryId == null)
+            {
+                toastService.ShowWarning("Please select the staff category.");
+                Args.Cancel = true;
+            }
+        }
+    }
+
+    #endregion CPDSummaryAdapter
+}

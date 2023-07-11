@@ -1,0 +1,677 @@
+﻿@page "/BSCKeyPerformanceIndicatorsPage"
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@using HCMIS.SHARED.DTOs;
+@using HCMIS.SHARED.Data
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using System.Collections;
+@using System.IO;
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager navigation;
+@inject SystemSettings _SystemSettings;
+@using HCMIS.SHARED.DTOs.BSC;
+@using HCMIS.SHARED.DTOs.Utilities;
+@inject IToastService toastService;
+
+<style>
+   /* .e-edit-dialog {
+        max-height: 95%;
+        max-width: 95%;
+        min-width: 95%;
+        min-height: 95%;
+    }*/
+    
+    /*Change Cell Color */
+    .e-headercell.e-attr1 {
+        background: #964B00;
+        color: white;
+    }
+
+    .e-headercell.e-attr2 {
+        background: #FFFF00;
+        color: darkred;
+    }
+
+    .e-headercell.e-attr3 {
+        background: grey;
+        color: white;
+    }
+
+    .pp {
+        color: ghostwhite;
+        background-color: #00cc00;
+        padding: 10px;
+    }
+
+</style>
+
+@*<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>*@
+
+@{
+    var Div = (new string[] { "BscPerspectiveTypeId", "FinancialYearId" });
+}
+
+<center>
+    <h5>
+        <strong>KEY PERFORMANCE INDICATORS FORM</strong>
+    </h5>
+</center>
+
+<div class="form-row">
+    <div class="form-group col-md-12">
+        <SfAccordion ExpandMode="ExpandMode.Single">
+            <AccordionItems>
+                <AccordionItem Expanded="false">
+                    <HeaderTemplate>Search Panel</HeaderTemplate>
+                    <ContentTemplate>
+                        <div style="padding:10px;">
+                            <EditForm Model="@SearchModel" OnValidSubmit="@SearchRecords">
+                                <div class="form-row">
+                                    @if (_SystemSettings.UserRole.Contains("Administrator"))
+                                    {
+                                        <div class="form-group col-md-6">
+                                            <p>Employee</p>
+                                            <SfMultiSelect @bind-Value="@SearchModel.Userid" TValue="string?[]" TItem="ViewUserManagementDto" AllowFiltering="true" Placeholder="Please select" Mode="@VisualMode.CheckBox" DataSource="@UsersData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Employee" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+                                                <MultiSelectFieldSettings Value="@nameof(ViewUserManagementDto.Id)" Text="@nameof(ViewUserManagementDto.FullName)"></MultiSelectFieldSettings>
+                                            </SfMultiSelect>
+                                        </div>
+                                    }
+                                    
+                                    <div class="form-group col-md-6">
+                                        <p>Perspective</p>
+                                        <SfMultiSelect @bind-Value="@SearchModel.BscPerspectiveTypeId" TValue="int?[]" TItem="ABscPerspectivesTypeDto" AllowFiltering="true" Placeholder="Please select" Mode="@VisualMode.CheckBox" DataSource="@BscPerspectiveTypeData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Perspective" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+                                            <MultiSelectFieldSettings Value="@nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeId)" Text="@nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeDescription)"></MultiSelectFieldSettings>
+                                        </SfMultiSelect>
+                                    </div>
+                                    <div class="form-group col-md-6">
+                                        <p>Year</p>
+                                        <SfMultiSelect @bind-Value="@SearchModel.FinancialYearId" TValue="int?[]" TItem="ViewFinancialYearDto" AllowFiltering="true" Placeholder="Please select" Mode="@VisualMode.CheckBox" DataSource="@FinancialYearData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Financial Year" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+                                            <MultiSelectFieldSettings Value="@nameof(ViewFinancialYearDto.Id)" Text="@nameof(ViewFinancialYearDto.FinancialYear)"></MultiSelectFieldSettings>
+                                        </SfMultiSelect>
+                                    </div>
+                                    <div class="form-group col-md-6">
+                                        <SfButton class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Search</SfButton>
+                                        <SfButton class="btn btn-danger" data-ripple="true" @onclick="ClearSearchBtnClick">Clear Search</SfButton>
+                                    </div>
+                                    <div class="form-group col-md-12">
+                                        <DataAnnotationsValidator />
+                                        <ValidationSummary />
+                                    </div>
+                                </div>
+                            </EditForm>
+                        </div>
+                    </ContentTemplate>
+                </AccordionItem>
+            </AccordionItems>
+        </SfAccordion>
+
+    </div>
+</div>
+
+<SfGrid @ref="@BscKpiGrid" TValue="ABscKpi" AllowPaging="true" Query="@mainQuery"
+        AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
+        AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit"/*, "Delete"*/, "Cancel", "Update"})">
+            <GridGroupSettings Columns="@Div" ShowDropArea="false">
+             <CaptionTemplate>
+            @{
+                var dvn = (context as CaptionTemplateContext);
+                string text = "";
+                if (dvn.Field == "FinancialYearId" && FinancialYearData != null)
+                {
+                    var data = FinancialYearData.FirstOrDefault(o => o.Id != null && o.Id.ToString() == dvn.Key);
+                    if(data != null)
+                    {
+                        text = data.FinancialYear;
+                    }
+                }
+                if (dvn.Field == "BscPerspectiveTypeId" && BscPerspectiveTypeData != null)
+                {
+                    var data = BscPerspectiveTypeData.FirstOrDefault(o => o.BscPerspectiveTypeId != null && o.BscPerspectiveTypeId.ToString() == dvn.Key);
+                    if (data != null)
+                    {
+                        text = data.BscPerspectiveTypeDescription;
+                    }
+                }
+                    <div><p class="pp"><strong>@text</strong></p></div>
+              }
+             </CaptionTemplate>
+            </GridGroupSettings>
+            <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+            <GridPageSettings PageSizes="true"></GridPageSettings>
+            <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+            <SfDataManager AdaptorInstance="@typeof(BscKpiAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+            <GridEvents TValue="ABscKpi"></GridEvents>
+            <GridEvents OnActionBegin="@OnBSCKPIActionBegin" OnActionComplete="@OnBSCKPIActionComplete" TValue="ABscKpi"></GridEvents>
+            <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog" Dialog="DialogParams">
+        <HeaderTemplate>
+            @{
+                var text = GetBscKpiHeader((context as ABscKpi));
+                <div class="headerbandimg">
+                    <span>@text</span>
+                </div>
+            }
+        </HeaderTemplate>
+        <Template Context="BscKpiContext">
+            @{
+                var KpiData = (BscKpiContext as ABscKpi);
+                @if (KpiData != null)
+                {
+                    <div class="row">
+                        <div class="col-md-12" hidden>
+                            <SfNumericTextBox @bind-Value="@(KpiData.Bsckpiid)" Enabled="false" Placeholder="InsurerId" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                        </div>
+
+                        <div class="col-md-6">
+                            <p>Financial Year:<span style="color:red;">*</span></p>
+                            <SfDropDownList @bind-Value="@(KpiData.FinancialYearId)"
+                                    Enabled="true" TItem="ViewFinancialYearDto" TValue="int?"
+                                    DataSource="@FinancialYearData" Placeholder="Please select"
+                                    FloatLabelType="FloatLabelType.Never" AllowFiltering="true"
+                                    FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                <DropDownListFieldSettings Value="@nameof(AFinancialYear.Id)"
+                                                   Text="@nameof(AFinancialYear.FinancialYear)">
+                                </DropDownListFieldSettings>
+                            </SfDropDownList>
+                        </div>
+
+                        <div class="col-md-6">
+                            <p>BSC Perspective:<span style="color:red;">*</span></p>
+                            <SfDropDownList @bind-Value="@(KpiData.BscPerspectiveTypeId)"
+                                    Enabled="true" TItem="ABscPerspectivesTypeDto" TValue="int?"
+                                    DataSource="@BscPerspectiveTypeData" Placeholder="Please select"
+                                    FloatLabelType="FloatLabelType.Never" AllowFiltering="true" 
+                            FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                <DropDownListFieldSettings 
+                                    Value="@nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeId)" 
+                                    Text="@nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeDescription)">
+                                </DropDownListFieldSettings>
+                            </SfDropDownList>
+                        </div>
+                        <div class="col-md-6">
+                            <p>Performance Measurement/Metric:<span style="color:red;">*</span></p>                            
+                            <SfDropDownList @bind-Value="@(KpiData.MeasurementMetricId)"
+                                    Enabled="true" TItem="BscPerformanceMeasurementDto" TValue="int?"
+                                    DataSource="@BscMeasurementData" Placeholder="Please select"
+                                    FloatLabelType="FloatLabelType.Never" AllowFiltering="true"
+                                    FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                <DropDownListFieldSettings Value="@nameof(ABscPerformanceMeasurement.MeasurementMetricId)"
+                                    Text="@nameof(ABscPerformanceMeasurement.MeasurementMetricDescription)">
+                                </DropDownListFieldSettings>
+                            </SfDropDownList>
+                        </div>
+
+                        <div class="col-md-6">
+                            <p>KPI Description:<span style="color:red;">*</span></p>  
+                            <SfTextBox Multiline=false @bind-Value="@(KpiData.Bsckpidescription)" Width="100%" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                        </div>
+
+                    </div>
+                }
+            }
+        </Template>
+    </GridEditSettings>
+    <GridColumns>
+        <GridColumn Type="ColumnType.CheckBox" Width="50" CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})"></GridColumn>
+        <GridColumn Field=@nameof(ABscKpi.Bsckpiid) Visible=false HeaderText="KPI Id" AllowEditing="false" IsPrimaryKey="true"  CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridColumn>
+        <GridForeignColumn Field=@nameof(ABscPerspectives.BscPerspectiveTypeId)
+                           HeaderText="Perspective"
+                           Width="180"
+                           AllowEditing="false"
+                           ForeignKeyField="@(nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeId))"
+                           ForeignKeyValue="@(nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeDescription))"
+                           ForeignDataSource="@BscPerspectiveTypeData"
+                           AllowFiltering="false"
+                           IsFrozen="false"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridForeignColumn>
+        <GridForeignColumn Field=@nameof(ABscKpi.FinancialYearId)
+                           HeaderText="Financial Year"
+                           Width="180"
+                           AllowEditing="false"
+                           ForeignKeyField="@(nameof(ViewFinancialYearDto.Id))"
+                           ForeignKeyValue="@(nameof(ViewFinancialYearDto.FinancialYear))"
+                           ForeignDataSource="@FinancialYearData"
+                           AllowFiltering="false"
+                           IsFrozen="false"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridForeignColumn>
+        <GridForeignColumn Field=@nameof(ABscKpi.MeasurementMetricId)
+                           HeaderText="Measurement Metric"
+                           Width="180"
+                           AllowEditing="false"
+                           ForeignKeyField="@(nameof(BscPerformanceMeasurementDto.MeasurementMetricId))"
+                           ForeignKeyValue="@(nameof(BscPerformanceMeasurementDto.MeasurementMetricDescription))"
+                           ForeignDataSource="@BscMeasurementData"
+                           AllowFiltering="false"
+                           IsFrozen="false"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridForeignColumn>
+        <GridColumn 
+            Field=@nameof(ABscKpi.Bsckpidescription) 
+            HeaderText="KPI Target" 
+            TextAlign="TextAlign.Left" 
+            AllowEditing="true"  
+            Visible=true 
+            Width="180"
+            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridColumn>
+        <GridForeignColumn Field=@nameof(ABscKpi.UserId)
+                           HeaderText="User"
+                           Width="180"
+                           AllowEditing="false"
+                           ForeignKeyField="@(nameof(ViewUserManagementDto.Id))"
+                           ForeignKeyValue="@(nameof(ViewUserManagementDto.FullName))"
+                           ForeignDataSource="@UsersData"
+                           AllowFiltering="false"
+                           IsFrozen="false"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridForeignColumn>        
+    </GridColumns>
+</SfGrid>
+
+@code {
+    #region Toasters
+    public static string? ToastContent { get; set; }
+    SfToast? ToastObj;
+    SfToast? DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+    {
+        new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+        new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+        new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+        new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+    };
+    #endregion Toasters
+
+    #region Declarations
+    SfGrid<ABscKpi>? BscKpiGrid;
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "65%" };
+    List<BscPerspectivesDto>? BscPerspectiveData { get; set; }
+    List<BscPerformanceMeasurementDto>? BscMeasurementData { get; set; }
+    List<ViewFinancialYearDto>? FinancialYearData { get; set; }
+    List<ViewBsckpicountDto>? BsckpiCountData { get; set; }
+    List<ABscPerspectivesTypeDto>? BscPerspectiveTypeData { get; set; }
+    List<ViewUserManagementDto>? UsersData { get; set; }
+    private UtilitiesSearchPanel SearchModel = new();
+    Query mainQuery { get; set; } = new();
+
+    #endregion Declarations
+
+    private void SearchRecords()
+    {
+        try
+        {
+            mainQuery = new Query();
+            if (SearchModel.Userid != null)
+            {
+                mainQuery.AddParams("Userid", string.Join(",", SearchModel.Userid));
+            }
+            if (SearchModel.BscPerspectiveTypeId != null)
+            {
+                mainQuery.AddParams("BscPerspectiveTypeId", string.Join(",", SearchModel.BscPerspectiveTypeId));
+            }
+            if (SearchModel.FinancialYearId != null)
+            {
+                mainQuery.AddParams("FinancialYearId", string.Join(",", SearchModel.FinancialYearId));
+            }
+        }
+
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+    }
+
+    private void ClearSearchBtnClick()
+    {
+        SearchModel = new();
+        mainQuery = new Query();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await _SystemSettings.GetLoginCredentials();
+        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+
+        var responsebscperspective = await Http.GetAsync($"{_ApiConfig.BaseUrl}BscPerspectives/GetBscPerspectives");
+        var contentbscperspective = await responsebscperspective.Content.ReadAsStringAsync();  
+        var responsebscmeasurement = await Http.GetAsync($"{_ApiConfig.BaseUrl}BscPerformanceMeasurement/GetBscPerformanceMeasurement");
+        var contentbscmeasurement = await responsebscmeasurement.Content.ReadAsStringAsync();
+        var responsefinyear = await Http.GetAsync($"{_ApiConfig.BaseUrl}FinancialYear/list");
+        var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
+        var responsebsckpicount = await Http.GetAsync($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/GetBSCCount");
+        var contentbsckpicount = await responsebsckpicount.Content.ReadAsStringAsync();
+        var responsebscperspectivetype = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/BSCPerspectiveType");
+        var contentbscperspectivetype = await responsebscperspective.Content.ReadAsStringAsync();  
+        var responseusers = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUsers");
+        var contentusers = await responseusers.Content.ReadAsStringAsync();
+
+        if (responsebscperspective.IsSuccessStatusCode)
+        {
+            BscPerspectiveData = await Http.GetFromJsonAsync<List<BscPerspectivesDto>>
+            ($"{_ApiConfig.BaseUrl}BscPerspectives/GetBscPerspectives");
+        }
+
+        if ( responsebscmeasurement.IsSuccessStatusCode)
+        {
+            BscMeasurementData = await Http.GetFromJsonAsync<List<BscPerformanceMeasurementDto>>
+            ($"{_ApiConfig.BaseUrl}BscPerformanceMeasurement/GetBscPerformanceMeasurement");
+        }
+
+        if (responsefinyear.IsSuccessStatusCode)
+        {
+            FinancialYearData = await Http.GetFromJsonAsync<List<ViewFinancialYearDto>>
+            ($"{_ApiConfig.BaseUrl}FinancialYear/list");
+        }
+
+        if (responsebsckpicount.IsSuccessStatusCode)
+        {
+            BsckpiCountData = await Http.GetFromJsonAsync<List<ViewBsckpicountDto>>
+            ($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/GetBSCCount");
+        }
+        if (responsebscperspectivetype.IsSuccessStatusCode)
+        {
+            BscPerspectiveTypeData = await Http.GetFromJsonAsync<List<ABscPerspectivesTypeDto>>
+            ($"{_ApiConfig.BaseUrl}Utilities/BSCPerspectiveType");
+        }
+        if (responseusers.IsSuccessStatusCode)
+        {
+            UsersData = await Http.GetFromJsonAsync<List<ViewUserManagementDto>>
+            ($"{_ApiConfig.BaseUrl}Utilities/GetUsers");
+        }
+    }
+
+    #region CategoryAdapter
+    public class BscKpiAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        ApiConfig _ApiConfig;
+        SystemSettings _SystemSettings;
+        private readonly JsonSerializerOptions _options;
+        public IToastService toastService;
+        private readonly NavigationManager Navigation;
+        public BscKpiAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+            , SystemSettings systemSettings,ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            Navigation = _Navigation;
+            _ApiConfig = apiConfig;
+            _SystemSettings = systemSettings;
+
+        }
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<ABscKpi>();
+            try
+            {
+                string Userid = null;
+                string FinancialYearId = null;
+                string BscPerspectiveTypeId = null;
+
+                if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
+                {
+                    var val = dataManagerRequest.Params;
+
+                    if (val.FirstOrDefault(o => o.Key == "Userid").Value != null)
+                    {
+                        Userid = val.FirstOrDefault(o => o.Key == "Userid").Value.ToString();
+                    }
+                    if (val.FirstOrDefault(o => o.Key == "FinancialYearId").Value != null)
+                    {
+                        FinancialYearId = val.FirstOrDefault(o => o.Key == "FinancialYearId").Value.ToString();
+                    }
+
+                    if (val.FirstOrDefault(o => o.Key == "BscPerspectiveTypeId").Value != null)
+                    {
+                        BscPerspectiveTypeId = val.FirstOrDefault(o => o.Key == "BscPerspectiveTypeId").Value.ToString();
+                    }
+                }
+
+                await _SystemSettings.GetLoginCredentials();
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                HttpResponseMessage response;
+
+                //Administrators without filtering
+                if (!string.IsNullOrEmpty(_SystemSettings.UserRole) 
+                && _SystemSettings.UserRole.Contains("Administrator") && (string.IsNullOrEmpty(Userid)
+                && string.IsNullOrEmpty(FinancialYearId) && string.IsNullOrEmpty(BscPerspectiveTypeId)))
+                {
+                    response = await Http.GetAsync($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/GetKeyPerformanceIndicatorAdmin");
+                }
+
+                //Pass in filters
+                else if (/*!string.IsNullOrEmpty(_SystemSettings.UserRole) 
+            && _SystemSettings.UserRole.Contains("Administrator") &&*/ (!string.IsNullOrEmpty(Userid)
+                || !string.IsNullOrEmpty(FinancialYearId) || !string.IsNullOrEmpty(BscPerspectiveTypeId)))
+                {
+                    response = await Http.GetAsync($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/GetKeyPerformanceIndicatorBySearch?Userid={Userid}&FinancialYearId={FinancialYearId}&BscPerspectiveTypeId={BscPerspectiveTypeId}");
+                }
+
+                else
+                {
+                    response = await Http.GetAsync($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/GetKeyPerformanceIndicator");
+                }
+
+                var content = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    toastService.ShowError(response.ReasonPhrase);
+                }
+                data = JsonSerializer.Deserialize<List<ABscKpi>>(content, _options);
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<ABscKpi>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                var val = (value as ABscKpi);
+
+                if (val.Bsckpiid == 0)
+                {
+                    string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                    StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                    var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/CreateKeyPerformanceIndicator", httpContent);
+                    if (result.IsSuccessStatusCode)
+                    {
+                        toastService.ShowSuccess(val.Bsckpidescription + " was sucessfully added");
+                    }
+                    else
+                    {
+                        // toastService.ShowError(result.Content.);
+                    }
+                }
+                else
+                {
+                    string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                    StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                    var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/CreateKeyPerformanceIndicator", httpContent);
+                    if (result.IsSuccessStatusCode)
+                    {
+                        toastService.ShowSuccess(val.Bsckpidescription + " was sucessfully added");
+                    }
+                    else
+                    {
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                var val = (value as ABscKpi);
+                await _SystemSettings.GetLoginCredentials();
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/CreateKeyPerformanceIndicator", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    toastService.ShowSuccess($"The {val.Bsckpidescription}  was sucessfully updated");
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+    }
+
+    public async void OnBSCKPIActionComplete(ActionEventArgs<ABscKpi> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) ||
+        args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            BscKpiGrid.PreventRender(false);
+        }
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+        {
+            var responsebsckpicount = await Http.GetAsync($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/GetBSCCount");
+            var contentbsckpicount = await responsebsckpicount.Content.ReadAsStringAsync();
+            if (responsebsckpicount.IsSuccessStatusCode)
+            {
+                BsckpiCountData = await Http.GetFromJsonAsync<List<ViewBsckpicountDto>>
+                ($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/GetBSCCount");
+            }
+        }
+    }
+
+    public async void OnBSCKPIActionBegin(ActionEventArgs<ABscKpi> args)
+    {
+        try
+        {
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+            {
+                if (args.Data.FinancialYearId == null)
+                {
+                    toastService.ShowWarning("Please select the financial year before saving this record.");
+                    args.Cancel = true;
+                }
+
+                else if (args.Data.BscPerspectiveTypeId == null)
+                {
+                    toastService.ShowWarning("Please select the perspective before saving this record.");
+                    args.Cancel = true;
+                }
+
+                else if (args.Data.MeasurementMetricId == null)
+                {
+                    toastService.ShowWarning("Please select the measurement metric before saving this record.");
+                    args.Cancel = true;
+                }
+
+                else if (string.IsNullOrEmpty(args.Data.Bsckpidescription))
+                {
+                    toastService.ShowWarning("Please fill in the key performance indicator description before saving this record.");
+                    args.Cancel = true;
+                }
+
+                var countdata = BsckpiCountData?.FirstOrDefault(o => o.BscPerspectiveTypeId == args.Data.BscPerspectiveTypeId && o.FinancialYearId == args.Data.FinancialYearId);
+
+                if (countdata != null && countdata.CountNo >= 3)
+                {
+                    toastService.ShowWarning("You have arleady entered three KPI's for the  " + countdata.BscPerspectiveTypeDescription + " in the Financial Year  " + countdata.FinancialYear + ". Record Not Saved");
+                    args.Cancel = true;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        //finally { StateHasChanged(); }
+    }
+
+    public string GetBscKpiHeader(ABscKpi Value)
+    {
+        if (Value.Bsckpiid == 0)
+        {
+            return "Add a new Key Performance Indicator";
+        }
+        else
+        {
+            return "Edit Details for " + Value.Bsckpidescription;
+        }
+    }
+    #endregion AInsurerAdapter
+}

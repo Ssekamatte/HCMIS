@@ -1,0 +1,292 @@
+﻿@using HCMIS.Data
+@using HCMIS.ViewModel
+@*<h3>WorkExperiencePatialPage</h3>*@
+@inject DocumentUploadModel _DocumentUploadModel;
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+@if (OndataLoad == true) {
+    if (IsJDExperienceCountGreaterthanZero == true || IsApplicantExperienceCountGreaterthanZero == true)
+    {
+        <div class="row">
+            @if (IsJDExperienceCountGreaterthanZero == true)
+            {
+                <div class="@JDExperienceSection">
+                    <h4>Job work Experience Requirements</h4>
+                    <ul>
+                        @foreach (var item in JobDescriptionWorkExperienceRequirementData)
+                        {
+                            <li><p>@item.ExperienceDesc</p></li>
+                        }
+                    </ul>
+                    @if (JobDescriptionResponsibilityData != null && JobDescriptionResponsibilityData.Count > 0)
+                    {
+                        <h4>Job Responsibilities</h4>
+                        <ul>
+                            @foreach (var item in JobDescriptionResponsibilityData)
+                            {
+                                <li><p>@item.ResponsibilityDesc</p></li>
+                            }
+                        </ul>
+                    }
+                </div>
+            }
+            @if (IsApplicantExperienceCountGreaterthanZero == true)
+            {
+                <div class="@ApplicantExperienceSection">
+                    <h4>Applicant's work Experience</h4>
+                    <SfGrid @ref="WorkExperienceGrid" TValue="NonStaffWorkExperience" DataSource="@WorkExperienceData"
+                        Toolbar="@(new string[] {"Edit","Delete","Update","Cancel","ColumnChooser"})" AllowGrouping="false"
+                        ShowColumnChooser="true" AllowTextWrap="true"
+                        AllowPaging="true" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" 
+                        GridLines="GridLine.Both" AllowSelection="true">
+
+                        <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+                        <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+                        <GridEvents OnActionComplete="@OnWorkExperienceActionComplete" TValue="NonStaffWorkExperience"></GridEvents>
+                        <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
+
+                            <HeaderTemplate>
+                                @{
+                                    var text = GetWorkExperienceHeader((context as NonStaffWorkExperience));
+                                    <div class="headerbandimg">
+                                        <span>@text</span>
+                                    </div>
+                                }
+                            </HeaderTemplate>
+                            <Template Context="WorkExperienceContext">
+                                @{
+                                    WorkExperienceReviewData = (WorkExperienceContext as NonStaffWorkExperience);
+                                    if (WorkExperienceReviewData != null)
+                                    {
+                                        <div style="padding:15px;">
+                                            <div class="row">
+                                                <div class="col-md-12" hidden>
+                                                    <SfNumericTextBox @bind-Value="@(WorkExperienceReviewData.WorkExperienceId)" Enabled="false" Placeholder="WorkExperienceId" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label>Organisation </label>
+                                                    <p>@WorkExperienceReviewData.Organisation</p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label>Job Title </label>
+                                                    <p>@WorkExperienceReviewData.JobTitle</p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label>From </label>
+                                                    @if (WorkExperienceReviewData.StartDate.HasValue)
+                                                    {
+                                                        <p>@WorkExperienceReviewData.StartDate.Value.ToString("dd/MM/yyyy")</p>
+                                                    }
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label>To</label>
+                                                    @if (WorkExperienceReviewData.EndDate.HasValue)
+                                                    {
+                                                        <p>@WorkExperienceReviewData.EndDate.Value.ToString("dd/MM/yyyy")</p>
+                                                    }
+                                                    else if (WorkExperienceReviewData.IsCurrent == true)
+                                                    {
+                                                        <p>Current</p>
+                                                    }
+                                                </div>
+                                                <div class="col-md-12"></div>
+                                                <div class="col-md-6">
+                                                    <label>Employer Name</label>
+                                                    <p>@WorkExperienceReviewData.EmployerName</p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label>Employer Email</label>
+                                                    <p>@WorkExperienceReviewData.EmployerOfficialEmail</p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label>Employer Official Number</label>
+                                                    <p>@WorkExperienceReviewData.EmployerOfficialNumber</p>
+                                                </div>
+                                                <div class="col-md-12" style="margin-bottom:10px;">
+                                                    <label>Responsibilities</label>
+                                                    @((MarkupString)@WorkExperienceReviewData.Responsibilities)
+                                                </div>
+
+                                                <div class="form-group col-md-12">
+                                                    @if (!string.IsNullOrEmpty(WorkExperienceDocumentString))
+                                                    {
+                                                        if (!string.IsNullOrEmpty(WorkExperienceReviewData.AppointmentLetterExt) && WorkExperienceReviewData.AppointmentLetterExt.ToLower().Contains("pdf"))
+                                                        {
+                                                            <embed src="@WorkExperienceDocumentString" width="100%" height="600px" style="border: none;" frameborder="0" allowfullscreen="true" />
+                                                        }
+                                                        else if (!string.IsNullOrEmpty(WorkExperienceReviewData.AppointmentLetterExt))
+                                                        {
+                                                            <img src="@WorkExperienceDocumentString" class="img-thumbnail" height="500" width="100%" style="margin-bottom:10px; margin:10%; margin-right:auto;" />
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            </Template>
+                            <FooterTemplate>
+                                <button type="button" class="btn btn-danger" @onclick=@(async()=>{ await WorkExperienceGrid.CloseEditAsync();})>Close</button>
+                            </FooterTemplate>
+                        </GridEditSettings>
+                        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                        <GridPageSettings PageSize="20"></GridPageSettings>
+                        <GridColumns>
+                            <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                            <GridColumn Field=@nameof(NonStaffWorkExperience.WorkExperienceId) HeaderText="WorkExperienceId" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+                            <GridColumn Field=@nameof(NonStaffWorkExperience.Organisation) HeaderText="Organisation" Width="150"></GridColumn>
+                            <GridColumn Field=@nameof(NonStaffWorkExperience.JobTitle) HeaderText="Job Title" Width="150"></GridColumn>
+                            <GridColumn Field=@nameof(NonStaffWorkExperience.EmployerName) HeaderText="Employer Name" Width="150"></GridColumn>
+                            <GridColumn Field=@nameof(NonStaffWorkExperience.EmployerOfficialEmail) HeaderText="Email" Width="150"></GridColumn>
+                            <GridColumn Field=@nameof(NonStaffWorkExperience.EmployerOfficialNumber) HeaderText="Official Number" Width="150"></GridColumn>
+                            <GridColumn Field=@nameof(NonStaffWorkExperience.StartDate) Format="dd/MM/yyyy" HeaderText="From" Width="180"></GridColumn>
+                            <GridColumn Field=@nameof(NonStaffWorkExperience.EndDate) Format="dd/MM/yyyy" HeaderText="To" Width="180"></GridColumn>
+                            <GridColumn Field=@nameof(NonStaffWorkExperience.IsCurrent) HeaderText="To Current" Width="180"></GridColumn>
+                        </GridColumns>
+                    </SfGrid>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <p class="alert-info">There is no data to display</p>
+    }
+}
+else
+{
+    <div class="col-md-12">
+        <div class="loader">
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--text"></div>
+        </div>
+    </div>
+}
+@code {
+    #region Toasters
+    public static string? ToastContent { get; set; }
+    SfToast? ToastObj;
+    SfToast? DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+        {
+            new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+            new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+            new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+            new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+        };
+    #endregion Toasters
+    [Parameter]
+    public List<NonStaffWorkExperience>? WorkExperienceData { get; set; }
+    [Parameter]
+    public List<JobDescriptionWorkExperienceRequirement>? JobDescriptionWorkExperienceRequirementData { get; set; }
+    [Parameter]
+    public List<JobDescriptionResponsibility>? JobDescriptionResponsibilityData { get; set; }
+    [Parameter]
+    public string? AccessToken { get; set; }
+    SfGrid<NonStaffWorkExperience>? WorkExperienceGrid;
+    private NonStaffWorkExperience? WorkExperienceReviewData { get; set; }
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "60vh", Width = "90%" };
+    private bool OndataLoad { get; set; } = false;
+    string? WorkExperienceDocumentString { get; set; } = null;
+    bool IsJDExperienceCountGreaterthanZero { get; set; } = false;
+    bool IsApplicantExperienceCountGreaterthanZero { get; set; } = false;
+    string? JDExperienceSection { get; set; } = "col-md-12";
+    string? ApplicantExperienceSection { get; set; } = "col-md-12";
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        if (WorkExperienceData?.Count > 0)
+        {
+            IsApplicantExperienceCountGreaterthanZero = true;
+        }
+        if (JobDescriptionWorkExperienceRequirementData?.Count > 0)
+        {
+            IsJDExperienceCountGreaterthanZero = true;
+        }
+        if (IsApplicantExperienceCountGreaterthanZero == true && IsJDExperienceCountGreaterthanZero == true)
+        {
+            JDExperienceSection = "col-md-4";
+            ApplicantExperienceSection = "col-md-8";
+        }
+        OndataLoad = true;
+    }
+    public async Task OnWorkExperienceActionComplete(ActionEventArgs<NonStaffWorkExperience> args)
+    {
+        try
+        {
+            if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+            {
+                WorkExperienceGrid.PreventRender(false);
+                if (!string.IsNullOrEmpty(args.RowData.AppointmentLetterUrl) && !string.IsNullOrEmpty(args.RowData.AppointmentLetterExt))
+                {
+                    WorkExperienceDocumentString = await GetImageString(args.RowData.AppointmentLetterUrl, args.RowData.AppointmentLetterExt, "WorkExperience");
+                }
+
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+
+    }
+    public string GetWorkExperienceHeader(NonStaffWorkExperience Value)
+    {
+        if (Value.WorkExperienceId == 0)
+        {
+            return "Add a New Work Experience";
+        }
+        else
+        {
+            return "Edit Details for " + Value.EmployerName;
+        }
+    }
+    private async Task<string> GetImageString(string imageUrl, string ext, string Rootfolder)
+    {
+        string result = null;
+        try
+        {
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                ImageUpload a = await _DocumentUploadModel.GetDocument(imageUrl, Rootfolder, AccessToken);
+
+                if (a != null)
+                {
+                    if (a.ImageExt.Contains("pdf"))
+                    {
+                        string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
+                        result = "data:application/pdf;base64," + base64String;
+                    }
+                    else
+                    {
+                        string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
+                        result = "data:image/" + a.ImageExt + ";base64," + base64String;
+                    }
+
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        return result;
+    }
+}

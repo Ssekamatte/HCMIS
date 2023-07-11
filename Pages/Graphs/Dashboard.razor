@@ -1,0 +1,665 @@
+﻿@page "/Dashboard"
+@using System.Text.Json
+@inject HttpClient Http
+@using HCMIS.Model
+@using HCMIS.SHARED.DTOs;
+@inject SystemSettings _SystemSettings
+@inject ApiConfig _ApiConfig;
+@inject AppState AppState
+@inject NavigationManager Navigation
+@using Syncfusion.Blazor;
+@using HCMIS.Pages.Charts;
+@using Syncfusion.Blazor.Charts;
+
+<ol class="breadcrumb" style="margin-top:5px;">
+	<li class="breadcrumb-item active" style="color: brown;font-size:larger">
+		<strong>
+			<img src="/Image/logonhcc.png" width="40" height="25" />HCMIS | SYSTEM DASHBOARD					
+		</strong>
+	</li>
+</ol>
+
+<div style="margin:10px; padding:10px; background-color:aliceblue;">
+    <div class="row">
+
+		@*EmployeeData*@
+		@if (EmployeeData != null)
+		{
+        <div class="col-md-2">
+            <div class="root-container" style="background-color:rgb(255, 255, 255); height:120px;">
+                <div class="item-container income">					
+						<p>@EmployeeData.Count</p>
+					<div class="auto-left">
+						<span class="fa fa-users"></span>
+                    </div>
+                </div>
+                <div class="bottom-container">
+                    <p>Employees</p>
+                </div>
+            </div>
+        </div>
+		<div class="col-md-2">
+            <div class="root-container" style="background-color:rgb(255, 255, 255); height:120px;">
+                <div class="item-container income">					
+						<p>@EmployeeData.Where(o=> o.GenderId==1).ToList().Count</p>
+					<div class="auto-left">
+						<span class="fa fa-male"></span>
+                    </div>
+                </div>
+                <div class="bottom-container">
+                    <p>Males</p>
+                </div>
+            </div>
+        </div>
+
+		<div class="col-md-2">
+            <div class="root-container" style="background-color:rgb(255, 255, 255); height:120px;">
+                <div class="item-container income">					
+						<p>@EmployeeData.Where(o=> o.GenderId==2).ToList().Count</p>
+					<div class="auto-left">
+                        <span class="fa fa-female"></span>
+                    </div>
+                </div>
+                <div class="bottom-container">
+                    <p>Females</p>
+                </div>
+            </div>
+			</div>
+
+		}
+
+		else
+		{
+			<div class="col-md-2">
+				<div class="root-container" style="background-color:rgb(255, 255, 255); height:120px;">
+					<div class="item-container income">
+						<p>0</p>
+						<div class="auto-left">
+							<span class="fa fa-users"></span>
+						</div>
+					</div>
+					<div class="bottom-container">
+						<p>Employees</p>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-2">
+				<div class="root-container" style="background-color:rgb(255, 255, 255); height:120px;">
+					<div class="item-container income">
+						<p>0</p>
+						<div class="auto-left">
+							<span class="fa fa-male"></span>
+						</div>
+					</div>
+					<div class="bottom-container">
+						<p>Males</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="col-md-2">
+				<div class="root-container" style="background-color:rgb(255, 255, 255); height:120px;">
+					<div class="item-container income">
+						<p>0</p>
+						<div class="auto-left">
+							<span class="fa fa-female"></span>
+						</div>
+					</div>
+					<div class="bottom-container">
+						<p>Females</p>
+					</div>
+				</div>
+			</div>
+		}
+
+		@*Departments Data*@
+		@if (DepartmentsData != null)
+		{
+			<div class="col-md-2">
+				<div class="root-container" style="background-color:rgb(255, 255, 255); height:120px;">
+					<div class="item-container income">
+						<p>@DepartmentsData.Count</p>
+						<div class="auto-left">
+							<span class="fa fa-sitemap"></span>
+						</div>
+					</div>
+					<div class="bottom-container">
+						<p>Departments</p>
+					</div>
+				</div>
+			</div>
+		}
+		else
+		{
+			<div class="col-md-2">
+				<div class="root-container" style="background-color:rgb(255, 255, 255); height:120px;">
+					<div class="item-container income">
+						<p>0</p>
+						<div class="auto-left">
+							<span class="fa fa-sitemap"></span>
+						</div>
+					</div>
+					<div class="bottom-container">
+						<p>Departments</p>
+					</div>
+				</div>
+			</div>
+		}
+
+		@*Employees on Leave Data*@
+		@if (LeaveData != null)
+		{
+			<div class="col-md-2">
+				<div class="root-container" style="background-color:rgb(255, 255, 255); height:120px;">
+					<div class="item-container income">
+						<p>@LeaveData.Count</p>
+						<div class="auto-left">
+							<span class="fa fa-sign-out"></span>
+						</div>
+					</div>
+					<div class="bottom-container">
+						<p>Employees on Leave (@currentYear)</p>
+					</div>
+				</div>
+			</div>
+		}
+		else
+		{
+			<div class="col-md-2">
+				<div class="root-container" style="background-color:rgb(255, 255, 255); height:120px;">
+					<div class="item-container income">
+						<p>0</p>
+						<div class="auto-left">
+							<span class="fa fa-sign-out"></span>
+						</div>
+					</div>
+					<div class="bottom-container">
+						<p>Employees on Leave (@currentYear)</p>
+					</div>
+				</div>
+			</div>
+		}
+
+		@*Appraisal Data*@
+		@if (BSCData != null)
+		{
+			<div class="col-md-2">
+				<div class="root-container" style="background-color:rgb(255, 255, 255); height:120px;">
+					<div class="item-container income">
+						@*<p>@BSCData.Where(o=> o.DateofReview.Value.Year == DateTime.Now.Year).ToList()</p>*@
+						<p>@BSCData.Count</p>
+						<div class="auto-left">
+							<span class="fa fa-thumbs-o-up"></span>
+						</div>
+					</div>
+					<div class="bottom-container">
+						<p>Appraised Employees (@currentYear)</p>
+					</div>
+				</div>
+			</div>
+		}
+		else
+		{
+			<div class="col-md-2">
+				<div class="root-container" style="background-color:rgb(255, 255, 255); height:120px;">
+					<div class="item-container income">
+						<p>0</p>
+						<div class="auto-left">
+							<span class="fa fa-thumbs-o-up"></span>
+						</div>
+					</div>
+					<div class="bottom-container">
+						<p>Appraised Employees (@currentYear)</p>
+					</div>
+				</div>
+			</div>
+		}
+	</div>
+
+	<div class="row" style="margin-top:5px;">
+		<div class="col-md-12">
+			<h5>Data For The Year @currentYear</h5>
+		</div>
+	</div>
+
+	<div class="row" style="margin-top:5px;">
+		@*Employees Per Department*@
+		<div class="col-md-6">
+			@if (EmployeeDetailsData != null && EmployeeDetailsData.Count > 0)
+			{
+				<ChartPartialPage SeriesDataSource=@EmployeeDetailsData 
+					SeriesTitle="Employees Per Department" LabelColor="Black" 
+					FontWeight="800" TextColor="#00cc00" AxisLabelRotation="LabelIntersectAction.Rotate45"/>
+			}
+			else
+			{
+				<center style="margin-top:10px;"><h6>Employees Per Department</h6></center>
+				<div style="width:100%; height:250px; margin-top:6px;display: flex;align-items: center;justify-content: center;">
+				<p><span class="fa fa-exclamation-circle"></span> There is no data to display</p>
+				</div>
+			}
+		</div>
+
+		@*Employees on Leave Per Department*@
+		<div class="col-md-6">
+			@if (LeaveData != null && LeaveData.Count > 0)
+			{
+				<ChartPartialPage SeriesDataSource=@LeaveDetailsData 
+					SeriesTitle="Employees On Leave Per Department" 
+					LabelColor="Black" FontWeight="800" TextColor="#00cc00"
+					AxisLabelRotation="LabelIntersectAction.Rotate45" />
+			}
+			else
+			{
+				<center style="margin-top:10px;"><h6>Employees On Leave Per Department</h6></center>
+				<div style="width:100%; height:250px; margin-top:6px;display: flex;align-items: center;justify-content: center;">
+					<p><span class="fa fa-exclamation-circle"></span> There is no data to display</p>
+				</div>
+			}
+		</div>
+	</div>
+</div>
+
+
+@code {
+	List<EmployeeDto>? EmployeeData { get; set; }
+	List<ADepartment>? DepartmentsData { get; set; }
+	List<ViewEmployeeLeaveDto>? LeaveData { get; set; }
+	List<BalanceScoreCardDto>? BSCData { get; set; }
+	List<SeriesModel>? EmployeeDetailsData { get; set; }
+	List<SeriesModel>? LeaveDetailsData { get; set; }
+	List<string> SeriesColors { get; set; } = new List<string>()
+    {
+        "#2485FA","#4d0702","#808285","#6002EE","#008b00","#262626","#424d44","#472b42","#1e4167","#3d1d00"
+    };
+	int currentMonth = DateTime.Now.Month;
+	int currentYear = DateTime.Now.Year;
+	Random random = new Random();
+
+	protected override async Task OnInitializedAsync()
+	{
+		try
+		{
+			await _SystemSettings.GetLoginCredentials();
+			await base.OnInitializedAsync();
+
+			//Adding Page Refresh Timer
+			System.Timers.Timer timer = new System.Timers.Timer();
+			timer.Interval = 300000; //In Milliseconds = 5 Minutes
+			timer.Elapsed += timer_Elapsed;
+			timer.Start();
+
+			if(string.IsNullOrEmpty(_SystemSettings.AccessToken))
+			{
+				AppState.LoggedIn = false;
+				Navigation.NavigateTo("/");
+			}
+			else if(DateTime.Now > _SystemSettings.ExpiryDate)
+			{
+				AppState.LoggedIn = false;
+				Navigation.NavigateTo("/");
+			}				
+
+			await LoadDashboards();
+		}
+
+		catch (Exception ex)
+		{
+
+		}
+	}
+
+	async void timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+	{
+		await LoadDashboards();
+	}
+
+	private async Task LoadDashboards()
+	{
+		try
+		{
+			await _SystemSettings.GetLoginCredentials();
+			var currentMonth = DateTime.Now.Month;
+			var currentYear = DateTime.Now.Year;
+
+			Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+			var responseemployee = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetEmployeeDashBoardData");
+			var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+
+			var responsedepartment = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetDepartment");
+			var contentdepartment = await responsedepartment.Content.ReadAsStringAsync();
+
+			var responseemployeeleave = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/GetEmployeeLeaveDataDashboard");
+			var contentemployeeleave = await responseemployeeleave.Content.ReadAsStringAsync();
+
+			var responsebsc = await Http.GetAsync($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetBSCDashboardData");
+			var contentbsc = await responsebsc.Content.ReadAsStringAsync();
+
+			if (responsebsc.IsSuccessStatusCode)
+			{
+				BSCData = await Http.GetFromJsonAsync<List<BalanceScoreCardDto>>
+				($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetBSCDashboardData");
+			}
+
+			if (responseemployee.IsSuccessStatusCode)
+			{
+				EmployeeData = await Http.GetFromJsonAsync<List<EmployeeDto>>
+				($"{_ApiConfig.BaseUrl}Utilities/GetEmployeeDashBoardData");
+			}
+
+			if (responsedepartment.IsSuccessStatusCode)
+			{
+				DepartmentsData = await Http.GetFromJsonAsync<List<ADepartment>>
+				($"{_ApiConfig.BaseUrl}Utilities/GetDepartment");
+			}
+
+			if (responseemployeeleave.IsSuccessStatusCode)
+			{
+				LeaveData = await Http.GetFromJsonAsync<List<ViewEmployeeLeaveDto>>
+				($"{_ApiConfig.BaseUrl}EmployeeLeave/GetEmployeeLeaveDataDashboard");
+			}	
+
+			Random rand = new Random();
+
+			if (EmployeeData != null)
+			{
+				//Employees Per Department
+				EmployeeDetailsData = new List<SeriesModel>();				
+				var mEmployeeDepartmentData = new SeriesModel();
+				mEmployeeDepartmentData.ChartType = ChartSeriesType.Column;
+				mEmployeeDepartmentData.SeriesName = "Department";
+				rand = new Random();
+				//int _index = rand.Next(0, (SeriesColors.Count() - 1));
+				mEmployeeDepartmentData.SeriesColor = String.Format("#{0:X6}", random.Next(0x1000000));
+				mEmployeeDepartmentData.ColumnWidth = 0.7;
+				mEmployeeDepartmentData.YAxisTitle = "Number";
+				mEmployeeDepartmentData.Interval = 1000;
+				mEmployeeDepartmentData.Datasource = new List<DashboardModel>();
+
+				foreach (var item in DepartmentsData)
+				{
+					mEmployeeDepartmentData.Datasource.Add(new DashboardModel()
+						{
+							ColumnX = item.DepartmentDescription,
+							ColumnY = EmployeeData.Where(o => o.DepartmentId == item.DepartmentId).ToList().Count
+						});
+				}
+				EmployeeDetailsData.Add(mEmployeeDepartmentData);
+			}
+
+			if (LeaveData != null)
+			{				
+				//Employees Per Department
+				LeaveDetailsData = new List<SeriesModel>();
+				var mLeaveDepartmentData = new SeriesModel();
+				mLeaveDepartmentData.ChartType = ChartSeriesType.Column;
+				mLeaveDepartmentData.SeriesName = "Department";
+				rand = new Random();
+				//int _index = rand.Next(0, (SeriesColors.Count() - 1));
+				mLeaveDepartmentData.SeriesColor = String.Format("#{0:X6}", random.Next(0x1000000));
+				mLeaveDepartmentData.ColumnWidth = 0.7;
+				mLeaveDepartmentData.YAxisTitle = "Number";
+				mLeaveDepartmentData.Interval = 1000;
+				mLeaveDepartmentData.Datasource = new List<DashboardModel>();
+
+				foreach (var item in DepartmentsData)
+				{
+					mLeaveDepartmentData.Datasource.Add(new DashboardModel()
+						{
+							ColumnX = item.DepartmentDescription,
+							ColumnY = LeaveData.Where(o => o.DepartmentId == item.DepartmentId).ToList().Count
+						});
+				}
+				LeaveDetailsData.Add(mLeaveDepartmentData);
+			}
+
+		}
+		catch (Exception ex)
+		{
+			throw ex;
+		}
+
+		finally
+		{
+
+			StateHasChanged();
+		}
+	}
+}
+
+<style>
+	.e-dashboardlayout {
+		padding: 10px;
+	}
+
+		.e-dashboardlayout.e-control .e-panel .e-panel-container .e-panel-header {
+			line-height: 40px;
+			height: 40px;
+		}
+
+	.fluent .e-dashboardlayout.e-control .e-panel .e-panel-container .e-panel-header,
+	.fluent-dark .e-dashboardlayout.e-control .e-panel .e-panel-container .e-panel-header {
+		height: 56px;
+	}
+
+	.bootstrap5 .e-dashboardlayout.e-control .e-panel .e-panel-container .e-panel-header,
+	.bootstrap5-dark .e-dashboardlayout.e-control .e-panel .e-panel-container .e-panel-header,
+	.tailwind .e-dashboardlayout.e-control .e-panel .e-panel-container .e-panel-header,
+	.fluent .e-dashboardlayout.e-control .e-panel .e-panel-container .e-panel-header,
+	.fluent-dark .e-dashboardlayout.e-control .e-panel .e-panel-container .e-panel-header,
+	.tailwind-dark .e-dashboardlayout.e-control .e-panel .e-panel-container .e-panel-header {
+		line-height: inherit;
+	}
+
+	.root-container {
+		height: 100%;
+	}
+
+	.title {
+		font-size: 16px;
+		font-weight: 400;
+	}
+
+	.category-text {
+		float: left;
+		line-height: 30px;
+	}
+
+	.category-icon {
+		float: left;
+		background-repeat: no-repeat;
+		background-position-x: center;
+		background-size: 100%;
+		height: 30px;
+		width: 30px;
+		display: inline-block;
+		margin-right: 10px;
+	}
+
+
+	.item-container {
+		display: flex;
+		text-align: center;
+		height: 70%;
+		padding: 2rem;
+		font-size: 22px;
+		font-weight: 400;
+	}
+
+		.item-container.income {
+			color: #17a00e
+		}
+
+		.item-container.balance {
+			color: #008cff;
+		}
+
+		.item-container.transaction {
+			color: #f41127;
+		}
+
+		.item-container.expense {
+			color: #ca765a;
+		}
+
+	.bottom-container {
+		text-align: center;
+		font-weight: 400;
+		font-size: 16px;
+	}
+
+	.mobile .bottom-container {
+		font-size: 30px;
+	}
+
+	.material .bottom-container,
+	.fabric .bottom-container,
+	.bootstrap .bottom-container,
+	.bootstrap4 .bottom-container,
+	.tailwind .bottom-container,
+	.bootstrap5 .bottom-container {
+		color: #4c5258;
+	}
+
+	.amt-payment.expense-payment {
+		font-weight: bold;
+		color: #ff5e65;
+	}
+
+	.amt-payment.income-payment {
+		font-weight: bold;
+		color: #04cd93;
+	}
+
+	.auto-left {
+		margin-left: auto;
+	}
+
+	.e-panel-cotent {
+		padding: 1rem;
+	}
+
+	@@font-face {
+		font-family: 'e-sb-icons';
+		src: url(data:application/x-font-ttf;charset=utf-8;base64,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) format("truetype");
+		font-weight: normal;
+		font-style: normal;
+	}
+
+	.balance:after {
+		//content: "\e900";
+		font-size: 24px;
+		font-family: "e-sb-icons";
+	}
+
+	.expense:after {
+		//content: "\e901";
+		font-size: 24px;
+		font-family: "e-sb-icons";
+	}
+
+	.income:after {
+		//content: "\e902";
+		font-size: 24px;
+		font-family: "e-sb-icons";
+	}
+
+	.transaction:after {
+		content: "\e903";
+		font-size: 24px;
+		font-family: "e-sb-icons";
+	}
+
+	.e-headercelldiv span.e-headertext {
+		font-size: 14px;
+		font-weight: 500;
+	}
+
+	.e-grid .e-rowcell {
+		font-size: 13px;
+	}
+
+	.mobile .e-control.e-lib.e-dashboardlayout.e-responsive {
+		z-index: 0;
+		overflow: scroll;
+	}
+
+	.mobile .item-container {
+		padding: 40px;
+		font-size: 40px;
+	}
+
+	.mobile .balance:after {
+		content: "\e900";
+		font-size: 40px;
+		font-family: "e-sb-icons";
+	}
+
+	.mobile .expense:after {
+		content: "\e901";
+		font-size: 40px;
+		font-family: "e-sb-icons";
+	}
+
+	.mobile .income:after {
+		content: "\e902";
+		font-size: 40px;
+		font-family: "e-sb-icons";
+	}
+
+	.mobile .transaction:after {
+		content: "\e903";
+		font-size: 40px;
+		font-family: "e-sb-icons";
+	}
+
+	.e-control.e-lib.e-dashboardlayout.e-responsive {
+		z-index: 0;
+	}
+
+	.e-dashboardlayout.e-control .e-panel .e-panel-container .e-grid.sf-grid .e-gridcontent .e-content.e-yscroll {
+		overflow: auto;
+	}
+
+	body.tailwind-dark .e-dashboardlayout.e-control .e-panel {
+		border: 1px #435266 solid;
+	}
+
+	.e-gridheader {
+		padding-right: 0px !important;
+	}
+
+	h5 {
+		display: block;
+		font-size: -1em;
+		font-weight: bold;
+		color: maroon;
+		background-color: #00cc00;
+		text-align: center;
+	}
+
+	h6 {
+		color: ghostwhite;
+		background-color: #268cff;
+		padding: 10px;
+		width: 100%;
+		font-size: 10px;
+	}
+
+	h4 {
+		color: black;
+		background-color: deepskyblue;
+		padding: 10px;
+		width: 100%;
+		font-size: 15px;
+	}
+
+	h3 {
+		color: black;
+		background-color: darkorange;
+		padding: 10px;
+		width: 100%;
+		font-size: 15px;
+		
+	}
+</style>

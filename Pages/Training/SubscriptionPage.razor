@@ -1,0 +1,839 @@
+﻿@page "/SubscriptionPage"
+@using HCMIS.SHARED.DTOs.BSC;
+@using HCMIS.Model
+@using HCMIS.ViewModel
+@using System.Text.Json
+@using System.Text.RegularExpressions
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject AppState AppState
+@inject NavigationManager Navigation
+@inject SystemSettings _SystemSettings
+@using System.Collections;
+@using HCMIS.SHARED.DTOs.Training;
+@using HCMIS.SHARED.DTOs.Utilities;
+@inject IToastService toastService;
+
+<style>
+    .e-edit-dialog {
+        max-height: 98%;
+        max-width: 98%;
+        min-width: 98%;
+        min-height: 98%;
+    }
+
+    h6 {
+        color: ghostwhite;
+        background-color: blue;
+        padding: 10px;
+        width: 100%;
+        font-size: 10px;
+    }
+
+    h4 {
+        color: black;
+        background-color: deepskyblue;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+
+    h3 {
+        color: black;
+        background-color: darkorange;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+
+
+    /*Accordion Colors*/
+    .e-accordion {
+        border-radius: 6px 6px 6px 6px;
+        border: none !important;
+    }
+
+        /* header custom css*/
+        .e-accordion .e-acrdn-item .e-acrdn-header {
+            background-color: rgb(255, 204, 255);
+            border-radius: 6px 6px 6px 6px;
+        }
+
+            /*header on hover custom css*/
+            .e-accordion .e-acrdn-item .e-acrdn-header:hover {
+                background-color: rgb(255, 51, 255);
+            }
+
+        /*header on selected and expanded custom css*/
+        .e-accordion .e-acrdn-item.e-select.e-expand-state > .e-acrdn-header {
+            background: rgb(255, 204, 255);
+        }
+
+        .e-accordion .e-acrdn-item.e-select.e-selected.e-expand-state > .e-acrdn-header {
+            background: rgb(255, 128, 255);
+        }
+
+        .e-accordion .e-acrdn-item.e-expand-state.e-select:not(.e-selected) > .e-acrdn-header:focus {
+            background: rgb(255, 204, 255);
+        }
+
+        /*content custom css*/
+        .e-accordion .e-acrdn-item .e-acrdn-panel .e-acrdn-content {
+            background-color: whitesmoke;
+            border-radius: 6px 6px 6px 6px;
+        }
+
+        /*to remove the white line*/
+        .e-accordion .e-acrdn-item.e-select {
+            border-bottom: 1px solid white !important;
+            border-top: 1px solid white !important;
+        }
+        /*to change the accordion header color*/
+        .e-accordion .e-acrdn-item .e-acrdn-header .e-acrdn-header-content {
+            color: darkred;
+        }
+
+    /*Change Grid Header Color */
+    .e-headercell.e-attr1 {
+        background: #964B00;
+        color: white;
+    }
+
+    /*Change Grid Header Color */
+    .e-headercell.e-attr1 {
+        background: #964B00;
+        color: white;
+    }
+</style>
+
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+
+<center>
+    <h5>
+        <strong>PROFESSIONAL SUBSCRIPTIONS</strong>
+    </h5>
+</center>
+
+<SfGrid @ref="@DataGrid" TValue="UpdateSubscriptionDto" ID="Grid" AllowPaging="true" AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowSelection="true" AllowSorting="true" Toolbar="@ToolbarMenu">
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+        <Template>
+            @{
+                <center>
+                    <h5>
+                        <strong>SUBSCRIPTION</strong>
+                    </h5>
+                </center>
+                CPDData = (context as UpdateSubscriptionDto);
+                <SfAccordion ExpandMode="@ExpandMode.Single">
+                    <AccordionItems>
+                        <AccordionItem Expanded="true">
+                            <HeaderTemplate>Header Details</HeaderTemplate>
+                            <ContentTemplate>
+                                <div>
+                                    <div class="row">
+                                        <div class="col-md-6" hidden="hidden">
+                                            <SfNumericTextBox ID="Id" @bind-Value="@(CPDData.Id)" Placeholder="Subscription Id" Enabled="false" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p><h3>Name of Officer<span style="color:red;">*</span></h3></p>
+                                            <SfDropDownList @bind-Value="@(CPDData.EmployeeId)" Enabled="true" TItem="ViewBscEmployeeDto" TValue="int?" DataSource="@EmployeeData" Placeholder="Choose Employee" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                <DropDownListFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></DropDownListFieldSettings>
+                                                <DropDownListEvents TValue="int?" TItem="ViewBscEmployeeDto" ValueChange="OnEmployeeChange"></DropDownListEvents>
+                                            </SfDropDownList>
+                                        </div>
+                                        @if (employeeno != null)
+                                        {
+                                            <div class="col-md-6">
+                                                <p><h3>Designation</h3></p>
+                                                <strong>@employeeno.DepartmentDescription</strong>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </ContentTemplate>
+                        </AccordionItem>
+                        <AccordionItem Expanded="false">
+                            <HeaderTemplate>Association Details</HeaderTemplate>
+                            <ContentTemplate>
+                            <div>
+                                        <div class="row">
+                                             <div class="form-group col-md-12">
+                                            <SfGrid @ref="AmountGrid"
+                                                DataSource="@CPDData.TrainingSubscriptionAmount"
+                                                        EnableStickyHeader=true
+                                                        TValue="TrainingSubscriptionAmountDto" 
+                                                        AllowGrouping="true" ShowColumnChooser="true" AllowTextWrap="true"
+                                                        AllowPaging="true" 
+                                                        AllowFiltering="true" 
+                                                        GridLines="GridLine.Both" 
+                                                        AllowSelection="true"
+                                                        Height="400px">
+                                                        <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Both" 
+                                                        Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+                                                        <GridSearchSettings IgnoreCase="true"></GridSearchSettings>            
+                                                        <GridEditSettings AllowAdding="false" AllowDeleting="false" AllowEditing="true" 
+                                                            ShowConfirmDialog="false" Mode="@EditMode.Batch">                
+                                                        </GridEditSettings>
+                                                        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                                                        <GridPageSettings PageSize="20"></GridPageSettings>
+
+                                                        <GridEvents CellSelected="CellSelectHandler"
+                                                            TValue="TrainingSubscriptionAmountDto">
+                                                        </GridEvents>
+                                                     <GridColumns>
+                                                    <GridColumn Field=@nameof(TrainingSubscriptionAmountDto.AssociationId)
+                                                            HeaderText="#" 
+                                                            TextAlign="TextAlign.Left" 
+                                                            IsPrimaryKey="true" 
+                                                            IsIdentity="true" 
+                                                            Visible="false" 
+                                                            Width="50"
+                                                            CustomAttributes="@(new Dictionary<string,
+                                                            object>(){ { "class", "e-attr1" }})">
+                                                        </GridColumn>
+                                                    <GridForeignColumn Field=@nameof(TrainingSubscriptionAmountDto.ProfessionAssociationId)
+                                                                   HeaderText="Profession Association"
+                                                                   Width="120"
+                                                                   AllowEditing="true"
+                                                                   ForeignKeyField="@(nameof(ViewProfessionalAssociationDto.Id))"
+                                                                   ForeignKeyValue="@(nameof(ViewProfessionalAssociationDto.ProfessionalAssociation))"
+                                                                   ForeignDataSource="@ProfessionalAssociationData" AllowFiltering="true"
+                                                                   CustomAttributes="@(new Dictionary<string,
+                                                                   object>(){ { "class", "e-attr1" }})">
+                                                    </GridForeignColumn>
+
+                                                    <GridColumn HeaderText="Amount"
+                                                            Width="80"
+                                                            AllowEditing="true"
+                                                            Field=@nameof(TrainingSubscriptionAmountDto.AmountPaid)
+                                                            EditType="EditType.NumericEdit"
+                                                            IsFrozen="false"
+                                                            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+                                                    </GridColumn>
+
+                                                    <GridForeignColumn Field=@nameof(TrainingSubscriptionAmountDto.CurrencyId)
+                                                                   HeaderText="Currency"
+                                                                   Width="80"
+                                                                   AllowEditing="true"
+                                                                   ForeignKeyField="@(nameof(ViewCurrencyDto.CurrencyId))"
+                                                                   ForeignKeyValue="@(nameof(ViewCurrencyDto.Currency))"
+                                                                   ForeignDataSource="@CurrencyData" AllowFiltering="true"
+                                                                   CustomAttributes="@(new Dictionary<string,
+                                                                   object>(){ { "class", "e-attr1" }})">
+                                                    </GridForeignColumn>                                                       
+                                                    </GridColumns>
+                                                </SfGrid>
+                                                </div>
+                                        </div>
+                                    </div>
+                            </ContentTemplate>
+                        </AccordionItem>
+                    </AccordionItems>
+                </SfAccordion>
+            }
+        </Template>
+        <FooterTemplate>            
+            <button @onclick="@onSubmitForm" class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Subscription</button>
+            <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel</button>
+        </FooterTemplate>
+    </GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple"></GridSelectionSettings>
+    <GridEvents OnActionBegin="ActionBegin" OnActionComplete="ActionComplete" TValue="UpdateSubscriptionDto"></GridEvents>
+    <SfDataManager AdaptorInstance="@typeof(SubscriptionSummaryAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <GridColumns>
+      <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+    	<GridColumn Field=@nameof(UpdateSubscriptionDto.Id) HeaderText="Id" AllowEditing="false" IsPrimaryKey="true" Visible="false" Width="150"></GridColumn>
+        <GridForeignColumn Field=@nameof(UpdateSubscriptionDto.EmployeeId)
+                           HeaderText="Name of Officer"
+                           Width="150"
+                           AllowEditing="true"
+                           ForeignKeyField="@(nameof(ViewBscEmployeeDto.Employeeid))"
+                           ForeignKeyValue="@(nameof(ViewBscEmployeeDto.EmployeeDetails))"
+                           ForeignDataSource="@EmployeeData" AllowFiltering="true"
+                           CustomAttributes="@(new Dictionary<string,
+                           object>(){ { "class", "e-attr1" }})">
+        </GridForeignColumn>
+    </GridColumns>
+</SfGrid>
+
+
+@code {
+    SfGrid<UpdateSubscriptionDto>? DataGrid { get; set; }
+    SfGrid<TrainingSubscriptionAmountDto>? AmountGrid { get; set; }
+    private static UpdateSubscriptionDto? CPDData { get; set; }
+    List<ViewProfessionalAssociationDto>? ProfessionalAssociationData { get; set; }
+    List<AFinancialYear>? FinancialYearData { get; set; }
+    List<ViewBscEmployeeDto>? EmployeeData { get; set; }
+    List<ViewCurrencyDto>? CurrencyData { get; set; }
+    List<UpdateSubscriptionDto>? SubscriptionData { get; set; }
+    private SfMultiSelect<int[],ViewProfessionalAssociationDto>? ProfessionalAssociationDatasourceObj;
+    private static ViewBscEmployeeDto employeeno { get; set; }
+    SfMultiSelect<int[], ViewProfessionalAssociationDto>? MDL { get; set; }
+
+    public class  AssociationClass
+    {
+        public int Id { get; set; }
+        public int? EmployeeId { get; set; }
+        public string? ProfessionalAssociation { get; set; }
+        public string? CourseDetails { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public int? CurrencyId { get; set; }
+        public double? AmountPaid { get; set; }
+    }
+
+    private List<AssociationClass> AssociationList = new List<AssociationClass>();
+
+    
+    private async void GenerateAssociationList()
+    {
+        try
+        {
+            if (ProfessionalAssociationData == null)
+            {
+                return;
+            }
+
+            if (CPDData != null && CPDData.TrainingSubscriptionAmount == null)
+            {
+                List<TrainingSubscriptionAmountDto> m = new List<TrainingSubscriptionAmountDto>();
+                
+                foreach (var n in ProfessionalAssociationData)
+                {
+                    Random random = new Random();
+                    m.Add(new TrainingSubscriptionAmountDto
+                        {
+                            AssociationId = random.Next(1000, 10000),
+                            ProfessionAssociationId = n.Id
+                        });
+                }
+                CPDData.TrainingSubscriptionAmount = m;
+            }
+
+            else
+            {
+                foreach (var n in ProfessionalAssociationData)
+                {
+                    var x = CPDData.TrainingSubscriptionAmount.FirstOrDefault(o => o.ProfessionAssociationId == n.Id);
+                    if (x == null)
+                    {
+                        Random random = new Random();
+                        CPDData.TrainingSubscriptionAmount.Add(new TrainingSubscriptionAmountDto
+                            {
+                                AssociationId = random.Next(1000, 10000),
+                                ProfessionAssociationId = n.Id
+                            });
+                    }
+                }
+            }
+
+        }
+        catch (Exception ex)
+        {
+
+        }
+
+        finally
+        {
+
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        GenerateAssociationList();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await _SystemSettings.GetLoginCredentials();
+
+        if (AssociationList != null)
+        {
+            AssociationList.Clear();
+        }     
+
+        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+        var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+        var content = await response.Content.ReadAsStringAsync();
+        var responseprofassociation = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetProfessionalAssociation");
+        var contentprofassociation = await response.Content.ReadAsStringAsync();
+        var responsecurrency = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetCurrency");
+        var contentcurrency = await response.Content.ReadAsStringAsync();
+        var responsesubscription = await Http.GetAsync($"{_ApiConfig.BaseUrl}Subscription/GetSubscription");
+        var contentsubscription = await response.Content.ReadAsStringAsync();
+
+        if (response.IsSuccessStatusCode && responseprofassociation.IsSuccessStatusCode 
+            && responsecurrency.IsSuccessStatusCode && responsesubscription.IsSuccessStatusCode)
+        {
+            EmployeeData = await Http.GetFromJsonAsync<List<ViewBscEmployeeDto>>
+            ($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+
+            ProfessionalAssociationData = await Http.GetFromJsonAsync<List<ViewProfessionalAssociationDto>>
+            ($"{_ApiConfig.BaseUrl}Utilities/GetProfessionalAssociation");
+
+            CurrencyData = await Http.GetFromJsonAsync<List<ViewCurrencyDto>>
+            ($"{_ApiConfig.BaseUrl}Utilities/GetCurrency");
+
+            SubscriptionData = await Http.GetFromJsonAsync<List<UpdateSubscriptionDto>>
+            ($"{_ApiConfig.BaseUrl}Subscription/GetSubscription");
+        }
+
+        //Set employeeno to null on initialize
+        employeeno = null;
+    }
+
+    public void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewBscEmployeeDto> args)
+    {
+        employeeno = args.ItemData;
+    }
+
+    public async Task onSubmitForm()
+    {
+        try
+        {
+            if (AmountGrid != null)
+            {
+                await AmountGrid.EndEditAsync();
+            }
+
+            if (DataGrid != null)
+            {
+                await DataGrid.EndEditAsync();
+            }            
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    
+    public async void DialogCancelBtnclicked()
+    {
+        if (DataGrid != null)
+        {
+            await DataGrid.CloseEdit();
+        }
+        if (AmountGrid != null)
+        {
+            await AmountGrid.CloseEdit();
+        }
+    }
+
+
+    #region Toasters
+    public static string ToastContent { get; set; }
+    SfToast? ToastObj;
+    SfToast DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+        {
+            new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+            new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+            new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+            new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+        };
+    #endregion Toasters
+
+    private List<object> ToolbarMenu = new List<object>()
+    {
+        new ItemModel() { Text = "Capture Subscription", PrefixIcon = "e-add", Id = "Grid_add"},
+        new ItemModel(){ Text = "Edit Subscription", PrefixIcon= "e-edit", Id="Grid_edit"},
+        new ItemModel(){ Text = "Delete Subscription", PrefixIcon= "e-delete", Id="Grid_delete"},
+        new ItemModel(){ Text = "Update Subscription", PrefixIcon= "e-update", Id="Grid_update"},
+        new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
+    };
+
+    #region SubscriptionSummaryAdapter 
+
+    public class SubscriptionSummaryAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        SystemSettings _SystemSettings;
+        ApiConfig _ApiConfig;
+        public IToastService toastService;
+        private readonly NavigationManager Navigation;
+
+        public SubscriptionSummaryAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+            , SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            Navigation = _Navigation;
+            _ApiConfig = apiConfig;
+            _SystemSettings = systemSettings;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            await _SystemSettings.GetLoginCredentials();
+
+            var data = new List<UpdateSubscriptionDto>();
+
+            string? AccessToken = _SystemSettings.AccessToken;
+            string? BaseUrl = _ApiConfig.BaseUrl;
+
+            try
+            {
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AccessToken);
+                var response = await Http.GetAsync($"{BaseUrl}Subscription/GetSubscription");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    data = JsonSerializer.Deserialize<List<UpdateSubscriptionDto>>(content, _options);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<UpdateSubscriptionDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as UpdateSubscriptionDto);
+                if (val != null)
+                {
+                    if (val.Id == 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}Subscription/CreateSubscription", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}Subscription/UpdateSubscription", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as UpdateSubscriptionDto);
+                if (val != null)
+                {
+                    if (val.Id == 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}Subscription/CreateSubscription", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}Subscription/UpdateSubscription", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }    
+
+    }
+
+    public void OnMethodDatasourceBound(Syncfusion.Blazor.DropDowns.DataBoundEventArgs args)
+    {
+        if (!string.IsNullOrEmpty(CPDData.ProfessionalAssociation))
+        {
+            var a = CPDData.ProfessionalAssociation.Split(',');
+            List<int> c = new List<int>();
+            foreach (var n in a)
+            {
+                int b = Convert.ToInt32(n.Trim());
+                c.Add(b);
+            }
+            ProfessionalAssociationDatasourceObj.Value = c.ToArray();
+        }
+    }
+    public void OnMethodDatasourceChange(Syncfusion.Blazor.DropDowns.MultiSelectChangeEventArgs<int[]> args)
+    {
+        if (args.Value != null)
+        {
+            CPDData.ProfessionalAssociation = string.Join(",", args.Value);
+        }
+        else
+        {
+            CPDData.ProfessionalAssociation = null;
+        }
+    }
+
+    public void ActionComplete(ActionEventArgs<UpdateSubscriptionDto> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) ||
+        args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            DataGrid.PreventRender(false);
+        }
+    }
+
+    public async void ActionBegin(ActionEventArgs<UpdateSubscriptionDto> Args)
+    {
+        var data = Args.Data;
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+        {
+            if (Args.Data.EmployeeId == null)
+            {
+                toastService.ShowWarning( "Please select the officer/employee.");
+                Args.Cancel = true;
+            }  
+            
+            else
+            {
+                int? employid = Args.Data.EmployeeId;
+                
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(CPDData);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                //var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}Subscription/GetSubscription/{employid}", httpContent);
+                //var content = await response.Content.ReadAsStringAsync();
+
+                //if (response.IsSuccessStatusCode)
+                //{
+                    
+                //}
+
+                //CPDData = SubscriptionData.FirstOrDefault(o => o.EmployeeId == Args.Data.EmployeeId);
+                ////if (CPDData != null && (CPDData.Id != Args.Data.Id))
+                //if (CPDData != null)
+                //{
+                //    await this.ToastObj.Show(new ToastModel { Title = "Error!", Content = "This employee's subscription has arleady been captured. Consider just updating the record! Record will not be saved", CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                //    Args.Cancel = true;
+                //}
+            }
+
+        }
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+        {
+            employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.EmployeeId);
+
+            if (Args.RowData.TrainingSubscriptionAmount == null)
+            {
+                Args.RowData.TrainingSubscriptionAmount = new List<TrainingSubscriptionAmountDto>();
+            }
+            foreach (var n in ProfessionalAssociationData)
+            {
+                var x = Args.RowData.TrainingSubscriptionAmount.FirstOrDefault(o => o.ProfessionAssociationId == n.Id);
+                if (x == null)
+                {
+                    Random random = new Random();
+                    Args.RowData.TrainingSubscriptionAmount.Add(new TrainingSubscriptionAmountDto
+                    {
+                            AssociationId = random.Next(1000, 10000),
+                            ProfessionAssociationId = n.Id
+                    });
+                }
+            }
+
+        }
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+        {
+            employeeno = null; ;
+        
+            Args.RowData.TrainingSubscriptionAmount = new List<TrainingSubscriptionAmountDto>();
+
+            if(ProfessionalAssociationData!=null)
+            {
+                foreach (var n in ProfessionalAssociationData)
+                {
+                    Random random = new Random();
+                    Args.RowData.TrainingSubscriptionAmount.Add(new TrainingSubscriptionAmountDto
+                        {
+                            AssociationId = random.Next(1000, 10000),
+                            ProfessionAssociationId = n.Id
+                        });
+                }
+            } 
+        }
+    }
+
+    //Enable cell edit on single click
+    public async Task CellSelectHandler(CellSelectEventArgs<TrainingSubscriptionAmountDto> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await AmountGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await AmountGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await AmountGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
+
+    #endregion SubscriptionSummaryAdapter
+
+}

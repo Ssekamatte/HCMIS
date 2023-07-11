@@ -1,0 +1,614 @@
+﻿@page "/ApplicantAptituddeTestPage/{JobTitleId}/{AppliedForJobsId}"
+@using HCMIS.DTOs;
+@using HCMIS.Interface;
+@using HCMIS.Models;
+@using HCMIS.ViewModel;
+@using System.Text.Json;
+@using System.Timers;
+@inject IAptituddeTestReopsitory TestRepo;
+@inject IToastService toastService;
+@inject HttpClient http;
+@inject ISettingsRepository settingsRepo;
+
+@if (haspageLoaded == true)
+{
+    if (MyTestData != null && MyTestData.Aptituddetestheader != null)
+    {
+        <div class="row">
+            @if (showInstructions == true)
+            {
+                <div class="col-md-12">
+                    <h2>Amptitude Test</h2>
+                </div>
+                <div class="col-md-12">
+                    @if (DurationTypeData != null)
+                    {
+                        var a = DurationTypeData.FirstOrDefault(o => o.DurationTypeId == MyTestData.Aptituddetestheader.DurationTypeId);
+                        if (a != null)
+                        {
+                            DurationDesc = a.DurationTypeDesc;
+                        }
+                    }
+                    <p>Test Duration: @MyTestData.Aptituddetestheader.TestDuration @DurationDesc</p>
+                </div>
+                <div class="col-md-12">
+                    <h4>Test Summary</h4>
+                    @((MarkupString)MyTestData.Aptituddetestheader.TestSummary)
+                </div>
+                <div class="col-md-12">
+                    <button class="btn btn-primary" @onclick=@StartTest>Start Test</button>
+                </div>
+            }
+            else if (showQuestions== true)
+            {
+                <div class="col-md-12">
+                    <SfSplitter Height="80vh" Width="100%">
+                        <SplitterPanes>
+                            <SplitterPane Size="12%" Min="10%">
+                                <ContentTemplate>
+                                    <div>
+                                        <h4 style="text-align:center; margin-top:10px;"><b>Questions</b></h4>
+                                        <SfListView @ref=@QuestionListView ID="ui-list" DataSource="@dataSource" ShowCheckBox=false Height="auto" CssClass="e-list-template">
+                                            <ListViewEvents TValue="DataModel" Clicked="select"></ListViewEvents>
+                                            <ListViewFieldSettings TValue="DataModel" Id="Id" Text="Name"></ListViewFieldSettings>
+                                            <ListViewTemplates TValue="DataModel">
+                                                <Template>
+                                                    @{
+                                                        <div style="padding:10px; text-align:center;">
+                                                            @context.Name
+                                                        </div>
+                                                    }
+                                                </Template>
+                                            </ListViewTemplates>
+                                        </SfListView>
+                                    </div>
+                                </ContentTemplate>
+                            </SplitterPane>
+                            <SplitterPane Size="89%" Min="75%">
+                                <ContentTemplate>
+                                    @if (SelectedQuestion != null && SelectedQuestion.Aptituddetestquestions != null)
+                                    {
+                                        <div class="row" style="margin:10px;">
+                                            <div class="col-md-8">
+                                                <h4>Question @QuestionNo</h4>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <p style="color:@timerColor">Remaining Time: @Minutescounter:@Secondcounter minutes</p>
+                                            </div>
+                                            <div class="col-md-12">
+                                                @((MarkupString)@SelectedQuestion.Aptituddetestquestions.Question)
+                                            </div>
+                                            <div class="col-md-12">
+                                                <SfListView @ref=@AnswerListView DataSource="@AnswerDataSource" ShowCheckBox=true
+                                                Height="auto" CssClass="e-list-template">
+                                                    <ListViewEvents TValue="AptituddeTestQuestionAnswersList" Clicked="OnAnswerSelect"></ListViewEvents>
+                                                    <ListViewFieldSettings TValue="AptituddeTestQuestionAnswersList" Id="AptituddeTestQuestionAnswersId" Text="Answer" IsChecked="IsChecked"></ListViewFieldSettings>
+                                                    <ListViewTemplates TValue="AptituddeTestQuestionAnswersList">
+                                                        <Template>
+                                                            @{
+                                                                <div style="padding:10px;">
+                                                                    @context.Answer
+                                                                </div>
+                                                            }
+                                                        </Template>
+                                                    </ListViewTemplates>
+                                                </SfListView>
+                                            </div>
+                                            <div class="col-md-12">
+                                                <button class="btn btn-primary" style="float:right; margin-top:15px; margin-left:10px;" @onclick=@SubmitTest>Submit Test</button>
+                                                <button class="btn btn-success" style="float:right; margin-top:15px;" @onclick=@(()=>{NextQuestion(QuestionNo);})>Next Question</button>
+                                            </div>
+                                        </div>
+                                        //LoadSelectedAnswer();
+                                    }
+                                </ContentTemplate>
+                            </SplitterPane>
+                        </SplitterPanes>
+                    </SfSplitter>
+                </div>
+            }
+            else if (showCompetionPage == true)
+            {
+                <div class="col-md-12">
+                    <p class="alert alert-success" style="padding:10px;">Your Test has been successfully Submitted. Please click <a href="/MyApplicationsPage">here</a> to the application's page</p>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+
+        <p class="alert-info" style="padding:10px;">The amptitudde test is nolonger available.</p>
+    }
+}
+else
+{
+    <div class="col-md-12">
+        <div class="loader">
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--text"></div>
+        </div>
+    </div>
+}
+
+<SfDialog @ref=@StartTestDialog IsModal=true Target=".page" Height="30vh" Width="40%"
+    AllowDragging=true CloseOnEscape=false EnableResize=true 
+    ShowCloseIcon=false Visible=false>
+    <DialogTemplates>
+        <Header>
+            <h1>Confirmation</h1>
+        </Header>
+        <Content>
+            <div class="row">
+                <div class="col-md-12">
+                    <p>Before starting this test, please ensure that you have stable internet connectivity throughout the test period.</p>
+                </div>
+            </div>
+        </Content>
+        <FooterTemplate>
+            <button class="btn btn-primary" @onclick=@StartTestConfirmationYes>Yes Continue</button>
+            <button class="btn btn-danger" @onclick=@StartTestConfirmationNo>Cancel</button>
+        </FooterTemplate>
+    </DialogTemplates>
+</SfDialog>
+
+<SfDialog @ref=@TestSubmissionDialog IsModal=true Target=".page" Height="30vh" Width="40%"
+          AllowDragging=true CloseOnEscape=false EnableResize=true
+          ShowCloseIcon=false Visible=false>
+    <DialogTemplates>
+        <Header>
+            <h1>Confirmation</h1>
+        </Header>
+        <Content>
+            <div class="row">
+                <div class="col-md-12">
+                    <p>Are you sure you would like to submit this test?</p>
+                </div>
+            </div>
+        </Content>
+        <FooterTemplate>
+            <button class="btn btn-primary" @onclick=@TestSubmissionConfirmationYes>Yes Continue</button>
+            <button class="btn btn-danger" @onclick=@TestSubmissionConfirmationNo>Cancel</button>
+        </FooterTemplate>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    [Parameter]
+    public string? JobTitleId { get; set; }
+    [Parameter]
+    public string? AppliedForJobsId { get; set; }
+
+    public int? _AppliedForJobsId { get; set; }
+    SfListView<DataModel>? QuestionListView;
+    SfListView<AptituddeTestQuestionAnswersList>? AnswerListView;
+    SfDialog? StartTestDialog;
+    SfDialog? TestSubmissionDialog;
+
+    public string? QuestionNo { get; set; } = "1";
+    private AptituddeTestQuestionModel? SelectedQuestion { get; set; } = new();
+    private AmptituddeTestDoneDto TestDoneModel { get; set; } = new();
+    List<DataModel> dataSource { get; set; } = new();
+    List<AptituddeTestQuestionAnswersList> AnswerDataSource { get; set; } = new();
+    AptituddeTestModel? MyTestData { get; set; }
+    bool haspageLoaded { get; set; } = false;
+    List<ADurationType>? DurationTypeData { get; set; }
+    string? DurationDesc { get; set; }
+    bool showInstructions { get; set; } = true;
+    bool showQuestions { get; set; } = false;
+    bool showCompetionPage { get; set; } = false;
+    private static Timer aTimer;
+    private int Secondcounter { get; set; } = 60;
+    private int Minutescounter { get; set; } = 6;
+    private string timerColor { get; set; } = "black";
+    private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+        try
+        {
+            haspageLoaded = false;
+            if (!string.IsNullOrEmpty(JobTitleId))
+            {
+                int id = Convert.ToInt32(JobTitleId);
+                MyTestData = await TestRepo.GetAplittuddeTestForJobTitleAsync(id);
+                if (MyTestData != null && MyTestData.Aptituddetestquestions != null)
+                {
+                    int count = 1;
+                    foreach (var n in MyTestData.Aptituddetestquestions)
+                    {
+                        dataSource.Add(new DataModel()
+                            {
+                                Id = n.AptituddeTestQuestionId,
+                                Name = count.ToString()
+                            });
+                        count++;
+                    }
+                    SelectedQuestion = MyTestData.Aptituddetestquestions.FirstOrDefault();
+                    LoadSelectedAnswer();
+                }
+            }
+            if (!string.IsNullOrEmpty(AppliedForJobsId))
+            {
+                _AppliedForJobsId = Convert.ToInt32(AppliedForJobsId);
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message);
+        }
+        finally
+        {
+            haspageLoaded = true;
+        }
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        try
+        {
+            dataSource = new();
+            string? accessToken = await settingsRepo.GetAccessToken();
+            http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            var tasks = new List<Task>();
+            tasks.Add(Task.Run(async () =>
+            {
+                var response = await http.GetAsync($"Utilities/GetDurationType");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    DurationTypeData = JsonSerializer.Deserialize<List<ADurationType>>(content, _options);
+                }
+            }));
+            Task t = Task.WhenAll(tasks);
+            await t;
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message);
+        }
+    }
+    private async Task StartTest()
+    {
+        await StartTestDialog.ShowAsync();
+    }
+    private async Task select(ClickEventArgs<DataModel> e)
+    {
+        //SelectedIndex = e.ItemData.Id;
+        QuestionNo = e.ItemData.Name;
+        SelectedQuestion = MyTestData.Aptituddetestquestions?.FirstOrDefault(o => o.AptituddeTestQuestionId == e.ItemData.Id);
+        LoadSelectedAnswer();
+        InvokeAsync(StateHasChanged);
+    }
+    private async Task OnAnswerSelect(ClickEventArgs<AptituddeTestQuestionAnswersList> e)
+    {
+        try
+        {
+
+            var selectedList = await AnswerListView.GetCheckedItemsAsync();
+            if (SelectedQuestion.Aptituddetestquestions.IsAmultiselectQuestion == false && selectedList.Data.Count > 0)
+            {
+                AptituddeTestDoneAnswers _ans = new AptituddeTestDoneAnswers();
+                _ans.AptituddeTestQuestionAnswersId = e.ItemData.AptituddeTestQuestionAnswersId;
+                _ans.AptituddeTestQuestionId = e.ItemData.AptituddeTestQuestionId;
+                var CorrectAns = SelectedQuestion.Aptituddetestquestionanswers.FirstOrDefault(o => o.IsCorrectAnswer == true);
+                _ans.CorrectAnswerId = CorrectAns.AptituddeTestQuestionAnswersId;
+                if (_ans.AptituddeTestQuestionAnswersId == _ans.CorrectAnswerId)
+                {
+                    _ans.AnswerScore = SelectedQuestion.Aptituddetestquestions.QuestionMark;
+                    _ans.QuestionScore = SelectedQuestion.Aptituddetestquestions.QuestionMark;
+                }
+                else
+                {
+                    _ans.AnswerScore = 0;
+                    _ans.QuestionScore = SelectedQuestion.Aptituddetestquestions.QuestionMark;
+                }
+
+                var lastAnswer = TestDoneModel.TestDoneAnswers.FirstOrDefault(o => o.AptituddeTestQuestionId == e.ItemData.AptituddeTestQuestionId);
+                if (lastAnswer != null)
+                {
+                    _ans.AptituddeTestDoneId = lastAnswer.AptituddeTestDoneId;
+                    _ans.TestDoneQuestionAnswersId = lastAnswer.TestDoneQuestionAnswersId;
+                    TestDoneModel.TestDoneAnswers.Remove(lastAnswer);
+                    TestDoneModel.TestDoneAnswers.Add(_ans);
+                }
+
+                var result = await TestRepo.SaveTestDone(TestDoneModel);
+                if (result != null && result.TestDoneHeader != null)
+                {
+                    TestDoneModel = result;
+                }
+
+                await AnswerListView.UncheckItemsAsync(selectedList.Data);
+            }
+            else if (SelectedQuestion.Aptituddetestquestions.IsAmultiselectQuestion == false && selectedList.Data.Count == 0)
+            {
+                AptituddeTestDoneAnswers _ans = new AptituddeTestDoneAnswers();
+                _ans.AptituddeTestQuestionAnswersId = e.ItemData.AptituddeTestQuestionAnswersId;
+                _ans.AptituddeTestQuestionId = e.ItemData.AptituddeTestQuestionId;
+                var CorrectAns = SelectedQuestion.Aptituddetestquestionanswers.FirstOrDefault(o => o.IsCorrectAnswer == true);
+                _ans.CorrectAnswerId = CorrectAns.AptituddeTestQuestionAnswersId;
+                if (_ans.AptituddeTestQuestionAnswersId == _ans.CorrectAnswerId)
+                {
+                    _ans.AnswerScore = SelectedQuestion.Aptituddetestquestions.QuestionMark;
+                    _ans.QuestionScore = SelectedQuestion.Aptituddetestquestions.QuestionMark;
+                }
+                else
+                {
+                    _ans.AnswerScore = 0;
+                    _ans.QuestionScore = SelectedQuestion.Aptituddetestquestions.QuestionMark;
+                }
+                var lastAnswer = TestDoneModel.TestDoneAnswers.FirstOrDefault(o => o.AptituddeTestQuestionId == e.ItemData.AptituddeTestQuestionId);
+                if (lastAnswer != null)
+                {
+                    _ans.AptituddeTestDoneId = lastAnswer.AptituddeTestDoneId;
+                    _ans.TestDoneQuestionAnswersId = lastAnswer.TestDoneQuestionAnswersId;
+                    TestDoneModel.TestDoneAnswers.Remove(lastAnswer);
+                    TestDoneModel.TestDoneAnswers.Add(_ans);
+                }
+                else
+                {
+                    TestDoneModel.TestDoneAnswers.Add(_ans);
+                }
+
+
+                var result = await TestRepo.SaveTestDone(TestDoneModel);
+                if (result != null && result.TestDoneHeader != null)
+                {
+                    TestDoneModel = result;
+                }
+            }
+            else if (SelectedQuestion.Aptituddetestquestions.IsAmultiselectQuestion == true && selectedList.Data.Count > 0)
+            {
+
+            }
+            else if (SelectedQuestion.Aptituddetestquestions.IsAmultiselectQuestion == true && selectedList.Data.Count == 0)
+            {
+
+            }
+        }
+        catch (Exception ex)
+        {
+
+            // throw;
+        }
+
+
+    }
+    private void SelectedAnswer(int QuestionId,int AnswerId)
+    {
+
+    }
+    private async Task StartTestConfirmationYes()
+    {
+        await StartTestDialog.HideAsync();
+        TestDoneModel = new();
+        TestDoneModel.TestDoneHeader = new();
+        TestDoneModel.TestDoneAnswers = new();
+        TestDoneModel.TestDoneHeader.AptituddeTestHeaderId = MyTestData.AptituddeTestHeaderId;
+        string userrole = await settingsRepo.GetUserRole();
+        if (userrole == "Non-Staff")
+        {
+            TestDoneModel.TestDoneHeader.NonStaffid = await settingsRepo.GetStaffId();
+        }
+        else
+        {
+            TestDoneModel.TestDoneHeader.Employeeid = await settingsRepo.GetStaffId();
+        }
+        TestDoneModel.TestDoneHeader.AppliedForJobsId = _AppliedForJobsId;
+        TestDoneModel.TestDoneHeader.IsSubmitted = false;
+
+        if (MyTestData.Aptituddetestheader.DurationTypeId == 1)
+        {
+            //Minutes
+            Minutescounter = MyTestData.Aptituddetestheader.TestDuration.Value;
+            DateTime startdate = DateTime.Now;
+            DateTime Enddate = startdate.AddMinutes((MyTestData.Aptituddetestheader.TestDuration.Value + 1));
+            TestDoneModel.TestDoneHeader.StartDate = startdate;
+            TestDoneModel.TestDoneHeader.EndDate = Enddate;
+        }
+        else if (MyTestData.Aptituddetestheader.DurationTypeId == 2)
+        {
+            //Hours
+            Minutescounter = (60* MyTestData.Aptituddetestheader.TestDuration.Value);
+            DateTime startdate = DateTime.Now;
+            DateTime Enddate = startdate.AddMinutes((Minutescounter + 1));
+            TestDoneModel.TestDoneHeader.StartDate = startdate;
+            TestDoneModel.TestDoneHeader.EndDate = Enddate;
+        }
+        foreach (var item in MyTestData.Aptituddetestquestions)
+        {
+            AptituddeTestDoneAnswers _ans = new AptituddeTestDoneAnswers();
+            _ans.AptituddeTestQuestionId = item.AptituddeTestQuestionId;
+            var CorrectAns = item.Aptituddetestquestionanswers.FirstOrDefault(o => o.IsCorrectAnswer == true);
+            _ans.CorrectAnswerId = CorrectAns.AptituddeTestQuestionAnswersId;
+            _ans.AnswerScore = 0;
+            _ans.QuestionScore = item.Aptituddetestquestions.QuestionMark;
+            TestDoneModel.TestDoneAnswers.Add(_ans);
+        }
+
+        var result = await TestRepo.SaveTestDone(TestDoneModel);
+        if(result != null && result.TestDoneHeader != null)
+        {
+            TestDoneModel = result;
+        }
+
+        showInstructions = false;
+        showQuestions = true;
+        aTimer = new Timer(1000);
+        aTimer.Elapsed += CountDownTimer;
+        aTimer.Enabled = true;
+        InvokeAsync(StateHasChanged);
+    }
+    private async Task StartTestConfirmationNo()
+    {
+        await StartTestDialog.HideAsync();
+    }
+    private async Task NextQuestion(string QuestionNumber)
+    {
+        int a = (Convert.ToInt32(QuestionNumber) + 1);
+        List<DataModel> NextQuestion = dataSource.Where(o => o.Name == a.ToString()).ToList();
+        if (NextQuestion != null && NextQuestion.Count > 0)
+        {
+            await QuestionListView.CheckItemsAsync(NextQuestion);
+            QuestionNo = NextQuestion[0].Name;
+            SelectedQuestion = MyTestData.Aptituddetestquestions?.FirstOrDefault(o => o.AptituddeTestQuestionId == NextQuestion[0].Id);
+        }
+        else
+        {
+            NextQuestion = new List<DataModel>();
+            NextQuestion.Add(dataSource.FirstOrDefault());
+            await QuestionListView.CheckItemsAsync(NextQuestion);
+            QuestionNo = NextQuestion[0].Name;
+            SelectedQuestion = MyTestData.Aptituddetestquestions?.FirstOrDefault(o => o.AptituddeTestQuestionId == NextQuestion[0].Id);
+        }
+        LoadSelectedAnswer();
+    }
+
+    public void CountDownTimer(Object source, ElapsedEventArgs e)
+    {
+        if (Minutescounter > 0)
+        {
+            if (Secondcounter > 0)
+            {
+                Secondcounter -= 1;
+            }
+            else
+            {
+                Minutescounter -= 1;
+                Secondcounter = 60;
+            }
+        }
+        else
+        {
+            OnTestSubmision();
+            aTimer.Enabled = false;
+        }
+        if (Minutescounter <= 5)
+        {
+            timerColor = "red";
+        }
+        else
+        {
+            timerColor = "black";
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    //private void LoadSelectedAnswer()
+    //{
+    //    //AnswerDataSource
+    //    if(TestDoneModel != null && TestDoneModel.TestDoneAnswers != null
+    //        && SelectedQuestion != null && SelectedQuestion.Aptituddetestquestionanswers != null)
+    //    {
+    //        var answeredQuestion = TestDoneModel.TestDoneAnswers.Where(o => o.AptituddeTestQuestionId == SelectedQuestion.AptituddeTestQuestionId).ToList();
+    //        if (answeredQuestion != null && answeredQuestion.Count > 0)
+    //        {
+    //            var _answeredQuestion = SelectedQuestion.Aptituddetestquestionanswers.Where(a => answeredQuestion.Any(o => o.AptituddeTestQuestionAnswersId == a.AptituddeTestQuestionAnswersId)).ToList();
+    //            if (_answeredQuestion != null && _answeredQuestion.Count > 0)
+    //            {
+    //                AnswerListView.CheckItemsAsync(_answeredQuestion);
+    //            }
+    //        }
+    //        InvokeAsync(StateHasChanged);
+    //    }
+
+    //}
+    private void LoadSelectedAnswer()
+    {
+        //AnswerDataSource
+        AnswerDataSource = new();
+        if (TestDoneModel != null && TestDoneModel.TestDoneAnswers != null)
+        {
+            if (SelectedQuestion != null && SelectedQuestion.Aptituddetestquestionanswers != null)
+            {
+                foreach (var n in SelectedQuestion.Aptituddetestquestionanswers)
+                {
+                    var answeredQuestion = TestDoneModel.TestDoneAnswers.FirstOrDefault(o => o.AptituddeTestQuestionId == SelectedQuestion.AptituddeTestQuestionId && o.AptituddeTestQuestionAnswersId==n.AptituddeTestQuestionAnswersId);
+                    if(answeredQuestion != null)
+                    {
+                        AnswerDataSource.Add(new AptituddeTestQuestionAnswersList()
+                            {
+                                Answer = n.Answer,
+                                AptituddeTestQuestionAnswersId = n.AptituddeTestQuestionAnswersId,
+                                AptituddeTestQuestionId = n.AptituddeTestQuestionId,
+                                IsChecked = true
+                            });
+                    }
+                    else
+                    {
+                        AnswerDataSource.Add(new AptituddeTestQuestionAnswersList()
+                            {
+                                Answer = n.Answer,
+                                AptituddeTestQuestionAnswersId = n.AptituddeTestQuestionAnswersId,
+                                AptituddeTestQuestionId = n.AptituddeTestQuestionId,
+                                IsChecked = false
+                            });
+                    }
+                }
+            }
+        }
+        else
+        {
+            if (SelectedQuestion != null && SelectedQuestion.Aptituddetestquestionanswers != null)
+            {
+                foreach (var n in SelectedQuestion.Aptituddetestquestionanswers)
+                {
+                    AnswerDataSource.Add(new AptituddeTestQuestionAnswersList()
+                        {
+                            Answer = n.Answer,
+                            AptituddeTestQuestionAnswersId = n.AptituddeTestQuestionAnswersId,
+                            AptituddeTestQuestionId = n.AptituddeTestQuestionId,
+                            IsChecked = false
+                        });
+                }
+            }
+        }
+    }
+    private async Task TestSubmissionConfirmationYes()
+    {
+        OnTestSubmision();
+        await TestSubmissionDialog.HideAsync();
+    }
+    private async Task TestSubmissionConfirmationNo()
+    {
+        await TestSubmissionDialog.HideAsync();
+    }
+    private async Task SubmitTest()
+    {
+        await TestSubmissionDialog.ShowAsync();
+    }
+
+    private async void OnTestSubmision()
+    {
+        TestDoneModel.TestDoneHeader.IsSubmitted = true;
+        var result = await TestRepo.SaveTestDone(TestDoneModel);
+        if (result != null && result.TestDoneHeader != null)
+        {
+            TestDoneModel = result;
+            showCompetionPage = true;
+            showQuestions = false;
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    private class DataModel
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+    }
+    public class AptituddeTestQuestionAnswersList
+    {
+        public int AptituddeTestQuestionAnswersId { get; set; }
+        public int? AptituddeTestQuestionId { get; set; }
+        public string? Answer { get; set; }
+        public bool IsChecked { get; set; }
+    }
+}

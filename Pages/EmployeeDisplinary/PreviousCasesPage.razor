@@ -1,0 +1,306 @@
+﻿@*@page "/PreviousCases"*@
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using HCMIS.ViewModel
+@using System.Collections
+@inject HttpClient Http
+@inject SystemSettings _SystemSettings
+@inject ApiConfig _ApiConfig;
+@inject AppState AppState
+@inject NavigationManager Navigation
+@inject DocumentUploadModel _DocumentUploadModel;
+<style>
+    .e-edit-dialog {
+        max-height: 95%;
+        max-width: 100%;
+        min-width: 100%;
+        min-height: 95%;
+    }
+
+    h6 {
+        color: ghostwhite;
+        background-color: blue;
+        padding: 10px;
+        width: 100%;
+        font-size: 10px;
+    }
+
+    h4 {
+        color: black;
+        background-color: white;
+        padding: 10px;
+        width: 100%;
+        font-size: 13px;
+    }
+
+      .e-grid .e-gridcontent .e-rowcell.SubmittedApplications {
+            color: red;
+            }
+</style>
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+           <SfGrid @ref="DisplinaryGrid" TValue="EmployeeDisplinary" Query="@mainQuery"
+                                    AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+                                    AllowPaging="true" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" GridLines="GridLine.Both" AllowSelection="true">
+                                <SfDataManager AdaptorInstance="@typeof(PreviousCaseAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+                                <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+                                <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+                                 <GridEvents  OnActionComplete="@OnPreviousActionComplete" TValue="EmployeeDisplinary"></GridEvents>
+                                <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
+                                       <HeaderTemplate>
+                                        @{
+                                            var text = GetDisplinaryHeader((context as EmployeeDisplinary));
+                                             <div class="headerbandimg" /><span>@text</span>
+                                        }
+                                    </HeaderTemplate>
+                                    <Template Context="PreviosCasesContext">
+                                      @{
+                                                        DisplinaryData = (PreviosCasesContext as EmployeeDisplinary);
+                                                        if(DisplinaryData != null){
+                                                            DisplinaryData.EmployeeId = EmployeeId;
+                                                              <div style="padding:15px;">
+                                                              <div class="row">
+                                                               <div class="col-md-12" hidden>
+                                                                    <SfNumericTextBox @bind-Value="@(DisplinaryData.EmployeeId)" Enabled="false" Placeholder="EmployeeId" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                                                               </div>
+                                                                <div class="col-md-12">
+                                                                    <p>Previous Offence<span style="color:red;">(*)</span></p>
+                                                                       <SfDropDownList @bind-Value="@(DisplinaryData.DisplinaryReasonId)" Enabled="false" TItem="ADisplinaryReason" TValue="int?" DataSource="@DisplinaryReasonData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                                        <DropDownListFieldSettings Value="@nameof(ADisplinaryReason.DisplinaryReasonId)" Text="@nameof(ADisplinaryReason.DisplinaryReasonDescription)"></DropDownListFieldSettings>
+                                                                    </SfDropDownList>
+                                                                </div>
+                                                                <div class="col-md-12">
+                                                                     <p>Offence Details<span style="color:red;">(*)</span></p>
+                                                                    <SfTextBox Multiline="false" @bind-Value="@(DisplinaryData.DisplinaryActionDetails)" Enabled="false"FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                                </div>
+                                                                 <div class="col-md-4">
+                                                                    <p>Action<span style="color:red;">(*)</span></p>
+                                                                       <SfDropDownList @bind-Value="@(DisplinaryData.DisplinaryActionId)" Enabled="false" TItem="ADisplinaryAction" TValue="int?" DataSource="@DisplinaryActionData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                                        <DropDownListFieldSettings Value="@nameof(ADisplinaryAction.DisplinaryActionId)" Text="@nameof(ADisplinaryAction.DisplinaryActionDescription)"></DropDownListFieldSettings>
+                                                                    </SfDropDownList>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                 <p>Date of Incident <span style="color:red;">(*)</span></p>
+                                                                   <SfDatePicker @bind-Value="@(DisplinaryData.DisplinaryDate)" Placeholder="Select Date" Enabled="false" Format="dd/MM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                                                                  <p> <ValidationMessage For="@(() => DisplinaryData.DisplinaryDate)" /></p>
+                                                                </div>
+                                                                 <div class="col-md-4">  
+                                                                <p>Previous Warnings <span style="color:red;">(*)</span></p>
+                                                                <SfDropDownList @bind-Value="@(DisplinaryData.DisplinaryWarningId)" Enabled="false" TItem="ADisplinaryWarning" TValue="int?" DataSource="@DisplinaryWarningData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                                  <DropDownListFieldSettings Value="@nameof(ADisplinaryWarning.DisplinaryWarningId)" Text="@nameof(ADisplinaryWarning.WarningDescription)"></DropDownListFieldSettings>
+                                                                </SfDropDownList>
+                                                                <p><ValidationMessage For="@(() => DisplinaryData.DisplinaryWarningId)" /></p>
+                                                                 </div>
+                                                              </div>
+                                                              </div>
+                                                        }
+                                           }
+                                </Template>
+                                </GridEditSettings>
+                                 <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                                <GridPageSettings PageSize="20"></GridPageSettings>
+                                <GridColumns>
+                                    <GridColumn Field=@nameof(EmployeeDisplinary.DisplinaryId) HeaderText="DisplinaryId" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+                                     <GridForeignColumn Field=@nameof(EmployeeDisplinary.DisplinaryReasonId) HeaderText="PREVIOUS OFFENCES / DISCIPLINARY INCIDENCES" Width="100" ForeignKeyField="@(nameof(ADisplinaryReason.DisplinaryReasonId))" ForeignKeyValue="@(nameof(ADisplinaryReason.DisplinaryReasonDescription))" ForeignDataSource="@DisplinaryReasonData"></GridForeignColumn>
+                                     <GridForeignColumn Field=@nameof(EmployeeDisplinary.DisplinaryWarningId) HeaderText="Warning" Width="50" Visible="false" ForeignKeyField="@(nameof(ADisplinaryWarning.DisplinaryWarningId))" ForeignKeyValue="@(nameof(ADisplinaryWarning.WarningDescription))" ForeignDataSource="@DisplinaryWarningData"></GridForeignColumn>
+                                     <GridForeignColumn Field=@nameof(EmployeeDisplinary.DisplinaryActionId) HeaderText="Action Taken" Width="50" Visible="false" ForeignKeyField="@(nameof(ADisplinaryAction.DisplinaryActionId))" ForeignKeyValue="@(nameof(ADisplinaryAction.DisplinaryActionDescription))" ForeignDataSource="@DisplinaryActionData"></GridForeignColumn>
+                                     <GridColumn Field=@nameof(EmployeeDisplinary.DisplinaryDate) HeaderText="Date of Incident" Visible="false" Width="70"></GridColumn>
+                                    <GridColumn HeaderText="View Records" Width="50" HeaderTextAlign="Syncfusion.Blazor.Grids.TextAlign.Left" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left"></GridColumn>
+                               @*   <GridCommandColumns>
+                                        <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="View" })" Title="View"></GridCommandColumn>
+                                         </GridCommandColumns>*@
+                                </GridColumns>
+                                </SfGrid>
+    </div>
+</div>
+
+@code {
+    #region Toasters
+    public static string? ToastContent { get; set; }
+    SfToast? ToastObj;
+    SfToast? DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+        {
+            new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+            new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+            new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+            new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+        };
+    #endregion Toasters
+
+    #region Declarations
+ 
+    string? ErrorMessage { get; set; } = null;
+    [Parameter]
+    public int EmployeeId { get; set; }
+    [Parameter]
+    public string? AccessToken { get; set; }
+    [Parameter]
+    public List<EmployeeDisplinary>? EmployeeDDisplinaryData { get; set; }
+
+    private ADisplinaryRefered? DisplinaryReferedViewData{ get; set; }
+
+    private EmployeeDisplinary? DisplinaryData { get; set; }
+    private SfGrid<EmployeeDisplinary>? DisplinaryGrid;
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "60%" };
+    Query mainQuery { get; set; } = new();
+    List<ViewEmployeeDisplinary>? EmployeeData { get; set; }
+    List<ADisplinaryAction>? DisplinaryActionData { get; set; }
+    List<ADepartment>? DepartmentData { get; set; }
+    [Parameter]
+    public List<ADisplinaryReason>? DisplinaryReasonData { get; set; }
+    List<ADisplinaryCategory>? DisplinaryCategoryData { get; set; }
+    List<ADisplinaryWarning>? DisplinaryWarningData { get; set; }
+    #endregion Declarations
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            mainQuery = new();
+            mainQuery.AddParams("EmployeeId", EmployeeId).AddParams("AccessToken", AccessToken).AddParams("BaseUrl", _ApiConfig.BaseUrl);
+            var tasks = new List<Task>();
+            tasks.Add(Task.Run(async () =>
+           {
+    
+           }));
+
+            Task t = Task.WhenAll(tasks);
+            await t;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error: {ex.Message}";
+        }
+        await base.OnInitializedAsync();
+    }
+    #region PreviousCase
+    public class PreviousCaseAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        SystemSettings _SystemSettings;
+        ApiConfig _ApiConfig;
+        public IToastService toastService;
+        public PreviousCaseAdapter(HttpClient _http, IToastService ts
+        , SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            _SystemSettings = systemSettings;
+            _ApiConfig = apiConfig;
+            toastService = ts;
+
+        }
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<EmployeeDisplinary>();
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                string? AccessToken = null;
+                string? BaseUrl = null;
+                int? EmployeeId = null;
+                if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
+                {
+                    var val = dataManagerRequest.Params;
+                    if (val.FirstOrDefault(o => o.Key == "EmployeeId").Value != null)
+                    {
+                        EmployeeId = Convert.ToInt32(val.FirstOrDefault(o => o.Key == "EmployeeId").Value.ToString());
+                    }
+                    if (val.FirstOrDefault(o => o.Key == "AccessToken").Value != null)
+                    {
+                        AccessToken = val.FirstOrDefault(o => o.Key == "AccessToken").Value.ToString();
+                    }
+                    if (val.FirstOrDefault(o => o.Key == "BaseUrl").Value != null)
+                    {
+                        BaseUrl = val.FirstOrDefault(o => o.Key == "BaseUrl").Value.ToString();
+                    }
+                }
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                //var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeDisplinary/GetEmployeeDisplinaryList");
+                var response = await Http.GetAsync($"{BaseUrl}EmployeeDisplinary/GetActionTakenDisplinaryCases/{EmployeeId}");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    data = JsonSerializer.Deserialize<List<EmployeeDisplinary>>(content, _options);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<ViewEmployeeDisplinary>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+    }
+    public async Task OnPreviousActionComplete(ActionEventArgs<EmployeeDisplinary> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            DisplinaryGrid.PreventRender(false);
+        }
+    }
+    public string GetDisplinaryHeader(EmployeeDisplinary Value)
+    {
+        if (Value.DisplinaryId == 0)
+        {
+            return "Add a New Displinary Case";
+        }
+        else
+        {
+            return "Displinary Case Details"; 
+        }
+    }
+    #endregion PreviousCases
+
+    
+}
+
+
+       

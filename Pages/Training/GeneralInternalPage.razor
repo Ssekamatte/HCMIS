@@ -1,0 +1,900 @@
+﻿@page "/GeneralInternalPage"
+@using HCMIS.Model
+@using HCMIS.ViewModel
+@using System.Text.Json
+@using System.Text.RegularExpressions
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject AppState AppState
+@inject NavigationManager Navigation
+@inject SystemSettings _SystemSettings
+@using System.Collections;
+@using HCMIS.SHARED.DTOs.Training;
+@inject IToastService toastService;
+
+<style>
+    .e-edit-dialog {
+        max-height: 98%;
+        max-width: 98%;
+        min-width: 98%;
+        min-height: 98%;
+    }
+
+    h6 {
+        color: ghostwhite;
+        background-color: blue;
+        padding: 10px;
+        width: 100%;
+        font-size: 10px;
+    }
+
+    h4 {
+        color: black;
+        background-color: deepskyblue;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+
+    h3 {
+        color: black;
+        background-color: darkorange;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+    /*Change Grid Header Color */
+    .e-headercell.e-attr1 {
+        background: #964B00;
+        color: white;
+    }
+</style>
+
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+
+<center>
+    <h5>
+        <strong>TRAINING PLAN FOR THE FINANCIAL YEAR</strong>
+    </h5>
+</center>
+
+<SfGrid @ref="@DataGrid" TValue="ViewGeneralInternalDto" 
+    ID="Grid" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" 
+    AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" 
+    AllowSorting="true" AllowTextWrap="true" Toolbar="@ToolbarMenu">
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="@EditMode.Dialog">
+        <HeaderTemplate>
+            @{
+                var text = GetGeneralHeader((context as ViewGeneralInternalDto));
+                    <div class="headerbandimg" />
+                    <span>@text</span>
+            }
+        </HeaderTemplate>
+        <Template>
+            @{
+                <center>
+                <h5>
+                <strong>TRAINING PLAN FOR THE FINANCIAL YEAR</strong>
+                </h5>
+                </center>
+                GeneralData = (context as ViewGeneralInternalDto);
+                <div>
+                    <div class="row">
+                        <div class="col-md-4" hidden="hidden">
+                             <SfNumericTextBox ID="Id" @bind-Value="@(GeneralData.Id)" Placeholder="Id" Enabled="false" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                        </div>
+                        <div class="col-md-4">
+                        <p><h3>Training Description<span style="color:red;">*</span></h3></p>
+                              <SfTextBox Multiline="false" ID="TrainingDescription" @bind-Value="@(GeneralData.TrainingDescription)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                        </div>
+                        <div class="col-md-4">
+                        <p><h3>Scheduled Start Date<span style="color:red;">*</span></h3></p>
+                               <SfDatePicker @bind-Value="@(GeneralData.StartDate)" Enabled="true" Placeholder="Start Date" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                        </div>
+                        <div class="col-md-4">
+                        <p><h3>Scheduled End Date<span style="color:red;">*</span></h3></p>
+                               <SfDatePicker @bind-Value="@(GeneralData.EndDate)" Enabled="true" Placeholder="End Date" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                        </div>
+                        <div class="col-md-4">
+                        <p><h3>Approach / Method<span style="color:red;">*</span></h3></p>
+                                <SfMultiSelect @ref="@TrainingMethodDatasourceObj" TValue="int[]" TItem="TrainingAMethodDto" AllowFiltering="true" Mode="@VisualMode.CheckBox" DataSource="@TrainingMethodData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Approach/Method" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
+                                    <MultiSelectFieldSettings Value="@nameof(TrainingAMethodDto.Id)" Text="@nameof(TrainingAMethodDto.TrainingMethod)"></MultiSelectFieldSettings>
+                                    <MultiSelectEvents TValue="int[]" TItem="TrainingAMethodDto" ValueChange="OnMethodDatasourceChange" DataBound="OnMethodDatasourceBound"></MultiSelectEvents>
+                                </SfMultiSelect>
+                        </div>
+                        <div class="col-md-4">
+                        <p><h3>Target Team</h3></p>
+                                <SfMultiSelect @ref="@TrainingTargetDatasourceObj" TValue="int[]" TItem="TrainingATargetTeamDto" AllowFiltering="true" Mode="@VisualMode.CheckBox" DataSource="@TrainingTargetData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Approach/Method" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
+                                    <MultiSelectFieldSettings Value="@nameof(TrainingATargetTeamDto.Id)" Text="@nameof(TrainingATargetTeamDto.TargetTeam)"></MultiSelectFieldSettings>
+                                    <MultiSelectEvents TValue="int[]" TItem="TrainingATargetTeamDto" ValueChange="OnTargetDatasourceChange" DataBound="OnTargetDatasourceBound"></MultiSelectEvents>
+                                </SfMultiSelect>
+                        </div>
+                        <div class="col-md-4">
+                               <p><h3>ExpectedOutcomes</h3></p>
+                               <SfTextBox Multiline="true" ID="Location" @bind-Value="@(GeneralData.ExpectedOutcomes)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                        </div>
+                        <div class="col-md-12">
+                            <center>
+                                <h5>
+                                    <strong>BUDGETING SECTION</strong>
+                                </h5>
+                            </center>
+
+                                <SfGrid @ref="@DataGrid1"
+                                    DataSource="@GeneralData.TrainingGeneralInternalBudget"
+                                    TValue="ViewGeneralInternalBudgetDto" 
+                                    ID="Grid1" 
+                                    AllowPaging="true" AllowFiltering="false" AllowReordering="true" 
+                                    AllowResizing="true" AllowGrouping="true" AllowExcelExport="false"
+                                    AllowPdfExport="false" AllowSelection="true" AllowSorting="true">
+                                <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" 
+                                    Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
+                                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.FilterBar"></GridFilterSettings>
+                                    <GridPageSettings PageSizes="true"></GridPageSettings>
+                                        <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Both" 
+                                         Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+                                    <GridEvents CellSelected="CellSelectHandler" TValue="ViewGeneralInternalBudgetDto"></GridEvents>
+                                <GridColumns>
+    	                                <GridColumn Field=@nameof(ViewGeneralInternalBudgetDto.Id) HeaderText="Id" AllowEditing="false" IsPrimaryKey="true" Visible="false" Width="150"></GridColumn>
+                                        <GridColumn Field=@nameof(ViewGeneralInternalBudgetDto.GeneralInternalId) HeaderText="GeneralInternalId" Visible="false" Width="150"></GridColumn>
+                                        <GridForeignColumn Field="@nameof(ViewGeneralInternalBudgetDto.FinancialYear)"
+                                                       Visible="true"
+                                                       HeaderText="Budget"
+                                                       Width="100"
+                                                       ForeignKeyField="@nameof(AFinancialYear.Id)"
+                                                       ForeignKeyValue="@nameof(AFinancialYear.FinancialYear)"
+                                                       ForeignDataSource="@FinancialYearData"
+                                                       ValidationRules="@(new ValidationRules {Required=true})"
+                                                       AllowEditing="false"
+                                                       CustomAttributes="@(new Dictionary<string,
+                                                       object>(){ { "class", "e-attr1" }})">
+                                        </GridForeignColumn>
+                                        <GridColumn Field=@nameof(ViewGeneralInternalBudgetDto.Budget) HeaderText="Budget"  Width="100"
+                                            CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})">
+                                         </GridColumn>
+                                         </GridColumns>
+                                </SfGrid>
+                        </div>
+                    </div>
+                </div>
+            }
+        </Template>
+        <FooterTemplate>
+            @if (!string.IsNullOrEmpty(UserRole)&& UserRole.Contains("Human Resource"
+                 , StringComparison.CurrentCultureIgnoreCase))
+            {
+                <button @onclick="@onApproveForm" class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Approve Plan</button>
+                <button @onclick="@onRejectForm" class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Reject Plan</button>
+                <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel Plan</button>                
+            }
+            else
+            {
+                <button @onclick="@onSaveDraftForm" class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
+                <button @onclick="@onSubmitForm" class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Submit Plan</button>
+                <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel Plan</button>                
+            }
+        </FooterTemplate>
+    </GridEditSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple"></GridSelectionSettings>
+        <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+    <GridEvents OnActionBegin="TrainingActionBegin" OnActionComplete="TrainingActionComplete" TValue="ViewGeneralInternalDto"></GridEvents>
+    <SfDataManager AdaptorInstance="@typeof(GeneralInternalAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <GridColumns>
+      <GridColumn Type="ColumnType.CheckBox" Width="20"></GridColumn>
+        <GridColumn Field=@nameof(ViewGeneralInternalDto.Id) HeaderText="Id" AllowEditing="false" IsPrimaryKey="true" Visible="false" Width="150"></GridColumn>
+        <GridColumn Field=@nameof(ViewGeneralInternalDto.TrainingDescription) HeaderText="Training Description" Width="120" CustomAttributes="@(new Dictionary<string,
+        object>(){ { "class", "e-attr1" }})"></GridColumn>
+        <GridColumn Field=@nameof(ViewGeneralInternalDto.StartDate) HeaderText="Training Start Date" Format="dd/MMMM/yyyy" TextAlign="TextAlign.Justify" Width="100" 
+        ClipMode="ClipMode.EllipsisWithTooltip" Type="ColumnType.Date" CustomAttributes="@(new Dictionary<string,
+        object>(){ { "class", "e-attr1" }})"></GridColumn>
+        <GridColumn Field=@nameof(ViewGeneralInternalDto.EndDate) HeaderText="Training End Date" Format="dd/MMMM/yyyy" TextAlign="TextAlign.Justify" Width="100"
+        ClipMode="ClipMode.EllipsisWithTooltip" Type="ColumnType.Date" CustomAttributes="@(new Dictionary<string,
+        object>(){ { "class", "e-attr1" }})"></GridColumn>
+        @*<GridColumn Field=@nameof(ViewGeneralInternalDto.Location) HeaderText="Location"  Width="90" CustomAttributes="@(new Dictionary<string,
+        object>(){ { "class", "e-attr1" }})"></GridColumn>
+        <GridColumn Field=@nameof(ViewGeneralInternalDto.Officers) HeaderText="Officers"  Width="90" CustomAttributes="@(new Dictionary<string,
+        object>(){ { "class", "e-attr1" }})"></GridColumn>
+        <GridColumn Field=@nameof(ViewGeneralInternalDto.Amount) HeaderText="Amount"  Width="90" CustomAttributes="@(new Dictionary<string,
+        object>(){ { "class", "e-attr1" }})"></GridColumn>*@
+    </GridColumns>
+</SfGrid>
+
+@code {
+    #region Toasters
+    public static string ToastContent { get; set; }
+    SfToast? ToastObj;
+    SfToast DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+        {
+            new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+            new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+            new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+            new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+        };
+    #endregion Toasters
+
+    SfGrid<ViewGeneralInternalBudgetDto>? DataGrid1 { get; set; }
+
+    SfGrid<ViewGeneralInternalDto>? DataGrid { get; set; }
+    private static ViewGeneralInternalDto? GeneralData { get; set; }
+    List<TrainingAMethodDto>? TrainingMethodData { get; set; }
+    List<TrainingATargetTeamDto>? TrainingTargetData { get; set; }
+    List<AFinancialYear>? FinancialYearData { get; set; }
+    //private CreateGeneralInternalDto? GeneralInternalEntity { get; set; } = new();
+    private SfMultiSelect<int[], TrainingAMethodDto>? TrainingMethodDatasourceObj;
+    private SfMultiSelect<int[], TrainingATargetTeamDto>? TrainingTargetDatasourceObj;
+    string UserRole { get; set; }
+
+    private List<object> ToolbarMenu = new List<object>()
+    {
+        new ItemModel() { Text = "Capture Training Plan", PrefixIcon = "e-add", Id = "Grid_add"},
+        new ItemModel(){ Text = "Edit Training Plan", PrefixIcon= "e-edit", Id="Grid_edit"},
+        new ItemModel(){ Text = "Delete Training Plan", PrefixIcon= "e-delete", Id="Grid_delete"},
+        new ItemModel(){ Text = "Update Training Plan", PrefixIcon= "e-update", Id="Grid_update"},
+        new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
+    };
+
+    public class  FinancialYearsClass
+    {
+        public int Id { get; set; }
+        public string? TrainingDescription { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public string? TrainingMethod { get; set; }
+        public string? TargetTeam { get; set; }
+        public string? ExpectedOutcomes { get; set; }
+    }
+
+    private List<FinancialYearsClass> FinancialYearsList = new List<FinancialYearsClass>();
+
+    private async void GenerateFinancialYearsList()
+    {
+        try
+        {
+            if (FinancialYearData == null)
+            {
+                return;
+            }
+
+            //if (GeneralInternalEntity != null && GeneralInternalEntity.TrainingGeneralInternalBudget == null)
+            if (GeneralData != null && GeneralData.TrainingGeneralInternalBudget == null)
+            {
+                List<ViewGeneralInternalBudgetDto> m = new List<ViewGeneralInternalBudgetDto>();
+
+                foreach (var n in FinancialYearData)
+                {
+                    Random random = new Random();
+                    m.Add(new ViewGeneralInternalBudgetDto
+                        {
+                            Id = random.Next(1000, 10000),
+                            FinancialYear = n.Id
+                        });
+                }
+                GeneralData.TrainingGeneralInternalBudget = m;
+            }
+
+            else
+            {
+                foreach (var n in FinancialYearData)
+                {
+                    var x = GeneralData.TrainingGeneralInternalBudget.FirstOrDefault(o => o.FinancialYear == n.Id);
+                    if (x == null)
+                    {
+                        Random random = new Random();
+                        GeneralData.TrainingGeneralInternalBudget.Add(new ViewGeneralInternalBudgetDto
+                            {
+                                Id = random.Next(1000, 10000),
+                                FinancialYear = n.Id
+                            });
+                    }
+                }
+            }
+
+        }
+        catch (Exception ex)
+        {
+
+        }
+
+        finally
+        {
+
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        GenerateFinancialYearsList();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await _SystemSettings.GetLoginCredentials();
+
+        if(FinancialYearsList!=null)
+        {
+            FinancialYearsList.Clear();
+        }     
+
+        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+        var responsemethod = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetTrainingMethod");
+        var responsetarget = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetTargetTeam");
+        var responsefinancialyear = await Http.GetAsync($"{_ApiConfig.BaseUrl}FinancialYear/list");
+        var responseuserrole = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUserRole");
+        var contentmethod = await responsemethod.Content.ReadAsStringAsync();
+        var contenttarget = await responsetarget.Content.ReadAsStringAsync();
+        var contentfinancialyear = await responsefinancialyear.Content.ReadAsStringAsync();
+        var contentuserrole = await responseuserrole.Content.ReadAsStringAsync();
+
+
+        if (responsemethod.IsSuccessStatusCode && responsetarget.IsSuccessStatusCode 
+            && responsefinancialyear.IsSuccessStatusCode && responseuserrole.IsSuccessStatusCode)
+        {
+            TrainingMethodData = await Http.GetFromJsonAsync<List<TrainingAMethodDto>>
+            ($"{_ApiConfig.BaseUrl}Utilities/GetTrainingMethod");
+
+            TrainingTargetData = await Http.GetFromJsonAsync<List<TrainingATargetTeamDto>>
+            ($"{_ApiConfig.BaseUrl}Utilities/GetTargetTeam");
+
+            FinancialYearData = await Http.GetFromJsonAsync<List<AFinancialYear>>
+            ($"{_ApiConfig.BaseUrl}FinancialYear/list");
+
+            UserRole = contentuserrole;
+        }
+    }
+
+    public async Task onSubmitForm()
+    {
+        try
+        {
+            if (DataGrid1 != null)
+            {
+                await DataGrid1.EndEditAsync();
+            }
+
+            if (DataGrid != null)
+            {
+                await DataGrid.EndEditAsync();
+            }  
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    public async Task onSaveDraftForm()
+    {
+        try
+        {
+            if (DataGrid1 != null)
+            {
+                await DataGrid1.EndEditAsync();
+            }
+
+            if (DataGrid != null)
+            {
+                await DataGrid.EndEditAsync();
+            }
+
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(GeneralData);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}GeneralInternal/DraftGeneralInternalTrainings", httpContent);
+
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+
+    public async Task onApproveForm()
+    {
+        try
+        {
+            if (DataGrid1 != null)
+            {
+                await DataGrid1.EndEditAsync();
+            }
+
+            if (DataGrid != null)
+            {
+                await DataGrid.EndEditAsync();
+            }  
+
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(GeneralData);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}GeneralInternal/ApproveGeneralInternalTrainings", httpContent);
+
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    public async Task onRejectForm()
+    {
+        try
+        {
+            if (DataGrid1 != null)
+            {
+                await DataGrid1.EndEditAsync();
+            }
+
+            if (DataGrid != null)
+            {
+                await DataGrid.EndEditAsync();
+            }  
+
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(GeneralData);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}GeneralInternal/RejectGeneralInternalTrainings", httpContent);
+
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    public async void DialogCancelBtnclicked()
+    {
+        if (DataGrid != null)
+        {
+            await DataGrid.CloseEdit();
+        }
+        if (DataGrid1 != null)
+        {
+            await DataGrid1.CloseEdit();
+        }
+    }
+
+    #region GeneralInternalAdapter Adapter
+    public class GeneralInternalAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        SystemSettings _SystemSettings;
+        ApiConfig _ApiConfig;
+        public IToastService toastService;
+        private readonly NavigationManager Navigation;
+
+        public GeneralInternalAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+            , SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            Navigation = _Navigation;
+            _ApiConfig = apiConfig;
+            _SystemSettings = systemSettings;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            await _SystemSettings.GetLoginCredentials();
+
+            var data = new List<ViewGeneralInternalDto>();
+
+            string? AccessToken = _SystemSettings.AccessToken;
+            string? BaseUrl = _ApiConfig.BaseUrl;
+            int? TrainingPlanStatusId = null;
+
+            try
+            {
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AccessToken);
+                //var response = await Http.GetAsync($"{BaseUrl}GeneralInternal/GetGeneralInternalList");
+                //var content = await response.Content.ReadAsStringAsync();
+                //if (response.IsSuccessStatusCode)
+                //{
+                //    data = JsonSerializer.Deserialize<List<ViewGeneralInternalDto>>(content, _options);
+                //}
+
+                if (_SystemSettings.UserRole == "Human Resource") 
+                {
+                    TrainingPlanStatusId = 1;
+                    var response = await Http.GetAsync($"{BaseUrl}GeneralInternal/GetGeneralInternalList/{TrainingPlanStatusId}");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        data = JsonSerializer.Deserialize<List<ViewGeneralInternalDto>>(content, _options);
+                    }
+                }
+
+                else 
+                {
+                    TrainingPlanStatusId = 2;
+                    var response = await Http.GetAsync($"{BaseUrl}GeneralInternal/GetGeneralInternalList/{TrainingPlanStatusId}");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        data = JsonSerializer.Deserialize<List<ViewGeneralInternalDto>>(content, _options);
+                    }
+                }
+                
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<ViewGeneralInternalDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as ViewGeneralInternalDto);
+                if (val != null)
+                {
+                    if (val.Id == 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}GeneralInternal/CreateGeneralInternalTrainings", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}GeneralInternal/UpdateGeneralInternalTrainings", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                var val = (value as ViewGeneralInternalDto);
+                if (val != null)
+                {
+                    if (val.Id == 0)
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}GeneralInternal/CreateGeneralInternalTrainings", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}GeneralInternal/UpdateGeneralInternalTrainings", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+    }
+
+    public void TrainingActionComplete(ActionEventArgs<ViewGeneralInternalDto> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            DataGrid.PreventRender(false);
+        }
+    }
+
+    public async void TrainingActionBegin(ActionEventArgs<ViewGeneralInternalDto> Args)
+    {
+        var data = Args.Data;
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+        {
+            if (Args.Data.TrainingDescription == null)
+            {
+                toastService.ShowWarning("Please enter the training description.");
+                Args.Cancel = true;
+            }
+            else if (Args.Data.StartDate == null)
+            {
+                toastService.ShowWarning("Please enter the training start date.");
+                Args.Cancel = true;
+            }
+            else if (Args.Data.EndDate == null)
+            {
+                toastService.ShowWarning("Please enter the training end date.");
+                Args.Cancel = true;
+            }
+            else if (Args.Data.StartDate > Args.Data.EndDate)
+            {
+                 toastService.ShowWarning("The training end date cannot be before the training start date.");
+                Args.Cancel = true;
+            }
+            else if (Args.Data.TrainingMethod == null)
+            {
+                 toastService.ShowWarning("Please choose the training approach/method.");
+                Args.Cancel = true;
+            }
+        }
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+                if(Args.RowData.TrainingGeneralInternalBudget== null){
+                    Args.RowData.TrainingGeneralInternalBudget = new List<ViewGeneralInternalBudgetDto>();
+                }
+                foreach (var n in FinancialYearData)
+                {
+                    var x = Args.RowData.TrainingGeneralInternalBudget.FirstOrDefault(o => o.FinancialYear == n.Id);
+                    if (x == null)
+                    {
+                        Random random = new Random();
+                        Args.RowData.TrainingGeneralInternalBudget.Add(new ViewGeneralInternalBudgetDto
+                            {
+                            Id = random.Next(1000, 10000),
+                            FinancialYear = n.Id
+                            });
+                    }
+                }
+            }
+            if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+            {
+                Args.RowData.TrainingGeneralInternalBudget = new List<ViewGeneralInternalBudgetDto>();
+                
+                foreach (var n in FinancialYearData)
+                {
+                   Random random = new Random();
+                   Args.RowData.TrainingGeneralInternalBudget.Add(new ViewGeneralInternalBudgetDto
+                            {
+                                Id = random.Next(1000, 10000),
+                                FinancialYear = n.Id
+                            });
+                }
+            }
+    
+    }
+
+    public void OnMethodDatasourceBound(Syncfusion.Blazor.DropDowns.DataBoundEventArgs args)
+    {
+        if (!string.IsNullOrEmpty(GeneralData.TrainingMethod))
+        {
+            var a = GeneralData.TrainingMethod.Split(',');
+            List<int> c = new List<int>();
+            foreach (var n in a)
+            {
+                int b = Convert.ToInt32(n.Trim());
+                c.Add(b);
+            }
+            TrainingMethodDatasourceObj.Value = c.ToArray();
+        }
+    }
+    public void OnMethodDatasourceChange(Syncfusion.Blazor.DropDowns.MultiSelectChangeEventArgs<int[]> args)
+    {
+        if (args.Value != null)
+        {
+            GeneralData.TrainingMethod = string.Join(",", args.Value);
+        }
+        else
+        {
+            GeneralData.TrainingMethod = null;
+        }
+    }
+    
+    public void OnTargetDatasourceBound(Syncfusion.Blazor.DropDowns.DataBoundEventArgs args)
+    {
+        if (!string.IsNullOrEmpty(GeneralData.TargetTeam))
+        {
+            var a = GeneralData.TargetTeam.Split(',');
+            List<int> c = new List<int>();
+            foreach (var n in a)
+            {
+                int b = Convert.ToInt32(n.Trim());
+                c.Add(b);
+            }
+            TrainingTargetDatasourceObj.Value = c.ToArray();
+        }
+    }
+    public void OnTargetDatasourceChange(Syncfusion.Blazor.DropDowns.MultiSelectChangeEventArgs<int[]> args)
+    {
+        if (args.Value != null)
+        {
+            GeneralData.TargetTeam = string.Join(",", args.Value);
+        }
+        else
+        {
+            GeneralData.TargetTeam = null;
+        }
+    }
+
+    //Enable cell edit on single click
+    public async Task CellSelectHandler(CellSelectEventArgs<ViewGeneralInternalBudgetDto> args)
+    {
+        //get selected cell index
+        var CellIndexes = await DataGrid1.GetSelectedRowCellIndexesAsync();
+
+        //get the row and cell index
+        var CurrentEditRowIndex = CellIndexes[0].Item1;
+        var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+        //get the available fields
+        var fields = await DataGrid1.GetColumnFieldNamesAsync();
+        // edit the selected cell using the cell index and column name
+        await DataGrid1.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+    }
+
+
+    public string GetGeneralHeader(ViewGeneralInternalDto Value)
+    {
+        if (Value.Id == 0)
+        {
+            return "Add a new Plan";
+        }
+        else
+        {
+            return "Edit Planning Information";
+        }
+    }
+
+    #endregion GeneralInternalAdapter
+}

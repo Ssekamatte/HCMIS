@@ -1,0 +1,613 @@
+﻿@page "/LeaveRosterGrid"
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using HCMIS.ViewModel
+@using System.Collections
+@using Syncfusion.Blazor.Schedule;
+@using Microsoft.AspNetCore.Authorization
+@inject HttpClient Http
+@inject SystemSettings _SystemSettings
+@inject ApiConfig _ApiConfig;
+@inject AppState AppState
+@inject NavigationManager Navigation
+@inject DocumentUploadModel _DocumentUploadModel;
+<style>
+    .e-dialog.e-control.e-popup {
+        padding: 3px;
+        min-width: 94%;
+    }
+    .e-recurrenceeditor .e-editor {
+        display: -ms-flexbox;
+        display: flex;
+        -ms-flex-flow: row wrap;
+        flex-flow: row wrap;
+        margin-left: 1px;
+        margin-right: 1px;
+    }
+
+    h4 {
+        background-color: #007bff;
+        color: whitesmoke;
+        padding: 10px;
+    }
+
+    .e-schedule-dialog .e-footer-content {
+        margin-top: 4px;
+        display: none;
+    }
+
+        .pp {
+        color: ghostwhite;
+        background-color:darkblue;
+        padding: 10px;
+    }
+
+    .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn-text {
+        color: black;
+    }
+</style>
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+    @{
+        var Initial = (new string[] { "LeaveTypeId"});
+       }
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="width: 100%; color: darkblue; font-family: Cambria; padding: 5px; font: bolder;"><img src="/Image/logo.png" height="35" width="50" /> <stong>|Scheduled Leave</stong></li>
+</ol>
+<div class="form-row">
+    <div class="form-group col-md-12">
+        <SfGrid @ref="RosterHeaderGrid" TValue="ALeaveRoster" Query="@MainQuery"
+            Toolbar="@(new string[] { "Edit", "Delete", "Update", "Cancel", "ColumnChooser" })" AllowGrouping="true" ShowColumnChooser="true" AllowTextWrap="true"
+                AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true">
+                 <GridGroupSettings ShowDropArea="false" Columns="@Initial" >
+                     <CaptionTemplate>
+                         @{
+                     var leaveType = (context as CaptionTemplateContext);
+                      //<div>@leaveType.Field - @leaveType.Key</div>
+                         <div><p class="pp"><strong>@leaveType.Field - @leaveType.Key</strong></p></div>
+                        }
+                    </CaptionTemplate>
+                 </GridGroupSettings>
+            <SfDataManager AdaptorInstance="@typeof(LeaveRosterDataAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+            <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+            <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+            <GridEvents  OnActionComplete="LeaveRosterActionComplete" TValue="ALeaveRoster"></GridEvents>
+                 <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog">
+                <HeaderTemplate>
+                    @{
+                        var text = GetRosterSchedular((context as ALeaveRoster));
+                        <div class="headerbandimg" />
+
+                        <span>@text</span>
+                    }
+                </HeaderTemplate>
+                     <Template>
+                         @{
+                        LeaveRosterData = (context as ALeaveRoster);
+                        //<input type="hidden" name="Id" class="e-field" value="@(LeaveRosterData.Meetingheld)" />
+                        <div class="form-row" style="margin-top: 15px; margin-bottom: 15px;">
+                         <div class="col-md-3">
+                                <p style="margin-bottom:30px">Leave Type:<span style="color:red;">(*)</span></p>
+                               <SfDropDownList @bind-Value="@(LeaveRosterData.LeaveTypeId)" Enabled="true" TItem="ALeaveType" TValue="int?" DataSource="@LeaveTypeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                               <DropDownListFieldSettings Value="@nameof(ALeaveType.LeaveTypeId)" Text="@nameof(ALeaveType.LeaveTypeDescription)"></DropDownListFieldSettings>
+                              </SfDropDownList>
+                               <p> <ValidationMessage For="@(() => LeaveRosterData.LeaveTypeId)" /></p>
+                        </div>
+                        <div class="col-md-3">
+                                <p style="margin-bottom:30px">Department / Section:<span style="color:red;">(*)</span></p>
+                                 <SfDropDownList @bind-Value="@(LeaveRosterData.DepartmentId)" Enabled="true" TItem="ADepartment" TValue="int?" DataSource="@DepartmentData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                               <DropDownListFieldSettings Value="@nameof(ADepartment.DepartmentId)" Text="@nameof(ADepartment.DepartmentDescription)"></DropDownListFieldSettings>
+                             <DropDownListEvents TValue="int?" TItem="ADepartment" ValueChange="OnDepartmentChange"></DropDownListEvents>
+                               </SfDropDownList>
+                               <p> <ValidationMessage For="@(() => LeaveRosterData.DepartmentId)" /></p>
+                        </div>
+                        <div class="col-md-6">
+                                <p style="margin-bottom:30px">Employee Name:<span style="color:red;">(*)</span></p>
+                            <SfDropDownList @bind-Value="@(LeaveRosterData.Employeeid)" Query="@DepartmentChange" Enabled="true" TItem="ViewEmployeeLeaveRoster" TValue="int?" DataSource="@ViewLeaveRosterData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                <DropDownListFieldSettings Value="@nameof(ViewEmployeeLeaveRoster.Employeeid)" Text="@nameof(ViewEmployeeLeaveRoster.EmployeeDetails)"></DropDownListFieldSettings>
+                                <DropDownListEvents TValue="int?" TItem="ViewEmployeeLeaveRoster" ValueChange="OnEmployeeChange"></DropDownListEvents>
+                               </SfDropDownList>
+                               <p> <ValidationMessage For="@(() => LeaveRosterData.Employeeid)" /></p>
+                        </div>
+                            @if (employeeno != null)
+                            {
+                                <div class="col-md-2">
+                                    <strong><p>Employee Number:</p> </strong>
+                                    @*    <br>*@
+                                    <p>@employeeno.EmployeeNumber</p>
+                                </div>
+                                <div class="col-md-2">
+                                    <strong> <p>Position:</p> </strong>
+                                    @*     <br>*@
+                                    <p>@employeeno.JobTitleDescription</p>
+                                </div>
+                                <div class="col-md-2">
+                                    <strong>  <p>Date of Engagement:</p></strong>
+                                    @*   <br>*@
+                                    @if (employeeno.DateJoined.HasValue)
+                                    {
+                                        <p> @employeeno.DateJoined</p>
+                                    }
+                                </div>
+                                <div class="col-md-2">
+                                    <strong> <p>Salary Scale:</p></strong>
+                                    @*  <br>*@
+                                    <p></p>
+                                </div>
+                                <div class="col-md-2">
+                                    <strong> <p>Leave Entitlement:</p> </strong>
+                                    @* <br>*@
+                                    <p> </p>
+                                </div>
+                                <div class="col-md-2">
+                                    <strong>   <p>Deductions:</p></strong>
+                                    @*  <br>*@
+                                    @*   <p>  <strong> <p> @employeeno.g</p> </strong></p>*@
+                                </div>
+
+                            }
+                            @if ((LeaveRosterData.LeaveTypeId == 2) || (LeaveRosterData.LeaveTypeId == 3) || (LeaveRosterData.LeaveTypeId == 4) || (LeaveRosterData.LeaveTypeId == 5))
+                            {
+                                <div class="col-md-3">
+                                    <p> No. of leave days applied for:<span style="color:red;">(*)</span></p>
+                                    <SfNumericTextBox Type="InputType.Text" @bind-Value="@LeaveRosterData.NumberofLeaveDaysAppliedFor" CssClass="form-control" Placeholder="Days applied for" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                    <p> <ValidationMessage For="@(() => LeaveRosterData.NumberofLeaveDaysAppliedFor)" /></p>
+                                </div>
+                                <div class="col-md-3">
+                                    <p style="margin-bottom:30px"> Last working day:<span style="color:red;">(*)</span></p>
+                                    <SfDatePicker @bind-Value="@(LeaveRosterData.LastWorkingDay)" Placeholder="Select Date" Format="dd/MM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                                    <p> <ValidationMessage For="@(() => LeaveRosterData.LastWorkingDay)" /></p>
+                                </div>
+                                <div class="col-md-3">
+                                    <p style="margin-bottom:30px"> Date of Resumption of work:<span style="color:red;">(*)</span></p>
+                                    <SfDatePicker @bind-Value="@(LeaveRosterData.DateofResumptionofWork)" Placeholder="Select Date" Format="dd/MM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                                    <p> <ValidationMessage For="@(() => LeaveRosterData.DateofResumptionofWork)" /></p>
+                                </div>
+                                <div class="col-md-3">
+                                    <p style="margin-bottom:30px"> Check box for Yes</p>
+                                    <SfCheckBox Label="Salary Requested in Advance" @bind-Checked="@LeaveRosterData.SalaryRequestedInAdvance">  </SfCheckBox>
+                                </div>
+                            }
+                            <div class="col-md-3">
+                                <p>Scheduled Start Date:<span style="color:red;">(*)</span></p>
+                                <SfDateTimePicker @bind-Value="@(LeaveRosterData.LeaveStartDate)" Enabled="true" ID="LeaveStartDate" FloatLabelType="FloatLabelType.Always"></SfDateTimePicker>
+                            </div>
+                            <div class="col-md-3">
+                                <p>Scheduled End Date:<span style="color:red;">(*)</span></p>
+                                <SfDateTimePicker @bind-Value="@(LeaveRosterData.LeaveEndDate)" Enabled="true" ID="LeaveEndDate" FloatLabelType="FloatLabelType.Always"></SfDateTimePicker>
+                            </div>
+                            <div class="col-md-3">
+                                <p>Actual Start Date:</p>
+                                <SfDateTimePicker @bind-Value="@(LeaveRosterData.ActualLeaveStartDate)" Enabled="true" ID="ActualLeaveStartDate" FloatLabelType="FloatLabelType.Always"></SfDateTimePicker>
+                            </div>
+                            <div class="col-md-3">
+                                <p>Actual End Date:</p>
+                                <SfDateTimePicker @bind-Value="@(LeaveRosterData.ActualLeaveEndDate)" Enabled="true" ID="ActualLeaveEndDate" FloatLabelType="FloatLabelType.Always"></SfDateTimePicker>
+                            </div>
+                            @if (LeaveRosterData.LeaveTypeId == 3)
+                            {
+                                <div class=" col-md-12">
+                                    <p class="alert-primary" style="padding:10px;">Please upload your Medical Certificate</p>
+                                    <SfUploader AutoUpload="true" ShowFileList="false">
+                                        <UploaderEvents ValueChange="OnLeaveRosterChange"></UploaderEvents>
+                                    </SfUploader>
+                                    <SfSpinner @ref="@UploadSickLeaveDocumentSpinner" Visible="false" Label="UpLoading document please wait.."></SfSpinner>
+                                </div>
+                            }
+                            <div class="col-md-12">
+                                @if (!string.IsNullOrEmpty(SickLeaveDocumentString))
+                                {
+                                    if (!string.IsNullOrEmpty(LeaveRosterData.SickLeaveDocumentExt) && LeaveRosterData.SickLeaveDocumentExt.ToLower().Contains("pdf"))
+                                    {
+                                        <embed src="@SickLeaveDocumentString" width="100%" height="600px" style="border: none;" frameborder="0" allowfullscreen="true" />
+                                    }
+                                    else
+                                    {
+                                        <img src="@SickLeaveDocumentString" class="img-thumbnail" height="500" width="100%" style="margin-bottom:10px; margin:10%; margin-right:auto;" />
+                                    }
+                                }
+                            </div>
+                        </div>
+                         }
+                     </Template>
+                <FooterTemplate>
+                    @if (IsGridButtonVisible)
+                    {
+                        <SfButton CssClass="e-btn e-success" OnClick="SaveRosterBtnClick">Save Roster</SfButton>
+                    }
+                    <SfButton CssClass="e-btn e-danger" OnClick="CancelRosterBtnClick"> Close</SfButton>
+                      <SfButton CssClass="e-btn e-danger" OnClick="CancelRosterBtnClick">Approve</SfButton>
+                </FooterTemplate>
+                 </GridEditSettings>
+            <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+            <GridPageSettings PageSize="20"></GridPageSettings>
+              <GridColumns>
+                <GridColumn Field=@nameof(ALeaveRoster.LeaveRosterId) HeaderText="LeaveRosterId" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="50"></GridColumn>
+                <GridForeignColumn Field=@nameof(ALeaveRoster.LeaveTypeId) HeaderText="Leave Type" Width="80" ForeignKeyField="@(nameof(ALeaveType.LeaveTypeId))" ForeignKeyValue="@(nameof(ALeaveType.LeaveTypeDescription))" ForeignDataSource="@LeaveTypeData"></GridForeignColumn>
+                <GridForeignColumn Field=@nameof(ALeaveRoster.Employeeid) HeaderText="Employee Name" Width="80" ForeignKeyField="@(nameof(ViewEmployeeLeaveRoster.Employeeid))" ForeignKeyValue="@(nameof(ViewEmployeeLeaveRoster.EmployeeDetails))" ForeignDataSource="@ViewLeaveRosterData"></GridForeignColumn>
+                <GridColumn Field=@nameof(ALeaveRoster.LeaveStartDate) Visible=true HeaderText="Start Date" AllowEditing="false" Width="70"></GridColumn>
+                 <GridColumn Field=@nameof(ALeaveRoster.LeaveEndDate) Visible=true HeaderText="End Date" AllowEditing="false" Width="70"></GridColumn>
+                 <GridForeignColumn Field=@nameof(ALeaveRoster.DepartmentId) HeaderText="Department" Width="80" ForeignKeyField="@(nameof(ADepartment.DepartmentId))" ForeignKeyValue="@(nameof(ADepartment.DepartmentDescription))" ForeignDataSource="@DepartmentData"></GridForeignColumn>
+@*               <GridColumn Field=@nameof(ALeaveRoster.Employeeid) HeaderText="Employee Name" EditType="EditType.DropDownEdit" ForeignKeyField="@nameof(ViewEmployeeLeaveRoster.Employeeid)" ForeignKeyValue="@nameof(ViewEmployeeLeaveRoster.EmployeeDetails)" DataSource="@ViewLeaveRosterData" Visible="true" Width="100"></GridColumn>*@
+             
+              </GridColumns>
+
+         </SfGrid>
+    </div>
+</div>
+@code {
+    #region Toasters
+    public static string? ToastContent { get; set; }
+    SfToast? ToastObj;
+    SfToast? DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+{
+        new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+        new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+        new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+        new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+    };
+    #endregion Toasters
+
+    #region Declarations
+    private SfGrid<ALeaveRoster>? RosterHeaderGrid;
+    public Query MainQuery = new Query();
+    Query DepartmentChange { get; set; } = new();
+    bool IsEnabled { get; set; } = false;
+    bool IsSaveDisabled { get; set; } = false;
+    string[]? ToolbarMenu { get; set; }
+    string? RegisterError { get; set; }
+    public string? AccessToken { get; set; }
+    Query mainQuery { get; set; } = new();
+    private List<ALeaveType>? ResourceData { get; set; }
+    private List<ADepartment>? DepartmentData { get; set; }
+    private string[] groupData = new string[] { "Leave Types" };
+    List<ALeaveType>? LeaveTypeData { get; set; }
+    SfSchedule<ALeaveRoster>? LeaveRosterRef;
+    private DateTime CurrentDate = DateTime.Now;
+    private ALeaveRoster? LeaveRosterData { get; set; }
+    List<ViewEmployeeLeaveRoster>? ViewLeaveRosterData { get; set; }
+    private static ViewEmployeeLeaveRoster? employeeno { get; set; }
+    EmployeeLeaveModel inputmodel { get; set; } = new EmployeeLeaveModel();
+    private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    string SickLeaveDocumentString { get; set; } = null;
+    string? UserRole { get; set; }
+    SfGrid<ASickLeaveDocuments>? SickLeaveDocumentGrid;
+    SfSpinner? UploadSickLeaveDocumentSpinner;
+    List<ADocumentType>? DocumenttypeData { get; set; } = new();
+    bool IsGridButtonVisible { get; set; } = false;
+    Employee EmployeeReviewData { get; set; } = new();
+    #endregion Declarations
+    
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await _SystemSettings.GetLoginCredentials();
+            mainQuery = new();
+            mainQuery.AddParams("AccessToken", AccessToken).AddParams("BaseUrl", _ApiConfig.BaseUrl);
+
+            inputmodel = new();
+            //   inputmodel.BscMdl = new();
+            var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/GetLeavePrimaryDetails");
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode)
+            {
+                var _LeaveApplicationModel = JsonSerializer.Deserialize<EmployeeLeaveModel>(content, _options);
+
+                if (_LeaveApplicationModel != null)
+                {
+                    ViewLeaveRosterData = _LeaveApplicationModel.ViewEmployeeLeaveRosters;
+                    DepartmentData = _LeaveApplicationModel.Departments;
+                    LeaveTypeData = _LeaveApplicationModel.EmployeeLeaveType;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            RegisterError = $"Error: {ex.Message}";
+        }
+        await base.OnInitializedAsync();
+    }
+
+    #region LeaveRosterGrid
+    public class LeaveRosterDataAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        public IToastService toastService;
+        SystemSettings _SystemSettings;
+        ApiConfig _ApiConfig;
+        public LeaveRosterDataAdapter(HttpClient _http, IToastService ts, SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            _SystemSettings = systemSettings;
+            _ApiConfig = apiConfig;
+            toastService = ts;
+
+        }
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            //DateTime? StartDate = null;
+            //DateTime? EndDate = null;
+            //int? LeaveApplicationNo = null;
+            //if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
+            //{
+            //    var val = dataManagerRequest.Params;
+            //    if (val.FirstOrDefault(o => o.Key == "StartDate").Value != null)
+            //    {
+            //        StartDate = Convert.ToDateTime(val.FirstOrDefault(o => o.Key == "StartDate").Value.ToString());
+            //    }
+            //    if (val.FirstOrDefault(o => o.Key == "EndDate").Value != null)
+            //    {
+            //        EndDate = Convert.ToDateTime(val.FirstOrDefault(o => o.Key == "EndDate").Value.ToString());
+            //    }
+            //    if (val.FirstOrDefault(o => o.Key == "LeaveApplicationNo").Value != null)
+            //    {
+            //        LeaveApplicationNo = Convert.ToInt32(val.FirstOrDefault(o => o.Key == "LeaveApplicationNo").Value.ToString());
+            //    }
+        
+            //}
+            var data = new List<ALeaveRoster>();
+            try
+            {
+                await _SystemSettings.GetLoginCredentials();
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                HttpResponseMessage response;
+                if (!string.IsNullOrEmpty(_SystemSettings.UserRole) && _SystemSettings.UserRole.Contains("Super Administrator"))
+                {
+                    response = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/GetLeaveRoster");
+                }
+                else
+                {
+                    response = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/GetLeaveRosterDetails/{_SystemSettings.StaffId}");
+                }
+
+                var content = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    toastService.ShowError(response.ReasonPhrase);
+                }
+                data = JsonSerializer.Deserialize<List<ALeaveRoster>>(content, _options);
+
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<ALeaveRoster>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+    }
+    public void LeaveRosterActionComplete(Syncfusion.Blazor.Grids.ActionEventArgs<ALeaveRoster> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            RosterHeaderGrid.PreventRender(false);
+        }
+    }
+    public string GetRosterSchedular(ALeaveRoster Value)
+    {
+        if (Value.LeaveRosterId == 0)
+        {
+            return "Add a new ";
+        }
+        else
+        {
+         return "Edit Details for " + Value.LeaveApplicationNumber;
+        }
+    }
+    #endregion  LeaveRosterGrid
+
+    #region Methods
+    private void SaveRosterBtnClick()
+    {
+        RosterHeaderGrid.EndEdit();
+    }
+    private void CancelRosterBtnClick()
+    {
+        RosterHeaderGrid.CloseEdit();
+    }
+    //private void ApproveSchedule(){
+
+    //}
+    private async void OnLeaveRosterChange(UploadChangeEventArgs args)
+    {
+
+        try
+        {
+            await UploadSickLeaveDocumentSpinner.ShowAsync();
+            foreach (var file in args.Files)
+            {
+                if (file.FileInfo.Size <= 5242880)
+                {
+                    file.Stream.Position = 0;
+                    if (file.FileInfo.Type.ToLower().Contains("pdf") || file.FileInfo.Type.ToLower().Contains("doc"))
+                    {
+                        string fileName = string.Empty;
+                        if (file.FileInfo.Type.Trim().Contains("doc"))
+                        {
+                            var a = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == LeaveRosterData.LeaveTypeId);
+                            fileName = a.LeaveTypeDescription + "_" + EmployeeReviewData.EmployeeNumber + ".pdf";
+                            //Create a new document
+                            Syncfusion.DocIO.DLS.WordDocument document;
+                            if (file.FileInfo.Type.Contains("doc") && !file.FileInfo.Type.Contains("docx"))
+                            {
+                                document = new Syncfusion.DocIO.DLS.WordDocument(file.Stream, Syncfusion.DocIO.FormatType.Doc);
+                            }
+                            else
+                            {
+                                document = new Syncfusion.DocIO.DLS.WordDocument(file.Stream, Syncfusion.DocIO.FormatType.Docx);
+                            }
+                            //Creates an instance of the DocToPDFConverter
+                            DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
+                            PdfDocument pdfDocument = render.ConvertToPDF(document);
+                            MemoryStream _ms = new MemoryStream();
+                            pdfDocument.Save(_ms);
+                            _ms.Position = 0;
+                            byte[] bytes = file.Stream.ToArray();
+                            string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                            ImageUpload m = new ImageUpload()
+                                {
+                                    ImageName = fileName,
+                                    ImageExt = file.FileInfo.Type.Trim(),
+                                    Imagebyte = bytes,
+                                    Rootfolder = "SickLeave"
+                                };
+                            var Requestresult = await _DocumentUploadModel.SaveDocument(m, AccessToken);
+                            if (Requestresult != null && Requestresult.IsSuccess)
+                            {
+                                var result = "data:application/pdf;base64," + base64;
+                                LeaveRosterData.SickLeaveDocumentName = fileName;
+                                LeaveRosterData.SickLeaveDocumentExt = "pdf";
+                                SickLeaveDocumentString = result;
+                                bytes = null;
+                                _ms.Close();
+                                _ms.Dispose();
+                                pdfDocument.Close();
+                                pdfDocument.Dispose();
+                                render.Dispose();
+                                document.Close();
+                                document.Dispose();
+                            }
+                            else if (Requestresult != null)
+                            {
+                                await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                            }
+                        }
+                        else
+                        {
+                            var a = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == LeaveRosterData.LeaveTypeId);
+                            fileName = a.LeaveTypeDescription + "_" + EmployeeReviewData.EmployeeNumber + ".pdf";
+                            MemoryStream ms = new MemoryStream();
+                            file.Stream.WriteTo(ms);
+                            ms.Position = 0;
+                            byte[] bytes = file.Stream.ToArray();
+                            string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                            ImageUpload m = new ImageUpload()
+                                {
+                                    ImageName = fileName,
+                                    ImageExt = file.FileInfo.Type.Trim(),
+                                    Imagebyte = bytes,
+                                    Rootfolder = "SickLeave"
+                                };
+                            var Requestresult = await _DocumentUploadModel.SaveDocument(m, AccessToken);
+                            if (Requestresult != null && Requestresult.IsSuccess)
+                            {
+                                var result = "data:application/pdf;base64," + base64;
+                                LeaveRosterData.SickLeaveDocumentName = file.FileInfo.Type.Trim();
+                                LeaveRosterData.SickLeaveDocumentExt = "pdf";
+                                SickLeaveDocumentString = result;
+                                bytes = null;
+                            }
+                            else if (Requestresult != null)
+                            {
+                                await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                            }
+                        }
+                    }
+                    else if (file.FileInfo.Type.ToLower().Contains("png") || file.FileInfo.Type.ToLower().Contains("gif") || file.FileInfo.Type.ToLower().Contains("jpeg"))
+                    {
+
+                        var a = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == LeaveRosterData.LeaveTypeId);
+                        string fileName = a.LeaveTypeDescription + "_" + EmployeeReviewData.EmployeeNumber + ".pdf";
+                        byte[] bytes = file.Stream.ToArray();
+                        string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+
+                        ImageUpload m = new ImageUpload()
+                            {
+                                ImageName = fileName,
+                                ImageExt = file.FileInfo.Type.Trim(),
+                                Imagebyte = bytes,
+                                Rootfolder = "SickLeave"
+                            };
+                        var Requestresult = await _DocumentUploadModel.SaveDocument(m, AccessToken);
+                        if (Requestresult != null && Requestresult.IsSuccess)
+                        {
+                            var result = "data:image/" + file.FileInfo.Type.Trim() + ";base64," + base64;
+                            LeaveRosterData.SickLeaveDocumentName = fileName;
+                            LeaveRosterData.SickLeaveDocumentExt = file.FileInfo.Type.Trim();
+                            SickLeaveDocumentString = result;
+                            bytes = null;
+                        }
+                        else if (Requestresult != null)
+                        {
+                            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                        }
+                    }
+                    else
+                    {
+                        await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = "Please ensure that the uploaded document is either a pdf or doc or docx or image(png/Jpeg/gif).", CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        finally
+        {
+            await UploadSickLeaveDocumentSpinner.HideAsync();
+            StateHasChanged();
+        }
+
+    }
+    public void OnDepartmentChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ADepartment> args)
+    {
+        if (args.ItemData != null)
+        {
+            DepartmentChange = new Query().Where(new WhereFilter() { Field = "DepartmentId", Operator = "equal", value = args.ItemData.DepartmentId, IgnoreCase = false, IgnoreAccent = false });
+        }
+    }
+    public void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewEmployeeLeaveRoster> args)
+    {
+        employeeno = args.ItemData;
+    }
+    #endregion Methods
+}

@@ -1,0 +1,240 @@
+﻿@page "/UserManagementPage"
+@using System.Collections;
+@using HCMIS.Interface;
+@using HCMIS.SHARED.Models;
+@inject IAuthenticationService AccountService;
+@inject NavigationManager navigation;
+@inject SystemSettings _SystemSettings;
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject IToastService toastService;
+
+@*<h3>UserManagementPage</h3>*@
+<style>
+    .e-checkbox-wrapper .e-label, .e-css.e-checkbox-wrapper .e-label {
+        border-color: transparent;
+    }
+    .e-checkbox-wrapper:hover .e-label, .e-css.e-checkbox-wrapper:hover .e-label {
+        border-color: transparent;
+    }
+
+    label span {
+        height: 13px;
+        width: 250px;
+        border: 2px solid #464d64;
+        border-radius: 2px;
+        display: inline-block;
+        position: relative;
+        cursor: pointer;
+        float: left;
+        left: 7.5%;
+    }
+</style>
+<SfGrid @ref="AcountManagementGrid" TValue="ViewUserManagement" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+        AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true">
+    @*<GridGroupSettings Columns="@GroupedColumns"></GridGroupSettings>*@
+    <SfDataManager AdaptorInstance="@typeof(UserManagementAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+    <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+    @*<GridEvents OnActionBegin="OnClientBranchActionBegin" OnActionComplete="@OnClientBranchActionComplete" TValue="ViewUserManagement"></GridEvents>*@
+    <GridEditSettings AllowAdding="false" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
+        <HeaderTemplate>
+            @{
+                var text = GetUserHeader((context as ViewUserManagement));
+                <div class="headerbandimg">
+                    <span>@text</span>
+                </div>
+            }
+        </HeaderTemplate>
+        <Template>
+            @{
+                AccountManagementData = (context as ViewUserManagement);
+
+                <div class="row">
+                    <div class="form-group col-md-6">
+                        <p>UserName</p>
+                        <SfTextBox ID="UserName" @bind-Value="@(AccountManagementData.UserName)" Enabled="false" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                    </div>
+
+                    <div class="form-group col-md-6">
+                        <p>Email</p>
+                        <SfTextBox ID="Email" @bind-Value="@(AccountManagementData.Email)" Enabled="false" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                    </div>
+
+                    <div class="form-group col-md-6">
+                        <p>AccountHolder's Name</p>
+                        <SfTextBox ID="AccountHolderName" @bind-Value="@(AccountManagementData.FullName)" Enabled="false" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <p>User Role</p>
+                        <SfDropDownList ID="RoleName" @bind-Value="@(AccountManagementData.NormalizedRoleName)" Enabled="true" TItem="AspNetRoles" TValue="string" DataSource="@UserRoleData" FloatLabelType="FloatLabelType.Always">
+                            <DropDownListFieldSettings Value="@nameof(AspNetRoles.NormalizedName)" Text="@nameof(AspNetRoles.Name)"></DropDownListFieldSettings>
+                        </SfDropDownList>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <p>Is Locked Out ?</p>
+                        @if (AccountManagementData.LockoutEnabled == true)
+                        {
+                            <input type="checkbox" id="LockoutEnabled" @bind-value="@AccountManagementData.LockoutEnabled" name="LockoutEnabled" checked="checked" class="e-field e-checkbox" style="width:30px" />
+                        }
+                        else
+                        {
+                            <input type="checkbox" id="LockoutEnabled" @bind-value="@AccountManagementData.LockoutEnabled" name="LockoutEnabled" class="e-field e-checkbox" style="width:30px" />
+                        }
+                    </div>
+                    
+                </div>
+            }
+        </Template>
+    </GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSize="20"></GridPageSettings>
+    <GridColumns>
+        @*<GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>*@
+        <GridColumn HeaderText="Manage Records" Width="60">
+            <GridCommandColumns>
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="View" })" Title="View"></GridCommandColumn>
+            </GridCommandColumns>
+        </GridColumn>
+        <GridColumn Field=@nameof(ViewUserManagement.Id) HeaderText="Id" AllowEditing=false TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+        <GridColumn Field=@nameof(ViewUserManagement.UserName) HeaderText="Username" AllowEditing=false Width="120"></GridColumn>
+        <GridColumn Field=@nameof(ViewUserManagement.Email) HeaderText="Email Address" AllowEditing=true Width="120"></GridColumn>
+        <GridColumn Field=@nameof(ViewUserManagement.FullName) HeaderText="Account Holder" AllowEditing=false Width="120"></GridColumn>
+        <GridForeignColumn Field=@nameof(ViewUserManagement.RoleName) HeaderText="User Role" Width="100" ForeignKeyField="@(nameof(AspNetRoles.Name))" ForeignKeyValue="@nameof(AspNetRoles.Name)" ForeignDataSource="@UserRoleData"></GridForeignColumn>
+        <GridColumn Field=@nameof(ViewUserManagement.LockoutEnabled) HeaderText="Is LockOut Enabled" EditType="EditType.BooleanEdit" Width="100"></GridColumn>
+
+    </GridColumns>
+</SfGrid>
+
+@code {
+    SfGrid<ViewUserManagement>? AcountManagementGrid;
+    List<AspNetRoles>? UserRoleData { get; set; }
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "70%" };
+    private ViewUserManagement? AccountManagementData { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await base.OnInitializedAsync();
+
+            await _SystemSettings.GetLoginCredentials();
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+
+            UserRoleData = await AccountService.GetUserRoles();
+
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowWarning(ex.Message.ToString());
+        }
+    }
+
+    public class UserManagementAdapter : DataAdaptor
+    {
+        private IToastService toastService;
+        private IAuthenticationService AuthService;
+        public UserManagementAdapter(IAuthenticationService AuthService, IToastService ts)
+        {
+            toastService = ts;
+            this.AuthService = AuthService;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<ViewUserManagement>();
+            try
+            {
+
+                data = await AuthService.GetSystemUsers();
+
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<ViewUserManagement>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                var val = (value as ViewUserManagement);
+
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+        public override async Task<object> RemoveAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+
+            return value;
+        }
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                var val = (value as ViewUserManagement);
+               await AuthService.UpdateAccountInformation(val);
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+    }
+
+    public string GetUserHeader(ViewUserManagement Value)
+    {
+        if (string.IsNullOrEmpty(Value.Id))
+        {
+            return "Add a new Record";
+        }
+        else
+        {
+            return "Edit " + Value.FullName + " Details";
+        }
+    }
+}

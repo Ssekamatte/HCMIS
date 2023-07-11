@@ -1,0 +1,424 @@
+﻿@*@page "/SubcountyPage"*@
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using System.Collections;
+@using System.IO;
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager navigation;
+@inject SystemSettings _SystemSettings;
+@using HCMIS.SHARED.DTOs.BSC;
+@using HCMIS.SHARED.DTOs.Utilities;
+@using HCMIS.ViewModel;
+@inject IToastService toastService;
+
+<style>
+    /*For Actual Application*/
+    /*.e-edit-dialog {
+            max-height: 30%;
+            max-width: 60%;
+            min-width: 50%;
+            min-height: 20%;
+        }*/
+
+    .headerbandimg {
+        background-image: url(/image/comesalogo.png);
+        background-size: 20px;
+        background-repeat: no-repeat;
+        width: 20px;
+        height: 20px;
+        margin-right: 5px;
+        vertical-align: top;
+        display: inline-block;
+        color: whitesmoke;
+    }
+
+    .pp {
+        color: ghostwhite;
+        background-color: #2ecc71;
+        padding: 10px;
+    }
+
+    /*Increase font size for Multi Line Text Box Place Holder*/
+    .e-multi-line-input label.e-float-text {
+        font-size: 17px !important;
+    }
+</style>
+
+@{
+    var Div = (new string[] { "DistrictId"});
+}
+
+<center>
+    <h5>
+        <strong>SUBCOUNTY</strong>
+    </h5>
+</center>
+
+<SfGrid @ref="@DataGrid" TValue="ASubCounty" ID="Grid1" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Delete", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
+    <GridGroupSettings Columns="@Div" ShowDropArea="false">
+        <CaptionTemplate>
+            @{
+                var dvn = (context as CaptionTemplateContext);
+                string text = "";
+                if (dvn.Field == "DistrictId" && DistrictData != null)
+                {
+                    var data = DistrictData.FirstOrDefault(o => o.DistrictId != null && o.DistrictId.ToString() == dvn.Key);
+                    if(data != null)
+                    {
+                        text = data.DistrictDescription;
+                    }
+                }
+                <div><p class="pp"><strong>@text</strong></p></div>
+            }
+        </CaptionTemplate>
+    </GridGroupSettings>
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+        <HeaderTemplate>
+            @{
+                var text = GetSubCountyHeader((context as ASubCounty));
+                <div class="headerbandimg">
+                    <span>@text</span>
+                </div>
+            }
+        </HeaderTemplate>
+        <Template Context="SubcountyContext">
+            @{
+                var KpiData = (SubcountyContext as ASubCounty);
+                @if (KpiData != null)
+                {
+                    <div class="row">
+                        <div class="col-md-12" hidden>
+                            <SfNumericTextBox @bind-Value="@(KpiData.SubCountyId)" Enabled="false" Placeholder="SubCounty Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                        </div>
+                        <div class="form-group col-md-12">
+                            <p>District<span style="color:red;">*</span></p>
+                            <SfDropDownList ID="DistrictId" @bind-Value="@(KpiData.DistrictId)" TItem="ADistrict" AllowFiltering="true" TValue="int?" DataSource="@DistrictData" FloatLabelType="FloatLabelType.Always">
+                                <DropDownListFieldSettings Value="@nameof(ADistrict.DistrictId)" Text="@nameof(ADistrict.DistrictDescription)"></DropDownListFieldSettings>
+                            </SfDropDownList>
+                        </div>
+                        <div class="col-md-12">
+                            <p>Subcounty<span style="color:red;">*</span></p>
+                            <SfTextBox Multiline=false @bind-Value="@(KpiData.SubCountyDescription)" Width="100%" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                        </div>
+                    </div>
+                }
+            }
+        </Template>
+
+    </GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.FilterBar"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+    <SfDataManager AdaptorInstance="@typeof(SubcountyAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+    <GridEvents OnToolbarClick="@GridToolbarClick"
+                OnActionBegin="@OnSubcountyActionBegin"
+                OnActionComplete="@OnSubcountyActionComplete"
+                TValue="ASubCounty">
+    </GridEvents>
+    <GridColumns>
+        <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+        <GridColumn Field=@nameof(ASubCounty.SubCountyId) HeaderText="SubCounty Id" AllowEditing="false" IsPrimaryKey="true" Width="150" Visible="false"></GridColumn>
+        <GridForeignColumn Field=@nameof(ASubCounty.DistrictId)
+                           HeaderText="District"
+                           Width="180"
+                           AllowEditing="false"
+                           ForeignKeyField="@(nameof(ADistrict.DistrictId))"
+                           ForeignKeyValue="@(nameof(ADistrict.DistrictDescription))"
+                           ForeignDataSource="@DistrictData"
+                           AllowFiltering="false"
+                           IsFrozen="false"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridForeignColumn>
+        <GridColumn Field=@nameof(ASubCounty.SubCountyDescription) HeaderText="Subcounty" Width="150"></GridColumn>
+    </GridColumns>
+</SfGrid>
+
+
+@code {
+    SfGrid<ASubCounty>? DataGrid { get; set; }
+    List<ADistrict>? DistrictData { get; set; }
+    List<ASubCounty>? SubCountyData { get; set; }
+    /// <summary>
+    /// Event for Toolbar click for Grid Exporting
+    /// </summary>
+    public void GridToolbarClick(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Id == "Grid1_excelexport")
+        {
+            this.DataGrid.ExportToExcelAsync();
+        }
+        if (args.Item.Id == "Grid1_pdfexport")
+        {
+            this.DataGrid.ExportToPdfAsync();
+        }
+        if (args.Item.Id == "Grid1_csvexport")
+        {
+            this.DataGrid.ExportToCsvAsync();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await _SystemSettings.GetLoginCredentials();
+        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+
+        var responsedistrict = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetDistrict");
+        var contentdistrict = await responsedistrict.Content.ReadAsStringAsync();
+
+        var responsesubcounty = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetSubcounty");
+        var contentsubcounty = await responsesubcounty.Content.ReadAsStringAsync();
+
+        if (responsedistrict.IsSuccessStatusCode)
+        {
+            DistrictData = await Http.GetFromJsonAsync<List<ADistrict>>
+            ($"{_ApiConfig.BaseUrl}Utilities/GetDistrict");
+        }
+
+        if (responsesubcounty.IsSuccessStatusCode)
+        {
+            SubCountyData = await Http.GetFromJsonAsync<List<ASubCounty>>
+            ($"{_ApiConfig.BaseUrl}Utilities/GetSubcounty");
+        }
+    }
+
+    #region Subcounty Region
+    public class SubcountyAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        ApiConfig _ApiConfig;
+        SystemSettings _SystemSettings;
+        private readonly JsonSerializerOptions _options;
+        public IToastService toastService;
+        private readonly NavigationManager Navigation;
+        public SubcountyAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+            , SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            Navigation = _Navigation;
+            _ApiConfig = apiConfig;
+            _SystemSettings = systemSettings;
+
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<ASubCounty>();
+
+            try
+            {
+                var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetSubcounty");
+                var content = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    toastService.ShowError(response.ReasonPhrase);
+                }
+                data = JsonSerializer.Deserialize<List<ASubCounty>>(content, _options);
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<ASubCounty>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                var val = (value as ASubCounty);
+
+                if (val.SubCountyId == 0)
+                {
+                    string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                    StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                    var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}Utilities/CreateSubcounty", httpContent);
+                    if (result.IsSuccessStatusCode)
+                    {
+                        toastService.ShowSuccess(val.SubCountyDescription + " was sucessfully added");
+                    }
+                    else
+                    {
+                        // toastService.ShowError(result.Content.);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                var val = (value as ASubCounty);
+                await _SystemSettings.GetLoginCredentials();
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}Utilities/UpdateSubcounty", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    toastService.ShowSuccess($"{val.SubCountyDescription}  was sucessfully updated");
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+    }
+
+    public async void OnSubcountyActionComplete(ActionEventArgs<ASubCounty> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) ||
+        args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            DataGrid.PreventRender(false);
+        }
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+        {
+
+            var responsedistrict = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetDistrict");
+            var contentdistrict = await responsedistrict.Content.ReadAsStringAsync();
+
+            var responsesubcounty = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetSubcounty");
+            var contentsubcounty = await responsesubcounty.Content.ReadAsStringAsync();
+
+            if (responsedistrict.IsSuccessStatusCode)
+            {
+                DistrictData = await Http.GetFromJsonAsync<List<ADistrict>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetDistrict");
+            }
+
+            if (responsesubcounty.IsSuccessStatusCode)
+            {
+                SubCountyData = await Http.GetFromJsonAsync<List<ASubCounty>>
+                ($"{_ApiConfig.BaseUrl}Utilities/GetSubcounty");
+            }
+        }
+    }
+
+    public async void OnSubcountyActionBegin(ActionEventArgs<ASubCounty> args)
+    {
+        try
+        {
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+            {
+                if (args.Data.DistrictId == null)
+                {
+                    toastService.ShowWarning("Please choose a District");
+                    args.Cancel = true;
+                }
+
+                else if (string.IsNullOrEmpty(args.Data.SubCountyDescription))
+                {
+                    toastService.ShowWarning("Please enter the subcounty.");
+                    args.Cancel = true;
+                }
+
+                else
+                {
+                    var countdata = SubCountyData?
+                    .FirstOrDefault(o =>o.DistrictId == args.Data.DistrictId 
+                        && o.SubCountyDescription.Trim().ToLower() 
+                        == args.Data.SubCountyDescription.Trim().ToLower());
+
+                    var districtname = DistrictData?
+                    .FirstOrDefault(o => o.DistrictId == args.Data.DistrictId);
+
+                    if (countdata != null)
+                    {
+                        toastService.ShowWarning("This subcounty " + args.Data.SubCountyDescription + " already exists in the district " + districtname.DistrictDescription + " Record will not be saved.");
+                        args.Cancel = true;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+    }
+
+
+    public string GetSubCountyHeader(ASubCounty Value)
+    {
+        if (Value.SubCountyId == 0)
+        {
+            return "Add a new Subcounty";
+        }
+        else
+        {
+            return "Edit Details for " + Value.SubCountyDescription;
+        }
+    }
+
+    #endregion Subcounty Region
+
+
+
+}
+

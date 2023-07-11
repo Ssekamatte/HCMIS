@@ -1,0 +1,8 @@
+﻿namespace HCMIS.DTO
+{
+    public class UpdateBscPerformanceMeasurementDto
+    {
+        public int MeasurementMetricId { get; set; }
+        public string? MeasurementMetric { get; set; }
+    }
+}
