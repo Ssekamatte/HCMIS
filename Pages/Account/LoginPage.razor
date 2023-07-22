@@ -1,0 +1,403 @@
+﻿@page "/LoginPage"
+@using HCMIS.Interface;
+@using HCMIS.Model
+@using System.Text.Json
+@inject ILocalStorageService localStore;
+@inject HttpClient Http
+@inject ApiConfig _ApiConfig;
+@inject NavigationManager Navigation
+@inject AppState _AppState
+@inject encrypt_decrypt_string security;
+@inject IAuthenticationService authservice;
+@inject IJSRuntime JSRuntime
+@inject IToastService toastService;
+
+<style>
+
+    *,
+    *::after,
+    *::before {
+        padding: 0;
+        margin: 0;
+    }
+
+    .main {
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        position: absolute;
+        transition: all 1s;
+    }
+
+    .loader {
+        border-radius: 50%;
+        border: 1px solid #D4AF37;
+        position: relative;
+    }
+
+    .loader__inner {
+        width: 4rem;
+        height: 4rem;
+        animation: spin 1s infinite linear;
+    }
+
+        .loader__inner::after {
+            content: "";
+            position: absolute;
+            top: -1px;
+            left: 0;
+            width: 4rem;
+            height: 4rem;
+            border-radius: 50%;
+            border-bottom: 6px solid #D4AF37;
+        }
+
+    .loader__outer {
+        position: absolute;
+        top: -30px;
+        left: -32px;
+        width: 8rem;
+        height: 8rem;
+        animation: spin 1s infinite linear reverse;
+    }
+
+        .loader__outer::after {
+            content: "";
+            position: absolute;
+            top: -1px;
+            left: 0;
+            width: 8rem;
+            height: 8rem;
+            border-radius: 50%;
+            border-bottom: 6px solid #D4AF37;
+        }
+
+    @@keyframes spin {
+
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+</style>
+
+<style>
+    /*Spinner Label Color*/
+    .e-spinner-pane .e-spinner-inner .e-spin-label {
+    color: red;
+    }
+
+    /*Hide Default Spinner Icon*/
+    .e-spinner-pane .e-spinner-inner .e-spin-fluent, .e-spinner-pane .e-spinner-inner .e-spin-fabric {
+    animation: fabric-spinner-rotate 1.3s infinite cubic-bezier(0.53, 0.21, 0.29, 0.67);
+    display: none;
+    margin: 0 auto;
+    overflow: visible;
+}
+
+    .particles-js-canvas-el {
+        display: none;
+    }
+
+    .center {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        border: 2px solid ghostwhite;
+        padding: 10px;
+        border-radius: 10px;
+        -moz-border-radius: 10px;
+    }
+
+    html,
+    body {
+        height: 100vh;
+    }
+
+    .parent {
+        height: 100vh;
+        width: 100vw;
+        background: #CCCCCC;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-image: url('image/nhcc1.jpg');
+        background-attachment: fixed;
+        background-repeat: no-repeat;
+        background-size: cover;
+    }
+
+    .child {
+        background-color: ghostwhite;
+        width: 40%;
+        height: auto;
+        padding: 2%;
+        border-radius: 10px;
+        -moz-border-radius: 10px;
+        /*box-shadow: 0 8px 2px -2px gray;*/
+        box-shadow: 10px 8px 5px -2px #888;
+    }
+
+    /*    .child {
+            background-color: ghostwhite;
+            width: 40%;
+            height: auto;
+            padding: 2%;
+            border-radius:10px;
+            -moz-border-radius:10px;
+            background-image: url('image/nhcc3.jpg');
+            box-shadow: 10px 8px 5px -2px #888;
+        }*/
+    .e-input.e-success, .e-input.e-success:focus, .e-input-group.e-success input.e-input, .e-input-group.e-control-wrapper.e-success input.e-input, .e-input-group.e-success .e-input-group-icon, .e-input-group.e-control-wrapper.e-success .e-input-group-icon, .e-input-group.e-success textarea.e-input, .e-input-group.e-control-wrapper.e-success textarea.e-input {
+        border-color: #22b24b;
+        padding-left: 10px;
+    }
+
+    .e-menu-wrapper.e-inherit .e-menu, .e-menu-container.e-inherit .e-menu {
+        background: inherit;
+        width: 100%;
+    }
+
+    /*Change Background Color For Username and Password Fields*/
+    .e-input-group.e-success, .e-input-group.e-control-wrapper.e-success, .e-input-group.e-success:not(.e-float-icon-left), .e-input-group.e-control-wrapper.e-success:not(.e-float-icon-left) {
+        border-color: #107c10;
+        background-color: ghostwhite;
+    }
+
+    .e-input-eye:before {
+        content: '\e345';
+        font-family: e-icons;
+        font-size: 13px;
+    }
+</style>
+
+<div class="parent">
+    <div class="child">
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                @*<h3>National Housing and Construction Company</h3>*@
+                <span class="contact100-form-title" style="color: darkred;font-weight: bold;">
+                    <center>
+                        NATIONAL HOUSING AND CONSTRUCTION COMPANY
+                    </center>
+                </span>
+
+                @*<EditForm Model="@InputModel" OnValidSubmit="@Login" class="row">*@
+                @if (ShowAuthError == true)
+                {
+                    <span class="error animated tada" id="msg">@Error</span>
+                }
+                <EditForm Model="@InputModel" OnValidSubmit="ExecuteLogin" class="box">
+                    <div class="col-md-12">
+                        <p class="alert-danger">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary />
+                        </p>
+                        @if (!string.IsNullOrEmpty(LoginError))
+                        {
+                            <p class="alert-danger">
+                                @LoginError
+                            </p>
+                        }
+
+                    </div>
+                    @*<p class="text3">Happy Homes Built To Last</p>*@
+                    <div style="width:100%;">
+                        <img id="profile-img" class="profile-img-card" src="/image/logonhcc.png" height="120" width="300" style="padding-left:35%;" />
+                        <p id="profile-name" class="profile-name-card"></p>
+                    </div>
+
+                    <div class="col-md-12">
+                        <p>Username / Email</p>
+                        <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@InputModel.Username" CssClass="form-control" Placeholder="User name / Email" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                        <p> <ValidationMessage For="@(() => InputModel.Username)" /></p>
+                    </div>
+                    <div class="col-md-12">
+                        <p>Password</p>
+                        <SfTextBox ID="passowrdBox" @ref="TextBoxSearchObj" Type=Syncfusion.Blazor.Inputs.InputType.Password @bind-Value="@InputModel.Password" Placeholder="Password" Created="@onCreatePassword"></SfTextBox>
+                        @*<SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Password" @bind-Value="@InputModel.Password" CssClass="form-control" Placeholder="Password" FloatLabelType="FloatLabelType.Never"></SfTextBox>*@
+                        <p> <ValidationMessage For="@(() => InputModel.Password)" /></p>
+                    </div>
+
+                    <div>
+                        <SfSpinner @bind-Visible="VisiblePro">
+                            <SpinnerTemplates>
+                                <Template>
+                                    <div class="loader loader__inner">
+                                    </div>
+                                </Template>
+                            </SpinnerTemplates>
+                        </SfSpinner>
+                    </div>
+                    <div>
+                        <SfSpinner @bind-Visible="VisiblePro">
+                            <SpinnerTemplates>
+                                <Template>
+                                    <div class="loader loader__outer">
+                                    </div>
+                                </Template>
+                            </SpinnerTemplates>
+                        </SfSpinner>
+                    </div>
+
+                    <div class="col-md-12">
+                        <SfSpinner @ref=@SigningUpSpinner Label="We are logging you in please wait ...." Visible=false></SfSpinner>
+                    </div>
+                    <div class="col-md-12">
+                        <button class="btn btn-success" style="margin-top:10px; width:100%;" disabled=@IsLogInDisabled>
+                            <span class="button__text">
+                                Log In Now
+                                <i class="fa fa-rocket"></i>
+                            </span>
+                        </button>
+                    </div>
+
+                    <div class="row">
+                    <div class="col-md-6">
+                        <a id="forgot-password" class="btn btn-primary" href="/ForgotPasswordPage" style="font-size:13px; margin-top:10px; background-color:#be1e2d;  width:100%;">Forgot Password</a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="/ExternalRegistrationPage" class="btn btn-secondary btn-block" style="font-size:13px; margin-top:10px;  width:100%;">Register Now</a>
+                    </div>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+    string? LoginError { get; set; }
+    SfTextBox TextBoxSearchObj;
+    public bool Isbool = true;
+    LoginModel InputModel { get; set; } = new LoginModel();
+    SfSpinner? SigningUpSpinner;
+    public bool ShowAuthError { get; set; }
+    public string? Error { get; set; }
+    public bool VisiblePro { get; set; } = false;
+    bool IsLogInDisabled = false;
+
+    public void ForgotPasswordClick()
+    {
+        Navigation.NavigateTo("/ForgotPasswordPage", true);
+    }
+
+    public async Task onCreatePassword()
+    {
+        var OnClick = EventCallback.Factory.Create<MouseEventArgs>(this, PasswordClick);
+        await TextBoxSearchObj.AddIconAsync("append", "fa fa-eye", new Dictionary<string, object>() { { "onclick", OnClick } });
+    }
+
+    public async Task PasswordClick()
+    {
+        if (Isbool)
+        {
+            await JSRuntime.InvokeAsync<object>("visible");
+            Isbool = false;
+        }
+
+        else
+        {
+            await JSRuntime.InvokeAsync<object>("hide");
+            Isbool = true;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        //await localStore.ClearAsync();
+        //_AppState.LoggedIn = false;
+    }
+
+    public async Task ExecuteLogin()
+    {
+        try
+        {
+            VisiblePro = true;
+            await SigningUpSpinner.ShowAsync();
+            ShowAuthError = false;
+            var result = await authservice.Login(InputModel);
+            if (!result.IsSuccess)
+            {
+                Error = result.ErrorMsg;
+                ShowAuthError = true;
+            }
+            else
+            {
+                //await repo.LoadData();
+
+                Navigation.NavigateTo("/DashboardPage", true);
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message);
+        }
+        finally
+        {
+            VisiblePro = false;
+            await SigningUpSpinner.HideAsync();
+        }
+
+    }
+
+
+    private async Task Login()
+    {
+        try
+        {
+            VisiblePro = true;
+            await SigningUpSpinner.ShowAsync();
+            IsLogInDisabled = true;
+
+            LoginError = null;
+            var data = await authservice.Login(InputModel);
+            if (data != null && string.IsNullOrEmpty(data.ErrorMsg))
+            {
+                SystemCredentials m = new SystemCredentials()
+                    {
+                        AccessToken = data.token,
+                        ExpiryDate = data.expiration,
+                        UserRole = data.UserRole,
+                        Username = InputModel.Username,
+                        Password = InputModel.Password,
+                        StaffId = data.StaffId,
+                        UserRoleId = data.UserRoleId,
+                        AccountHolderName = data.AccountHolderName
+                    };
+                // string Credentials = await security.EncryptCredentials(m);
+                await localStore.SetItemAsync("Credentials", m);
+                _AppState.LoggedIn = true;
+                Navigation.NavigateTo("DashboardPage");
+            }
+
+            //}
+            else
+            {
+                LoginError = "Invalid login, Please check your username or password.";
+                await localStore.ClearAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            LoginError = ex.Message.ToString();
+        }
+        finally
+        {
+            IsLogInDisabled = false;
+            await SigningUpSpinner.HideAsync();
+            VisiblePro = false;
+        }
+    }
+}
+
+@*To add icon for viewind password*@
+@*https://www.syncfusion.com/forums/181291/toggle-icon*@

@@ -1,15 +1,7 @@
 ﻿@page "/"
 @using HCMIS.Interface;
-@using HCMIS.Model
-@using System.Text.Json
-@inject ILocalStorageService localStore;
-@inject HttpClient Http
-@inject ApiConfig _ApiConfig;
-@inject NavigationManager Navigation
-@inject AppState _AppState
-@inject encrypt_decrypt_string security;
-@inject IAuthenticationService authservice;
- @inject IJSRuntime JSRuntime
+@inject IAuthenticationService IAuthService;
+@inject NavigationManager NavigationManager;
 
 <style>
     .particles-js-canvas-el {
@@ -91,169 +83,49 @@
 
 @*<PageTitle>Page loading....</PageTitle>*@
 
-<div class="parent">
-    <div class="child">
-       <div class="form-row">
-           <div class="form-group col-md-12">
-                @*<h3>National Housing and Construction Company</h3>*@
-                <span class="contact100-form-title" style="color: darkred;font-weight: bold;">
-                    <center>
-                        National Housing and Construction Company
-                    </center>    
-                </span>
-                
-               <EditForm Model="@InputModel"  OnValidSubmit="@Login" class="row">
-                   <div class="col-md-12">
-                        <p class="alert-danger">
-                             <DataAnnotationsValidator />
-                            <ValidationSummary />
-                        </p>
-                        @if (!string.IsNullOrEmpty(LoginError))
-                        {
-                             <p class="alert-danger">
-                                 @LoginError
-                            </p>
-                        }
-                       
-                   </div>
-                    @*<p class="text3">Happy Homes Built To Last</p>*@
-                    <div style="width:100%;">
-                        <img id="profile-img" class="profile-img-card" src="/image/logonhcc.png" height="120" width="300" style="padding-left:35%;" />
-                        <p id="profile-name" class="profile-name-card"></p>
-                    </div>
 
-                   <div class="col-md-12">
-                       <p>Username / Email</p>
-                       <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@InputModel.Username" CssClass="form-control" Placeholder="User name / Email" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                       <p> <ValidationMessage For="@(() => InputModel.Username)" /></p>
-                   </div>
-                   <div class="col-md-12">
-                       <p>Password</p>
-                        <SfTextBox ID="passowrdBox" @ref="TextBoxSearchObj" Type=InputType.Password @bind-Value="@InputModel.Password" Placeholder="Password" Created="@onCreatePassword"></SfTextBox>
-                       @*<SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Password" @bind-Value="@InputModel.Password" CssClass="form-control" Placeholder="Password" FloatLabelType="FloatLabelType.Never"></SfTextBox>*@
-                       <p> <ValidationMessage For="@(() => InputModel.Password)" /></p>
-                   </div>
-
-                   <div class="col-md-12">
-                       <SfSpinner @ref=@loginSpinner Label="We are logging you in please wait ...." Visible=false></SfSpinner>
-                   </div>
-                   <div class="col-md-12">
-                        <button class="btn btn-success" style="margin-top:10px; width:100%;">
-                            <span class="button__text">Log In Now
-                                <i class="fa fa-rocket"></i>
-                            </span>
-                        </button>
-                   </div>
-                   <div class="col-md-6">
-                        <a id="forgot-password" class="btn btn-primary" href="/ForgotPasswordPage" style="font-size:13px; margin-top:10px; background-color:#be1e2d;  width:100%;">Forgot Password</a>
-                   </div>
-                   <div class="col-md-6">
-                       <a href="/ExternalRegistrationPage" class="btn btn-secondary btn-block" style="font-size:13px; margin-top:10px;  width:100%;">Register Now</a>
-                   </div>
-               </EditForm>
-           </div>
-       </div>
-    </div>
+<style>
+    .particles-js-canvas-el {
+        display: none;
+    }
+</style>
+<style>
+    .particles-js-canvas-el {
+        display: none;
+    }
+</style>
+<PageTitle>Page Loading....</PageTitle>
+<div class="loader">
+    <div class="loader--dot"></div>
+    <div class="loader--dot"></div>
+    <div class="loader--dot"></div>
+    <div class="loader--dot"></div>
+    <div class="loader--dot"></div>
+    <div class="loader--dot"></div>
+    <div class="loader--text"></div>
 </div>
 
-@code{
-
-    private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-    //const string AccessToken = "AccessToken";
-    //const string UserRole = "UserRole";
-    //const string Username = "Username";
-    //const string Password = "Password";
-    //const string ExpiryDate = "ExpiryDate";
-    SfSpinner? loginSpinner;
-    string? LoginError { get; set; }
-    SfTextBox TextBoxSearchObj;
-    public bool Isbool = true;
-
-
-    LoginModel InputModel { get; set; } = new LoginModel();
-
-    public async Task onCreatePassword()
-    {
-        var OnClick = EventCallback.Factory.Create<MouseEventArgs>(this, PasswordClick);
-        await TextBoxSearchObj.AddIconAsync("append", "fa fa-eye", new Dictionary<string, object>() { { "onclick", OnClick } });
-    }
-
-    public async Task PasswordClick()
-    {
-        if (Isbool)
-        {
-            await JSRuntime.InvokeAsync<object>("visible");
-            Isbool = false;
-        }
-
-        else
-        {
-            await JSRuntime.InvokeAsync<object>("hide");
-            Isbool = true;
-        }
-    }
-
+@code {
     protected override async Task OnInitializedAsync()
     {
-        await localStore.ClearAsync();
-        _AppState.LoggedIn = false;
-    }
-    private async Task Login()
-    {
+        await base.OnInitializedAsync();
         try
         {
-            await loginSpinner.ShowAsync();
-            LoginError = null;
-            var data = await authservice.Login(InputModel);
-
-
-            ////LoginModel m = new LoginModel();
-            ////m.Username = await security.Encrypt(InputModel.Username);
-            ////m.Password = await security.Encrypt(InputModel.Password);
-            //string json = Newtonsoft.Json.JsonConvert.SerializeObject(InputModel);
-            //StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-            //var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}Account/login", httpContent);
-            //if (result.IsSuccessStatusCode)
-            //{
-            //    var content = await result.Content.ReadAsStringAsync();
-            //    var data = JsonSerializer.Deserialize<LoginResultModel>(content, _options);
-                if(data != null)
-                {
-                    SystemCredentials m = new SystemCredentials()
-                        {
-                            AccessToken = data.token,
-                            ExpiryDate = data.expiration,
-                            UserRole = data.UserRole,
-                            Username = InputModel.Username,
-                            Password = InputModel.Password,
-                            StaffId=data.StaffId,
-                            UserRoleId = data.UserRoleId,
-                            AccountHolderName = data.AccountHolderName
-                        };
-                   // string Credentials = await security.EncryptCredentials(m);
-
-                    await localStore.SetItemAsync("Credentials",m);
-                    _AppState.LoggedIn = true;
-                    Navigation.NavigateTo("Dashboard");
-                }
-
-            //}
+            var result = await IAuthService.CheckAuthenticationStatus();
+            if (result == false)
+            {
+                NavigationManager.NavigateTo("/LoginPage", true);
+            }
             else
             {
-                LoginError = "Invalid login, Please check your username or password.";
-                await localStore.ClearAsync();
+                NavigationManager.NavigateTo("/DashboardPage", true);
             }
         }
         catch (Exception ex)
         {
-            LoginError = ex.Message.ToString();
+            NavigationManager.NavigateTo("/LoginPage", true);
+            //throw;
         }
-        finally
-        {
-            await loginSpinner.HideAsync();
-        }
+
     }
 }
-
-@*To add icon for viewind password*@
-@*https://www.syncfusion.com/forums/181291/toggle-icon*@

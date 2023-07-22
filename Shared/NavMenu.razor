@@ -1,104 +1,172 @@
-﻿@using HCMIS.Model
-@using System.Text.Json
-@inject ILocalStorageService localStore;
-@inject HttpClient Http
-@inject ApiConfig _ApiConfig;
-@inject NavigationManager Navigation;
-@inject AppState AppState;
-@inject SystemSettings _SystemSettings
+﻿@using HCMIS.Interface;
+@inject IAuthenticationService IAuthService;
 
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">HCMIS</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
-</div>
-
-<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="Dashboard" @onclick="@(()=>{menuClicked("Dashboard");})">
-                <span class="oi oi-dashboard" aria-hidden="true"></span> Dashboard
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="NonStaffProfilePage" @onclick="@(()=>{menuClicked("NonStaffProfilePage");})">
-                <span class="oi oi-person" aria-hidden="true"></span> Profile
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="OrganisationStructurePage" @onclick="@(()=>{menuClicked("OrganisationStructurePage");})">
-                <span class="oi oi-fork" aria-hidden="true"></span> Organisation Structure
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="AvailableJobsPage" @onclick="@(()=>{menuClicked("AvailableJobsPage");})">
-                <span class="oi oi-briefcase" aria-hidden="true"></span> Jobs
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="AptitudeTestPage" @onclick="@(()=>{menuClicked("AptitudeTestPage");})">
-                <span class="oi oi-briefcase" aria-hidden="true"></span> Aptitudde Test
-            </NavLink>
-        </div>
-       @* <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter" @onclick="@(()=>{menuClicked("counter");})">
-                <span class="oi oi-plus" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="fetchdata" @onclick="@(()=>{menuClicked("fetchdata");})">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Fetch data
-            </NavLink>
-        </div>*@
-        @if (!string.IsNullOrEmpty(_SystemSettings.AccountHolderName))
+<MudDrawer @bind-Open="@SideBarOpen" Elevation="1" ClipMode="DrawerClipMode.Never" Style="margin-top:2px;">
+    <MudDrawerHeader>
+        <MudAvatar Color="Color.Transparent" Size="Size.Large">
+            <ChildContent>
+                <img src="/image/logonhcc.png" alt="Logo" style="width:85px; height:90px; margin-top:-2px;" />
+            </ChildContent>
+        </MudAvatar>
+        <MudText Typo="Typo.h5" Color="Color.Primary" Style="margin: auto;background-color: white;font-weight: bolder;">HCMIS</MudText>
+    </MudDrawerHeader>
+    <MudNavMenu>
+        <MudNavLink Href="/DashboardPage" Match="NavLinkMatch.All" Icon="fa fa-tachometer">DASHBOARD</MudNavLink>
+        @if (user != null)
         {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="@PreviousUrl">
-                    <span class="oi oi-person" aria-hidden="true" style="margin-right:5px;"></span> @_SystemSettings.AccountHolderName
-                </NavLink>
-            </div>
-        }
+            if (user.UserRole.Contains("SUPER ADMINISTRATOR", StringComparison.CurrentCultureIgnoreCase))
+            {
+                <MudNavGroup Title="HR" Icon="fa fa-users" Expanded="false">
+                    <MudNavLink Href="/EmployeeRegistrationNewPage" Icon="fa fa-times-circle">EMPLOYEE REGISTRATION</MudNavLink>
+                    <MudNavLink Href="/EmployeeExitsPage" Icon="fa fa-times-circle">SEPARATION OF SERVICE</MudNavLink>
+                    <MudNavLink Href="/OrganisationStructurePage" Icon="fa fa-sitemap">ORGANISATION STRUCTURE</MudNavLink>
+                    <MudNavLink Href="/AptitudeTestPage" Icon="fa fa-pencil">APTITUDE TEST</MudNavLink>
+                    <MudNavLink Href="/DisplinaryPage" Icon="fa fa-eye">DISCIPLINARY</MudNavLink>
+                </MudNavGroup>
+                <MudNavGroup Title="APPLICATION" Icon="fa fa-pencil-square" Expanded="false">
+                    <MudNavLink Href="/SubmittedApplicationPage" Icon="fa fa-plus-circle">NEWLY SUBMITTED</MudNavLink>
+                    <MudNavLink Href="/InterviewApplicationPage" Icon="fa fa-question-circle">ORAL INTERVIEWS</MudNavLink>
+                    <MudNavLink Href="/FinalApplicationAssessmentPage" Icon="fa fa-list-alt">FINAL REVIEW</MudNavLink>
+                </MudNavGroup>
+                <MudNavGroup Title="EMPLOYEE" Icon="fa fa-user" Expanded="false">
+                    <MudNavGroup Title="PERFORMANCE APPRAISAL" Icon="fa fa-weibo" Expanded="false">
+                        <MudNavLink Href="/BSCKeyPerformanceIndicatorsPage" Icon="fa fa-bullseye">SET TARGETS</MudNavLink>
+                        <MudNavLink Href="/AppraisalFormPage" Icon="fa fa-street-view">APPRAISAL</MudNavLink>
+                    </MudNavGroup>
+                    <MudNavGroup Title="EMPLOYEE LEAVE" Icon="fa fa-university" Expanded="false">
+                        <MudNavLink Href="/AnnualLeavePlanPage" Icon="fa fa-calendar">ANNUAL LEAVE ROASTER</MudNavLink>
+                        <MudNavLink Href="/EmployeeLeaveRequestPage" Icon="fa fa-pencil-square-o">LEAVE REQUEST</MudNavLink>
+                    </MudNavGroup>
+                    <MudNavGroup Title="LEARNING AND DEVELOPMENT" Icon="fa fa-exchange" Expanded="false">
+                        <MudNavLink Href="/AssessmentSurveyPage" Icon="fa fa-assistive-listening-systems">ASSESSMENT SURVEY</MudNavLink>
+                        <MudNavGroup Title="CPD" Icon="fa fa-eercast" Expanded="false">
+                            <MudNavLink Href="/CPDPage" Icon="fa fa-snowflake-">CPD</MudNavLink>
+                            <MudNavLink Href="/CPDSummaryPage" Icon="fa fa-bandcamp">CPD SUMMARY</MudNavLink>
+                        </MudNavGroup>
+                        <MudNavLink Href="/GeneralInternalPage" Icon="fa fa-certificate">GENERAL INTERNAL</MudNavLink>
+                        <MudNavLink Href="/SubscriptionPage" Icon="fa fa-bolt">SUBSCRIPTION</MudNavLink>
+                        <MudNavLink Href="/TrainingEvaluationFormPage" Icon="fa fa-bomb">TRAINING EVALUATION</MudNavLink>
+                    </MudNavGroup>
+                </MudNavGroup>
+
+                <MudNavGroup Title="REPORTS" Icon="fa fa-file-excel-o" Expanded="false">
+                    <MudNavLink Href="/AppraisalReport" Icon="fa fa-file-excel-o">APPRAISAL REPORT</MudNavLink>
+                    <MudNavLink Href="/LeaveRequestReportPage" Icon="fa fa-file-excel-o">LEAVE REQUEST REPORT</MudNavLink>
+                </MudNavGroup>
+
+                <MudNavGroup Title="UTILITIES" Icon="fa fa-cogs" Expanded="false">
+                    <MudNavLink Href="/PrimaryDataPage" Icon="fa fa-database">PRIMARY DATA </MudNavLink>
+                    <MudNavGroup Title="MANAGE USERS" Icon="fa fa-users" Expanded="false">
+                        <MudNavLink Href="/AccountManagementPage" Icon="fa fa-user-plus">ACCOUNT MANAGEMENT</MudNavLink>
+                        <MudNavLink Href="/PrimaryDataPage" Icon="fa fa-users">PRIMARY DATA</MudNavLink>
+                    </MudNavGroup>
+                </MudNavGroup>
+            }
+
+            else if (user.UserRole.Contains("ADMINISTRATOR", StringComparison.CurrentCultureIgnoreCase))
+            {
+                <MudNavGroup Title="HR" Icon="fa fa-users" Expanded="false">
+                    <MudNavLink Href="/EmployeeExitsPage" Icon="fa fa-times-circle">SEPARATION OF SERVICE</MudNavLink>
+                    <MudNavLink Href="/OrganisationStructurePage" Icon="fa fa-sitemap">ORGANISATION STRUCTURE</MudNavLink>
+                    <MudNavLink Href="/AptitudeTestPage" Icon="fa fa-pencil">APTITUDE TEST</MudNavLink>
+                    <MudNavLink Href="/DisplinaryPage" Icon="fa fa-eye">DISCIPLINARY</MudNavLink>
+                </MudNavGroup>
+                <MudNavGroup Title="APPLICATION" Icon="fa fa-pencil-square" Expanded="false">
+                    <MudNavLink Href="/SubmittedApplicationPage" Icon="fa fa-plus-circle">NEWLY SUBMITTED</MudNavLink>
+                    <MudNavLink Href="/InterviewApplicationPage" Icon="fa fa-question-circle">ORAL INTERVIEWS</MudNavLink>
+                    <MudNavLink Href="/FinalApplicationAssessmentPage" Icon="fa fa-list-alt">FINAL REVIEW</MudNavLink>
+                </MudNavGroup>
+                <MudNavGroup Title="EMPLOYEE" Icon="fa fa-user" Expanded="false">
+                    <MudNavGroup Title="PERFORMANCE APPRAISAL" Icon="fa fa-weibo" Expanded="false">
+                        <MudNavLink Href="/BSCKeyPerformanceIndicatorsPage" Icon="fa fa-bullseye">SET TARGETS</MudNavLink>
+                        <MudNavLink Href="/AppraisalFormPage" Icon="fa fa-street-view">APPRAISAL</MudNavLink>
+                    </MudNavGroup>
+                    <MudNavGroup Title="EMPLOYEE LEAVE" Icon="fa fa-university" Expanded="false">
+                        <MudNavLink Href="/AnnualLeavePlanPage" Icon="fa fa-calendar">ANNUAL LEAVE ROASTER</MudNavLink>
+                        <MudNavLink Href="/EmployeeLeaveRequestPage" Icon="fa fa-pencil-square-o">LEAVE REQUEST</MudNavLink>
+                    </MudNavGroup>
+                    <MudNavGroup Title="LEARNING AND DEVELOPMENT" Icon="fa fa-exchange" Expanded="false">
+                        <MudNavLink Href="/AssessmentSurveyPage" Icon="fa fa-assistive-listening-systems">ASSESSMENT SURVEY</MudNavLink>
+                        <MudNavGroup Title="CPD" Icon="fa fa-eercast" Expanded="false">
+                            <MudNavLink Href="/CPDPage" Icon="fa fa-snowflake-">CPD</MudNavLink>
+                            <MudNavLink Href="/CPDSummaryPage" Icon="fa fa-bandcamp">CPD SUMMARY</MudNavLink>
+                        </MudNavGroup>
+                        <MudNavLink Href="/GeneralInternalPage" Icon="fa fa-certificate">GENERAL INTERNAL</MudNavLink>
+                        <MudNavLink Href="/SubscriptionPage" Icon="fa fa-bolt">SUBSCRIPTION</MudNavLink>
+                        <MudNavLink Href="/TrainingEvaluationFormPage" Icon="fa fa-bomb">TRAINING EVALUATION</MudNavLink>
+                    </MudNavGroup>
+                </MudNavGroup>
+
+                <MudNavGroup Title="REPORTS" Icon="fa fa-file-excel-o" Expanded="false">
+                    <MudNavLink Href="/AppraisalReport" Icon="fa fa-file-excel-o">APPRAISAL REPORT</MudNavLink>
+                    <MudNavLink Href="/LeaveRequestReportPage" Icon="fa fa-file-excel-o">LEAVE REQUEST REPORT</MudNavLink>
+                </MudNavGroup>
+
+                <MudNavGroup Title="UTILITIES" Icon="fa fa-cogs" Expanded="false">
+                    @*<MudNavLink Href="/PrimaryDataPage" Icon="fa fa-database">PRIMARY DATA </MudNavLink>*@
+                    <MudNavGroup Title="MANAGE USERS" Icon="fa fa-users" Expanded="false">
+                        @*<MudNavLink Href="/AccountManagementPage" Icon="fa fa-user-plus">ACCOUNT MANAGEMENT</MudNavLink>*@
+                        <MudNavLink Href="/PrimaryDataPage" Icon="fa fa-users">PRIMARY DATA</MudNavLink>
+                    </MudNavGroup>
+                </MudNavGroup>
+            }
+
+            else if (user.UserRole.Contains("OFFICER", StringComparison.CurrentCultureIgnoreCase))
+            {
+                <MudNavGroup Title="EMPLOYEE" Icon="fa fa-user" Expanded="false">
+                    <MudNavGroup Title="PERFORMANCE APPRAISAL" Icon="fa fa-weibo" Expanded="false">
+                        <MudNavLink Href="/BSCKeyPerformanceIndicatorsPage" Icon="fa fa-bullseye">SET TARGETS</MudNavLink>
+                        <MudNavLink Href="/AppraisalFormPage" Icon="fa fa-street-view">APPRAISAL</MudNavLink>
+                    </MudNavGroup>
+                    <MudNavGroup Title="EMPLOYEE LEAVE" Icon="fa fa-university" Expanded="false">
+                        <MudNavLink Href="/AnnualLeavePlanPage" Icon="fa fa-calendar">ANNUAL LEAVE ROASTER</MudNavLink>
+                        <MudNavLink Href="/EmployeeLeaveRequestPage" Icon="fa fa-pencil-square-o">LEAVE REQUEST</MudNavLink>
+                    </MudNavGroup>
+                    <MudNavGroup Title="LEARNING AND DEVELOPMENT" Icon="fa fa-exchange" Expanded="false">
+                        <MudNavLink Href="/AssessmentSurveyPage" Icon="fa fa-assistive-listening-systems">ASSESSMENT SURVEY</MudNavLink>
+                        <MudNavGroup Title="CPD" Icon="fa fa-eercast" Expanded="false">
+                            <MudNavLink Href="/CPDPage" Icon="fa fa-snowflake-">CPD</MudNavLink>
+                            <MudNavLink Href="/CPDSummaryPage" Icon="fa fa-bandcamp">CPD SUMMARY</MudNavLink>
+                        </MudNavGroup>
+                        <MudNavLink Href="/GeneralInternalPage" Icon="fa fa-certificate">GENERAL INTERNAL</MudNavLink>
+                        <MudNavLink Href="/SubscriptionPage" Icon="fa fa-bolt">SUBSCRIPTION</MudNavLink>
+                        <MudNavLink Href="/TrainingEvaluationFormPage" Icon="fa fa-bomb">TRAINING EVALUATION</MudNavLink>
+                    </MudNavGroup>
+                </MudNavGroup>
+
+                <MudNavGroup Title="REPORTS" Icon="fa fa-file-excel-o" Expanded="false">
+                    <MudNavLink Href="/AppraisalReport" Icon="fa fa-file-excel-o">APPRAISAL REPORT</MudNavLink>
+                    <MudNavLink Href="/LeaveRequestReportPage" Icon="fa fa-file-excel-o">LEAVE REQUEST REPORT</MudNavLink>
+                </MudNavGroup>
+            }
+
+            else if (user.UserRole.Contains("NON-STAFF", StringComparison.CurrentCultureIgnoreCase))
+            {
+                <MudNavGroup Title="EMPLOYEE PROFILE" Icon="fa fa-user-md" Expanded="false">
+                    <MudNavGroup Title="PROFILE" Icon="fa fa-user" Expanded="false">
+                        <MudNavLink Href="/NonStaffProfilePage" Icon="fa fa-info-circle">USER PROFILE</MudNavLink>
+                        @*<MudNavLink Href="/AppraisalFormPage" Icon="fa fa-street-view">APPRAISAL</MudNavLink>*@
+                    </MudNavGroup>
+                </MudNavGroup>
+            }
         
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="@PreviousUrl" @onclick="@LoggoutClicked">
-                <span class="oi oi-account-logout" aria-hidden="true"></span> LogOut
-            </NavLink>
-        </div>
-    </nav>
-</div>
+            <MudNavGroup Title="@user.AccountHolderName.ToUpper()" Icon="fa fa-user" Expanded="false">
+                <MudNavLink Href="/ChangePasswordPage" Icon="fa fa-key">CHANGE PASSWORD</MudNavLink>
+                @*<MudNavLink Href="/" Icon="fa fa-sign-out">LOG OUT</MudNavLink>*@
+            </MudNavGroup>
+        }
+    </MudNavMenu>
+</MudDrawer>
 
 @code {
-    private bool collapseNavMenu = true;
-    string PreviousUrl { get; set; } = "Dashboard";
+    [Parameter]
+    public bool SideBarOpen { get; set; }      
+    LoginResultModel user { get; set; }
 
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
-    private void ToggleNavMenu()
+    protected async override void OnInitialized()
     {
-        collapseNavMenu = !collapseNavMenu;
-    }
-    private void menuClicked(string url)
-    {
-        PreviousUrl = url;
-    }
-    private async Task LoggoutClicked()
-    {
-        await localStore.ClearAsync();
-        AppState.LoggedIn = false;
-        Navigation.NavigateTo("/");
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        await _SystemSettings.GetLoginCredentials();
-        if (!string.IsNullOrEmpty(Navigation.Uri.Split('/').LastOrDefault()))
-        {
-            string _nav = Navigation.Uri.Split('/').LastOrDefault().ToString();
-            PreviousUrl = _nav;
-        }
-        
+        await base.OnInitializedAsync();
+        user = await IAuthService.GetUserCredentials();
     }
 }

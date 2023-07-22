@@ -33,7 +33,7 @@ namespace HCMIS.Services
             try
             {
                 var val = (employeeExitModel);
-                var response = await _httpClient.PostAsJsonAsync<EmployeeExitModel>($"{_ApiConfig.BaseUrl}EmployeeLeave/AddRoster", employeeExitModel);
+                var response = await _httpClient.PostAsJsonAsync<EmployeeExitModel>($"EmployeeLeave/AddRoster", employeeExitModel);
                 if (response.IsSuccessStatusCode)
                 {
                     _toast.ShowSuccess("Exit interview was sucessfully added");

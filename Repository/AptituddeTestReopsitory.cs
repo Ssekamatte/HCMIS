@@ -25,7 +25,7 @@ namespace HCMIS.Repository
         {
             List<AptituddeTestModel>? data = new List<AptituddeTestModel>();
             string? accessToken = await settingsRepo.GetAccessToken();
-            http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+             
             var response = await http.GetAsync($"HumanResource/GetAllAptituddeTests");
             var content = await response.Content.ReadAsStringAsync();
             if (response.IsSuccessStatusCode)
@@ -39,7 +39,7 @@ namespace HCMIS.Repository
         {
             AptituddeTestModel? data = new AptituddeTestModel();
             string? accessToken = await settingsRepo.GetAccessToken();
-            http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+             
             var response = await http.GetAsync($"HumanResource/GetAptituddeTestsForJobTitle/{JobTitleId}");
             var content = await response.Content.ReadAsStringAsync();
             if (response.IsSuccessStatusCode)
@@ -54,7 +54,7 @@ namespace HCMIS.Repository
             int departmentId = 1;
             List<AptituddeTestModel>? data = new List<AptituddeTestModel>();
             string? accessToken = await settingsRepo.GetAccessToken();
-            http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+             
             var response = await http.GetAsync($"HumanResource/GetAptituddeTestsForDepartment/{departmentId}");
             var content = await response.Content.ReadAsStringAsync();
             if (response.IsSuccessStatusCode)
@@ -69,7 +69,7 @@ namespace HCMIS.Repository
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(model);
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
             string? accessToken = await settingsRepo.GetAccessToken();
-            http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+             
             var result = await http.PostAsync($"HumanResource/SaveAptituddeTest", httpContent);
             return result;
         }
@@ -80,7 +80,7 @@ namespace HCMIS.Repository
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(model);
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
             string? accessToken = await settingsRepo.GetAccessToken();
-            http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+             
             var result = await http.PostAsync($"HumanResource/SaveTestDone", httpContent);
             if (result.IsSuccessStatusCode)
             {

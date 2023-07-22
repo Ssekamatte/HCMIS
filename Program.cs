@@ -63,9 +63,11 @@ using static HCMIS.Pages.Utilities.RelationshipPage;
 using static HCMIS.Pages.EmployeeExit.EmployeeExitsPage;
 using static HCMIS.Pages.EmployeeRegistration.EmployeeRegistrationNewPage;
 using static HCMIS.Pages.EmployeeLeave.AnnualLeavePlanPage;
+using MudBlazor.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.Services.AddSyncfusionBlazor();
+builder.Services.AddMudServices();
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddSingleton(builder.Configuration.GetSection("ApiConfig").Get<ApiConfig>());

@@ -26,24 +26,24 @@ namespace HCMIS.Services
         }
         public async Task<IEnumerable<ViewEmployeeMasterDetails>> GetEmployeeList()
         {
-            //($"{_ApiConfig.BaseUrl}Employeez/GetEmployeeList");
-            return await _httpClient.GetFromJsonAsync<IEnumerable<ViewEmployeeMasterDetails>>($"{_ApiConfig.BaseUrl}Employeez/GetMasterList");
+            //($"Employeez/GetEmployeeList");
+            return await _httpClient.GetFromJsonAsync<IEnumerable<ViewEmployeeMasterDetails>>($"Employeez/GetMasterList");
         }
 
         //public async Task<IEnumerable<ViewDisplinaryMasterDetails>> GetDisplinaryList()
         //{
  
-        //    return await _httpClient.GetFromJsonAsync<IEnumerable<ViewDisplinaryMasterDetails>>($"{_ApiConfig.BaseUrl}Employeez/GetDisplinaryMasterList");
+        //    return await _httpClient.GetFromJsonAsync<IEnumerable<ViewDisplinaryMasterDetails>>($"Employeez/GetDisplinaryMasterList");
         //}
         public async   Task<IEnumerable<ViewLeaveMasterDetails>> GetLeaveList()
         {
 
-            return await _httpClient.GetFromJsonAsync<IEnumerable<ViewLeaveMasterDetails>>($"{_ApiConfig.BaseUrl}Employeez/GetLeaveMasterList");
+            return await _httpClient.GetFromJsonAsync<IEnumerable<ViewLeaveMasterDetails>>($"Employeez/GetLeaveMasterList");
         }
         //public async Task<IEnumerable<ViewQualificationMasterDetails>> GetQualificationList()
         //{
 
-        //    return await _httpClient.GetFromJsonAsync<IEnumerable<ViewQualificationMasterDetails>>($"{_ApiConfig.BaseUrl}Employeez/GetQualificationMasterList");
+        //    return await _httpClient.GetFromJsonAsync<IEnumerable<ViewQualificationMasterDetails>>($"Employeez/GetQualificationMasterList");
         //}
     }
 }

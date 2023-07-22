@@ -14,6 +14,8 @@
 @inject SystemSettings _SystemSettings
 @inject DocumentUploadModel _DocumentUploadModel;
 @inject IToastService toastService;
+@using HCMIS.Interface;
+@inject IAuthenticationService AuthenticationService;
 
 <style>
     .e-dialog {
@@ -296,8 +298,8 @@
                                 </div>
                                    <div class=" col-md-3">
                                     <p style="margin-bottom:29px;">Village <span style="color:red;">*</span></p>
-                                    @*<SfDropDownList @bind-Value="@(EmployeeReviewData.PlaceofOriginVillageId)" Query=@(new Query().Where(new WhereFilter() { Field = "ParishId", Operator = "equal", value = EmployeeReviewData.PlaceofOriginParishId, IgnoreCase = false, IgnoreAccent = false })) Enabled="@isVillageEnabled" TItem="ViewAvillage" TValue="int?" DataSource="@VillageData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">*@
-                                    <SfDropDownList @bind-Value="@(EmployeeReviewData.PlaceofOriginVillageId)" Query="@ParishChange" Enabled="@isVillageEnabled" TItem="ViewAvillage" TValue="int?" DataSource="@VillageData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" EnableVirtualization="true">
+                                    <SfDropDownList @bind-Value="@(EmployeeReviewData.PlaceofOriginVillageId)" Query=@(new Query().Where(new WhereFilter() { Field = "ParishId", Operator = "equal", value = EmployeeReviewData.PlaceofOriginParishId, IgnoreCase = false, IgnoreAccent = false })) Enabled="@isVillageEnabled" TItem="ViewAvillage" TValue="int?" DataSource="@VillageData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                    @*<SfDropDownList @bind-Value="@(EmployeeReviewData.PlaceofOriginVillageId)" Query="@ParishChange" Enabled="@isVillageEnabled" TItem="ViewAvillage" TValue="int?" DataSource="@VillageData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" EnableVirtualization="true">*@
                                         <DropDownListFieldSettings Value="@nameof(ViewAvillage.VillageId)" Text="@nameof(ViewAvillage.ViallgeDescription)"></DropDownListFieldSettings>
                                     </SfDropDownList>
                                 </div>
@@ -735,7 +737,17 @@
                                 
                         </div>
 
-                        
+
+                        <div class="col-md-12">
+                        <p class="alert alert-danger"><b>Separation of Duty (To be used where necessary)</b></p>
+                        </div>
+                        <div class="col-md-12">
+                                <p  style="margin-bottom:29px;">Separtion of Duty (Reason)</p>
+                                <SfDropDownList @bind-Value="@(EmployeeReviewData.DutyReasonId)" Enabled="true" TItem="ASeparationofDutyDto" TValue="int?" DataSource="@DutyReasonData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                    <DropDownListFieldSettings Value="@nameof(ASeparationofDutyDto.DutyReasonId)" Text="@nameof(ASeparationofDutyDto.DutyReason)"></DropDownListFieldSettings>
+                                </SfDropDownList>
+                                
+                        </div>
                 </div>
             }
         </Template>
@@ -743,7 +755,7 @@
             @if (SaveButtons == false)
             {
                 @*<SfButton CssClass="e-success" OnClick="@onSubmitForm">Save Form</SfButton>
-            <SfButton CssClass="e-danger" OnClick="DialogCancelBtnclicked">Cancel</SfButton>*@
+                <SfButton CssClass="e-danger" OnClick="DialogCancelBtnclicked">Cancel</SfButton>*@
 
                 <button type="button" class="btn btn-success" @onclick="@onSubmitForm">Save Record</button>
                 <button type="button" class="btn btn-danger" @onclick="@DialogCancelBtnclicked">Cancel</button>
@@ -970,6 +982,8 @@
     List<ViewAparish>? ParishData { get; set; }
     List<ASubCounty>? SubCountyData { get; set; }
     List<ViewAvillage>? VillageData { get; set; }
+    List<ASeparationofDutyDto>? DutyReasonData { get; set; }
+
     bool isSubcountyEnabled { get; set; } = false;
     bool isParishEnabled { get; set; } = false;
     bool isVillageEnabled { get; set; } = false;
@@ -992,6 +1006,7 @@
     private UtilitiesSearchPanel SearchModel = new();
     SfMultiSelect<int[],EmployeeDto> EmployeeObj;
     bool SaveButtons { get; set; } = false;
+    LoginResultModel? Credentials { get; set; }
 
     #endregion Declarations
 
@@ -1008,142 +1023,149 @@
     {
         try
         {
-            await _SystemSettings.GetLoginCredentials();
-            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            Credentials = await AuthenticationService.GetUserCredentials();
             RowDetails = null;
 
-            var responseemployee = await Http.GetAsync($"{_ApiConfig.BaseUrl}Employeez/GetMasterList");
+            var responseemployee = await Http.GetAsync($"Employeez/GetMasterList");
             var contentemployee = await responseemployee.Content.ReadAsStringAsync();
             if (responseemployee.IsSuccessStatusCode)
             {
                 EmployeeData = await Http.GetFromJsonAsync<List<EmployeeDto>>
-                ($"{_ApiConfig.BaseUrl}Employeez/GetMasterList");
+                ($"Employeez/GetMasterList");
             }
 
-            var responsegender = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetEmployeeLevel");
+            var responsegender = await Http.GetAsync($"Utilities/GetEmployeeLevel");
             var contentemployeegender = await responsegender.Content.ReadAsStringAsync();
             if (responsegender.IsSuccessStatusCode)
             {
                 GenderData = await Http.GetFromJsonAsync<List<AGenderDto>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetGender");
+                ($"Utilities/GetGender");
             }
 
-            var responseemployeelevel = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetEmployeeLevel");
+            var responseemployeelevel = await Http.GetAsync($"Utilities/GetEmployeeLevel");
             var contentemployeelevel = await responseemployeelevel.Content.ReadAsStringAsync();
             if (responseemployeelevel.IsSuccessStatusCode)
             {
                 EmployeeLevelData = await Http.GetFromJsonAsync<List<AEmployeeLevelDto>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetEmployeeLevel");
+                ($"Utilities/GetEmployeeLevel");
             }
 
-            var responsemaritalstatus = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetMaritalStatus");
+            var responsemaritalstatus = await Http.GetAsync($"Utilities/GetMaritalStatus");
             var contentmaritalstatus = await responsemaritalstatus.Content.ReadAsStringAsync();
             if (responsemaritalstatus.IsSuccessStatusCode)
             {
                 MaritalStatusData = await Http.GetFromJsonAsync<List<AMaritalStatusDto>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetMaritalStatus");
+                ($"Utilities/GetMaritalStatus");
             }
 
-            var responsecountry = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetCountry");
+            var responsecountry = await Http.GetAsync($"Utilities/GetCountry");
             var contentcountry = await responsecountry.Content.ReadAsStringAsync();
             if (responsecountry.IsSuccessStatusCode)
             {
                 CountryData = await Http.GetFromJsonAsync<List<ACountryDto>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetCountry");
+                ($"Utilities/GetCountry");
             }
 
-            var responseuserrole = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUserRoleId");
+            var responseuserrole = await Http.GetAsync($"Utilities/GetUserRoleId");
             var contentuserrole = await responseuserrole.Content.ReadAsStringAsync();            
             if (responseuserrole.IsSuccessStatusCode)
             {
                 UserRole = contentuserrole;
             }
 
-            var responseuserjobtitleid = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUserJobTitleId");
+            var responseuserjobtitleid = await Http.GetAsync($"Utilities/GetUserJobTitleId");
             var contentuserjobtitleid = await responseuserjobtitleid.Content.ReadAsStringAsync();
             if (responseuserjobtitleid.IsSuccessStatusCode)
             {
                 UserJobTitleId = Convert.ToInt32(contentuserjobtitleid);
             }
 
-            var responsedistrict = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetDistrict");
+            var responsedistrict = await Http.GetAsync($"Utilities/GetDistrict");
             var contentdistrict = await responsedistrict.Content.ReadAsStringAsync();
             if (responsedistrict.IsSuccessStatusCode)
             {
                 DistrictData = await Http.GetFromJsonAsync<List<ADistrict>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetDistrict");
+                ($"Utilities/GetDistrict");
             }
 
-            var responsesubcounty = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetSubcounty");
+            var responsesubcounty = await Http.GetAsync($"Utilities/GetSubcounty");
             var contentsubcounty = await responsesubcounty.Content.ReadAsStringAsync();
             if (responsesubcounty.IsSuccessStatusCode)
             {
                 SubCountyData = await Http.GetFromJsonAsync<List<ASubCounty>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetSubcounty");
+                ($"Utilities/GetSubcounty");
             }
 
-            var responseparish = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetParishDropDown");
+            var responseparish = await Http.GetAsync($"Utilities/GetParishDropDown");
             var contentparish = await responseparish.Content.ReadAsStringAsync();
             if (responseparish.IsSuccessStatusCode)
             {
                 ParishData = await Http.GetFromJsonAsync<List<ViewAparish>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetParishDropDown");
+                ($"Utilities/GetParishDropDown");
             }
 
-            //var responsevillage = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetVillageDropDown");
+            var responseseparationreason = await Http.GetAsync($"Utilities/GetSeparationReason");
+            var contentseparationreason = await responseseparationreason.Content.ReadAsStringAsync();
+            if (responseseparationreason.IsSuccessStatusCode)
+            {
+                DutyReasonData = await Http.GetFromJsonAsync<List<ASeparationofDutyDto>>
+                ($"Utilities/GetSeparationReason");
+            }
+
+            //var responsevillage = await Http.GetAsync($"Utilities/GetVillageDropDown");
             //var contentvillage = await responsevillage.Content.ReadAsStringAsync();
             //if (responsevillage.IsSuccessStatusCode)
             //{
             //    VillageData = await Http.GetFromJsonAsync<List<ViewAvillage>>
-            //    ($"{_ApiConfig.BaseUrl}Utilities/GetVillageDropDown");
+            //    ($"Utilities/GetVillageDropDown");
             //} 
 
-            var responserelationship = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetRelationship");
+            var responserelationship = await Http.GetAsync($"Utilities/GetRelationship");
             var contentrelationship = await responserelationship.Content.ReadAsStringAsync();
             if (responserelationship.IsSuccessStatusCode)
             {
                 ARelationshipData = await Http.GetFromJsonAsync<List<ARelationshipDto>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetRelationship");
+                ($"Utilities/GetRelationship");
             }
 
-            var responseEducationLevel = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetLevelofEducation");
+            var responseEducationLevel = await Http.GetAsync($"Utilities/GetLevelofEducation");
             var contentEducationLevel = await responseEducationLevel.Content.ReadAsStringAsync();
             if (responseEducationLevel.IsSuccessStatusCode)
             {
                 LevelofEducationData = await Http.GetFromJsonAsync<List<ALevelofEducationDto>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetLevelofEducation");
+                ($"Utilities/GetLevelofEducation");
             }
 
-            var responseDegreeClass = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetDegreeClass");
+            var responseDegreeClass = await Http.GetAsync($"Utilities/GetDegreeClass");
             var contentDegreeClass = await responseDegreeClass.Content.ReadAsStringAsync();
             if (responseDegreeClass.IsSuccessStatusCode)
             {
                 DegreeClassData = await Http.GetFromJsonAsync<List<ADegreeClassDto>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetDegreeClass");
+                ($"Utilities/GetDegreeClass");
             }
 
-            var responseIdentificationType = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetIdentificationType");
+            var responseIdentificationType = await Http.GetAsync($"Utilities/GetIdentificationType");
             var contentIdentificationType = await responseIdentificationType.Content.ReadAsStringAsync();
             if (responseIdentificationType.IsSuccessStatusCode)
             {
                 IdentificationTypeData = await Http.GetFromJsonAsync<List<AIdentificationTypeDto>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetIdentificationType");
+                ($"Utilities/GetIdentificationType");
             }
 
-            var responseBank = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetBank");
+            var responseBank = await Http.GetAsync($"Utilities/GetBank");
             var contentBank = await responseBank.Content.ReadAsStringAsync();
             if (responseBank.IsSuccessStatusCode)
             {
                 BankData = await Http.GetFromJsonAsync<List<ABankDto>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetBank");
+                ($"Utilities/GetBank");
             }
 
-            var responseJobDescription = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetJobDescription");
+            var responseJobDescription = await Http.GetAsync($"Utilities/GetJobDescription");
             var contentJobDescription = await responseJobDescription.Content.ReadAsStringAsync();
             if (responseJobDescription.IsSuccessStatusCode)
             {
                 JobDescriptionData = await Http.GetFromJsonAsync<List<JobDescriptionDto>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetJobDescription");
+                ($"Utilities/GetJobDescription");
             }
 
 
@@ -1354,11 +1376,11 @@
             }
 
             await SavingDialog.ShowAsync();
-            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(selectedemployee);
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-            var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}Employeez/DeleteEmployee?employeeid={employeeid}", httpContent);
+            var result = await Http.PostAsync($"Employeez/DeleteEmployee?employeeid={employeeid}", httpContent);
 
             if (result.IsSuccessStatusCode)
             {
@@ -1403,9 +1425,8 @@
         SpinnerObj.ShowAsync();
         GridAttributes.Add("disable", "yes");
 
-        await _SystemSettings.GetLoginCredentials();
-        if (!string.IsNullOrEmpty(_SystemSettings.UserRole) != null &&
-            _SystemSettings.UserRole.Contains("Administrator"))
+        if (Credentials != null && !string.IsNullOrEmpty(Credentials.UserRole) &&
+            Credentials.UserRole.Contains("Administrator"))
         {
             hide = true;
         }
@@ -1454,10 +1475,10 @@
                     }
                 }
 
-                await _SystemSettings.GetLoginCredentials();
-                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
-                //var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}Employeez/GetEmployeeList");
-                var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}Employeez/GetEmployeeList?Employeeid={Employeeid}");
+                //
+                //
+                //var response = await Http.GetAsync($"Employeez/GetEmployeeList");
+                var response = await Http.GetAsync($"Employeez/GetEmployeeList?Employeeid={Employeeid}");
                 var content = await response.Content.ReadAsStringAsync();
                 if (!response.IsSuccessStatusCode)
                 {
@@ -1517,17 +1538,17 @@
         {
             try
             {
-                await _SystemSettings.GetLoginCredentials();
+                //
                 var val = (value as EmployeeDto);
                 if (val != null)
                 {
                     if (val.Employeeid == 0)
                     {
-                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        //
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}Employeez/CreateEmployeeDetails", httpContent);
+                        var result = await Http.PostAsync($"Employeez/CreateEmployeeDetails", httpContent);
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
@@ -1563,17 +1584,17 @@
         {
             try
             {
-                await _SystemSettings.GetLoginCredentials();
+                //
                 var val = (value as EmployeeDto);
                 if (val != null)
                 {
                     if (val.Employeeid != 0)
                     {
-                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        //
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                        var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}Employeez/UpdateEmployeeDetails", httpContent);
+                        var result = await Http.PutAsync($"Employeez/UpdateEmployeeDetails", httpContent);
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
@@ -1612,11 +1633,11 @@
         //    try
         //    {
         //        var val = (value as EmployeeDto);
-        //        await _SystemSettings.GetLoginCredentials();
-        //        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+        //        
+        //        
         //        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
         //        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-        //        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}Employeez/SaveEmployeeRecord", httpContent);
+        //        var result = await Http.PostAsync($"Employeez/SaveEmployeeRecord", httpContent);
         //        if (result.IsSuccessStatusCode)
         //        {
         //            toastService.ShowSuccess($"{val.EmployeeHeader.FirstName}'s record was sucessfully updated");
@@ -1844,12 +1865,12 @@
 
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
         {
-            var responseemployee = await Http.GetAsync($"{_ApiConfig.BaseUrl}Employeez/GetMasterList");
+            var responseemployee = await Http.GetAsync($"Employeez/GetMasterList");
             var contentemployee = await responseemployee.Content.ReadAsStringAsync();
             if (responseemployee.IsSuccessStatusCode)
             {
                 EmployeeData = await Http.GetFromJsonAsync<List<EmployeeDto>>
-                ($"{_ApiConfig.BaseUrl}Employeez/GetMasterList");
+                ($"Employeez/GetMasterList");
             }
          }
     }
@@ -2198,12 +2219,12 @@
         if (args.ItemData != null)
         {
             isVillageEnabled= true;
-            var responsevillage = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
+            var responsevillage = await Http.GetAsync($"Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
             var contentvillage = await responsevillage.Content.ReadAsStringAsync();
             if (responsevillage.IsSuccessStatusCode)
             {
                 VillageData = await Http.GetFromJsonAsync<List<ViewAvillage>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
+                ($"Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
             } 
             ParishChange = new Query().Where(new WhereFilter() { Field = "ParishId", Operator = "equal", value = args.ItemData.ParishId, IgnoreCase = false, IgnoreAccent = false });
         }
@@ -2228,12 +2249,12 @@
         if (args.ItemData != null)
         {
             isVillageREnabled= true;
-            var responsevillage = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
+            var responsevillage = await Http.GetAsync($"Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
             var contentvillage = await responsevillage.Content.ReadAsStringAsync();
             if (responsevillage.IsSuccessStatusCode)
             {
                 VillageData = await Http.GetFromJsonAsync<List<ViewAvillage>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
+                ($"Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
             } 
             ParishRChange = new Query().Where(new WhereFilter() { Field = "ParishId", Operator = "equal", value = args.ItemData.ParishId, IgnoreCase = false, IgnoreAccent = false });
         }

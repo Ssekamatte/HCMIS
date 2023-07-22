@@ -10,11 +10,13 @@
 
 <AuthorizeView>
     <Authorized>
+        @if(user != null)
+        {
+            <h9 style="color:darkblue"><a>Welcome: @user.AccountHolderName</a></h9>
+        <SfButton IconCss="e-danger" OnClick="@signOutClick">Log Out</SfButton>
+        }
         @*<a href="Identity/Account/Manage">Hello, @context.User.Identity.Name!</a>*@
-        <h9 style="color:darkblue"><a href="Identity/Account/Manage">Welcome, @_SystemSettings.AccountHolderName</a></h9>
-            <form method="post" action="Identity/Account/LogOut">
-                <button type="submit" class="nav-link btn btn-link"><h9 style="color:orangered">Log out</h9></button>
-            </form>
+        
     </Authorized>
     <NotAuthorized>
         @*<a href="Identity/Account/Register">Register</a>
@@ -22,8 +24,20 @@
     </NotAuthorized>
 </AuthorizeView>
 @code{
+    LoginResultModel user { get; set; }
     protected override async Task OnInitializedAsync()
     {
+        // 
+        user = await IAuthService.GetUserCredentials();
+    }
 
+    private async void signOutClick()
+    {
+          await localStore.ClearAsync();
+          AppState.LoggedIn = false;
+          Navigation.NavigateTo("/");
+
+        //IAuthService.Logout();
+        //Navigation.NavigateTo("/");
     }
 }

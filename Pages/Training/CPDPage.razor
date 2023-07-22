@@ -11,6 +11,7 @@
 @using System.Collections;
 @using HCMIS.SHARED.DTOs.Training;
 @inject IToastService toastService;
+@using HCMIS.SHARED.DTOs.Utilities;
 
 <style>
     .e-edit-dialog {
@@ -80,7 +81,7 @@
         @{
             <center>
             <h5>
-            <strong>Continous Proffessional Development (CPDS)</strong>
+            <strong>Continous Proffessional Development (CPD)</strong>
             </h5>
             </center>
                 CPDData = (context as ViewCpdDto);
@@ -102,6 +103,12 @@
                    <SfDatePicker @bind-Value="@(CPDData.EndDate)" Enabled="true" Placeholder="End Date" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
             </div>
             <div class="col-md-4">
+                <p><h3>National/International<span style="color:red;">*</span></h3></p>
+                            <SfDropDownList @bind-Value="@(CPDData.LocalityId)" Enabled="true" TItem="ATrainingLocalityDto" TValue="int?" DataSource="@LocalityData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                <DropDownListFieldSettings Value="@nameof(ATrainingLocalityDto.LocalityId)" Text="@nameof(ATrainingLocalityDto.LocalityDesc)"></DropDownListFieldSettings>
+                            </SfDropDownList>
+            </div>
+            <div class="col-md-4">
             <p><h3>Location</h3></p>
                    <SfTextBox Multiline="false" ID="Location" @bind-Value="@(CPDData.Location)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
             </div>
@@ -111,15 +118,15 @@
             </div>
             <div class="col-md-4">
             <p><h3>Amount</h3></p>
-                   <SfNumericTextBox ID="Id" @bind-Value="@(CPDData.Amount)" Placeholder="Amount" Enabled="true" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                   <SfNumericTextBox ID="Id" @bind-Value="@(CPDData.Amount)" Enabled="true" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
             <p><h3>Trainer</h3></p>
                     <SfTextBox Multiline="false" ID="Trainer" @bind-Value="@(CPDData.Trainer)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
             <p><h3>Department(s)<span style="color:red;">*</span></h3></p>
-                <SfMultiSelect @ref="@DepartmentsDatasourceObj" TValue="int[]" TItem="ADepartment" AllowFiltering="true" Placeholder="Department(s)" Mode="@VisualMode.CheckBox" DataSource="@DepartmentData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Departments" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
+                <SfMultiSelect @ref="@DepartmentsDatasourceObj" TValue="int[]" TItem="ADepartment" AllowFiltering="true" Mode="@VisualMode.CheckBox" DataSource="@DepartmentData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Departments" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
                     <MultiSelectFieldSettings Value="@nameof(ADepartment.DepartmentId)" Text="@nameof(ADepartment.DepartmentDescription)"></MultiSelectFieldSettings>
                     <MultiSelectEvents TValue="int[]" TItem="ADepartment" ValueChange="OnDepartmentDatasourceChange" DataBound="OnDepartmentDatasourceBound"></MultiSelectEvents>
                 </SfMultiSelect>
@@ -159,6 +166,7 @@
     SfGrid<ViewCpdDto>? DataGrid { get; set; }
     private static ViewCpdDto? CPDData { get; set; }
     List<ADepartment>? DepartmentData { get; set; }
+    List<ATrainingLocalityDto>? LocalityData { get; set; }
     private SfMultiSelect<int[],ADepartment>? DepartmentsDatasourceObj;
 
     #region Toasters
@@ -202,16 +210,23 @@
     }
 
     protected override async Task OnInitializedAsync()
-    {
-        await _SystemSettings.GetLoginCredentials();
-        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
-        var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}TrainingTopic/GetTrainingTopic");
+    {      
+        var response = await Http.GetAsync($"TrainingTopic/GetTrainingTopic");
         var content = await response.Content.ReadAsStringAsync();
 
         if (response.IsSuccessStatusCode)
         {
             DepartmentData = await Http.GetFromJsonAsync<List<ADepartment>>
-            ($"{_ApiConfig.BaseUrl}Utilities/GetDepartment");
+            ($"Utilities/GetDepartment");
+        }
+
+        var responselocality = await Http.GetAsync($"Utilities/GetLocality");
+        var contentlocality = await responselocality.Content.ReadAsStringAsync();
+
+        if (responselocality.IsSuccessStatusCode)
+        {
+            LocalityData = await Http.GetFromJsonAsync<List<ATrainingLocalityDto>>
+            ($"Utilities/GetLocality");
         }
     }
 
@@ -239,7 +254,7 @@
 
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         {
-            await _SystemSettings.GetLoginCredentials();
+            
 
             var data = new List<ViewCpdDto>();
 
@@ -248,8 +263,8 @@
 
             try
             {
-                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AccessToken);
-                var response = await Http.GetAsync($"{BaseUrl}CPD/GetCPD");
+                 
+                var response = await Http.GetAsync($"CPD/GetCPD");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
@@ -304,17 +319,17 @@
         {
             try
             {
-                await _SystemSettings.GetLoginCredentials();
+                
                 var val = (value as ViewCpdDto);
                 if (val != null)
                 {
                     if (val.Id == 0)
                     {
-                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}CPD/CreateCPD", httpContent);
+                        var result = await Http.PostAsync($"CPD/CreateCPD", httpContent);
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
@@ -339,11 +354,11 @@
                     }
                     else
                     {
-                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}CPD/UpdateCPD", httpContent);
+                        var result = await Http.PostAsync($"CPD/UpdateCPD", httpContent);
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
@@ -378,17 +393,17 @@
         {
             try
             {
-                await _SystemSettings.GetLoginCredentials();
+                
                 var val = (value as ViewCpdDto);
                 if (val != null)
                 {
                     if (val.Id == 0)
                     {
-                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}CPD/CreateCPD", httpContent);
+                        var result = await Http.PostAsync($"CPD/CreateCPD", httpContent);
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
@@ -413,11 +428,11 @@
                     }
                     else
                     {
-                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                        var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}CPD/UpdateCPD", httpContent);
+                        var result = await Http.PutAsync($"CPD/UpdateCPD", httpContent);
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
@@ -483,6 +498,12 @@
                 toastService.ShowWarning("The training end date cannot be before the training start date.!");
                 Args.Cancel = true;
             }
+            else if (Args.Data.LocalityId == null)
+            {
+                toastService.ShowWarning("Please choose whether this is a local or international training!");
+                Args.Cancel = true;
+            }
+
             else if (Args.Data.Departments == null)
             {
                 toastService.ShowWarning("Please choose the department(s).!");

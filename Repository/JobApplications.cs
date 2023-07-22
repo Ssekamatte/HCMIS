@@ -26,7 +26,7 @@ namespace HCMIS.Repository
             try
             {
                 string? accessToken = await settingsRepo.GetAccessToken();
-                http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                 
                 var response = await http.GetAsync($"HumanResource/GetApplicationForStatus/{ApplicationStatusId}");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
@@ -50,7 +50,7 @@ namespace HCMIS.Repository
             try
             {
                 string? accessToken = await settingsRepo.GetAccessToken();
-                http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                 
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(data);
                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
                 var result = await http.PostAsync($"HumanResource/SaveJobApplication", httpContent);
@@ -87,7 +87,7 @@ namespace HCMIS.Repository
             try
             {
                 string? accessToken = await settingsRepo.GetAccessToken();
-                http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                 
                 var response = await http.GetAsync($"HumanResource/GetMyApplications/{ApplicationStatusId}/{ApplicantId}");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)

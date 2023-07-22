@@ -8,12 +8,13 @@
 @inject ApiConfig _ApiConfig;
 @inject HttpClient Http
 @inject NavigationManager Navigation
-@inject SystemSettings _SystemSettings
 @using System.Collections;
 @inject IToastService toastService;
 @using System.Globalization;
-@using HCMIS.SHARED.Data
-@inject IJSRuntime JsRuntime
+@using HCMIS.SHARED.Data;
+@inject IJSRuntime JsRuntime;
+@using HCMIS.Interface;
+@inject IAuthenticationService AuthService;
 
 <style>
     /*Customize Scroll Bars*/
@@ -39,13 +40,13 @@
         z-index: 1;
     }
     /*stick grid headers*/
-
+/*
     .e-edit-dialog {
         max-height: 95%;
         max-width: 100%;
         min-width: 100%;
         min-height: 95%;
-    }
+    }*/
 
     h6 {
         color: ghostwhite;
@@ -169,9 +170,10 @@
     </h5>    
 </center>
 
-@if ((!string.IsNullOrEmpty(_SystemSettings.UserRole)&& _SystemSettings.UserRole.Contains("Administrator"))
-|| (UserJobTitleId != null && UserJobTitleId == 44))
+@if (Credentials != null && (!string.IsNullOrEmpty(Credentials.UserRole) &&
+		Credentials.UserRole.Contains("Administrator")) || UserJobTitleId == 44)
 {
+
 <div class="form-row">
     <div class="col-md-12">
         <SfAccordion ExpandMode="ExpandMode.Single">
@@ -262,12 +264,10 @@
                                         <strong>Leave No: @employeeleave.EmployeeLeaveNo</strong>
                                 </h5>
                         </div>
-                        <div class="col-md-4">                                  
-                                <marquee scrollamount="3">
-                                    <h5 style="color:green;">
-                                        <strong>Application Status: @employeeleave.LeaveApprovalStatus</strong>
-                                    </h5>
-                                </marquee>
+                        <div class="col-md-4">
+                            <h5 style="color:green;">
+                                <strong>Application Status: @employeeleave.LeaveApprovalStatus</strong>
+                            </h5>
                         </div>
                     }
                 </div>
@@ -884,7 +884,7 @@
                 {
                     if ((_previousAdd == Syncfusion.Blazor.Grids.Action.Add 
                         || _previousEdit == Syncfusion.Blazor.Grids.Action.BeginEdit)
-                        && (LeaveData != null && LeaveData.EmployeeId == _SystemSettings.StaffId))
+                        && (LeaveData != null && LeaveData.EmployeeId == Credentials.StaffId))
                     {
                         <button @onclick="@onSaveDraftForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
                         <button @onclick="@onSubmitAssistantForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Submit Request</button>
@@ -909,7 +909,7 @@
                 {
                     if ((_previousAdd == Syncfusion.Blazor.Grids.Action.Add 
                         || _previousEdit == Syncfusion.Blazor.Grids.Action.BeginEdit)
-                        && (LeaveData != null && LeaveData.EmployeeId == _SystemSettings.StaffId))
+                        && (LeaveData != null && LeaveData.EmployeeId == Credentials.StaffId))
                     {
                         <button @onclick="@onSaveDraftForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
                         <button @onclick="@onSubmitAssistantForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Submit To Supervisor</button>
@@ -931,7 +931,7 @@
             {
                     if ((_previousAdd == Syncfusion.Blazor.Grids.Action.Add 
                         || _previousEdit == Syncfusion.Blazor.Grids.Action.BeginEdit)
-                        && (LeaveData != null && LeaveData.EmployeeId == _SystemSettings.StaffId))
+                        && (LeaveData != null && LeaveData.EmployeeId == Credentials.StaffId))
                     {
                         <button @onclick="@onSaveDraftForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
                         <button @onclick="@onSubmitCHROAssistantForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Submit To Supervisor</button>
@@ -1155,6 +1155,7 @@
     private UtilitiesSearchPanel SearchModel = new();
     Query mainQuery { get; set; } = new();
     bool IsDisabled = false;
+    LoginResultModel? Credentials { get; set; }
 
     /// <summary>
     /// Event for Toolbar click for Grid Exporting
@@ -1188,49 +1189,51 @@
     {
         try
         {
+            Credentials = await AuthService.GetUserCredentials();
+
             employeeno = null;
             employeenosupervisor = null;
             employeenohod = null;
             leavetypedays = null;
-            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
-            var responseemployee = await Http.GetAsync($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+            
+            var responseemployee = await Http.GetAsync($"BalanceScoreCard/GetEmployeeData");
             var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-            var responseleavetype = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetLeaveType");
+            var responseleavetype = await Http.GetAsync($"Utilities/GetLeaveType");
             var contentleavetype = await responseleavetype.Content.ReadAsStringAsync();
-            var responsepublicholiday = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetPublicHoliday");
+            var responsepublicholiday = await Http.GetAsync($"Utilities/GetPublicHoliday");
             var contentpublicholiday = await responsepublicholiday.Content.ReadAsStringAsync();
-            var responseemployeeleave = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/GetEmployeeLeaveData");
+            var responseemployeeleave = await Http.GetAsync($"EmployeeLeave/GetEmployeeLeaveData");
             var contentemployeeleave = await responseemployeeleave.Content.ReadAsStringAsync();
-            var responseuserjobtitle = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUserJobTitle");        
-            var responseuserrole = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUserRoleId");
+            var responseuserjobtitle = await Http.GetAsync($"Utilities/GetUserJobTitle");        
+            var responseuserrole = await Http.GetAsync($"Utilities/GetUserRoleId");
             var contentuserrole = await responseuserrole.Content.ReadAsStringAsync();
             var contentuserjobtitle = await responseuserjobtitle.Content.ReadAsStringAsync();
-            var responseapprovalstatus = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetLeaveApprovalStatus");
+            var responseapprovalstatus = await Http.GetAsync($"Utilities/GetLeaveApprovalStatus");
             var contentapprovalstatus = await responseapprovalstatus.Content.ReadAsStringAsync();
-            var responseuserlevelid = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetEmployeeLevelId");
+            var responseuserlevelid = await Http.GetAsync($"Utilities/GetEmployeeLevelId");
             var contentuserlevelid = await responseuserlevelid.Content.ReadAsStringAsync();
-            var responseuserjobtitleid = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUserJobTitleId");
+            var responseuserjobtitleid = await Http.GetAsync($"Utilities/GetUserJobTitleId");
             var contentuserjobtitleid = await responseuserjobtitleid.Content.ReadAsStringAsync();
 
             if (responseemployee.IsSuccessStatusCode)
             {
                 EmployeeData = await Http.GetFromJsonAsync<List<ViewBscEmployeeDto>>
-                ($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+                ($"BalanceScoreCard/GetEmployeeData");
             }
             if (responseleavetype.IsSuccessStatusCode)
             {
                 LeaveTypeData = await Http.GetFromJsonAsync<List<ALeaveTypeDto>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetLeaveType");
+                ($"Utilities/GetLeaveType");
             }
             if (responsepublicholiday.IsSuccessStatusCode)
             {
                 PublicHolidaysData = await Http.GetFromJsonAsync<List<APublicHolidays>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetPublicHoliday");
+                ($"Utilities/GetPublicHoliday");
             }
             if (responseemployeeleave.IsSuccessStatusCode)
             {
                 RoasterCount = await Http.GetFromJsonAsync<List<ViewEmployeeLeaveDto>>
-                ($"{_ApiConfig.BaseUrl}EmployeeLeave/GetEmployeeLeaveData");
+                ($"EmployeeLeave/GetEmployeeLeaveData");
             }
 
             if (responseuserjobtitle.IsSuccessStatusCode)
@@ -1241,7 +1244,7 @@
             if (responseapprovalstatus.IsSuccessStatusCode)
             {
                 ApprovalStatusData = await Http.GetFromJsonAsync<List<ALeaveApprovalStatusDto>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetLeaveApprovalStatus");
+                ($"Utilities/GetLeaveApprovalStatus");
             }
 
             if (responseuserrole.IsSuccessStatusCode)
@@ -1566,10 +1569,10 @@
             await LoadingDialogue.HideAsync();
             StateHasChanged();
 
-            //Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            //
             //string json = Newtonsoft.Json.JsonConvert.SerializeObject(LeaveData);
             //StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-            //var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/LeaveRequestSubmissionEmail", httpContent);
+            //var result = await Http.PostAsync($"EmployeeLeave/LeaveRequestSubmissionEmail", httpContent);
         }
     }
 
@@ -1606,7 +1609,7 @@
                 await LoadingDialogue.ShowAsync();
                 LeaveData.LeaveApprovalStatusId = 9;
                 LeaveData.ChroapprovalDate = DateTime.Now;
-                LeaveData.ChroapprovedBy = _SystemSettings.StaffId;
+                LeaveData.ChroapprovedBy = Credentials.StaffId;
                 LeaveData.ApprovedByChro = true;
                 await DataGrid.EndEditAsync();
             }            
@@ -1623,10 +1626,10 @@
             StateHasChanged();
 
             string? _baseurl = Navigation.BaseUri;            
-            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(LeaveData);
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-            var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/ApproveEmployeeLeaveCHRO?_baseurl={_baseurl}", httpContent);
+            var result = await Http.PostAsync($"EmployeeLeave/ApproveEmployeeLeaveCHRO?_baseurl={_baseurl}", httpContent);
         }
     }
 
@@ -1738,10 +1741,10 @@
                 await DataGrid.EndEditAsync();
             }
 
-            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(LeaveData);
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-            var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/RejectEmployeeLeave", httpContent);
+            var result = await Http.PostAsync($"EmployeeLeave/RejectEmployeeLeave", httpContent);
         }
         catch (Exception ex)
         {
@@ -1879,10 +1882,13 @@
             StateHasChanged();
 
             string? _baseurl = Navigation.BaseUri;            
-            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(LeaveData);
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-            var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/LeaveRequestSupervisorToHODEmail?_baseurl={_baseurl}", httpContent);
+            //Send Email to HOD
+            var result = await Http.PostAsync($"EmployeeLeave/LeaveRequestSupervisorToHODEmail?_baseurl={_baseurl}", httpContent);
+            //Send Email to Employee
+            var result1 = await Http.PostAsync($"EmployeeLeave/LeaveRequestSupervisorToHODEmployeeEmail?_baseurl={_baseurl}", httpContent);
         }
     }
 
@@ -2037,10 +2043,11 @@
             StateHasChanged();
 
             string? _baseurl = Navigation.BaseUri;
-            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(LeaveData);
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-            var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/SendHODToCHROEmail?_baseurl={_baseurl}", httpContent);            
+            var result = await Http.PostAsync($"EmployeeLeave/SendHODToCHROEmail?_baseurl={_baseurl}", httpContent);  
+            var result1 = await Http.PostAsync($"EmployeeLeave/SendHODToCHROEmployeeEmail?_baseurl={_baseurl}", httpContent);
         }
     }
 
@@ -2087,10 +2094,10 @@
             StateHasChanged();
 
             string? _baseurl = Navigation.BaseUri;
-            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(LeaveData);
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-            var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/RejectEmployeeLeaveHOD?_baseurl={_baseurl}", httpContent);
+            var result = await Http.PostAsync($"EmployeeLeave/RejectEmployeeLeaveHOD?_baseurl={_baseurl}", httpContent);
         }
     }
 
@@ -2231,10 +2238,10 @@
             StateHasChanged();
 
             string? _baseurl = Navigation.BaseUri;            
-            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+            
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(LeaveData);
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-            var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/RejectEmployeeLeaveCHRO?_baseurl={_baseurl}", httpContent);
+            var result = await Http.PostAsync($"EmployeeLeave/RejectEmployeeLeaveCHRO?_baseurl={_baseurl}", httpContent);
         }
     }
 
@@ -2401,14 +2408,14 @@
     {
         HttpClient Http;
         private readonly JsonSerializerOptions _options;
-        SystemSettings _SystemSettings;
+        IAuthenticationService _AuthService;
         ApiConfig _ApiConfig;
         public IToastService toastService;
         private readonly NavigationManager Navigation;
         private readonly ILogger <LeaveRequestAdapter> _logger;
 
         public LeaveRequestAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
-            , SystemSettings systemSettings, ApiConfig apiConfig,
+            ,IAuthenticationService authservice, ApiConfig apiConfig,
         ILogger<LeaveRequestAdapter> logger)
         {
             Http = _http;
@@ -2416,20 +2423,19 @@
             toastService = ts;
             Navigation = _Navigation;
             _ApiConfig = apiConfig;
-            _SystemSettings = systemSettings;
+            _AuthService = authservice;
         }
 
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
-        {
-            await _SystemSettings.GetLoginCredentials();
-
+        {            
+            var credentials = await _AuthService.GetUserCredentials();
             var data = new List<ViewEmployeeLeaveDto>();
 
-            string? AccessToken = _SystemSettings.AccessToken;
+            //string? AccessToken = credentials.AccessToken;
             string? BaseUrl = _ApiConfig.BaseUrl;
-            int? EmployeeId = _SystemSettings.StaffId;
-            string? UserRoleId = _SystemSettings.UserRoleId;
-            string? UserRole = _SystemSettings.UserRole;
+            int? EmployeeId = credentials.StaffId;
+            string? UserRoleId = credentials.UserRoleId;
+            string? UserRole = credentials.UserRole;
 
             try
             {
@@ -2456,7 +2462,7 @@
                     }
                 }
 
-                var response = await Http.GetAsync($"{BaseUrl}EmployeeLeave/GetEmployeeLeaveById?EmployeeId={EmployeeId}&UserRoleId={UserRoleId}&UserRole={UserRole}&LeaveApprovalStatusId={LeaveApprovalStatusId}&Employeeidsearch={Employeeidsearch}");
+                var response = await Http.GetAsync($"EmployeeLeave/GetEmployeeLeaveById?EmployeeId={EmployeeId}&UserRoleId={UserRoleId}&UserRole={UserRole}&LeaveApprovalStatusId={LeaveApprovalStatusId}&Employeeidsearch={Employeeidsearch}");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
@@ -2519,17 +2525,17 @@
                 {
                     _datesselectedd = string.Join(",", datesselectedd.Select(d => d.ToString("dd/MM/yyyy")).ToArray());
                 }
-                await _SystemSettings.GetLoginCredentials();
+                
                 var val = (value as ViewEmployeeLeaveDto);
                 if (val != null)
                 {
                     if (val.EmployeeLeaveId == 0)
                     {
-                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/CreateEmployeeLeave?_datesselectedd={_datesselectedd}&_baseurl={_baseurl}", httpContent);
+                        var result = await Http.PostAsync($"EmployeeLeave/CreateEmployeeLeave?_datesselectedd={_datesselectedd}&_baseurl={_baseurl}", httpContent);
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
@@ -2554,11 +2560,11 @@
                     }
                     else
                     {
-                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                        var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/UpdateEmployeeLeave?_datesselectedd={_datesselectedd}&_baseurl={_baseurl}", httpContent);
+                        var result = await Http.PutAsync($"EmployeeLeave/UpdateEmployeeLeave?_datesselectedd={_datesselectedd}&_baseurl={_baseurl}", httpContent);
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
@@ -2600,17 +2606,17 @@
                 {
                     _datesselectedd = string.Join(",", datesselectedd.Select(d => d.ToString("dd/MM/yyyy")).ToArray());
                 }
-                await _SystemSettings.GetLoginCredentials();
+                
                 var val = (value as ViewEmployeeLeaveDto);
                 if (val != null)
                 {
                     if (val.EmployeeLeaveId == 0)
                     {
-                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                        var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/CreateEmployeeLeave?_datesselectedd={_datesselectedd}&_baseurl={_baseurl}", httpContent);
+                        var result = await Http.PostAsync($"EmployeeLeave/CreateEmployeeLeave?_datesselectedd={_datesselectedd}&_baseurl={_baseurl}", httpContent);
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
@@ -2635,11 +2641,11 @@
                     }
                     else
                     {
-                        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                        
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                        var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/UpdateEmployeeLeave?_datesselectedd={_datesselectedd}&_baseurl={_baseurl}", httpContent);
+                        var result = await Http.PutAsync($"EmployeeLeave/UpdateEmployeeLeave?_datesselectedd={_datesselectedd}&_baseurl={_baseurl}", httpContent);
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
@@ -2682,41 +2688,41 @@
         }
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
         {
-            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
-            var responseemployee = await Http.GetAsync($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+            
+            var responseemployee = await Http.GetAsync($"BalanceScoreCard/GetEmployeeData");
             var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-            var responseleavetype = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetLeaveType");
+            var responseleavetype = await Http.GetAsync($"Utilities/GetLeaveType");
             var contentleavetype = await responseleavetype.Content.ReadAsStringAsync();
-            var responsepublicholiday = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetPublicHoliday");
+            var responsepublicholiday = await Http.GetAsync($"Utilities/GetPublicHoliday");
             var contentpublicholiday = await responsepublicholiday.Content.ReadAsStringAsync();
-            var responseemployeeleave = await Http.GetAsync($"{_ApiConfig.BaseUrl}EmployeeLeave/GetEmployeeLeaveData");
+            var responseemployeeleave = await Http.GetAsync($"EmployeeLeave/GetEmployeeLeaveData");
             var contentemployeeleave = await responseemployeeleave.Content.ReadAsStringAsync();
-            var responseuserjobtitle = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUserJobTitle");        
-            var responseuserrole = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUserRoleId");
+            var responseuserjobtitle = await Http.GetAsync($"Utilities/GetUserJobTitle");        
+            var responseuserrole = await Http.GetAsync($"Utilities/GetUserRoleId");
             var contentuserrole = await responseuserrole.Content.ReadAsStringAsync();
             var contentuserjobtitle = await responseuserjobtitle.Content.ReadAsStringAsync();
-            var responseapprovalstatus = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetLeaveApprovalStatus");
+            var responseapprovalstatus = await Http.GetAsync($"Utilities/GetLeaveApprovalStatus");
             var contentapprovalstatus = await responseapprovalstatus.Content.ReadAsStringAsync();
 
             if (responseemployee.IsSuccessStatusCode)
             {
                 EmployeeData = await Http.GetFromJsonAsync<List<ViewBscEmployeeDto>>
-                ($"{_ApiConfig.BaseUrl}BalanceScoreCard/GetEmployeeData");
+                ($"BalanceScoreCard/GetEmployeeData");
             }
             if (responseleavetype.IsSuccessStatusCode)
             {
                 LeaveTypeData = await Http.GetFromJsonAsync<List<ALeaveTypeDto>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetLeaveType");
+                ($"Utilities/GetLeaveType");
             }
             if (responsepublicholiday.IsSuccessStatusCode)
             {
                 PublicHolidaysData = await Http.GetFromJsonAsync<List<APublicHolidays>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetPublicHoliday");
+                ($"Utilities/GetPublicHoliday");
             }
             if (responseemployeeleave.IsSuccessStatusCode)
             {
                 RoasterCount = await Http.GetFromJsonAsync<List<ViewEmployeeLeaveDto>>
-                ($"{_ApiConfig.BaseUrl}EmployeeLeave/GetEmployeeLeaveData");
+                ($"EmployeeLeave/GetEmployeeLeaveData");
             }
 
             if (responseuserjobtitle.IsSuccessStatusCode)
@@ -2727,7 +2733,7 @@
             if (responseapprovalstatus.IsSuccessStatusCode)
             {
                 ApprovalStatusData = await Http.GetFromJsonAsync<List<ALeaveApprovalStatusDto>>
-                ($"{_ApiConfig.BaseUrl}Utilities/GetLeaveApprovalStatus");
+                ($"Utilities/GetLeaveApprovalStatus");
             }
 
             if (responseuserrole.IsSuccessStatusCode)
@@ -2749,7 +2755,7 @@
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
         {
             _previousEdit = Args.RequestType;
-            employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.EmployeeId /*_SystemSettings.StaffId*/);
+            employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.EmployeeId /*Credentials.StaffId*/);
             employeenosupervisor = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.SupervisorRecommendationBy);
             employeenohod = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.HodrecommendationBy);
             employeeleave  = RoasterCount.FirstOrDefault(o => o.EmployeeLeaveId == Args.RowData.EmployeeLeaveId);
@@ -2790,7 +2796,7 @@
             //Submitted to Supervisor and Not Rejected or Rejected
             if(Args.Data.SubmittedToSupervisor == true 
             && Args.Data.SubmittedToHod == false 
-            && Args.Data.EmployeeId == _SystemSettings.StaffId
+            && Args.Data.EmployeeId == Credentials.StaffId
             &&(Args.Data.LeaveApprovalStatusId != 4 
             && Args.Data.LeaveApprovalStatusId != 7 
             && Args.Data.LeaveApprovalStatusId != 10
@@ -2810,8 +2816,8 @@
             //Supervisor reviewing another persons recommendation
             else if(Args.Data.SubmittedToSupervisor == true
             && Args.Data.SubmittedToHod == false 
-            && Args.Data.EmployeeId != _SystemSettings.StaffId
-            && Args.Data.SupervisorRecommendationBy == _SystemSettings.StaffId)
+            && Args.Data.EmployeeId != Credentials.StaffId
+            && Args.Data.SupervisorRecommendationBy == Credentials.StaffId)
             {
                     IsDisabled = false;
                     EmployeeDD = false;
@@ -2827,8 +2833,8 @@
             //Disable for Supervisor after submitting to HOD (For Non CHROs Approval)
             else if(Args.Data.SubmittedToSupervisor == true
             && Args.Data.SubmittedToHod == true 
-            && Args.Data.EmployeeId != _SystemSettings.StaffId
-            && Args.Data.SupervisorRecommendationBy == _SystemSettings.StaffId
+            && Args.Data.EmployeeId != Credentials.StaffId
+            && Args.Data.SupervisorRecommendationBy == Credentials.StaffId
             && (employeeno != null && employeeno.JobTitleId != 44))
             {
                     IsDisabled = true;
@@ -2845,8 +2851,8 @@
             //Disable for Supervisor after submitting to HOD (For CHROs Approval)
             else if(Args.Data.SubmittedToSupervisor == true
             && Args.Data.SubmittedToHod == true 
-            && Args.Data.EmployeeId != _SystemSettings.StaffId
-            && Args.Data.SupervisorRecommendationBy == _SystemSettings.StaffId
+            && Args.Data.EmployeeId != Credentials.StaffId
+            && Args.Data.SupervisorRecommendationBy == Credentials.StaffId
             && (employeeno != null && employeeno.JobTitleId == 44))
             {
                     IsDisabled = false;
@@ -2864,7 +2870,7 @@
             else if(Args.Data.SubmittedToSupervisor == true
             && Args.Data.SubmittedToHod == true 
             && Args.Data.SubmittedToHod == false 
-            && Args.Data.EmployeeId == _SystemSettings.StaffId)
+            && Args.Data.EmployeeId == Credentials.StaffId)
             {
                     IsDisabled = true;
                     EmployeeDD = false;
@@ -2881,7 +2887,7 @@
             else if(Args.Data.SubmittedToSupervisor == true
             && Args.Data.SubmittedToHod == true 
             && Args.Data.SubmittedToHod == true 
-            && Args.Data.EmployeeId == _SystemSettings.StaffId)
+            && Args.Data.EmployeeId == Credentials.StaffId)
             {
                     IsDisabled = true;
                     EmployeeDD = false;
@@ -2897,8 +2903,8 @@
             //HOD reviewing another persons recommendation
             else if(Args.Data.SubmittedToHod == true
             && Args.Data.SubmittedToChro == false 
-            && Args.Data.EmployeeId != _SystemSettings.StaffId
-            && Args.Data.HodrecommendationBy == _SystemSettings.StaffId)
+            && Args.Data.EmployeeId != Credentials.StaffId
+            && Args.Data.HodrecommendationBy == Credentials.StaffId)
             {
                     IsDisabled = false;
                     EmployeeDD = false;
@@ -2914,8 +2920,8 @@
             //Disable for HOD after submitting to CHRO
             else if(Args.Data.SubmittedToHod == true
             && Args.Data.SubmittedToChro == true 
-            && Args.Data.EmployeeId != _SystemSettings.StaffId
-            && Args.Data.HodrecommendationBy == _SystemSettings.StaffId)
+            && Args.Data.EmployeeId != Credentials.StaffId
+            && Args.Data.HodrecommendationBy == Credentials.StaffId)
             {
                     IsDisabled = true;
                     EmployeeDD = false;
@@ -2964,12 +2970,12 @@
             _previousAdd = Args.RequestType;
             leavetypedays = null;
             EmployeeDD = true;
-            if(_SystemSettings.StaffId > 0)
+            if(Credentials.StaffId > 0)
             {
-                Args.Data.EmployeeId = _SystemSettings.StaffId /*Args.RowData.EmployeeId*/;
+                Args.Data.EmployeeId = Credentials.StaffId /*Args.RowData.EmployeeId*/;
                 if(EmployeeData != null)
                 {
-                    employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.EmployeeId /*_SystemSettings.StaffId*/);
+                    employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.EmployeeId /*Credentials.StaffId*/);
                     employeenosupervisor = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.SupervisorRecommendationBy);
                     employeenohod = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.EmployeeId);
                     employeenohodchange = EmployeeData.FirstOrDefault(o => o.Employeeid == employeenohod.HoDemployeeId);
@@ -3047,7 +3053,7 @@
     {   
         //Only show draft aoolicationsfor the applicant and hide for the others
         if (Args.Data.LeaveApprovalStatusId == 1 
-            && Args.Data.EmployeeId != _SystemSettings.StaffId)
+            && Args.Data.EmployeeId != Credentials.StaffId)
         {
             //Args.Row.AddClass(new string[] { "equal-5" });
             Args.Row.AddClass(new string[] { "hiderecord" }); //adding class name to row
@@ -3056,7 +3062,7 @@
         //Only show approved for the applicant and hide for the others
         else if((Args.Data.LeaveApprovalStatusId == 9 
             || Args.Data.LeaveApprovalStatusId == 11)
-            && Args.Data.EmployeeId != _SystemSettings.StaffId)
+            && Args.Data.EmployeeId != Credentials.StaffId)
         {
             Args.Row.AddClass(new string[] { "hiderecord" });
         }

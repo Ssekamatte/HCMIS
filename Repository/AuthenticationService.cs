@@ -129,8 +129,9 @@ namespace HCMIS.Repository
                     else
                     {
                         await _localStorage.SetItemAsync("authToken", result);
-                        ((HCMISAuthStateProvider)_authStateProvider).NotifyUserAuthentication(result.token);
                         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", result.token);
+                        ((HCMISAuthStateProvider)_authStateProvider).NotifyUserAuthentication(result.token);
+                        
                     }
                 }
                 //var _outhtoken = await Crypto.EncryptAsync(result);

@@ -21,11 +21,10 @@ namespace HCMIS.ViewModel
             ResponseDto? _response = new();
             try
             {
-                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",AccessToken);
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(inputmodel);
                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}NonStaff/SaveDocumentUpload", httpContent);
+                var result = await Http.PostAsync($"NonStaff/SaveDocumentUpload", httpContent);
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
@@ -53,8 +52,7 @@ namespace HCMIS.ViewModel
             ImageUpload? imageUpload = new();
             try
             {
-                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",AccessToken);
-                var response = await Http.GetAsync($"{_ApiConfig.BaseUrl}NonStaff/DocumentUpload/{DocName}/{Rootfolder}");
+                var response = await Http.GetAsync($"NonStaff/DocumentUpload/{DocName}/{Rootfolder}");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {

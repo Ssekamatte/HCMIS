@@ -10,10 +10,11 @@
 @using System.IO;
 @using Microsoft.AspNetCore.Authorization
 @inject NavigationManager navigation;
-@inject SystemSettings _SystemSettings;
 @using HCMIS.SHARED.DTOs.BSC;
 @using HCMIS.SHARED.DTOs.Utilities;
 @inject IToastService toastService;
+@using HCMIS.Interface;
+@inject IAuthenticationService AuthService;
 
 <style>
    /* .e-edit-dialog {
@@ -44,7 +45,9 @@
         background-color: #00cc00;
         padding: 10px;
     }
-
+    .blazortoaster {
+        z-index: 1000; /* You can adjust this value as needed */
+    }
 </style>
 
 @*<div class="row">
@@ -75,8 +78,9 @@
                         <div style="padding:10px;">
                             <EditForm Model="@SearchModel" OnValidSubmit="@SearchRecords">
                                 <div class="form-row">
-                                    @if (_SystemSettings.UserRole.Contains("Administrator"))
-                                    {
+                                    @if (Credentials != null && (!string.IsNullOrEmpty(Credentials.UserRole) &&
+		                                Credentials.UserRole.Contains("Administrator")))
+		                            {
                                         <div class="form-group col-md-6">
                                             <p>Employee</p>
                                             <SfMultiSelect @bind-Value="@SearchModel.Userid" TValue="string?[]" TItem="ViewUserManagementDto" AllowFiltering="true" Placeholder="Please select" Mode="@VisualMode.CheckBox" DataSource="@UsersData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Employee" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
@@ -296,7 +300,7 @@
 
     #region Declarations
     SfGrid<ABscKpi>? BscKpiGrid;
-    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "65%" };
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "65%", CssClass = "blazortoaster" };
     List<BscPerspectivesDto>? BscPerspectiveData { get; set; }
     List<BscPerformanceMeasurementDto>? BscMeasurementData { get; set; }
     List<ViewFinancialYearDto>? FinancialYearData { get; set; }
@@ -305,6 +309,7 @@
     List<ViewUserManagementDto>? UsersData { get; set; }
     private UtilitiesSearchPanel SearchModel = new();
     Query mainQuery { get; set; } = new();
+    LoginResultModel? Credentials { get; set; }
 
     #endregion Declarations
 
@@ -341,54 +346,53 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await _SystemSettings.GetLoginCredentials();
-        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+        Credentials = await AuthService.GetUserCredentials();        
 
-        var responsebscperspective = await Http.GetAsync($"{_ApiConfig.BaseUrl}BscPerspectives/GetBscPerspectives");
+        var responsebscperspective = await Http.GetAsync($"BscPerspectives/GetBscPerspectives");
         var contentbscperspective = await responsebscperspective.Content.ReadAsStringAsync();  
-        var responsebscmeasurement = await Http.GetAsync($"{_ApiConfig.BaseUrl}BscPerformanceMeasurement/GetBscPerformanceMeasurement");
+        var responsebscmeasurement = await Http.GetAsync($"BscPerformanceMeasurement/GetBscPerformanceMeasurement");
         var contentbscmeasurement = await responsebscmeasurement.Content.ReadAsStringAsync();
-        var responsefinyear = await Http.GetAsync($"{_ApiConfig.BaseUrl}FinancialYear/list");
+        var responsefinyear = await Http.GetAsync($"FinancialYear/list");
         var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
-        var responsebsckpicount = await Http.GetAsync($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/GetBSCCount");
+        var responsebsckpicount = await Http.GetAsync($"BscKeyPerformanceIndicator/GetBSCCount");
         var contentbsckpicount = await responsebsckpicount.Content.ReadAsStringAsync();
-        var responsebscperspectivetype = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/BSCPerspectiveType");
+        var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
         var contentbscperspectivetype = await responsebscperspective.Content.ReadAsStringAsync();  
-        var responseusers = await Http.GetAsync($"{_ApiConfig.BaseUrl}Utilities/GetUsers");
+        var responseusers = await Http.GetAsync($"Utilities/GetUsers");
         var contentusers = await responseusers.Content.ReadAsStringAsync();
 
         if (responsebscperspective.IsSuccessStatusCode)
         {
             BscPerspectiveData = await Http.GetFromJsonAsync<List<BscPerspectivesDto>>
-            ($"{_ApiConfig.BaseUrl}BscPerspectives/GetBscPerspectives");
+            ($"BscPerspectives/GetBscPerspectives");
         }
 
         if ( responsebscmeasurement.IsSuccessStatusCode)
         {
             BscMeasurementData = await Http.GetFromJsonAsync<List<BscPerformanceMeasurementDto>>
-            ($"{_ApiConfig.BaseUrl}BscPerformanceMeasurement/GetBscPerformanceMeasurement");
+            ($"BscPerformanceMeasurement/GetBscPerformanceMeasurement");
         }
 
         if (responsefinyear.IsSuccessStatusCode)
         {
             FinancialYearData = await Http.GetFromJsonAsync<List<ViewFinancialYearDto>>
-            ($"{_ApiConfig.BaseUrl}FinancialYear/list");
+            ($"FinancialYear/list");
         }
 
         if (responsebsckpicount.IsSuccessStatusCode)
         {
             BsckpiCountData = await Http.GetFromJsonAsync<List<ViewBsckpicountDto>>
-            ($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/GetBSCCount");
+            ($"BscKeyPerformanceIndicator/GetBSCCount");
         }
         if (responsebscperspectivetype.IsSuccessStatusCode)
         {
             BscPerspectiveTypeData = await Http.GetFromJsonAsync<List<ABscPerspectivesTypeDto>>
-            ($"{_ApiConfig.BaseUrl}Utilities/BSCPerspectiveType");
+            ($"Utilities/BSCPerspectiveType");
         }
         if (responseusers.IsSuccessStatusCode)
         {
             UsersData = await Http.GetFromJsonAsync<List<ViewUserManagementDto>>
-            ($"{_ApiConfig.BaseUrl}Utilities/GetUsers");
+            ($"Utilities/GetUsers");
         }
     }
 
@@ -397,23 +401,23 @@
     {
         HttpClient Http;
         ApiConfig _ApiConfig;
-        SystemSettings _SystemSettings;
+        IAuthenticationService _AuthService;
         private readonly JsonSerializerOptions _options;
         public IToastService toastService;
         private readonly NavigationManager Navigation;
         public BscKpiAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
-            , SystemSettings systemSettings,ApiConfig apiConfig)
+            ,IAuthenticationService authservice,ApiConfig apiConfig)
         {
             Http = _http;
             _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             toastService = ts;
             Navigation = _Navigation;
             _ApiConfig = apiConfig;
-            _SystemSettings = systemSettings;
-
+            _AuthService = authservice;
         }
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         {
+            var credentials = await _AuthService.GetUserCredentials();
             var data = new List<ABscKpi>();
             try
             {
@@ -440,29 +444,29 @@
                     }
                 }
 
-                await _SystemSettings.GetLoginCredentials();
-                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                
+                
                 HttpResponseMessage response;
 
                 //Administrators without filtering
-                if (!string.IsNullOrEmpty(_SystemSettings.UserRole) 
-                && _SystemSettings.UserRole.Contains("Administrator") && (string.IsNullOrEmpty(Userid)
-                && string.IsNullOrEmpty(FinancialYearId) && string.IsNullOrEmpty(BscPerspectiveTypeId)))
-                {
-                    response = await Http.GetAsync($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/GetKeyPerformanceIndicatorAdmin");
+                @if (credentials != null && (!string.IsNullOrEmpty(credentials.UserRole) &&
+		        credentials.UserRole.Contains("Administrator")) && (string.IsNullOrEmpty(Userid)
+                           && string.IsNullOrEmpty(FinancialYearId) && string.IsNullOrEmpty(BscPerspectiveTypeId)))
+		        {
+                    response = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicatorAdmin");
                 }
 
                 //Pass in filters
                 else if (/*!string.IsNullOrEmpty(_SystemSettings.UserRole) 
-            && _SystemSettings.UserRole.Contains("Administrator") &&*/ (!string.IsNullOrEmpty(Userid)
+                && _SystemSettings.UserRole.Contains("Administrator") &&*/ (!string.IsNullOrEmpty(Userid)
                 || !string.IsNullOrEmpty(FinancialYearId) || !string.IsNullOrEmpty(BscPerspectiveTypeId)))
                 {
-                    response = await Http.GetAsync($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/GetKeyPerformanceIndicatorBySearch?Userid={Userid}&FinancialYearId={FinancialYearId}&BscPerspectiveTypeId={BscPerspectiveTypeId}");
+                    response = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicatorBySearch?Userid={Userid}&FinancialYearId={FinancialYearId}&BscPerspectiveTypeId={BscPerspectiveTypeId}");
                 }
 
                 else
                 {
-                    response = await Http.GetAsync($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/GetKeyPerformanceIndicator");
+                    response = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicator");
                 }
 
                 var content = await response.Content.ReadAsStringAsync();
@@ -526,7 +530,7 @@
                 {
                     string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                     StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                    var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/CreateKeyPerformanceIndicator", httpContent);
+                    var result = await Http.PostAsync($"BscKeyPerformanceIndicator/CreateKeyPerformanceIndicator", httpContent);
                     if (result.IsSuccessStatusCode)
                     {
                         toastService.ShowSuccess(val.Bsckpidescription + " was sucessfully added");
@@ -540,7 +544,7 @@
                 {
                     string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                     StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                    var result = await Http.PutAsync($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/CreateKeyPerformanceIndicator", httpContent);
+                    var result = await Http.PutAsync($"BscKeyPerformanceIndicator/CreateKeyPerformanceIndicator", httpContent);
                     if (result.IsSuccessStatusCode)
                     {
                         toastService.ShowSuccess(val.Bsckpidescription + " was sucessfully added");
@@ -562,11 +566,11 @@
             try
             {
                 var val = (value as ABscKpi);
-                await _SystemSettings.GetLoginCredentials();
-                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _SystemSettings.AccessToken);
+                
+                
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                var result = await Http.PostAsync($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/CreateKeyPerformanceIndicator", httpContent);
+                var result = await Http.PostAsync($"BscKeyPerformanceIndicator/CreateKeyPerformanceIndicator", httpContent);
                 if (result.IsSuccessStatusCode)
                 {
                     toastService.ShowSuccess($"The {val.Bsckpidescription}  was sucessfully updated");
@@ -594,12 +598,12 @@
         }
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
         {
-            var responsebsckpicount = await Http.GetAsync($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/GetBSCCount");
+            var responsebsckpicount = await Http.GetAsync($"BscKeyPerformanceIndicator/GetBSCCount");
             var contentbsckpicount = await responsebsckpicount.Content.ReadAsStringAsync();
             if (responsebsckpicount.IsSuccessStatusCode)
             {
                 BsckpiCountData = await Http.GetFromJsonAsync<List<ViewBsckpicountDto>>
-                ($"{_ApiConfig.BaseUrl}BscKeyPerformanceIndicator/GetBSCCount");
+                ($"BscKeyPerformanceIndicator/GetBSCCount");
             }
         }
     }
