@@ -165,11 +165,20 @@
                                  {
                                      <div>
                                         <h5>Please be reminded that you can only plan for 25 Days Annually.</h5>
-                                        
+                                        <p>Days marked as <img src="/image/blockedcells.png" width="90"/> are not available</p>                                        
                                         <h5 style="color:green;">Days Selected: @SelectedCells.Count</h5>
 
+                                        @*@if (_previous == Syncfusion.Blazor.Grids.Action.Add)
+                                        {
+                                            <h5 style="color:green;">Days Selected:  @RoasterMonthsCount</h5>
+                                        }
+                                        else if(_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
+                                        {
+                                            <h5 style="color:green;">Days Selected.: @RoasterMonthsCount</h5>
+                                        }*@
+
                                      </div>
-                                     if(@SelectedCells.Count > 5)
+                                     if(@SelectedCells.Count > 25)
                                      {
                                         <h6>You cannot add more than 25 Days</h6>
                                      }
@@ -193,7 +202,6 @@
                                             <GridEvents 
                                                     QueryCellInfo="QueryCellInfoHandler"
                                                     CellSelected="OnCellSelect"
-                                                    CellSaved="CellSavedHandler"                                                    
                                                     TValue="AnnualLeaveRosterMonthsDto">                                               
                                             </GridEvents>
                                             <GridColumns>
@@ -332,7 +340,7 @@
                         }
                     </Template> 
                     <FooterTemplate>
-                        @if(@SelectedCells.Count <= 5)
+                        @if(@SelectedCells.Count <= 25)
                         {
                             <button @onclick="@onSubmitForm" class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Plan</button>
                             <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel</button>
@@ -393,7 +401,7 @@
                                                         DefaultValue="@(DateTime.Now)" 
                                                         HeaderText="DATE CAPTURED" 
                                                         EditType="EditType.DatePickerEdit" 
-                                                        Format="dd/MM/yyyy" 
+                                                        Format="dd/MMMM/yyyy" 
                                                         Type="ColumnType.Date" 
                                                         Width="80"
                                                         AllowEditing="false"
@@ -460,6 +468,7 @@
     public int TotalCount = 0; 
     public List<Tuple<double, double>> SelectedCells { get; set; } = new List<Tuple<double, double>>(); 
     LoginResultModel? Credentials { get; set; }
+    Syncfusion.Blazor.Grids.Action _previous { get; set; }
 
     //Generate all weekends in the current year
     static public List<string> GetWeekendDates(DateTime startDate, DateTime endDate)
@@ -604,7 +613,7 @@
 
             try
             {
-                 
+
                 var response = await Http.GetAsync($"Employeez/GetAnnualLeaverRoster?EmployeeId={EmployeeId}&UserRole={UserRole}");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
@@ -660,13 +669,13 @@
         {
             try
             {
-                
+
                 var val = (value as AnnualLeaveRosterDto);
                 if (val != null)
                 {
                     if (val.LeaveRoasterId == 0)
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -695,7 +704,7 @@
                     }
                     else
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -734,13 +743,13 @@
         {
             try
             {
-                
+
                 var val = (value as AnnualLeaveRosterDto);
                 if (val != null)
                 {
                     if (val.LeaveRoasterId == 0)
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -769,7 +778,7 @@
                     }
                     else
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -816,7 +825,7 @@
 
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
         {
-            
+
 
             var responseyears = await Http.GetAsync($"Utilities/GetYears");
             var contentyears = await responseyears.Content.ReadAsStringAsync();
@@ -862,7 +871,7 @@
                 toastService.ShowWarning("Please select the Year.");
                 Args.Cancel = true;
             }
-            if (Args.Data.EmployeeId == null)
+            else if (Args.Data.EmployeeId == null)
             {
                 toastService.ShowWarning("Please select the Employee.");
                 Args.Cancel = true;
@@ -872,18 +881,20 @@
         { 
             try
             {
+                SelectedCells = new List<Tuple<double, double>>();
+                _previous = Args.RequestType;
+
                 int countid = -1000;                              
 
-                var responseroastermonths = await Http.GetAsync($"Employeez/GetSelectedDaysCount?YearId={Args.RowData.YearId}&EmployeeId={Args.RowData.EmployeeId}");
+                var responseroastermonths = await Http.GetAsync($"Employeez/GetMonthsLeavePlan");
                 var contentroastermonths = await responseroastermonths.Content.ReadAsStringAsync();
                 if (responseroastermonths.IsSuccessStatusCode)
                 {
-                    //ErrorHere
                     RoasterMonthsData = await Http.GetFromJsonAsync<List<AnnualLeaveRosterMonthsDto>>
-                    ($"Employeez/GetSelectedDaysCount?YearId={Args.RowData.YearId}&EmployeeId={Args.RowData.EmployeeId}");
+                    ($"Employeez/GetMonthsLeavePlan?YearId={Args.RowData.YearId}&EmployeeId={Args.RowData.EmployeeId}");
                 }  
 
-                var responsedayscount = await Http.GetAsync($"Employeez/GetMonthsLeavePlan");
+                var responsedayscount = await Http.GetAsync($"Employeez/GetSelectedDaysCount?YearId={Args.RowData.YearId}&EmployeeId={Args.RowData.EmployeeId}");
                 var contentdayscount = await responsedayscount.Content.ReadAsStringAsync();
                 if (responsedayscount.IsSuccessStatusCode)
                 {
@@ -935,7 +946,7 @@
                     }
                 }
                 PlannedDaysData.AnnualLeaveRosterMonths = Args.RowData.AnnualLeaveRosterMonths.OrderBy(o => o.DayId).ToList();
-                
+
                 //RoasterMonthsCount;
 
                 YearDD = false;
@@ -954,8 +965,13 @@
         }
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
         {            
-            //Initialize the selected days to zero when adding a new record
-            //@SelectedCells.Count;
+            SelectedCells = new List<Tuple<double, double>>();
+            _previous = Args.RequestType;
+
+            //Enable employee and Year dropdowns on adding
+            YearDD = true;
+            EmployeeDD = true;
+
             SelectedCells.Clear();
             if(Credentials.StaffId > 0)
             {
@@ -963,6 +979,8 @@
             }
 
             Args.RowData.AnnualLeaveRosterMonths = new List<AnnualLeaveRosterMonthsDto>();
+
+            StateHasChanged();
         }
     }
 
@@ -1015,7 +1033,6 @@
             int countid = -1000;
             List<AnnualLeaveRosterMonthsDto> mn = new List<AnnualLeaveRosterMonthsDto>();
 
-            
 
             var responseemployee = await Http.GetAsync($"Employeez/GetMasterList");
             var contentemployee = await responseemployee.Content.ReadAsStringAsync();
@@ -1040,6 +1057,20 @@
                 DaysData = await Http.GetFromJsonAsync<List<ADaysDto>>
                 ($"Utilities/GetDays");
             }
+
+            var responsedayscount = await Http.GetAsync($"Employeez/GetSelectedDaysCount?YearId={PlannedDaysData.YearId}&EmployeeId={PlannedDaysData.EmployeeId}");
+            var contentdayscount = await responsedayscount.Content.ReadAsStringAsync();
+            if (responsedayscount.IsSuccessStatusCode)
+            {
+                if(!string.IsNullOrEmpty(contentdayscount))
+                {
+                    RoasterMonthsCount = Convert.ToInt32(contentdayscount);
+                }
+                else
+                {
+                    RoasterMonthsCount = 0;
+                }                
+            }  
 
             if(RoasterMonthsData != null)
             {
@@ -1070,7 +1101,7 @@
         }
         catch(Exception ex)
         {
-
+            throw ex;
         }
         finally
         {
@@ -1080,16 +1111,134 @@
 
     public async void QueryCellInfoHandler(QueryCellInfoEventArgs<AnnualLeaveRosterMonthsDto> Args)
     {
-        //
+        if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.January))
+        {
+            if (Args.Data.January == true)
+            {
+                var index = await DataGrid.GetRowIndexByPrimaryKeyAsync(Args.Data.LeaveRoasterMonthsId);
+                SelectedCells.Add(new Tuple<double, double>(index, 3));
+            }
+        }
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.February))
+        {
+            if (Args.Data.February == true)
+            {
+                var index = await DataGrid.GetRowIndexByPrimaryKeyAsync(Args.Data.LeaveRoasterMonthsId);
+                SelectedCells.Add(new Tuple<double, double>(index, 4));
+            }
 
-        //var responseyears = await Http.GetAsync($"Utilities/GetYears");
-        //var contentyears = await responseyears.Content.ReadAsStringAsync();
-        //if (responseyears.IsSuccessStatusCode)
-        //{
-        //    YearData = await Http.GetFromJsonAsync<List<AYearsDto>>
-        //    ($"Utilities/GetYears");
-        //}
+            //Disable the dates in February
+            if (Args.Data.DayId == 29 || Args.Data.DayId == 30 || Args.Data.DayId == 31)
+            {
+                Args.Cell.AddClass(new string[] { "disablecell" });
+            }
+        }
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.March))
+        {
+            if (Args.Data.March == true)
+            {
+                var index = await DataGrid.GetRowIndexByPrimaryKeyAsync(Args.Data.LeaveRoasterMonthsId);
+                SelectedCells.Add(new Tuple<double, double>(index, 5));
+            }
+        }
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.April))
+        {
+            if (Args.Data.April == true)
+            {
+                var index = await DataGrid.GetRowIndexByPrimaryKeyAsync(Args.Data.LeaveRoasterMonthsId);
+                SelectedCells.Add(new Tuple<double, double>(index, 6));
+            }
 
+            if (Args.Data.DayId == 31 )
+            {
+                Args.Cell.AddClass(new string[] { "disablecell" });
+            }
+        }
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.May))
+        {
+            if (Args.Data.May == true)
+            {
+                var index = await DataGrid.GetRowIndexByPrimaryKeyAsync(Args.Data.LeaveRoasterMonthsId);
+                SelectedCells.Add(new Tuple<double, double>(index, 7));
+            }
+        }
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.June))
+        {
+            if (Args.Data.June == true)
+            {
+                var index = await DataGrid.GetRowIndexByPrimaryKeyAsync(Args.Data.LeaveRoasterMonthsId);
+                SelectedCells.Add(new Tuple<double, double>(index, 8));
+            }
+
+            if (Args.Data.DayId == 31 )
+            {
+                Args.Cell.AddClass(new string[] { "disablecell" });
+            }
+        }
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.July))
+        {
+            if (Args.Data.July == true)
+            {
+                var index = await DataGrid.GetRowIndexByPrimaryKeyAsync(Args.Data.LeaveRoasterMonthsId);
+                SelectedCells.Add(new Tuple<double, double>(index, 9));
+            }
+        }
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.August))
+        {
+            if (Args.Data.August == true)
+            {
+                var index = await DataGrid.GetRowIndexByPrimaryKeyAsync(Args.Data.LeaveRoasterMonthsId);
+                SelectedCells.Add(new Tuple<double, double>(index, 10));
+            }
+
+            if (Args.Data.DayId == 31)
+            {
+                Args.Cell.AddClass(new string[] { "disablecell" });
+            }
+        }
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.September))
+        {
+            if (Args.Data.September == true)
+            {
+                var index = await DataGrid.GetRowIndexByPrimaryKeyAsync(Args.Data.LeaveRoasterMonthsId);
+                SelectedCells.Add(new Tuple<double, double>(index, 11));
+            }
+
+            if (Args.Data.DayId == 31 )
+            {
+                Args.Cell.AddClass(new string[] { "disablecell" });
+            }
+        }
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.October))
+        {
+            if (Args.Data.October == true)
+            {
+                var index = await DataGrid.GetRowIndexByPrimaryKeyAsync(Args.Data.LeaveRoasterMonthsId);
+                SelectedCells.Add(new Tuple<double, double>(index, 12));
+            }
+        }
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.November))
+        {
+            if (Args.Data.November == true)
+            {
+                var index = await DataGrid.GetRowIndexByPrimaryKeyAsync(Args.Data.LeaveRoasterMonthsId);
+                SelectedCells.Add(new Tuple<double, double>(index, 13));
+            }
+
+            if (Args.Data.DayId == 31)
+            {
+                Args.Cell.AddClass(new string[] { "disablecell" });
+            }
+        }
+        else if (Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.December))
+        {
+            if (Args.Data.December == true)
+            {
+                var index = await DataGrid.GetRowIndexByPrimaryKeyAsync(Args.Data.LeaveRoasterMonthsId);
+                SelectedCells.Add(new Tuple<double, double>(index, 14));
+            }
+        }
+        
         int? year = PlannedDaysData.YearId;
         var yeardesc = YearData.FirstOrDefault(o => o.YearId == PlannedDaysData.YearId);
 
@@ -1111,39 +1260,27 @@
         //    }
         //}
 
-        if (Args.Column.Field == "February")
-        {
-            if (Args.Data.DayId == 29 || Args.Data.DayId == 30 || Args.Data.DayId == 31)
-            {
-                Args.Cell.AddClass(new string[] { "disablecell" });
-            }
-        }
-        if (Args.Column.Field == "April" || Args.Column.Field == "June"
-        || Args.Column.Field == "August" || Args.Column.Field == "September" || Args.Column.Field == "November")
-        {
-            if (Args.Data.DayId == 31 )
-            {
-                Args.Cell.AddClass(new string[] { "disablecell" });
-            }
-        }
+        //if (Args.Column.Field == "February")
+        //{
+        //    if (Args.Data.DayId == 29 || Args.Data.DayId == 30 || Args.Data.DayId == 31)
+        //    {
+        //        Args.Cell.AddClass(new string[] { "disablecell" });
+        //    }
+        //}
+        //if (Args.Column.Field == "April" || Args.Column.Field == "June"
+        //|| Args.Column.Field == "August" || Args.Column.Field == "September" || Args.Column.Field == "November")
+        //{
+        //    if (Args.Data.DayId == 31 )
+        //    {
+        //        Args.Cell.AddClass(new string[] { "disablecell" });
+        //    }
+        //}
     }
 
     public async Task OnCellSelect(CellSelectEventArgs<AnnualLeaveRosterMonthsDto> Args)
     { 
         try
         {
-            ////get selected cell index
-            //var CellIndexes = await DataGrid.GetSelectedRowCellIndexesAsync();
-
-            ////get the row and cell index
-            //var CurrentEditRowIndex = CellIndexes[0].Item1;
-            //var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
-
-            ////get the available fields
-            //var fields = await DataGrid.GetColumnFieldNamesAsync();
-            //// edit the selected cell using the cell index and column name
-            //await DataGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
-
             if (!SelectedCells.Contains(new Tuple<double, double>(Args.RowIndex, Args.CellIndex))) 
             { 
                 SelectedCells.Add(new Tuple<double, double>(Args.RowIndex, Args.CellIndex)); 
@@ -1160,16 +1297,6 @@
 
             
     } 
-
-    public async void CellEditHandler(CellEditArgs<AnnualLeaveRosterMonthsDto> args)
-    {
-        //await DataGrid.EndEditAsync();
-    }
-
-    private async Task CellSavedHandler(CellSaveArgs<AnnualLeaveRosterMonthsDto> Args)
-    {
-        //selectedcount: @SelectedCells.Count
-    }
 
     public void CellDeselectHandler(CellDeselectEventArgs<AnnualLeaveRosterMonthsDto> Args)
     {

@@ -4,6 +4,7 @@ using Blazored.Toast.Services;
 using HCMIS.Data;
 using HCMIS.Interface;
 using HCMIS.Model;
+using HCMIS.SHARED;
 using HCMIS.SHARED.Data;
 using HCMIS.SHARED.Models.SPModel;
 using System.Text.Json;
@@ -78,5 +79,82 @@ namespace HCMIS.Repository
             return data;
         }
 
+        public async Task<List<EmployeeDto>> GetEmployeeDetails(UtilitiesSearchPanel SearchModel)
+        {
+            List<EmployeeDto>? data = new List<EmployeeDto>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetEmployeeDetailsReport", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<EmployeeDto>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
+
+        public async Task<List<ViewEmployeeQualificationDto>> GetEmployeeQualifications(UtilitiesSearchPanel SearchModel)
+        {
+            List<ViewEmployeeQualificationDto>? data = new List<ViewEmployeeQualificationDto>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetEmployeeQualificationsReport", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<ViewEmployeeQualificationDto>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
+
+        public async Task<List<ViewEmployeeFamilyDto>> GetEmployeeFamily(UtilitiesSearchPanel SearchModel)
+        {
+            List<ViewEmployeeFamilyDto>? data = new List<ViewEmployeeFamilyDto>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetEmployeeFamilyReport", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<ViewEmployeeFamilyDto>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
     }
 }

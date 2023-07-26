@@ -1,0 +1,551 @@
+﻿@page "/EmployeeFamilyReportPage"
+@using HCMIS.Data;
+@using HCMIS.SHARED.Data;
+@using HCMIS.SHARED.DTOs;
+@using HCMIS.Interface;
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject SystemSettings _SystemSettings
+@using HCMIS.SHARED.DTOs.Utilities;
+@using Syncfusion.XlsIO;
+@using System.Text.Json;
+@inject IReportService reportservice;
+@inject IToastService toastService;
+@inject Microsoft.JSInterop.IJSRuntime JS;
+@inject IUtilityRepository UtilityRepo;
+
+<style>
+    .e-spinner-pane .e-spinner-inner .e-spin-bootstrap4 {
+        stroke: green;
+    }
+</style>
+
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="color: brown;">
+        <strong>
+            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
+        </strong>| EMPLOYEE FAMILY REPORT
+    </li>
+</ol>
+
+<EditForm Model="@InputModel" OnValidSubmit="@OnSearchSubmit">
+    <DataAnnotationsValidator />
+    <div class="row" style="margin-bottom:10px;">
+        <div class="col col-md-6">
+            <p>Employee</p>
+            <SfMultiSelect @bind-Value="@InputModel.Employeeid" TValue="int?[]" TItem="ViewEmployeeMasterDetailsDto" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@EmployeeReportData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
+                <MultiSelectFieldSettings Value="@nameof(ViewEmployeeMasterDetailsDto.Employeeid)" Text="@nameof(ViewEmployeeMasterDetailsDto.EmployeeFullName)"></MultiSelectFieldSettings>
+            </SfMultiSelect>
+        </div>
+
+        <div class="form-group col-md-12">
+            <SfSpinner @ref="DownloadingSpinner" Label="Downloading Report Please Wait....." Size="50"></SfSpinner>
+        </div>
+    </div>
+
+    <div class="row" style="margin-bottom:10px;">
+        @if (Downloadreport == false)
+        {
+            <div class="col col-md-3">
+                <SfButton Color="Color.Primary" ButtonType="BlazorStrap.ButtonType.Submit">Download Report</SfButton>
+                <SfButton Color="Color.Secondary" ButtonType="BlazorStrap.ButtonType.Button" @onclick="ClearSearchBtnClick">Clear Search</SfButton>
+            </div>
+
+        }
+
+        @if (!string.IsNullOrEmpty(InputModel.Response))
+        {
+            <div class="col col-md-12" style="margin-top:10px;">
+                <div class="alert alert-success">@InputModel.Response</div>
+            </div>
+        }
+    </div>
+    <ValidationSummary />
+</EditForm>
+
+@code {
+    private UtilitiesSearchPanel InputModel = new UtilitiesSearchPanel();
+    SfSpinner? DownloadingSpinner;
+    bool Downloadreport { get; set; } = false;
+    string? filename { get; set; } = null;
+    List<EmployeeDto>? EmployeeData { get; set; }
+    List<AGenderDto>? GenderData { get; set; }
+    List<ADepartmentDto>? DepartmentData { get; set; }
+    List<ViewOrgStructureJobTitleDto>? JobTitleData { get; set; }
+    List<JobDescriptionDto>? JobDescriptionData { get; set; }
+    List<ALeaveTypeDto>? LeaveTypeData { get; set; }
+    List<ViewEmployeeMasterDetailsDto>? EmployeeReportData { get; set; }
+    List<ADistrict>? DistrictData { get; set; }
+    List<ViewAparish>? ParishData { get; set; }
+    List<ASubCounty>? SubCountyData { get; set; }
+    List<ViewAvillage>? VillageData { get; set; }
+    List<AEmployeeChildrenDto>? ChildrenData { get; set; }
+    List<AEmployeeParentsDto>? ParentsData { get; set; }
+    List<EmployeeNextOfKinDto>? NOKData { get; set; }
+    List<EmployeeSpouseDto>? SpouseData { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+        List<Task> t = new List<Task>();
+        t.Add(Task.Run(async () =>
+        {
+            var responseemployee = await Http.GetAsync($"Employeez/GetMasterList");
+            if (responseemployee.IsSuccessStatusCode)
+            {
+                var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+                EmployeeData = JsonSerializer.Deserialize<List<EmployeeDto>>(contentemployee, _options);
+            }
+
+        }));
+        t.Add(Task.Run(async () =>
+       {
+           var responseemployeereport = await Http.GetAsync($"Employeez/GetEmployeeReportsList");
+           if (responseemployeereport.IsSuccessStatusCode)
+           {
+               var contentemployeereport = await responseemployeereport.Content.ReadAsStringAsync();
+               EmployeeReportData = JsonSerializer.Deserialize<List<ViewEmployeeMasterDetailsDto>>(contentemployeereport, _options);
+           }
+       }));
+        t.Add(Task.Run(async () =>
+       {
+           var responsegender = await Http.GetAsync($"Utilities/GetGender");
+           if (responsegender.IsSuccessStatusCode)
+           {
+               var contentgender = await responsegender.Content.ReadAsStringAsync();
+               GenderData = JsonSerializer.Deserialize<List<AGenderDto>>(contentgender, _options);
+           }
+       }));
+        t.Add(Task.Run(async () =>
+       {
+           var responsedepartment = await Http.GetAsync($"Utilities/GetDepartment");
+           if (responsedepartment.IsSuccessStatusCode)
+           {
+               var contentdepartment = await responsedepartment.Content.ReadAsStringAsync();
+               DepartmentData = JsonSerializer.Deserialize<List<ADepartmentDto>>(contentdepartment, _options);
+           }
+
+       }));
+        t.Add(Task.Run(async () =>
+       {
+           var responseJobTitle = await Http.GetAsync($"Utilities/GetOrgStructureJobTitle");
+           if (responseJobTitle.IsSuccessStatusCode)
+           {
+               var contentJobTitle = await responseJobTitle.Content.ReadAsStringAsync();
+               JobTitleData = JsonSerializer.Deserialize<List<ViewOrgStructureJobTitleDto>>(contentJobTitle, _options);
+           }
+
+       }));
+        t.Add(Task.Run(async () =>
+       {
+           var responseJD = await Http.GetAsync($"Utilities/GetJobDescription");
+           if (responseJD.IsSuccessStatusCode)
+           {
+               var contentJD = await responseJD.Content.ReadAsStringAsync();
+               JobDescriptionData = JsonSerializer.Deserialize<List<JobDescriptionDto>>(contentJD, _options);
+           }
+       }));
+        t.Add(Task.Run(async () =>
+       {
+           var responsedistrict = await Http.GetAsync($"Utilities/GetDistrict");
+           if (responsedistrict.IsSuccessStatusCode)
+           {
+               var contentdistrict = await responsedistrict.Content.ReadAsStringAsync();
+               DistrictData = JsonSerializer.Deserialize<List<ADistrict>>(contentdistrict, _options);
+           }
+       }));
+        t.Add(Task.Run(async () =>
+        {
+            var responsesubcounty = await Http.GetAsync($"Utilities/GetSubcounty");
+            if (responsesubcounty.IsSuccessStatusCode)
+            {
+                var contentsubcounty = await responsesubcounty.Content.ReadAsStringAsync();
+                SubCountyData = JsonSerializer.Deserialize<List<ASubCounty>>(contentsubcounty, _options);
+            }
+        }));
+        t.Add(Task.Run(async () =>
+        {
+            var responseparish = await Http.GetAsync($"Utilities/GetParishDropDown");
+            if (responseparish.IsSuccessStatusCode)
+            {
+                var contentparish = await responseparish.Content.ReadAsStringAsync();
+                ParishData = JsonSerializer.Deserialize<List<ViewAparish>>(contentparish, _options);
+            }
+        }));
+        t.Add(Task.Run(async () =>
+        {
+            var responsesubcounty = await Http.GetAsync($"Utilities/GetSubcounty");
+            if (responsesubcounty.IsSuccessStatusCode)
+            {
+                var contentsubcounty = await responsesubcounty.Content.ReadAsStringAsync();
+                SubCountyData = JsonSerializer.Deserialize<List<ASubCounty>>(contentsubcounty, _options);
+            }
+        }));
+        t.Add(Task.Run(async () =>
+        {
+            var responsevillage = await Http.GetAsync($"Utilities/GetVillageDropDown");
+            if (responsevillage.IsSuccessStatusCode)
+            {
+                var contentvillage = await responsevillage.Content.ReadAsStringAsync();
+                VillageData = JsonSerializer.Deserialize<List<ViewAvillage>>(contentvillage, _options);
+            }
+
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
+            var responsechildren = await Http.GetAsync($"Utilities/GetEmployeeChildren");
+            if (responsechildren.IsSuccessStatusCode)
+            {
+                var contentchildren = await responsechildren.Content.ReadAsStringAsync();
+                ChildrenData = JsonSerializer.Deserialize<List<AEmployeeChildrenDto>>(contentchildren, _options);
+            }
+
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
+            var responseparents = await Http.GetAsync($"Utilities/GetEmployeeParents");
+            if (responseparents.IsSuccessStatusCode)
+            {
+                var contentparents = await responseparents.Content.ReadAsStringAsync();
+                ParentsData = JsonSerializer.Deserialize<List<AEmployeeParentsDto>>(contentparents, _options);
+            }
+
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
+            var responsenok = await Http.GetAsync($"Utilities/GetEmployeeNextofKin");
+            if (responsenok.IsSuccessStatusCode)
+            {
+                var contentnok = await responsenok.Content.ReadAsStringAsync();
+                NOKData = JsonSerializer.Deserialize<List<EmployeeNextOfKinDto>>(contentnok, _options);
+            }
+
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
+            var responsespouse = await Http.GetAsync($"Utilities/GetEmployeeSpouse");
+            if (responsespouse.IsSuccessStatusCode)
+            {
+                var contentspouse = await responsespouse.Content.ReadAsStringAsync();
+                SpouseData = JsonSerializer.Deserialize<List<EmployeeSpouseDto>>(contentspouse, _options);
+            }
+
+        }));
+        Task _t = Task.WhenAll(t);
+        await _t;
+    }
+
+    private async Task OnSearchSubmit()
+    {
+        filename = null;
+        Downloadreport = true;
+        await DownloadingSpinner.ShowAsync();
+        try
+        {
+            //1-Children,2-Spouse, 3-Parents,4-NOK
+            var data = await reportservice.GetEmployeeFamily(InputModel);
+            var datachildren = data.Where(o=>o.Tbl=="1");
+            var dataspouse = data.Where(o=>o.Tbl=="2");
+            var dataParents = data.Where(o => o.Tbl == "3");
+            var dataNOK = data.Where(o => o.Tbl == "4");
+
+            var _employeedata = EmployeeData.Where(o => InputModel.Employeeid == null || InputModel.Employeeid.Any(a => a == o.Employeeid)).ToList();
+
+            if (data.Count > 0)
+            {
+                using (ExcelEngine excelEngine = new ExcelEngine())
+                {
+                    IApplication application = excelEngine.Excel;
+                    application.DefaultVersion = ExcelVersion.Excel2013;
+                    IWorkbook workbook = application.Workbooks.Create(1);
+                    IWorksheet worksheet = workbook.Worksheets[0];
+                    worksheet.Name = "Employee Family Report";
+
+                    #region Styles
+                    var headerStyle = workbook.Styles.Add("headerStyle");
+
+                    headerStyle.BeginUpdate();
+                    headerStyle.Color = Syncfusion.Drawing.Color.Black;
+                    headerStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+                    headerStyle.Font.Bold = true;
+                    headerStyle.Font.FontName = "Arial";
+                    headerStyle.Font.Size = 8f;
+                    headerStyle.Font.Color = ExcelKnownColors.White;
+
+                    headerStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    headerStyle.Borders.Color = ExcelKnownColors.White;
+                    headerStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+                    headerStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+                    headerStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+
+                    headerStyle.WrapText = true;
+
+                    headerStyle.EndUpdate();
+
+                    var Style = workbook.Styles.Add("bodyStyle");
+
+                    Style.BeginUpdate();
+                    Style.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+                    Style.VerticalAlignment = ExcelVAlign.VAlignTop;
+                    Style.Font.Bold = false;
+                    Style.Font.FontName = "Arial";
+                    Style.Font.Size = 8f;
+                    Style.Font.Color = ExcelKnownColors.Black;
+                    Style.WrapText = true;
+                    Style.Borders.Color = ExcelKnownColors.Black;
+                    Style.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+                    Style.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+                    Style.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+                    Style.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
+                    Style.EndUpdate();
+
+
+                    var CategoryStyle = workbook.Styles.Add("CategoryStyle");
+
+                    CategoryStyle.BeginUpdate();
+                    CategoryStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    CategoryStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 204, 0);
+                    CategoryStyle.Font.Bold = true;
+                    CategoryStyle.Font.FontName = "Arial";
+                    CategoryStyle.Font.Size = 20f;
+                    CategoryStyle.Font.Color = ExcelKnownColors.Brown;
+                    CategoryStyle.WrapText = true;
+                    CategoryStyle.Borders.Color = ExcelKnownColors.White;
+                    CategoryStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+                    CategoryStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+                    CategoryStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+                    CategoryStyle.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
+                    CategoryStyle.EndUpdate();
+
+                    var DivisionStyle = workbook.Styles.Add("DivisionStyle");
+
+                    DivisionStyle.BeginUpdate();
+                    DivisionStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    DivisionStyle.Color = Syncfusion.Drawing.Color.FromArgb(255, 0, 0); //RED
+                    DivisionStyle.Font.Bold = true;
+                    DivisionStyle.Font.FontName = "Arial";
+                    DivisionStyle.Font.Size = 12f;
+                    DivisionStyle.Font.Color = ExcelKnownColors.White;
+                    DivisionStyle.WrapText = true;
+                    DivisionStyle.Borders.Color = ExcelKnownColors.White;
+                    DivisionStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.None;
+                    DivisionStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.None;
+                    DivisionStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.None;
+                    DivisionStyle.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.None;
+                    DivisionStyle.EndUpdate();
+
+                    #endregion
+
+                    #region
+                    int row = 1;
+                    worksheet.Range["A" + row].Text = "Employee Family Report";
+                    worksheet.Range["A" + row + ":E" + row].CellStyle = CategoryStyle;
+                    worksheet.Range["A" + row + ":E" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    worksheet.Range["A" + row + ":E" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+                    worksheet.Range["A" + row].RowHeight = 30;
+                    worksheet.Range["A" + row + ":E" + row].Merge();
+                    row++;
+
+                    worksheet.Range["B" + row].Text = "Employee Children";
+                    worksheet.Range["B" + row + ":B" + row].CellStyle = DivisionStyle;
+                    worksheet.Range["B" + row + ":B" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    worksheet.Range["B" + row + ":B" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+                    worksheet.Range["B" + row].RowHeight = 30;
+                    worksheet.Range["B" + row + ":B" + row].Merge();
+
+                    worksheet.Range["C" + row].Text = "Employee Spouse";
+                    worksheet.Range["C" + row + ":C" + row].CellStyle = DivisionStyle;
+                    worksheet.Range["C" + row + ":C" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    worksheet.Range["C" + row + ":C" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+                    worksheet.Range["C" + row].RowHeight = 30;
+                    worksheet.Range["C" + row + ":C" + row].Merge();
+
+                    worksheet.Range["D" + row].Text = "Employee Parents";
+                    worksheet.Range["D" + row + ":D" + row].CellStyle = DivisionStyle;
+                    worksheet.Range["D" + row + ":D" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    worksheet.Range["D" + row + ":D" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+                    worksheet.Range["D" + row].RowHeight = 30;
+                    worksheet.Range["D" + row + ":D" + row].Merge();
+
+
+                    worksheet.Range["E" + row].Text = "Employee Next of Kin";
+                    worksheet.Range["E" + row + ":E" + row].CellStyle = DivisionStyle;
+                    worksheet.Range["E" + row + ":E" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    worksheet.Range["E" + row + ":E" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+                    worksheet.Range["E" + row].RowHeight = 30;
+                    worksheet.Range["E" + row + ":E" + row].Merge();
+
+                    row++;
+
+
+                    worksheet.Range[row, 1].Text = "#";
+                    worksheet.Range[row, 1].CellStyle = headerStyle;
+                    worksheet.Range[row, 1].ColumnWidth = 5;
+                    worksheet.Range[row, 1].WrapText = true;
+
+                    worksheet.Range[row, 2].Text = "Child Name";
+                    worksheet.Range[row, 2].CellStyle = headerStyle;
+                    worksheet.Range[row, 2].ColumnWidth = 20;
+                    worksheet.Range[row, 2].WrapText = true;
+
+                    worksheet.Range[row, 3].Text = "Spouse Name";
+                    worksheet.Range[row, 3].CellStyle = headerStyle;
+                    worksheet.Range[row, 3].ColumnWidth = 20;
+                    worksheet.Range[row, 3].WrapText = true;
+
+                    worksheet.Range[row, 4].Text = "Parents Name";
+                    worksheet.Range[row, 4].CellStyle = headerStyle;
+                    worksheet.Range[row, 4].ColumnWidth = 20;
+                    worksheet.Range[row, 4].WrapText = true;
+
+                    worksheet.Range[row, 5].Text = "Next of Kin Name";
+                    worksheet.Range[row, 5].CellStyle = headerStyle;
+                    worksheet.Range[row, 5].ColumnWidth = 20;
+                    worksheet.Range[row, 5].WrapText = true;
+
+                    row++;
+                    int count = 1;
+
+                    #endregion
+                    int datastartrow = row;
+                    foreach (var w in _employeedata)
+                    {
+                        var empdata = data.Where(o => o.EmployeeId == w.Employeeid).ToList();
+                        var empchildren = datachildren.Where(o => o.EmployeeId == w.Employeeid).Distinct().ToList();
+                        var empspouse = dataspouse.Where(o => o.EmployeeId == w.Employeeid).ToList();
+                        var empParents = dataParents.Where(o => o.EmployeeId == w.Employeeid).ToList();
+                        var empNOK = dataNOK.Where(o => o.EmployeeId == w.Employeeid).ToList();
+
+                        ////Employee Data
+                        //if (empdata.Count > 0)
+                        //{
+                        //    worksheet.Range["A" + row].Text = w.FirstName + " " + w.MiddleName + " " + w.LastName + " - " + w.EmployeeNumber;
+                        //    worksheet.Range["A" + row + ":E" + row].Merge();
+                        //    worksheet.Range["A" + row + ":E" + row].CellStyle = DivisionStyle;
+                        //    worksheet.Range["A" + row + ":E" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+                        //    row++;
+
+                        //    foreach (var x in empdata)
+                        //    {
+                        //        worksheet.Range[row, 1].Text = count.ToString();
+                        //        worksheet.Range[row, 2].Text = x.FirstName + " " + x.MiddleName + " " + x.LastName;
+                        //        worksheet.Range[row, 2].WrapText = true;
+
+                        //        row += 1;
+                        //        count++;
+                        //    }
+                        //}
+
+                        //Employee Data
+                        if (empdata.Count > 0)
+                        {
+                            worksheet.Range["A" + row].Text = w.FirstName + " " + w.MiddleName + " " + w.LastName + " - " + w.EmployeeNumber;
+                            worksheet.Range["A" + row + ":E" + row].Merge();
+                            worksheet.Range["A" + row + ":E" + row].CellStyle = DivisionStyle;
+                            worksheet.Range["A" + row + ":E" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+                            row++;
+
+                            foreach (var x in empdata)
+                            {
+                                worksheet.Range[row, 1].Text = count.ToString();
+                                //worksheet.Range[row, 2].Text = x.FirstName + " " + x.MiddleName + " " + x.LastName;
+                                worksheet.Range[row, 2].WrapText = true;
+                                
+                                ////Employee Children
+                                //if (empchildren.Count > 0)
+                                //{
+                                //    foreach (var xchild in empchildren)
+                                //    {
+                                //        worksheet.Range[row, 2].Text = xchild.FirstName + " " + xchild.MiddleName + " " + xchild.LastName;
+                                //        worksheet.Range[row, 2].WrapText = true;
+
+                                //        row += 1;
+                                //        count++;
+                                //    }                                    
+                                //}
+                                
+                                ////Employee Spouse
+                                //if (empspouse.Count > 0)
+                                //{
+                                //    foreach (var xspouse in empspouse)
+                                //    {
+                                //        worksheet.Range[row, 3].Text = xspouse.FirstName + " " + xspouse.MiddleName + " " + xspouse.LastName;
+                                //        worksheet.Range[row, 3].WrapText = true;
+                                //    }
+                                //}
+
+                                //row += 1;
+                                //count++;
+                            }
+                            //Employee Children
+                            if (empchildren.Count > 0)
+                            {
+                                foreach (var xchild in empchildren)
+                                {
+                                    worksheet.Range[row, 2].Text = xchild.FirstName + " " + xchild.MiddleName + " " + xchild.LastName;
+                                    worksheet.Range[row, 2].WrapText = true;
+
+                                    row += 1;
+                                    count++;
+                                }
+                            }
+
+                            //Employee Spouse
+                            if (empspouse.Count > 0)
+                            {
+                                foreach (var xspouse in empspouse)
+                                {
+                                    worksheet.Range[row, 3].Text = xspouse.FirstName + " " + xspouse.MiddleName + " " + xspouse.LastName;
+                                    worksheet.Range[row, 3].WrapText = true;
+
+                                    row += 1;
+                                    count++;
+                                }
+                            }
+
+                            //Uncommenting these returns one record because it not looping through
+                            row += 1;
+                            count++;
+                        }
+
+                    }
+
+                    MemoryStream ms = new MemoryStream();
+                    // Save and close the document.
+                    workbook.SaveAs(ms);
+                    //Reset the memory stream position.
+                    ms.Position = 0;
+                    string _filename = "Employee Family Report.xlsx";
+                    filename = _filename;
+                    await JS.InvokeAsync<object>("saveAsFile", filename, Convert.ToBase64String(ms.ToArray()));
+                    ms.Dispose();
+                    workbook.Close();
+                    Downloadreport = false;
+                    InputModel.Response = "Report Downloaded Successfully";
+                }
+
+            }
+
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.ToString());
+        }
+        finally
+        {
+            await DownloadingSpinner.HideAsync();
+            StateHasChanged();
+        }
+    }
+    private void ClearSearchBtnClick()
+    {
+        InputModel = new UtilitiesSearchPanel();
+    }
+}
+

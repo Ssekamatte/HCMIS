@@ -1,0 +1,587 @@
+﻿@page "/EmployeeDetailsReportPage"
+@using HCMIS.Data;
+@using HCMIS.SHARED.Data;
+@using HCMIS.SHARED.DTOs;
+@using HCMIS.Interface;
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject SystemSettings _SystemSettings
+@using HCMIS.SHARED.DTOs.Utilities;
+@using Syncfusion.XlsIO;
+@using System.Text.Json;
+@inject IReportService reportservice;
+@inject IToastService toastService;
+@inject Microsoft.JSInterop.IJSRuntime JS;
+@inject IUtilityRepository UtilityRepo;
+
+<style>
+    .e-spinner-pane .e-spinner-inner .e-spin-bootstrap4 {
+        stroke: green;
+    }
+</style>
+
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="color: brown;">
+        <strong>
+            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
+        </strong>| EMPLOYEE LIST REPORT
+    </li>
+</ol>
+
+<EditForm Model="@InputModel" OnValidSubmit="@OnSearchSubmit">
+    <DataAnnotationsValidator />
+    <div class="row" style="margin-bottom:10px;">
+        <div class="col-md-6">
+            <p>Date of Birth Range</p>
+            <div class="row">
+                <div class="col-md-6">
+                    <SfDatePicker @bind-Value="@(InputModel.StartDate)" Enabled="true" Placeholder="Start Date" Format="dd/MMMM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                </div>
+                <div class="col-md-6">
+                    <SfDatePicker @bind-Value="@(InputModel.EndDate)" Enabled="true" Placeholder="End Date" Format="dd/MMMM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                </div>
+            </div>
+        </div>
+        <div class="col col-md-6">
+            <p>Employee</p>            
+            <SfMultiSelect @bind-Value="@InputModel.Employeeid" TValue="int?[]" TItem="ViewEmployeeMasterDetailsDto" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@EmployeeReportData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
+            <MultiSelectFieldSettings Value="@nameof(ViewEmployeeMasterDetailsDto.Employeeid)" Text="@nameof(ViewEmployeeMasterDetailsDto.EmployeeFullName)"></MultiSelectFieldSettings>
+            </SfMultiSelect>
+        </div>
+        <div class="col col-md-6">
+            <p>Gender</p>
+            <SfMultiSelect @bind-Value="@InputModel.GenderId" TValue="int?[]" TItem="AGenderDto" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@GenderData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Gender" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
+                <MultiSelectFieldSettings Value="@nameof(AGenderDto.GenderId)" Text="@nameof(AGenderDto.GenderDesc)"></MultiSelectFieldSettings>
+            </SfMultiSelect>
+        </div>
+        @*<div class="col col-md-3">
+            <p>Leave Type</p>
+            <SfMultiSelect @bind-Value="@InputModel.LeaveTypeId" TValue="int?[]" TItem="ALeaveTypeDto" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@LeaveTypeData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Leave Type" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
+                <MultiSelectFieldSettings Value="@nameof(ALeaveTypeDto.LeaveTypeId)" Text="@nameof(ALeaveTypeDto.LeaveTypeDescription)"></MultiSelectFieldSettings>
+            </SfMultiSelect>
+        </div>*@
+        <div class="col col-md-6">
+            <p>Department</p>
+            <SfMultiSelect @bind-Value="@InputModel.DepartmentId" TValue="int?[]" TItem="ADepartmentDto" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@DepartmentData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Department" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
+                <MultiSelectFieldSettings Value="@nameof(ADepartmentDto.DepartmentId)" Text="@nameof(ADepartmentDto.DepartmentDescription)"></MultiSelectFieldSettings>
+            </SfMultiSelect>
+        </div>
+        @*<div class="col col-md-3">
+            <p>Job Title</p>
+            <SfMultiSelect @bind-Value="@InputModel.JobTitleId" TValue="int?[]" TItem="ViewOrgStructureJobTitleDto" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@JobTitleData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Department" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
+                <MultiSelectFieldSettings Value="@nameof(ViewOrgStructureJobTitleDto.JobTitleId)" Text="@nameof(ViewOrgStructureJobTitleDto.JobTitleDescription)"></MultiSelectFieldSettings>
+            </SfMultiSelect>
+        </div>*@
+        
+        <div class="form-group col-md-12">
+            <SfSpinner @ref="DownloadingSpinner" Label="Downloading Report Please Wait....." Size="50"></SfSpinner>
+        </div>        
+    </div>
+    
+    <div class="row" style="margin-bottom:10px;">
+        @if (Downloadreport == false)
+        {
+            <div class="col col-md-3">
+                <SfButton Color="Color.Primary" ButtonType="BlazorStrap.ButtonType.Submit">Download Report</SfButton>
+                <SfButton Color="Color.Secondary" ButtonType="BlazorStrap.ButtonType.Button" @onclick="ClearSearchBtnClick">Clear Search</SfButton>
+            </div>
+
+        }
+
+        @if (!string.IsNullOrEmpty(InputModel.Response))
+        {
+            <div class="col col-md-12" style="margin-top:10px;">
+                <div class="alert alert-success">@InputModel.Response</div>
+            </div>
+        }
+    </div>
+    <ValidationSummary />
+</EditForm>
+
+@code {
+    private UtilitiesSearchPanel InputModel = new UtilitiesSearchPanel();
+    SfSpinner? DownloadingSpinner;
+    bool Downloadreport { get; set; } = false;
+    string? filename { get; set; } = null;
+    List<EmployeeDto>? EmployeeData { get; set; }
+    List<AGenderDto>? GenderData { get; set; }
+    List<ADepartmentDto>? DepartmentData { get; set; }
+    List<ViewOrgStructureJobTitleDto>? JobTitleData { get; set; }
+    List<JobDescriptionDto>? JobDescriptionData { get; set; }
+    List<ALeaveTypeDto>? LeaveTypeData { get; set; }
+    List<ViewEmployeeMasterDetailsDto>? EmployeeReportData { get; set; }
+    List<ADistrict>? DistrictData { get; set; }
+    List<ViewAparish>? ParishData { get; set; }
+    List<ASubCounty>? SubCountyData { get; set; }
+    List<ViewAvillage>? VillageData { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+        List<Task> t = new List<Task>();
+        t.Add(Task.Run(async () =>
+        {
+            var responseemployee = await Http.GetAsync($"Employeez/GetMasterList");
+            if (responseemployee.IsSuccessStatusCode)
+            {
+                var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+                EmployeeData = JsonSerializer.Deserialize<List<EmployeeDto>>(contentemployee, _options);
+            }
+
+        }));
+         t.Add(Task.Run(async () =>
+        {
+           var responseemployeereport = await Http.GetAsync($"Employeez/GetEmployeeReportsList");           
+           if (responseemployeereport.IsSuccessStatusCode)
+           {
+               var contentemployeereport = await responseemployeereport.Content.ReadAsStringAsync();
+               EmployeeReportData = JsonSerializer.Deserialize<List<ViewEmployeeMasterDetailsDto>>(contentemployeereport, _options);
+           }
+        }));
+         t.Add(Task.Run(async () =>
+        {
+           var responsegender = await Http.GetAsync($"Utilities/GetGender");           
+           if (responsegender.IsSuccessStatusCode)
+           {
+               var contentgender = await responsegender.Content.ReadAsStringAsync();
+               GenderData = JsonSerializer.Deserialize<List<AGenderDto>>(contentgender, _options);
+           }
+        }));
+         t.Add(Task.Run(async () =>
+        {
+           var responsedepartment = await Http.GetAsync($"Utilities/GetDepartment");
+           if (responsedepartment.IsSuccessStatusCode)
+           {
+               var contentdepartment = await responsedepartment.Content.ReadAsStringAsync();
+               DepartmentData = JsonSerializer.Deserialize<List<ADepartmentDto>>(contentdepartment, _options);
+           }
+
+        }));
+         t.Add(Task.Run(async () =>
+        {
+           var responseJobTitle = await Http.GetAsync($"Utilities/GetOrgStructureJobTitle");           
+           if (responseJobTitle.IsSuccessStatusCode)
+           {
+               var contentJobTitle = await responseJobTitle.Content.ReadAsStringAsync();
+               JobTitleData = JsonSerializer.Deserialize<List<ViewOrgStructureJobTitleDto>>(contentJobTitle, _options);
+           }
+
+        }));
+         t.Add(Task.Run(async () =>
+        {
+           var responseJD = await Http.GetAsync($"Utilities/GetJobDescription");           
+           if (responseJD.IsSuccessStatusCode)
+           {
+               var contentJD = await responseJD.Content.ReadAsStringAsync();
+               JobDescriptionData = JsonSerializer.Deserialize<List<JobDescriptionDto>>(contentJD, _options);
+           }
+        }));
+         t.Add(Task.Run(async () =>
+        {
+           var responsedistrict = await Http.GetAsync($"Utilities/GetDistrict");           
+           if (responsedistrict.IsSuccessStatusCode)
+           {
+               var contentdistrict = await responsedistrict.Content.ReadAsStringAsync();
+               DistrictData = JsonSerializer.Deserialize<List<ADistrict>>(contentdistrict, _options);
+           }
+        }));
+        t.Add(Task.Run(async () =>
+        {
+           var responsesubcounty = await Http.GetAsync($"Utilities/GetSubcounty");          
+           if (responsesubcounty.IsSuccessStatusCode)
+           {
+                var contentsubcounty = await responsesubcounty.Content.ReadAsStringAsync();
+                SubCountyData = JsonSerializer.Deserialize<List<ASubCounty>>(contentsubcounty, _options);
+           }
+        }));
+        t.Add(Task.Run(async () =>
+        {
+            var responseparish = await Http.GetAsync($"Utilities/GetParishDropDown");
+            if (responseparish.IsSuccessStatusCode)
+            {
+                var contentparish = await responseparish.Content.ReadAsStringAsync();
+                ParishData = JsonSerializer.Deserialize<List<ViewAparish>>(contentparish, _options);
+            }
+        }));
+        t.Add(Task.Run(async () =>
+        {
+           var responsesubcounty = await Http.GetAsync($"Utilities/GetSubcounty");           
+           if (responsesubcounty.IsSuccessStatusCode)
+           {
+               var contentsubcounty = await responsesubcounty.Content.ReadAsStringAsync();
+               SubCountyData = JsonSerializer.Deserialize<List<ASubCounty>>(contentsubcounty, _options);
+           }
+        }));
+        t.Add(Task.Run(async () =>
+        {
+            var responsevillage = await Http.GetAsync($"Utilities/GetVillageDropDown");            
+            if (responsevillage.IsSuccessStatusCode)
+            {
+                var contentvillage = await responsevillage.Content.ReadAsStringAsync();
+                VillageData = JsonSerializer.Deserialize<List<ViewAvillage>>(contentvillage, _options);
+            }
+            
+        }));
+        Task _t = Task.WhenAll(t);
+        await _t;
+    }
+
+    private async Task OnSearchSubmit()
+    {
+        filename = null;
+        Downloadreport = true;
+        await DownloadingSpinner.ShowAsync();
+        try
+        {
+            var data = await reportservice.GetEmployeeDetails(InputModel);
+
+            if (data.Count > 0)
+            {
+                using (ExcelEngine excelEngine = new ExcelEngine())
+                {
+                    IApplication application = excelEngine.Excel;
+                    application.DefaultVersion = ExcelVersion.Excel2013;
+                    IWorkbook workbook = application.Workbooks.Create(1);
+                    IWorksheet worksheet = workbook.Worksheets[0];
+                    worksheet.Name = "Employee Details Report";
+
+                    #region Styles
+                    var headerStyle = workbook.Styles.Add("headerStyle");
+
+                    headerStyle.BeginUpdate();
+                    headerStyle.Color = Syncfusion.Drawing.Color.Black;
+                    headerStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+                    headerStyle.Font.Bold = true;
+                    headerStyle.Font.FontName = "Arial";
+                    headerStyle.Font.Size = 8f;
+                    headerStyle.Font.Color = ExcelKnownColors.White;
+
+                    headerStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    headerStyle.Borders.Color = ExcelKnownColors.White;
+                    headerStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+                    headerStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+                    headerStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+
+                    headerStyle.WrapText = true;
+
+                    headerStyle.EndUpdate();
+
+                    var Style = workbook.Styles.Add("bodyStyle");
+
+                    Style.BeginUpdate();
+                    Style.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+                    Style.VerticalAlignment = ExcelVAlign.VAlignTop;
+                    Style.Font.Bold = false;
+                    Style.Font.FontName = "Arial";
+                    Style.Font.Size = 8f;
+                    Style.Font.Color = ExcelKnownColors.Black;
+                    Style.WrapText = true;
+                    Style.Borders.Color = ExcelKnownColors.Black;
+                    Style.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+                    Style.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+                    Style.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+                    Style.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
+                    Style.EndUpdate();
+
+
+                    var CategoryStyle = workbook.Styles.Add("CategoryStyle");
+
+                    CategoryStyle.BeginUpdate();
+                    CategoryStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    CategoryStyle.Color = Syncfusion.Drawing.Color.FromArgb(0,204,0);
+                    CategoryStyle.Font.Bold = true;
+                    CategoryStyle.Font.FontName = "Arial";
+                    CategoryStyle.Font.Size = 20f;
+                    CategoryStyle.Font.Color = ExcelKnownColors.Brown;
+                    CategoryStyle.WrapText = true;
+                    CategoryStyle.Borders.Color = ExcelKnownColors.White;
+                    CategoryStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+                    CategoryStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+                    CategoryStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+                    CategoryStyle.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
+                    CategoryStyle.EndUpdate();
+
+                    var DivisionStyle = workbook.Styles.Add("DivisionStyle");
+
+                    DivisionStyle.BeginUpdate();
+                    DivisionStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    DivisionStyle.Color = Syncfusion.Drawing.Color.FromArgb(255, 0, 0); //RED
+                    DivisionStyle.Font.Bold = true;
+                    DivisionStyle.Font.FontName = "Arial";
+                    DivisionStyle.Font.Size = 12f;
+                    DivisionStyle.Font.Color = ExcelKnownColors.White;
+                    DivisionStyle.WrapText = true;
+                    DivisionStyle.Borders.Color = ExcelKnownColors.White;
+                    DivisionStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.None;
+                    DivisionStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.None;
+                    DivisionStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.None;
+                    DivisionStyle.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.None;
+                    DivisionStyle.EndUpdate();
+
+                    #endregion
+
+                    int row = 1;
+                    worksheet.Range["A" + row].Text = "Employee Details Report";
+                    worksheet.Range["A" + row + ":Q" + row].CellStyle = CategoryStyle;
+                    worksheet.Range["A" + row + ":Q" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    worksheet.Range["A" + row + ":Q" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+                    worksheet.Range["A" + row].RowHeight = 30;
+                    worksheet.Range["A" + row + ":Q" + row].Merge();
+                    row++;
+
+                    worksheet.Range["M" + row].Text = "Employee Address";
+                    worksheet.Range["M" + row + ":Q" + row].CellStyle = DivisionStyle;
+                    worksheet.Range["M" + row + ":Q" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    worksheet.Range["M" + row + ":Q" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+                    worksheet.Range["M" + row].RowHeight = 30;
+                    worksheet.Range["M" + row + ":Q" + row].Merge();
+
+                    //FILTERS SEARCHED BY
+                    row++;
+
+                    worksheet.Range[row, 1].Text = "#";
+                    worksheet.Range[row, 1].CellStyle = headerStyle;
+                    worksheet.Range[row, 1].ColumnWidth = 5;
+                    worksheet.Range[row, 1].WrapText = true;
+
+                    worksheet.Range[row, 2].Text = "First Name";
+                    worksheet.Range[row, 2].CellStyle = headerStyle;
+                    worksheet.Range[row, 2].ColumnWidth = 20;
+                    worksheet.Range[row, 2].WrapText = true;
+
+                    worksheet.Range[row, 3].Text = "Middle Name";
+                    worksheet.Range[row, 3].CellStyle = headerStyle;
+                    worksheet.Range[row, 3].ColumnWidth = 20;
+                    worksheet.Range[row, 3].WrapText = true;
+
+                    worksheet.Range[row, 4].Text = "Last Name";
+                    worksheet.Range[row, 4].CellStyle = headerStyle;
+                    worksheet.Range[row, 4].ColumnWidth = 20;
+                    worksheet.Range[row, 4].WrapText = true;
+
+                    worksheet.Range[row, 5].Text = "Employee Number";
+                    worksheet.Range[row, 5].CellStyle = headerStyle;
+                    worksheet.Range[row, 5].ColumnWidth = 20;
+                    worksheet.Range[row, 5].WrapText = true;
+
+                    worksheet.Range[row, 6].Text = "Gender";
+                    worksheet.Range[row, 6].CellStyle = headerStyle;
+                    worksheet.Range[row, 6].ColumnWidth = 20;
+                    worksheet.Range[row, 6].WrapText = true;
+
+                    worksheet.Range[row, 7].Text = "Date of Birth";
+                    worksheet.Range[row, 7].CellStyle = headerStyle;
+                    worksheet.Range[row, 7].ColumnWidth = 20;
+                    worksheet.Range[row, 7].WrapText = true;
+
+                    worksheet.Range[row, 8].Text = "Employee Phone No";
+                    worksheet.Range[row, 8].CellStyle = headerStyle;
+                    worksheet.Range[row, 8].ColumnWidth = 20;
+                    worksheet.Range[row, 8].WrapText = true;
+
+                    worksheet.Range[row, 9].Text = "Employee Email";
+                    worksheet.Range[row, 9].CellStyle = headerStyle;
+                    worksheet.Range[row, 9].ColumnWidth = 25;
+                    worksheet.Range[row, 9].WrapText = true;
+
+                    worksheet.Range[row, 10].Text = "Department";
+                    worksheet.Range[row, 10].CellStyle = headerStyle;
+                    worksheet.Range[row, 10].ColumnWidth = 25;
+                    worksheet.Range[row, 10].WrapText = true;
+
+                    worksheet.Range[row, 11].Text = "Job Title";
+                    worksheet.Range[row, 11].CellStyle = headerStyle;
+                    worksheet.Range[row, 11].ColumnWidth = 25;
+                    worksheet.Range[row, 11].WrapText = true;
+
+                    worksheet.Range[row, 12].Text = "Date Joined";
+                    worksheet.Range[row, 12].CellStyle = headerStyle;
+                    worksheet.Range[row, 12].ColumnWidth = 20;
+                    worksheet.Range[row, 12].WrapText = true;
+
+                    worksheet.Range[row, 13].Text = "Date Departed";
+                    worksheet.Range[row, 13].CellStyle = headerStyle;
+                    worksheet.Range[row, 13].ColumnWidth = 20;
+                    worksheet.Range[row, 13].WrapText = true;
+
+                    worksheet.Range[row, 14].Text = "District";
+                    worksheet.Range[row, 14].CellStyle = headerStyle;
+                    worksheet.Range[row, 14].ColumnWidth = 20;
+                    worksheet.Range[row, 14].WrapText = true;
+
+                    worksheet.Range[row, 15].Text = "Subcounty";
+                    worksheet.Range[row, 15].CellStyle = headerStyle;
+                    worksheet.Range[row, 15].ColumnWidth = 20;
+                    worksheet.Range[row, 15].WrapText = true;
+
+                    worksheet.Range[row, 16].Text = "Parish";
+                    worksheet.Range[row, 16].CellStyle = headerStyle;
+                    worksheet.Range[row, 16].ColumnWidth = 20;
+                    worksheet.Range[row, 16].WrapText = true;
+
+                    worksheet.Range[row, 17].Text = "Village";
+                    worksheet.Range[row, 17].CellStyle = headerStyle;
+                    worksheet.Range[row, 17].ColumnWidth = 20;
+                    worksheet.Range[row, 17].WrapText = true;
+
+                    row++;
+                    int count = 1;
+
+                    foreach (var item in data)
+                    {
+                        worksheet.Range[row, 1].Text = count.ToString();
+                        worksheet.Range[row, 2].Text = item.FirstName;
+                        worksheet.Range[row, 3].Text = item.MiddleName;
+                        worksheet.Range[row, 4].Text = item.LastName;
+                        worksheet.Range[row, 5].Text = item.EmployeeNumber;
+
+                        if (item.GenderId.HasValue)
+                        {
+                            if(GenderData != null)
+                            {
+                                var deptdata = GenderData.FirstOrDefault(o => o.GenderId == item.GenderId);
+                                if (deptdata != null)
+                                {
+                                    worksheet.Range[row, 6].Text = deptdata.GenderDesc;
+                                }
+                            }                                
+                        }
+
+                        if (item.DoB.HasValue)
+                        {
+                            worksheet.Range[row, 7].Text = item.DoB.Value.ToString("dd/MMMM/yyyy");
+                        }
+                        worksheet.Range[row, 8].Text = item.OfficialPhoneNumber;
+                        worksheet.Range[row, 9].Text = item.EmailAddress;
+                        if (item.DepartmentId.HasValue)
+                        {
+                            if(DepartmentData != null)
+                            {
+                                var deptdata = DepartmentData.FirstOrDefault(o => o.DepartmentId == item.DepartmentId);
+                                if (deptdata != null)
+                                {
+                                    worksheet.Range[row, 10].Text = deptdata.DepartmentDescription;
+                                    worksheet.Range[row, 10].WrapText = true;
+                                }
+                            }                                
+                        }
+
+                        if (item.JobDescriptionId.HasValue)
+                        {
+                            if(JobDescriptionData != null)
+                            {
+                                var jddata = JobDescriptionData.FirstOrDefault(o => o.JobDescriptionId == item.JobDescriptionId.Value);
+                                if (jddata != null)
+                                {
+                                    if (JobTitleData != null)
+                                    {
+                                        var jobtitledata = JobTitleData.FirstOrDefault(o => o.JobTitleId == jddata.JibTitleId);
+                                        if (jobtitledata != null)
+                                        {
+                                            worksheet.Range[row, 11].Text = jobtitledata.JobTitleDescription;
+                                            worksheet.Range[row, 11].WrapText = true;
+                                        }                                        
+                                    }                                    
+                                }
+                            }                                
+                        }
+
+                        if (item.DateJoined.HasValue)
+                        {
+                            worksheet.Range[row, 12].Text = item.DateJoined.Value.ToString("dd/MMMM/yyyy");
+                        }
+                        if (item.DepartureDate.HasValue)
+                        {
+                            worksheet.Range[row,13].Text = item.DepartureDate.Value.ToString("dd/MMMM/yyyy");
+                        }
+
+                        if (item.PlaceofResidenceDistrictId.HasValue)
+                        {
+                            if(DistrictData != null)
+                            {
+                                var deptdata = DistrictData.FirstOrDefault(o => o.DistrictId == item.PlaceofResidenceDistrictId.Value);
+                                if (deptdata != null)
+                                {
+                                    worksheet.Range[row, 14].Text = deptdata.DistrictDescription;
+                                    worksheet.Range[row, 14].WrapText = true;
+                                }
+                            }      
+                        }
+
+                        if (item.PlaceofResidenceSubCountyId.HasValue)
+                        {
+                            if (SubCountyData != null)
+                            {
+                                var deptdata = SubCountyData.FirstOrDefault(o => o.SubCountyId == item.PlaceofResidenceSubCountyId.Value);
+                                if (deptdata != null)
+                                {
+                                    worksheet.Range[row, 15].Text = deptdata.SubCountyDescription;
+                                    worksheet.Range[row, 15].WrapText = true;
+                                }
+                            }      
+                        }
+
+                        if (item.PlaceofResidenceParishId.HasValue)
+                        {
+                            if (ParishData != null)
+                            {
+                                var deptdata = ParishData.FirstOrDefault(o => o.ParishId == item.PlaceofResidenceParishId.Value);
+                                if (deptdata != null)
+                                {
+                                    worksheet.Range[row, 16].Text = deptdata.ParishDesc;
+                                    worksheet.Range[row, 16].WrapText = true;
+                                }
+                            }      
+                        }
+
+                        if (item.PlaceofResidenceVillageId.HasValue)
+                        {
+                            if (VillageData != null)
+                            {
+                                var deptdata = VillageData.FirstOrDefault(o => o.VillageId == item.PlaceofResidenceVillageId.Value);
+                                if (deptdata != null)
+                                {
+                                    worksheet.Range[row, 17].Text = deptdata.ViallgeDescription;
+                                    worksheet.Range[row, 17].WrapText = true;
+                                }
+                            }
+                        }
+
+                        row += 1;
+                        count++;
+                    }
+
+                    MemoryStream ms = new MemoryStream();
+                    // Save and close the document.
+                    workbook.SaveAs(ms);
+                    //Reset the memory stream position.
+                    ms.Position = 0;
+                    string _filename = "Employee Details Report.xlsx";
+                    filename = _filename;
+                    await JS.InvokeAsync<object>("saveAsFile", filename, Convert.ToBase64String(ms.ToArray()));
+                    ms.Dispose();
+                    workbook.Close();
+                    Downloadreport = false;
+                    InputModel.Response = "Report Downloaded Successfully";
+                }
+                
+            }
+
+        }
+        catch(Exception ex)
+        {
+            toastService.ShowError(ex.ToString());
+        }
+        finally
+        {
+            await DownloadingSpinner.HideAsync();
+            StateHasChanged();
+        }
+    }
+    private void ClearSearchBtnClick()
+    {
+        InputModel = new UtilitiesSearchPanel();
+    }
+}

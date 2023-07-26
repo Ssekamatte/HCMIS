@@ -20,7 +20,13 @@
     }
 </style>
 
-<BreadcrumbPage CategoryName="LEAVE REQUEST" PageName="REPORT" />
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="color: brown;">
+        <strong>
+            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
+        </strong>| LEAVE REQUEST REPORT
+    </li>
+</ol>
 
 <EditForm Model="@InputModel" OnValidSubmit="@OnSearchSubmit">
     <DataAnnotationsValidator/>
@@ -38,9 +44,29 @@
         </div>
         <div class="col col-md-6">
             <p>Employee</p>
-            <SfMultiSelect @bind-Value="@InputModel.Employeeid" TValue="int?[]" TItem="ViewBscEmployeeDto" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
-                <MultiSelectFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></MultiSelectFieldSettings>
+            <SfMultiSelect @bind-Value="@InputModel.Employeeid" TValue="int?[]" TItem="EmployeeDto"
+                           AllowFiltering="true" Placeholder="Please select"
+                           Mode="@VisualMode.CheckBox" DataSource="@EmployeeData"
+                           ShowSelectAll="true"
+                           EnableSelectionOrder="true"
+                           ShowDropDownIcon="true"
+                           FilterBarPlaceholder="Search Employee"
+                           FloatLabelType="FloatLabelType.Never"
+                           PopupHeight="350px"
+                           FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                <MultiSelectFieldSettings Text="@nameof(EmployeeDto.LastName)" Value="@nameof(EmployeeDto.Employeeid)"></MultiSelectFieldSettings>
+                <MultiSelectTemplates TItem="EmployeeDto">
+                    <ValueTemplate Context="NameContext">
+                        <span class='name'>@((NameContext as EmployeeDto).FirstName) @((NameContext as EmployeeDto).LastName)</span>
+                    </ValueTemplate>
+                    <ItemTemplate Context="ItemContext">
+                        <span class='name'>@((ItemContext as EmployeeDto).FirstName) @((ItemContext as EmployeeDto).LastName)</span>
+                    </ItemTemplate>
+                </MultiSelectTemplates>
             </SfMultiSelect>
+            @*<SfMultiSelect @bind-Value="@InputModel.Employeeid" TValue="int?[]" TItem="EmployeeDto" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
+                <MultiSelectFieldSettings Value="@nameof(EmployeeDto.Employeeid)" Text="@nameof(EmployeeDto.LastName)"></MultiSelectFieldSettings>
+            </SfMultiSelect>*@
         </div>
         <div class="col col-md-6">
             <p>Gender</p>
@@ -95,7 +121,7 @@
     SfSpinner? DownloadingSpinner;
     bool Downloadreport { get; set; } = false;
     string? filename { get; set; } = null;
-    List<ViewBscEmployeeDto>? EmployeeData { get; set; }
+    List<EmployeeDto>? EmployeeData { get; set; }
     List<AGenderDto>? GenderData { get; set; }
     List<ADepartmentDto>? DepartmentData { get; set; }
     List<ViewOrgStructureJobTitleDto>? JobTitleData { get; set; }
@@ -106,7 +132,7 @@
     protected override async Task OnInitializedAsync()
     {
         
-        var responseemployee = await Http.GetAsync($"BalanceScoreCard/GetEmployeeData");
+        var responseemployee = await Http.GetAsync($"Employeez/GetMasterList");
         var contentemployee = await responseemployee.Content.ReadAsStringAsync();
         var responsegender = await Http.GetAsync($"FinancialYear/list");
         var contentgender = await responsegender.Content.ReadAsStringAsync();
@@ -119,8 +145,8 @@
 
         if (responseemployee.IsSuccessStatusCode)
         {
-            EmployeeData = await Http.GetFromJsonAsync<List<ViewBscEmployeeDto>>
-            ($"BalanceScoreCard/GetEmployeeData");
+            EmployeeData = await Http.GetFromJsonAsync<List<EmployeeDto>>
+            ($"Employeez/GetMasterList");
         }
 
         if (responsegender.IsSuccessStatusCode)
