@@ -15,7 +15,9 @@
 @using HCMIS.SHARED.DTOs.Utilities;
 @using Syncfusion.Blazor.Notifications;
 
+<style>
 
+</style>
 
 <ol class="breadcrumb" style="margin-top:5px;">
     <li class="breadcrumb-item active" style="color: brown;">
@@ -237,16 +239,19 @@
                                                    CustomAttributes="@(new Dictionary<string,
                                                    object>(){ { "class", "e-attr1" }})">
                                 </GridForeignColumn>
-                                 @*<GridColumn HeaderText="Select" TextAlign="TextAlign.Center" Width="50"> 
+                                @*<GridColumn HeaderText="Rating" TextAlign="TextAlign.Center" Width="150">
                                     <Template Context="RadioContext"> 
-                                        @{ 
-                                            var employee = (context as EmployeeExitRatingDto);
-                                            <div class="col-md-6">
-                                                <SfRadioButton Label="Yes" Name="options" Value="true" TChecked="bool?" ValueChange="OnValueChange"></SfRadioButton>
-                                                <SfRadioButton Label="Yes" Name="options" Value="true" TChecked="bool?" ValueChange="OnValueChange"></SfRadioButton>
-                                                <SfRadioButton Label="Yes" Name="options" Value="true" TChecked="bool?" ValueChange="OnValueChange"></SfRadioButton>
-                                                <SfRadioButton Label="Yes" Name="options" Value="true" TChecked="bool?" ValueChange="OnValueChange"></SfRadioButton>
-                                            </div> 
+                                        @{
+                                            var employee = (RadioContext as EmployeeExitRatingDto);
+                                            
+                                            <div class="col-md-12">
+                                                <SfRadioButton Name="selection" ValueChange="@((args)=>OnValueChange1(args,employee))" TChecked="bool"></SfRadioButton>
+                                                <SfRadioButton Label="Poor" Name="options" Value=1 TChecked="int?" @bind-Checked="@(employee.ExitRatingId)" ValueChange="OnValueChange"></SfRadioButton>
+                                                <SfRadioButton Label="Fair" Name="options" Value=2 TChecked="int?" @bind-Checked="@(employee.ExitRatingId)" ValueChange="OnValueChange"></SfRadioButton>
+                                                <SfRadioButton Label="Good" Name="options" Value=3 TChecked="int?" @bind-Checked="@(employee.ExitRatingId)" ValueChange="OnValueChange"></SfRadioButton>
+                                                <SfRadioButton Label="Very Good" Name="options" Value=4 TChecked="int?" @bind-Checked="@(employee.ExitRatingId)" ValueChange="OnValueChange"></SfRadioButton>
+                                                <SfRadioButton Label="Excellent" Name="options" Value=5 TChecked="int?" @bind-Checked="@(employee.ExitRatingId)" ValueChange="OnValueChange"></SfRadioButton>
+                                            </div>
                                         } 
                                     </Template> 
                                 </GridColumn>*@
@@ -291,9 +296,9 @@
 
             }
         </Template>
-        <FooterTemplate>         
-            <SfButton IconCss="e-success" OnClick="@onSubmitForm">Save Form</SfButton>
-            <SfButton IconCss="e-primary" OnClick="DialogCancelBtnclicked">Cancel</SfButton>
+        <FooterTemplate>    
+            <button @onclick="@onSubmitForm" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Save Form</button>
+            <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true" style="margin-right:10px;">Cancel</button>
         </FooterTemplate>
     </GridEditSettings>
     <GridEvents OnToolbarClick="@GridToolbarClick"
@@ -398,7 +403,7 @@
     public static int UserJobTitleId { get; set; } = 0;
     public static int UserLevelId { get; set; } = 0;
     public bool EmployeeDD = true;
-    public bool? radiovalue;
+    public int? radiovalue;
     SfDialog? LoadingDialogue;
     public int RowCounter = 0;
 
@@ -627,11 +632,18 @@
         }
     }
 
-    private void OnValueChange(ChangeArgs<bool?> args)
+    private void OnValueChange(ChangeArgs<int?> args)
     {
         radiovalue = args.Value;
     }
 
+    public async Task OnValueChange1(ChangeArgs<bool> Args, EmployeeExitRatingDto val)
+    {
+        //to find the row index
+        var rowIndex = ExitRatingGrid.CurrentViewData.ToList().IndexOf(val);
+        //select the record using index and SelectRow method
+        await ExitRatingGrid.SelectRow((int)rowIndex, false);
+    }
 
     public async void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewBscEmployeeDto> args)
     {
@@ -697,6 +709,12 @@
             if (Args.Data.EmployeeId == null)
             {
                 toastService.ShowWarning("Please select the employee.");
+                Args.Cancel = true;
+            }
+
+            else if (Args.Data.DateToExit == null)
+            {
+                toastService.ShowWarning("Please enter the Exit Date.");
                 Args.Cancel = true;
             }
 
