@@ -23,7 +23,13 @@
         min-width: 95%;
         min-height: 95%;
     }*/
-    
+
+    /*Disable select all on grid checkbox*/
+    .e-headercelldiv.e-headerchkcelldiv .e-checkbox-wrapper.e-css {
+        pointer-events: none;
+        opacity: 0.5;
+    }
+
     /*Change Cell Color */
     .e-headercell.e-attr1 {
         background: #964B00;
@@ -102,8 +108,8 @@
                                         </SfMultiSelect>
                                     </div>
                                     <div class="form-group col-md-6">
-                                        <SfButton class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Search</SfButton>
-                                        <SfButton class="btn btn-danger" data-ripple="true" @onclick="ClearSearchBtnClick">Clear Search</SfButton>
+                                        <button @onclick="@SearchRecords" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Search</button>
+                                        <button @onclick="@ClearSearchBtnClick" class="btn btn-danger" data-ripple="true" style="margin-right:10px;">Clear Search</button>
                                     </div>
                                     <div class="form-group col-md-12">
                                         <DataAnnotationsValidator />
@@ -153,7 +159,12 @@
             <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
             <SfDataManager AdaptorInstance="@typeof(BscKpiAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
             <GridEvents TValue="ABscKpi"></GridEvents>
-            <GridEvents OnActionBegin="@OnBSCKPIActionBegin" OnActionComplete="@OnBSCKPIActionComplete" TValue="ABscKpi"></GridEvents>
+            <GridEvents 
+                OnActionBegin="@OnBSCKPIActionBegin" 
+                OnActionComplete="@OnBSCKPIActionComplete" 
+                RowSelecting="RowSelectingHandler"
+                TValue="ABscKpi">
+            </GridEvents>
             <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog" Dialog="DialogParams">
         <HeaderTemplate>
             @{
@@ -310,6 +321,7 @@
     private UtilitiesSearchPanel SearchModel = new();
     Query mainQuery { get; set; } = new();
     LoginResultModel? Credentials { get; set; }
+    public static int CountedValue { get; set; } = 0;
 
     #endregion Declarations
 
@@ -346,54 +358,73 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Credentials = await AuthService.GetUserCredentials();        
+        Credentials = await AuthService.GetUserCredentials();     
+        JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-        var responsebscperspective = await Http.GetAsync($"BscPerspectives/GetBscPerspectives");
-        var contentbscperspective = await responsebscperspective.Content.ReadAsStringAsync();  
-        var responsebscmeasurement = await Http.GetAsync($"BscPerformanceMeasurement/GetBscPerformanceMeasurement");
-        var contentbscmeasurement = await responsebscmeasurement.Content.ReadAsStringAsync();
-        var responsefinyear = await Http.GetAsync($"FinancialYear/list");
-        var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
-        var responsebsckpicount = await Http.GetAsync($"BscKeyPerformanceIndicator/GetBSCCount");
-        var contentbsckpicount = await responsebsckpicount.Content.ReadAsStringAsync();
-        var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
-        var contentbscperspectivetype = await responsebscperspective.Content.ReadAsStringAsync();  
-        var responseusers = await Http.GetAsync($"Utilities/GetUsers");
-        var contentusers = await responseusers.Content.ReadAsStringAsync();
+        List<Task> t = new List<Task>();
+        t.Add(Task.Run(async () =>
+        {
+            var responsebscperspective = await Http.GetAsync($"BscPerspectives/GetBscPerspectives");
+            if (responsebscperspective.IsSuccessStatusCode)
+            {
+                var contentbscperspective = await responsebscperspective.Content.ReadAsStringAsync();
+                BscPerspectiveData = JsonSerializer.Deserialize<List<BscPerspectivesDto>>(contentbscperspective, _options);
+            }
+        }));
 
-        if (responsebscperspective.IsSuccessStatusCode)
+        t.Add(Task.Run(async () =>
         {
-            BscPerspectiveData = await Http.GetFromJsonAsync<List<BscPerspectivesDto>>
-            ($"BscPerspectives/GetBscPerspectives");
-        }
+            var responsebscmeasurement = await Http.GetAsync($"BscPerformanceMeasurement/GetBscPerformanceMeasurement");
+            if (responsebscmeasurement.IsSuccessStatusCode)
+            {
+                var contentbscmeasurement = await responsebscmeasurement.Content.ReadAsStringAsync();
+                BscMeasurementData = JsonSerializer.Deserialize<List<BscPerformanceMeasurementDto>>(contentbscmeasurement, _options);
+            }
+        }));
 
-        if ( responsebscmeasurement.IsSuccessStatusCode)
+        t.Add(Task.Run(async () =>
         {
-            BscMeasurementData = await Http.GetFromJsonAsync<List<BscPerformanceMeasurementDto>>
-            ($"BscPerformanceMeasurement/GetBscPerformanceMeasurement");
-        }
+            var responsefinyear = await Http.GetAsync($"FinancialYear/list");
+            if (responsefinyear.IsSuccessStatusCode)
+            {
+                var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
+                FinancialYearData = JsonSerializer.Deserialize<List<ViewFinancialYearDto>>(contentfinyear, _options);
+            }
+        }));
 
-        if (responsefinyear.IsSuccessStatusCode)
+        t.Add(Task.Run(async () =>
         {
-            FinancialYearData = await Http.GetFromJsonAsync<List<ViewFinancialYearDto>>
-            ($"FinancialYear/list");
-        }
+            var responsebsckpicount = await Http.GetAsync($"BscKeyPerformanceIndicator/GetBSCCount");
+            if (responsebsckpicount.IsSuccessStatusCode)
+            {
+                var contentbsckpicount = await responsebsckpicount.Content.ReadAsStringAsync();
+                BsckpiCountData = JsonSerializer.Deserialize<List<ViewBsckpicountDto>>(contentbsckpicount, _options);
+            }
+        }));
 
-        if (responsebsckpicount.IsSuccessStatusCode)
+        t.Add(Task.Run(async () =>
         {
-            BsckpiCountData = await Http.GetFromJsonAsync<List<ViewBsckpicountDto>>
-            ($"BscKeyPerformanceIndicator/GetBSCCount");
-        }
-        if (responsebscperspectivetype.IsSuccessStatusCode)
+            var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
+            if (responsebscperspectivetype.IsSuccessStatusCode)
+            {
+                var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
+                BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesTypeDto>>(contentbscperspectivetype, _options);
+            }
+        }));
+
+        t.Add(Task.Run(async () =>
         {
-            BscPerspectiveTypeData = await Http.GetFromJsonAsync<List<ABscPerspectivesTypeDto>>
-            ($"Utilities/BSCPerspectiveType");
-        }
-        if (responseusers.IsSuccessStatusCode)
-        {
-            UsersData = await Http.GetFromJsonAsync<List<ViewUserManagementDto>>
-            ($"Utilities/GetUsers");
-        }
+            var responseusers = await Http.GetAsync($"Utilities/GetUsers");
+            if (responseusers.IsSuccessStatusCode)
+            {
+                var contentusers = await responseusers.Content.ReadAsStringAsync();
+                UsersData = JsonSerializer.Deserialize<List<ViewUserManagementDto>>(contentusers, _options);
+            }
+        }));
+
+        Task _t = Task.WhenAll(t);
+        await _t;
+
     }
 
     #region CategoryAdapter
@@ -566,8 +597,8 @@
             try
             {
                 var val = (value as ABscKpi);
-                
-                
+
+
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
                 var result = await Http.PostAsync($"BscKeyPerformanceIndicator/CreateKeyPerformanceIndicator", httpContent);
@@ -652,11 +683,39 @@
 
                 var countdata = BsckpiCountData?.FirstOrDefault(o => o.BscPerspectiveTypeId == args.Data.BscPerspectiveTypeId && o.FinancialYearId == args.Data.FinancialYearId);
 
-                if (countdata != null && countdata.CountNo >= 3)
+                //if (countdata != null && countdata.CountNo >= 3)
+                if (countdata != null && countdata.CountNo >= 3 && args.Data.Bsckpiid == 0)
                 {
                     toastService.ShowWarning("You have arleady entered three KPI's for the  " + countdata.BscPerspectiveTypeDescription + " in the Financial Year  " + countdata.FinancialYear + ". Record Not Saved");
                     args.Cancel = true;
                 }
+
+                //int? BscPerspectiveTypeId = null;
+                //int? FinancialYearId = null;
+
+                //if (args.Data.BscPerspectiveTypeId != null)
+                //{
+                //    BscPerspectiveTypeId = args.Data.BscPerspectiveTypeId;
+                //}
+
+                //if (args.Data.FinancialYearId != null)
+                //{
+                //    FinancialYearId = args.Data.FinancialYearId;
+                //}
+
+                //var responsebsckpicount = await Http.GetAsync($"BscKeyPerformanceIndicator/GetBSCCount1?BscPerspectiveTypeId={BscPerspectiveTypeId}&FinancialYearId={FinancialYearId}");
+                //if (responsebsckpicount.IsSuccessStatusCode)
+                //{
+
+                //    var contentbsckpicount = await responsebsckpicount.Content.ReadAsStringAsync();
+                //    CountedValue = Convert.ToInt32(contentbsckpicount);
+                //}
+
+                //if (CountedValue >= 3)
+                //{
+                //    toastService.ShowWarning("You have arleady entered three KPI's for the   Record Not Saved");
+                //    args.Cancel = true;
+                //}
             }
         }
         catch (Exception ex)
@@ -665,6 +724,11 @@
         }
         //finally { StateHasChanged(); }
     }
+
+    public async Task RowSelectingHandler(RowSelectingEventArgs<ABscKpi> args)
+    { 
+        await BscKpiGrid.ClearSelection();   //clear selection  
+    } 
 
     public string GetBscKpiHeader(ABscKpi Value)
     {
