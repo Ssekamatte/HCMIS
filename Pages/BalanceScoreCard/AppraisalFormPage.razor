@@ -13,6 +13,7 @@
 @using HCMIS.Interface;
 @inject IAuthenticationService AuthService;
 
+
 <style>
 
     /*Change font size in grid elements*/
@@ -174,15 +175,6 @@
     }
 </style>
 
-<div class="row">
-    <div class="col-lg-12 control-section">
-        <SfToast @ref="ToastObj" ID="toast_type">
-            <ToastPosition X="@ToastPosition"></ToastPosition>
-        </SfToast>
-    </div>
-</div>
-
-
 @{
     var Div = (new string[] { "BscPerspectiveTypeId", "PerspectiveTotalWeight" });
 }
@@ -195,15 +187,38 @@
     </li>
 </ol>
 
-<SfGrid @ref="@DataGrid" TValue="BalanceScoreCardDto" GridLines="GridLine.Both" ID="Grid" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@ToolbarMenu">
+<SfSpinner @ref="SpinnerObj" Label="Loading Please Wait....." Size="50">
+        @*Render custom spinner component.*@
+</SfSpinner>
+
+<SfGrid @ref="@DataGrid" TValue="BalanceScoreCardDto" GridLines="GridLine.Both" ID="Grid" @attributes="@GridAttributes" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@ToolbarMenu">
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
         <Template>           
             @{
-                    <center>
-                        <h5>
-                            <strong>PERFORMANCE APPRAISAL FORM</strong>
-                        </h5>
-                    </center>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <center>
+                                <h5>
+                                    <strong>PERFORMANCE APPRAISAL FORM</strong>
+                                </h5>
+                            </center>
+                        </div>
+
+                        @*@if(employeeleave!=null)
+                        {
+                            <div class="col-md-4">   
+                                   <h5 style="color:green;">
+                                            <strong>Leave No: @employeeleave.EmployeeLeaveNo</strong>
+                                    </h5>
+                            </div>
+                            <div class="col-md-4">
+                                <h5 style="color:green;">
+                                    <strong>Application Status: @employeeleave.LeaveApprovalStatus</strong>
+                                </h5>
+                            </div>
+                        }*@
+                    </div>
+
                     BscData = (context as BalanceScoreCardDto);
 
                     <SfAccordion ExpandMode="ExpandMode.Single">
@@ -401,6 +416,7 @@
                                         <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
                                         <GridEvents CellSelected="CellSelectHandler"
                                             CellSaved="CellSavedHandler"
+                                            OnCellSave="CellSaveHandler"
                                             TValue="BalanceScoreCardTargetSettingDto">
                                         </GridEvents>
 
@@ -457,7 +473,7 @@
                                                                ForeignKeyField="@(nameof(ABscPerformanceMeasurement.MeasurementMetricId))"
                                                                ForeignKeyValue="@(nameof(ABscPerformanceMeasurement.MeasurementMetricDescription))"
                                                                ForeignDataSource="@BscMeasurementData"
-                                                                       ClipMode="ClipMode.EllipsisWithTooltip"
+                                                               ClipMode="ClipMode.EllipsisWithTooltip"
                                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
                                                     </GridForeignColumn>
                                                     <GridColumn Field=@nameof(BalanceScoreCardTargetSettingDto.IndividualTargetWeight)
@@ -576,7 +592,7 @@
                                 <HeaderTemplate><strong>SECTION 3.VALUES & BEHAVIORAL COMPETENCIES ( RATING USING A SCALE OF 1- 3 AS PER THE COMPETENCE GUIDE)</strong></HeaderTemplate>
                                 <ContentTemplate>                               
                                     <SfGrid @ref="@BehavioralGrid" DataSource="@BscData.BalanceScoreCardBehavioral" GridLines="GridLine.Both"
-                                    TValue="BalanceScoreCardBehavioralDto" ID="Grid1" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit","Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
+                                    TValue="BalanceScoreCardBehavioralDto" ID="Grid1" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit","Cancel", "Update"})">
                                         <GridEditSettings AllowAdding="false" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
                                         <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
                                         <GridPageSettings PageSizes="true"></GridPageSettings>
@@ -669,7 +685,7 @@
                                 <HeaderTemplate><strong>SECTION 4: INDIVIDUAL DEVELOPMENT PLAN</strong></HeaderTemplate>
                                 <ContentTemplate>
                                     <SfGrid @ref="@DevelopmentPlanGrid" DataSource="@BscData.BalanceScoreCardTargetDevelopmentPlan" GridLines="GridLine.Both"
-                                    TValue="BalanceScoreCardTargetDevelopmentPlanDto" ID="GridDevelopmentPlan" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
+                                    TValue="BalanceScoreCardTargetDevelopmentPlanDto" ID="GridDevelopmentPlan" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Cancel", "Update"})">
                                         <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
                                         <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
                                         <GridPageSettings PageSizes="true"></GridPageSettings>
@@ -718,7 +734,7 @@
                                             <HeaderTemplate>APPRAISEE'S COMMENTS</HeaderTemplate>
                                             <ContentTemplate>
                                                 <SfGrid @ref="@AppraiseeCommentsGrid" DataSource="@BscData.BalanceScoreCardAppraiseeComments" GridLines="GridLine.Both"
-                                                TValue="BalanceScoreCardAppraiseeCommentsDto" ID="Grid1" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit","Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
+                                                TValue="BalanceScoreCardAppraiseeCommentsDto" ID="Grid1" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit","Cancel", "Update"})">
                                                     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
                                                     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
                                                     <GridPageSettings PageSizes="true"></GridPageSettings>
@@ -855,7 +871,7 @@
                                             </ContentTemplate>
                                         </AccordionItem>
 
-                                    if (Credentials != null && !string.IsNullOrEmpty(Credentials.UserRole) &&
+                                    @if (Credentials != null && !string.IsNullOrEmpty(Credentials.UserRole) &&
                                         Credentials.UserRole.Contains("Administrator"))
                                     {                                    
                                                 <AccordionItem Expanded="false">
@@ -917,8 +933,18 @@
 
         </Template>
         <FooterTemplate> 
-            <button @onclick="@onSubmitForm" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Save Form</button>
-            <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true" style="margin-right:10px;">Cancel</button>
+            <button @onclick="@onSaveDraftForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
+            @if (_previous == Syncfusion.Blazor.Grids.Action.Add)
+            {                
+                <button @onclick="@onSubmitForm" disabled=@IsDisabled class="btn btn-success" data-ripple="true" style="margin-right:10px;">Submit</button>
+            }
+            else if (_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+                <button @onclick="@onApproveForm" hidden=@IsHiddenApprove disabled=@IsDisabled class="btn btn-success" data-ripple="true" style="margin-right:10px;">Approve</button>
+                <button @onclick="@onSubmitForm" hidden=@IsHiddenSubmitEdit disabled=@IsDisabled class="btn btn-success" data-ripple="true" style="margin-right:10px;">Submit1</button>
+            }
+            
+                <button @onclick="@DialogCancelBtnclicked" disabled=@IsDisabled class="btn btn-danger" data-ripple="true" style="margin-right:10px;">Cancel</button>
         </FooterTemplate>
     </GridEditSettings>    
     <GridPageSettings PageSizes="true"></GridPageSettings>
@@ -926,6 +952,9 @@
     <GridEvents 
         OnActionComplete="ActionCompleteMain" 
         OnActionBegin="ActionBeginMain" 
+        OnLoad="LoadHandler" 
+        DataBound="DataBound"
+        QueryCellInfo="QueryCellInfoHandler"
         TValue="BalanceScoreCardDto">
     </GridEvents>
     <SfDataManager AdaptorInstance="@typeof(BSCAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
@@ -934,7 +963,7 @@
         <GridColumn Field=@nameof(BalanceScoreCardDto.BalanceScoreCardId) HeaderText="BalanceScoreCardId" AllowEditing="false" Visible="false" IsPrimaryKey="true" Width="150"></GridColumn>
         <GridForeignColumn Field=@nameof(BalanceScoreCardDto.Employeeid)
                            HeaderText="Employee"
-                           Width="180"
+                           Width="100"
                            AllowEditing="true"
                            ForeignKeyField="@(nameof(ViewBscEmployee.Employeeid))"
                            ForeignKeyValue="@(nameof(ViewBscEmployee.EmployeeDetails))"
@@ -942,9 +971,17 @@
                            CustomAttributes="@(new Dictionary<string,
                     object>(){ { "class", "e-attr1" }})">
         </GridForeignColumn>
+        <GridColumn 
+            Field=@nameof(BalanceScoreCardDto.AppraisalNo) 
+            HeaderText="Appraisal No" 
+            AllowEditing="false" 
+            Width="100" 
+            Visible="true"
+            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+        </GridColumn>
         <GridForeignColumn Field=@nameof(BalanceScoreCardDto.AppraisalReasonId)
                            HeaderText="Appraisal Reason"
-                           Width="180"
+                           Width="100"
                            AllowEditing="true"
                            ForeignKeyField="@(nameof(AppraisalReasonDto.AppraisalReasonId))"
                            ForeignKeyValue="@(nameof(AppraisalReasonDto.AppraisalReason))"
@@ -954,24 +991,50 @@
         </GridForeignColumn>
         <GridForeignColumn Field=@nameof(BalanceScoreCardDto.AppraiserName)
                            HeaderText="Appraiser Name"
-                           Width="180"
+                           Width="100"
                            AllowEditing="true"
                            ForeignKeyField="@(nameof(AppraisalReasonDto.AppraisalReasonId))"
                            ForeignKeyValue="@(nameof(AppraisalReasonDto.AppraisalReason))"
                            ForeignDataSource="@AppraisalData" AllowFiltering="false"
                            CustomAttributes="@(new Dictionary<string,
                     object>(){ { "class", "e-attr1" }})">
-        </GridForeignColumn>s
+        </GridForeignColumn>
         <GridColumn 
                     Field=@nameof(BalanceScoreCardDto.DateofReview) 
                     Format="dd/MMMM/yyyy"
                     HeaderText="Review Date" 
-                    Width="180"
+                    Width="100"
                     CustomAttributes="@(new Dictionary<string,
                     object>(){ { "class", "e-attr1" }})">
                 </GridColumn>
     </GridColumns>
+    <GridForeignColumn Field=@nameof(BalanceScoreCardDto.LeaveApprovalStatusId)
+                           HeaderText="Approval Status"
+                           Width="100"
+                           AllowEditing="false"
+                           ForeignKeyField="@(nameof(ALeaveApprovalStatusDto.LeaveApprovalStatusId))"
+                           ForeignKeyValue="@(nameof(ALeaveApprovalStatusDto.LeaveApprovalStatus))"
+                           ForeignDataSource="@ApprovalStatusData"
+                           AllowFiltering="false"
+                           IsFrozen="false"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+    </GridForeignColumn>  
 </SfGrid>
+
+<div class="form-group col-md-12">
+    <SfDialog @ref="@ConfirmationApproveDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @((MarkupString)@ConfirmationText)
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationApproveYes" />
+            <DialogButton Content="No" OnClick="@ComfirmationApproveNo" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+
 
 <div>
     <SfDialog @ref="@LoadingDialogue"
@@ -993,8 +1056,8 @@
                         <div class="loader--dot"></div>
                         <div class="loader--dot"></div>
                         <div class="loader--dot"></div>
-                        @*<div class="loader-Loading-text"></div>*@
-                        <div class="loader-Saving-text"></div>
+                        <div class="loader-Loading-text"></div>
+                        @*<div class="loader-Saving-text"></div>*@
                     </div>
                 </div>
             </Content>
@@ -1026,20 +1089,6 @@
             {"style", "z-index: 2000;" }
         };
 
-    #region Toasters
-    public static string ToastContent { get; set; }
-    SfToast? ToastObj;
-    SfToast DeleteToastObj;
-    private string ToastPosition = "Right"; 
-    private int AlarmTimeout { get; set; } = 890000;
-    private List<ToastModel> Toast = new List<ToastModel>
-        {
-            new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
-            new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
-            new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
-            new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
-        };
-    #endregion Toasters
     List<ViewBscEmployeeDto>? EmployeeData { get; set; }
     private static BalanceScoreCardDto? BscData { get; set; }
     List<JobTitleDto>? JobTitleData { get; set; }
@@ -1054,10 +1103,18 @@
     List<TargetSettingDto>? TargetData { get; set; }
     List<BalanceScoreCardTargetSettingDto>? TargetDataa { get; set; }
     List<ABscPerspectivesTypeDto>? BscPerspectiveTypeData { get; set; }
+    List<ALeaveApprovalStatusDto>? ApprovalStatusData { get; set; }
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    SfSpinner? SpinnerObj;
 
     private static ViewBscEmployeeDto employeeno { get; set; }
     private static ViewBscEmployeeDto appraiserdetails { get; set; }
+    bool IsDisabled = false;
+    bool IsHiddenApprove = false;
+    bool IsHiddenSubmitEdit = false;
+    SfDialog ConfirmationApproveDialogue;
+    string ConfirmationText { get; set; }
+    private Dictionary<string, object> GridAttributes { get; set; } = new Dictionary<string, object>();
 
     private List<object> ToolbarMenu = new List<object>()
      {
@@ -1279,6 +1336,64 @@
         GenerateBehavioralCompetenciesList();
     }
 
+    public async Task onSaveDraftForm()
+    {
+        try
+        {
+            if (TargetsettingGrid != null)
+            {
+                await TargetsettingGrid.EndEditAsync();
+                BscData.BalanceScoreCardTargetSetting = gridData;
+            }
+
+            if (BehavioralGrid != null)
+            {
+                await BehavioralGrid.EndEditAsync();
+            }
+
+            if (DevelopmentPlanGrid != null)
+            {
+                await DevelopmentPlanGrid.EndEditAsync();
+            }
+
+            if (AppraiseeCommentsGrid != null)
+            {
+                await AppraiseeCommentsGrid.EndEditAsync();
+            }
+
+            if (SupervisorCommentsGrid != null)
+            {
+                await SupervisorCommentsGrid.EndEditAsync();
+            }
+
+            if (HODCommentsGrid != null)
+            {
+                await HODCommentsGrid.EndEditAsync();
+            }
+
+            if (CEOCommentsGrid != null)
+            {
+                await CEOCommentsGrid.EndEditAsync();
+            }
+
+            if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                BscData.LeaveApprovalStatusId = 1;
+                BscData.AddedDate = DateTime.Now;
+                await DataGrid.EndEditAsync();
+            }       
+        }
+        catch (Exception ex)
+        {
+            //toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
 
     public async Task onSubmitForm()
     {
@@ -1327,7 +1442,7 @@
         }
         catch (Exception ex)
         {
-            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+            toastService.ShowError(ex.Message.ToString());
         }
         finally
         {
@@ -1336,6 +1451,124 @@
         }
     }
 
+    /*Approve Appraisal*/
+
+    public async Task onApproveForm()
+    {
+        try
+        {
+            if (BscData.Employeeid == null)
+            {
+                toastService.ShowWarning("Please select the employee.");
+            }
+
+            else if (BscData.DateofReview == null)
+            {
+                toastService.ShowWarning("Please enter the date of review.");
+            }            
+
+            else if (BscData.AppraisalReasonId == null)
+            {
+                toastService.ShowWarning("Please select the reason for appraisal.");
+            }  
+
+            else if (BscData.AppraiserName == null)
+            {
+                toastService.ShowWarning("Please select the appraiser.");
+            }
+
+            else if (BscData.FinancialYearId == null)
+            {
+                toastService.ShowWarning("Please select the financial year.");
+            }
+            else
+            {
+                ConfirmationText = "<p>Are you sure you want to approve this appraisal! </p>";
+                await this.ConfirmationApproveDialogue.Show();
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {            
+            StateHasChanged();
+        }
+    }
+
+    private async void ComfirmationApproveYes()
+    {
+        try
+        {
+            await this.ConfirmationApproveDialogue.HideAsync();
+            if (TargetsettingGrid != null)
+            {
+                await TargetsettingGrid.EndEditAsync();
+                BscData.BalanceScoreCardTargetSetting = gridData;
+            }
+
+            if (BehavioralGrid != null)
+            {
+                await BehavioralGrid.EndEditAsync();
+            }
+
+            if (DevelopmentPlanGrid != null)
+            {
+                await DevelopmentPlanGrid.EndEditAsync();
+            }
+
+            if (AppraiseeCommentsGrid != null)
+            {
+                await AppraiseeCommentsGrid.EndEditAsync();
+            }
+
+            if (SupervisorCommentsGrid != null)
+            {
+                await SupervisorCommentsGrid.EndEditAsync();
+            }
+
+            if (HODCommentsGrid != null)
+            {
+                await HODCommentsGrid.EndEditAsync();
+            }
+
+            if (CEOCommentsGrid != null)
+            {
+                await CEOCommentsGrid.EndEditAsync();
+            }
+
+            if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                BscData.LeaveApprovalStatusId = 3;
+                //BscData.AddedDate = DateTime.Now;
+                await DataGrid.EndEditAsync();
+            }  
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+            await LoadingDialogue.HideAsync();
+
+            string? _baseurl = Navigation.BaseUri;
+
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(BscData);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            var result = await Http.PostAsync($"BalanceScoreCard/ApprovedAppraisalMail?_baseurl={_baseurl}", httpContent);
+        }
+    }
+
+    private void ComfirmationApproveNo()
+    {
+        this.ConfirmationApproveDialogue.Hide();
+    }
+
+    /*Approve Appraisal*/
 
     public async void DialogCancelBtnclicked()
     {
@@ -1467,6 +1700,15 @@
             TargetData = await Http.GetFromJsonAsync<List<TargetSettingDto>>
             ($"TargetSetting/GetAllTargetData");
         }
+
+        var responseapprovalstatus = await Http.GetAsync($"Utilities/GetLeaveApprovalStatus");
+        var contentapprovalstatus = await responseapprovalstatus.Content.ReadAsStringAsync();
+        if (responseapprovalstatus.IsSuccessStatusCode)
+            {
+                ApprovalStatusData = await Http.GetFromJsonAsync<List<ALeaveApprovalStatusDto>>
+                ($"Utilities/GetLeaveApprovalStatus");
+            }
+
     }
 
     public void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewBscEmployeeDto> args)
@@ -1482,36 +1724,50 @@
 
     public async void OnFinancialYearChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewFinancialYearDto> args)
     {
-        finyear = args.ItemData.Id;
-
-        string json = Newtonsoft.Json.JsonConvert.SerializeObject(BscData);
-        StringContent HttpCompletionOption = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-        var resulttarget = await Http.GetAsync($"TargetSetting/GetAllTargetDataFiltered/{finyear}");
-        var contenttarget = await resulttarget.Content.ReadAsStringAsync();
-
-        if (resulttarget.IsSuccessStatusCode)
+        try
         {
-            List<ViewBscPerspectiveperformanceIndicatorDto>? data = new List<ViewBscPerspectiveperformanceIndicatorDto>();
-            data = JsonSerializer.Deserialize<List<ViewBscPerspectiveperformanceIndicatorDto>>(contenttarget, _options);
+            await LoadingDialogue.ShowAsync();
+            finyear = args.ItemData.Id;
 
-            List<BalanceScoreCardTargetSettingDto> m = new List<BalanceScoreCardTargetSettingDto>();
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(BscData);
+            StringContent HttpCompletionOption = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            var resulttarget = await Http.GetAsync($"TargetSetting/GetAllTargetDataFiltered/{finyear}");
+            var contenttarget = await resulttarget.Content.ReadAsStringAsync();
 
-            foreach (var n in data)
+            if (resulttarget.IsSuccessStatusCode)
             {
-                Random random = new Random();
-                m.Add(new BalanceScoreCardTargetSettingDto
-                    {
-                        TargetSettingId = random.Next(1000, 10000),
-                        BscPerspectiveTypeId = n.BscPerspectiveTypeId,
-                        PerspectiveTotalWeight = n.PerspectiveTotalWeight,
-                        MeasurementMetricId = n.MeasurementMetricId,
-                        Bsckpiid = n.Bsckpiid,
-                    });
+                List<ViewBscPerspectiveperformanceIndicatorDto>? data = new List<ViewBscPerspectiveperformanceIndicatorDto>();
+                data = JsonSerializer.Deserialize<List<ViewBscPerspectiveperformanceIndicatorDto>>(contenttarget, _options);
+
+                List<BalanceScoreCardTargetSettingDto> m = new List<BalanceScoreCardTargetSettingDto>();
+
+                foreach (var n in data)
+                {
+                    Random random = new Random();
+                    m.Add(new BalanceScoreCardTargetSettingDto
+                        {
+                            TargetSettingId = random.Next(1000, 10000),
+                            BscPerspectiveTypeId = n.BscPerspectiveTypeId,
+                            PerspectiveTotalWeight = n.PerspectiveTotalWeight,
+                            MeasurementMetricId = n.MeasurementMetricId,
+                            Bsckpiid = n.Bsckpiid,
+                        });
+                }
+                gridData = m;
             }
-            gridData = m;
+
+            StateHasChanged();
+        }
+        catch(Exception ex)
+        {
+            throw ex;
         }
 
-        StateHasChanged();
+        finally 
+        {
+            await LoadingDialogue.HideAsync();
+        }
+
     }
 
     #region BSCAdapter 
@@ -1545,7 +1801,7 @@
 
             try
             {
-                 
+
                 var response = await Http.GetAsync($"BalanceScoreCard/GetBSCData");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
@@ -1601,17 +1857,17 @@
         {
             try
             {
-                
+                string? _baseurl = Navigation.BaseUri; 
                 var val = (value as BalanceScoreCardDto);
                 if (val != null)
                 {
                     if (val.BalanceScoreCardId == 0)
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                        var result = await Http.PostAsync($"BalanceScoreCard/CreateAppraisal", httpContent);
+                        var result = await Http.PostAsync($"BalanceScoreCard/CreateAppraisal?_baseurl={_baseurl}", httpContent);
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
@@ -1636,11 +1892,11 @@
                     }
                     else
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                        var result = await Http.PutAsync($"BalanceScoreCard/UpdateAppraisal", httpContent);
+                        var result = await Http.PutAsync($"BalanceScoreCard/UpdateAppraisal?_baseurl={_baseurl}", httpContent);
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
@@ -1675,17 +1931,17 @@
         {
             try
             {
-                
+                string? _baseurl = Navigation.BaseUri;
                 var val = (value as BalanceScoreCardDto);
                 if (val != null)
                 {
                     if (val.BalanceScoreCardId == 0)
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                        var result = await Http.PostAsync($"BalanceScoreCard/CreateAppraisal", httpContent);
+                        var result = await Http.PostAsync($"BalanceScoreCard/CreateAppraisal?_baseurl={_baseurl}", httpContent);
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
@@ -1710,11 +1966,11 @@
                     }
                     else
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                        var result = await Http.PutAsync($"BalanceScoreCard/UpdateAppraisal", httpContent);
+                        var result = await Http.PutAsync($"BalanceScoreCard/UpdateAppraisal?_baseurl={_baseurl}", httpContent);
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
@@ -1953,6 +2209,11 @@
         }
     }
 
+    public void CellSaveHandler(CellSaveArgs<BalanceScoreCardTargetSettingDto> args)
+    {
+        // Here, you can customize your code.
+    }
+
     private async Task BehavioralCellSavedHandler(CellSaveArgs<BalanceScoreCardBehavioralDto> args)
     {
         try
@@ -2062,6 +2323,16 @@
         }
     }
 
+        public async void LoadHandler()
+    {
+        SpinnerObj.ShowAsync();
+        GridAttributes.Add("disable", "yes");
+    }
+    public async void DataBound()
+    {
+        GridAttributes["disable"] = "no";
+        SpinnerObj.HideAsync();
+    }
 
     public void ActionCompleteMain(ActionEventArgs<BalanceScoreCardDto> args)
     {
@@ -2071,7 +2342,6 @@
             DataGrid.PreventRender(false);
         }
     }
-
 
     public async void ActionBeginMain(ActionEventArgs<BalanceScoreCardDto> Args)
     {
@@ -2086,25 +2356,25 @@
 
             else if (Args.Data.DateofReview == null)
             {
-                 toastService.ShowWarning("Please enter the date of review.");
-                 Args.Cancel = true;
+                toastService.ShowWarning("Please enter the date of review.");
+                Args.Cancel = true;
             }            
 
             else if (Args.Data.AppraisalReasonId == null)
             {
-                 toastService.ShowWarning("Please select the reason for appraisal.");
-                 Args.Cancel = true;
+                toastService.ShowWarning("Please select the reason for appraisal.");
+                Args.Cancel = true;
             }  
 
             else if (Args.Data.AppraiserName == null)
             {
-                 toastService.ShowWarning("Please select the appraiser.");
-                 Args.Cancel = true;
+                toastService.ShowWarning("Please select the appraiser.");
+                Args.Cancel = true;
             }
 
             else if (Args.Data.FinancialYearId == null)
             {
-                 toastService.ShowWarning("Please select the financial year.");
+                toastService.ShowWarning("Please select the financial year.");
                 Args.Cancel = true;
             }
 
@@ -2112,7 +2382,7 @@
             {
                 await LoadingDialogue.ShowAsync();
                 int? employid = Args.Data.Employeeid;
-                
+
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(BscData);
                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -2121,6 +2391,7 @@
         }
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
         {
+            _previous = Args.RequestType;
             isFinancialYearEnabled = true;
             employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
             appraiserdetails = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.AppraiserName);
@@ -2165,38 +2436,37 @@
             }
             gridData = m;
 
-            //foreach (var n in TargetData)
-            //{
-            //    var x = Args.RowData.BalanceScoreCardTargetSetting
-            //    .FirstOrDefault(o => o.BscPerspectiveTypeId == n.BscPerspectiveTypeId);
-
-            //    if (x == null)
-            //    {
-            //        Random random = new Random();
-            //        Args.RowData.BalanceScoreCardTargetSetting.Add(new BalanceScoreCardTargetSettingDto
-            //            {
-            //                TargetSettingId = random.Next(1000, 10000),
-            //                BscPerspectiveTypeId = n.BscPerspectiveId,
-            //                PerspectiveTotalWeight = n.PerspectiveTotalWeight,
-            //                MeasurementMetricId = n.MeasurementMetricId,
-            //                Bsckpiid = n.Bsckpiid,
-            //            });
-            //    }
-            //}
-
-            foreach (var n in CompetenceData)
+            if(CompetenceData != null)
             {
-                var x = Args.RowData.BalanceScoreCardBehavioral.FirstOrDefault(o => o.CompetenceId == n.CompetenceId);
-                if (x == null)
+                foreach (var n in CompetenceData)
                 {
-                    Random random = new Random();
-                    Args.RowData.BalanceScoreCardBehavioral.Add(new BalanceScoreCardBehavioralDto
-                        {
-                            BehavioralId = random.Next(1000, 10000),
-                            CompetenceId = n.CompetenceId,
-                        });
+                    var x = Args.RowData.BalanceScoreCardBehavioral.FirstOrDefault(o => o.CompetenceId == n.CompetenceId);
+                    if (x == null)
+                    {
+                        Random random = new Random();
+                        Args.RowData.BalanceScoreCardBehavioral.Add(new BalanceScoreCardBehavioralDto
+                            {
+                                BehavioralId = random.Next(1000, 10000),
+                                CompetenceId = n.CompetenceId,
+                            });
+                    }
                 }
+            
+                }            
+
+            //Hide / Show Buttons
+            if(Args.RowData.Employeeid != Credentials.StaffId
+            && Args.RowData.LeaveApprovalStatusId == 2)
+            {
+                IsHiddenApprove = false;
+                IsHiddenSubmitEdit =  true;
             }
+            else
+            {
+                IsHiddenApprove = true;
+                IsHiddenSubmitEdit = false;
+            }
+        
         }
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
         {
@@ -2237,6 +2507,65 @@
         }
     }
 
-    #endregion BSCAdapter
+    public void QueryCellInfoHandler(QueryCellInfoEventArgs<BalanceScoreCardDto> Args)
+    {
+        if (Args.Column.Field == "LeaveApprovalStatusId")
+        {
+            if (Args.Data.LeaveApprovalStatusId == 3)
+            {
+                Args.Cell.AddClass(new string[] { "Approved" });
+            }
+            if (Args.Data.LeaveApprovalStatusId == 4)
+            {
+                Args.Cell.AddClass(new string[] { "Rejected" });
+            }
+            else
+            {
+                Args.Cell.AddClass(new string[] { "Draft" });
+            }  
+        }
+    }
 
+    #endregion BSCAdapter
 }
+
+<style>
+    /*Define Colors for Cells*/
+    .Draft {
+        background-color: yellow;
+    }
+
+    .Approved {
+        background-color: forestgreen;
+    }
+
+    .Rejected {
+        background-color: red;
+    }
+    /*Change color for text in Grid*/
+    /*QueryCellInfo*/
+    /*.Draft*/
+    .e-grid .e-gridcontent .e-rowcell.Draft {
+        color: ghostwhite;
+    }
+
+    /*.Approved*/
+    .e-grid .e-gridcontent .e-rowcell.Approved {
+        color: White;
+    }
+
+     /*.Rejected*/
+    .e-grid .e-gridcontent .e-rowcell.Approved {
+        color: black;
+    }
+
+     /*.hiderecord*/
+    .hiderecord {
+        display: none; 
+    } 
+
+    .equal-5 {
+        background-color: #336c12;
+    }
+    /*QueryCellInfo*/
+</style>
