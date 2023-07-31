@@ -15,6 +15,11 @@
 
 
 <style>
+     /*Disable select all on grid checkbox*/
+    .e-headercelldiv.e-headerchkcelldiv .e-checkbox-wrapper.e-css {
+        pointer-events: none;
+        opacity: 0.5;
+    }
 
     /*Change font size in grid elements*/
         .e-grid .e-rowcell{ 
@@ -76,7 +81,7 @@
         background-color: #268cff;
         padding: 10px;
         width: 100%;
-        font-size: 10px;
+        font-size: 15px;
     }
 
     h4 {
@@ -193,6 +198,14 @@
 
 <SfGrid @ref="@DataGrid" TValue="BalanceScoreCardDto" GridLines="GridLine.Both" ID="Grid" @attributes="@GridAttributes" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@ToolbarMenu">
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+        <HeaderTemplate>
+            @{
+                var text = GetEmployeeHeader((context as BalanceScoreCardDto));
+                <div class="headerbandimg">
+                    <span>@text</span>
+                </div>
+            }
+        </HeaderTemplate>
         <Template>           
             @{
                     <div class="row">
@@ -204,19 +217,23 @@
                             </center>
                         </div>
 
-                        @*@if(employeeleave!=null)
-                        {
-                            <div class="col-md-4">   
-                                   <h5 style="color:green;">
-                                            <strong>Leave No: @employeeleave.EmployeeLeaveNo</strong>
-                                    </h5>
-                            </div>
-                            <div class="col-md-4">
+                        @if(BscData != null && BscData.AppraisalNo != null)
+                        { 
+                        <div class="col-md-4">
                                 <h5 style="color:green;">
-                                    <strong>Application Status: @employeeleave.LeaveApprovalStatus</strong>
+                                    <strong>Appraisal No: @(BscData.AppraisalNo)</strong>
                                 </h5>
                             </div>
-                        }*@
+                        }
+
+                        @if(statusdecsription!=null)
+                        {                         
+                            <div class="col-md-4">
+                                <h5 style="color:green;">
+                                    <strong>Appraisal Status: @statusdecsription.LeaveApprovalStatus</strong>
+                                </h5>
+                            </div>
+                        }
                     </div>
 
                     BscData = (context as BalanceScoreCardDto);
@@ -235,7 +252,7 @@
                                                 <p>Employee Name:<span style="color:red;">*</span></p>
                                             </div>
                                         <div class="col-md-7">
-                                            <SfDropDownList @bind-Value="@(BscData.Employeeid)" Enabled="true" TItem="ViewBscEmployeeDto" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                            <SfDropDownList @bind-Value="@(BscData.Employeeid)" Enabled="EmployeeDDEnabled" TItem="ViewBscEmployeeDto" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                                 <DropDownListFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></DropDownListFieldSettings>
                                                 <DropDownListEvents TValue="int?" TItem="ViewBscEmployeeDto" ValueChange="OnEmployeeChange"></DropDownListEvents>
                                             </SfDropDownList>
@@ -284,7 +301,7 @@
                                                             <p>Date of Review:<span style="color:red;">*</span></p>
                                                         </div>
                                                         <div class="col-md-7">
-                                                            <SfDatePicker @bind-Value="@(BscData.DateofReview)" Placeholder="Select Date" Format="dd/MM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                                                            <SfDatePicker @bind-Value="@(BscData.DateofReview)" Enabled="ReviewDateEnabled" Placeholder="Select Date" Format="dd/MM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
                                                         </div>
                                                         <div class="col-md-5">
                                                             <p>Duration in Organization (Yrs):</p>
@@ -296,12 +313,12 @@
                                                             <p>Reason for Appraisal :<span style="color:red;">*</span></p>
                                                         </div>
                                                         <div class="col-md-7">
-                                                             <SfDropDownList @bind-Value="@(BscData.AppraisalReasonId)" Enabled="true"
-                                                            TItem="AppraisalReasonDto" TValue="int?" DataSource="@AppraisalData"
-                                                            Placeholder="Please select" FloatLabelType="FloatLabelType.Never"
-                                                            AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                                                    <DropDownListFieldSettings Value="@nameof(AAppraisalReason.AppraisalReasonId)"
-                                                            Text="@nameof(AAppraisalReason.AppraisalReason)"></DropDownListFieldSettings>
+                                                             <SfDropDownList @bind-Value="@(BscData.AppraisalReasonId)" Enabled="AppraisalReasonEnabled"
+                                                                TItem="AppraisalReasonDto" TValue="int?" DataSource="@AppraisalData"
+                                                                Placeholder="Please select" FloatLabelType="FloatLabelType.Never"
+                                                                AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                                        <DropDownListFieldSettings Value="@nameof(AAppraisalReason.AppraisalReasonId)"
+                                                                Text="@nameof(AAppraisalReason.AppraisalReason)"></DropDownListFieldSettings>
                                                             </SfDropDownList>
                                                         </div>
                                                     }
@@ -317,7 +334,7 @@
                                                         <p>Appraiser Name:<span style="color:red;">*</span></p>
                                                     </div>
                                                     <div class="col-md-7">
-                                                    <SfDropDownList @bind-Value="@(BscData.AppraiserName)" Enabled="true" TItem="ViewBscEmployeeDto" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                    <SfDropDownList @bind-Value="@(BscData.AppraiserName)" Enabled="AppraiserNameEnabled" TItem="ViewBscEmployeeDto" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                                         <DropDownListFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></DropDownListFieldSettings>
                                                         <DropDownListEvents TValue="int?" TItem="ViewBscEmployeeDto" ValueChange="OnAppraiserChange"></DropDownListEvents>
                                                     </SfDropDownList>
@@ -346,7 +363,7 @@
                                                         <p>Financial Year:<span style="color:red;">*</span></p>
                                                     </div>
                                                     <div class="col-md-7">
-                                                        <SfDropDownList @bind-Value="@(BscData.FinancialYearId)"TItem="ViewFinancialYearDto" TValue="int?"
+                                                        <SfDropDownList @bind-Value="@(BscData.FinancialYearId)" TItem="ViewFinancialYearDto" TValue="int?"
                                                                 DataSource="@FinancialYearData" Placeholder="Please select"
                                                                 FloatLabelType="FloatLabelType.Never" AllowFiltering="true"
                                                                 FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
@@ -360,6 +377,22 @@
                                                         </SfDropDownList>
                                                     </div>
 
+                                                    @*Reason for Rejection*@
+
+                                                    @if(BscData != null && !string.IsNullOrEmpty(BscData.RejectionReason) && BscData.LeaveApprovalStatusId == 4)
+                                                    {
+                                                    
+                                                        <div class="col-md-12">
+                                                            <h4 style="align-items:center; font-weight:bold">Reason for Rejection<span style="color:red;">*</span></h4>
+                                                            <table style="width:100%;font-size:20px">
+                                                                <tr>
+                                                                <td style="border: 1px solid black;border-collapse: collapse;border-color:black; background-color:white; color:red;">
+                                                                        @BscData.RejectionReason
+                                                                    </td>
+                                                                </tr>
+                                                            </table>
+                                                        </div>
+                                                    }
                                                 </div>
                                             </div>
                                      </div>
@@ -497,10 +530,10 @@
                                                                     <FooterTemplate Context="FooterTemplateContext">
                                                                         @{
                                                                             <div>
-                                                                                @*<p><span style="color:Purple;">Financial: @GetFinancialPerspectiveScore()</span></p>
-                                                                    <p><span style="color:Purple;">Internal Processes: @GetInternalProcessScore()</span></p>
-                                                                    <p><span style="color:Purple;">Customer: @GetCustomerPerspectiveScore()</span></p>
-                                                                    <p><span style="color:Purple;">Learning and Growth: @GetLearningGrowthScore()</span></p>*@
+                                                                                <p><span style="color:Purple;">Financial: @GetFinancialPerspectiveScore()</span></p>
+                                                                                @*<p><span style="color:Purple;">Internal Processes: @GetInternalProcessScore()</span></p>
+                                                                                <p><span style="color:Purple;">Customer: @GetCustomerPerspectiveScore()</span></p>
+                                                                                <p><span style="color:Purple;">Learning and Growth: @GetLearningGrowthScore()</span></p>*@
                                                                             </div>
                                                                         }
                                                                     </FooterTemplate>
@@ -933,18 +966,18 @@
 
         </Template>
         <FooterTemplate> 
-            <button @onclick="@onSaveDraftForm" disabled=@IsDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
+            <button @onclick="@onSaveDraftForm" hidden=@IsHiddenDraft disabled=@IsDraftDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
             @if (_previous == Syncfusion.Blazor.Grids.Action.Add)
             {                
-                <button @onclick="@onSubmitForm" disabled=@IsDisabled class="btn btn-success" data-ripple="true" style="margin-right:10px;">Submit</button>
+                <button @onclick="@onSubmitForm" hidden=@IsHiddenPersonSubmit  disabled=@IsSubmitDisabled class="btn btn-success" data-ripple="true" style="margin-right:10px;">Submit</button>
             }
             else if (_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
             {
-                <button @onclick="@onApproveForm" hidden=@IsHiddenApprove disabled=@IsDisabled class="btn btn-success" data-ripple="true" style="margin-right:10px;">Approve</button>
-                <button @onclick="@onSubmitForm" hidden=@IsHiddenSubmitEdit disabled=@IsDisabled class="btn btn-success" data-ripple="true" style="margin-right:10px;">Submit1</button>
-            }
-            
-                <button @onclick="@DialogCancelBtnclicked" disabled=@IsDisabled class="btn btn-danger" data-ripple="true" style="margin-right:10px;">Cancel</button>
+                <button @onclick="@onApproveForm" hidden=@IsHiddenApprove disabled=@IsHiddenApproveDisabled class="btn btn-info" data-ripple="true" style="margin-right:10px;">Approve</button>
+                <button @onclick="@onRejectForm" hidden=@IsHiddenRejected disabled=@IsRejectedDisabled class="btn btn-warning" data-ripple="true" style="margin-right:10px;">Reject</button>
+                <button @onclick="@onSubmitForm" hidden=@IsHiddenSubmitEdit disabled=@IsHiddenDisabled class="btn btn-success" data-ripple="true" style="margin-right:10px;">Submit</button>
+            }            
+                <button @onclick="@DialogCancelBtnclicked" disabled=@IsCancelDisabled class="btn btn-danger" data-ripple="true" style="margin-right:10px;">Cancel</button>
         </FooterTemplate>
     </GridEditSettings>    
     <GridPageSettings PageSizes="true"></GridPageSettings>
@@ -955,6 +988,7 @@
         OnLoad="LoadHandler" 
         DataBound="DataBound"
         QueryCellInfo="QueryCellInfoHandler"
+        RowSelecting="RowSelectingHandler"
         TValue="BalanceScoreCardDto">
     </GridEvents>
     <SfDataManager AdaptorInstance="@typeof(BSCAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
@@ -993,9 +1027,9 @@
                            HeaderText="Appraiser Name"
                            Width="100"
                            AllowEditing="true"
-                           ForeignKeyField="@(nameof(AppraisalReasonDto.AppraisalReasonId))"
-                           ForeignKeyValue="@(nameof(AppraisalReasonDto.AppraisalReason))"
-                           ForeignDataSource="@AppraisalData" AllowFiltering="false"
+                           ForeignKeyField="@(nameof(ViewBscEmployeeDto.Employeeid))"
+                           ForeignKeyValue="@(nameof(ViewBscEmployeeDto.EmployeeDetails))"
+                           ForeignDataSource="@EmployeeData" AllowFiltering="false"
                            CustomAttributes="@(new Dictionary<string,
                     object>(){ { "class", "e-attr1" }})">
         </GridForeignColumn>
@@ -1006,21 +1040,21 @@
                     Width="100"
                     CustomAttributes="@(new Dictionary<string,
                     object>(){ { "class", "e-attr1" }})">
-                </GridColumn>
-    </GridColumns>
-    <GridForeignColumn Field=@nameof(BalanceScoreCardDto.LeaveApprovalStatusId)
-                           HeaderText="Approval Status"
+        </GridColumn>
+        <GridForeignColumn Field=@nameof(BalanceScoreCardDto.LeaveApprovalStatusId)
+                       HeaderText="Approval Status"
                            Width="100"
-                           AllowEditing="false"
+                           AllowEditing="true"
                            ForeignKeyField="@(nameof(ALeaveApprovalStatusDto.LeaveApprovalStatusId))"
                            ForeignKeyValue="@(nameof(ALeaveApprovalStatusDto.LeaveApprovalStatus))"
-                           ForeignDataSource="@ApprovalStatusData"
-                           AllowFiltering="false"
-                           IsFrozen="false"
-                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
-    </GridForeignColumn>  
+                           ForeignDataSource="@ApprovalStatusData" AllowFiltering="false"
+                           CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})">
+        </GridForeignColumn>
+    </GridColumns>
+   
 </SfGrid>
 
+@*Approval Confirmation Dialogue*@
 <div class="form-group col-md-12">
     <SfDialog @ref="@ConfirmationApproveDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
         <DialogTemplates>
@@ -1035,6 +1069,42 @@
     </SfDialog>
 </div>
 
+@*Reason for rejection - CHRO*@
+                    <div class="form-group col-md-12">
+                    <SfDialog @ref="@RejectLeaveDialogueCHRO" Width="80%" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+                            <DialogTemplates>
+                                <Content>
+                                    <div class="form-row">
+                                        <div class="col-md-3">
+                                            <p>Provide Rejection Reason<span style="color:red;">*</span></p>
+                                        </div>
+                                        <div class="form-group col-md-12">
+                                            <SfTextBox Multiline="true" @bind-Value="@(BscData.RejectionReason)" Enabled="true" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                                        </div>
+                                    </div>
+
+                                </Content>
+                            </DialogTemplates>
+                            <DialogButtons>
+                                <DialogButton OnClick="@RejectReasonYesCHRO" Content="Confirm Rejection" IsPrimary="true"/>  
+                            <DialogButton OnClick="@RejectReasonNoCHRO" Content="Cancel"/>
+                        </DialogButtons>
+                        </SfDialog>
+                    </div>
+
+                    @*<div class="form-group col-md-12">
+                    <SfDialog @ref="@ConfirmationCHRODialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+                        <DialogTemplates>
+                            <Content>
+                                @((MarkupString)@ConfirmationText)
+                            </Content>
+                        </DialogTemplates>
+                        <DialogButtons>
+                            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationYesCHRO" />
+                            <DialogButton Content="No" OnClick="@ComfirmationNoCHRO" />
+                        </DialogButtons>
+                    </SfDialog>
+                    </div>*@
 
 <div>
     <SfDialog @ref="@LoadingDialogue"
@@ -1109,12 +1179,31 @@
 
     private static ViewBscEmployeeDto employeeno { get; set; }
     private static ViewBscEmployeeDto appraiserdetails { get; set; }
-    bool IsDisabled = false;
+    private static ALeaveApprovalStatusDto statusdecsription { get; set; }
+
+    bool IsSubmitDisabled = false;
+    bool IsDraftDisabled = false;
+    bool IsHiddenApproveDisabled = false;
+    bool IsRejectedDisabled = false;
+    bool IsHiddenDisabled = false;
+    bool IsCancelDisabled = false;
+
     bool IsHiddenApprove = false;
     bool IsHiddenSubmitEdit = false;
+    bool IsHiddenRejected = false;
+    bool IsHiddenDraft = false;
+    bool IsHiddenPersonSubmit = false;
+
     SfDialog ConfirmationApproveDialogue;
     string ConfirmationText { get; set; }
     private Dictionary<string, object> GridAttributes { get; set; } = new Dictionary<string, object>();
+    SfDialog RejectLeaveDialogueCHRO;
+    SfDialog ConfirmationCHRODialogue;
+
+    public bool EmployeeDDEnabled = true;
+    public bool ReviewDateEnabled = true;
+    public bool AppraisalReasonEnabled = true;
+    public bool AppraiserNameEnabled = true;
 
     private List<object> ToolbarMenu = new List<object>()
      {
@@ -1165,17 +1254,17 @@
         public string? SupervisorComment { get; set; }
     }
 
-    //public string GetFinancialPerspectiveScore()
-    //{
-    //    var data = BscData
-    //    .BalanceScoreCardTargetSetting
-    //    .Where(e => e.BscPerspectiveId == 1);
+    public string GetFinancialPerspectiveScore()
+    {
+        var data = BscData
+        .BalanceScoreCardTargetSetting
+        .Where(e => e.BscPerspectiveTypeId == 1);
 
-    //    return Queryable
-    //    .Sum(data.Select(x => x.PerspectiveTotalWeight)
-    //    .AsQueryable())
-    //    .ToString();
-    //}
+        return Queryable
+        .Sum(data.Select(x => x.PerspectiveTotalWeight)
+        .AsQueryable())
+        .ToString();
+    }
 
     //public string GetInternalProcessScore()
     //{
@@ -1437,6 +1526,8 @@
 
             if (DataGrid != null)
             {
+                BscData.LeaveApprovalStatusId = 2;
+                BscData.AddedDate = DateTime.Now;
                 await DataGrid.EndEditAsync();
             }
         }
@@ -1582,6 +1673,131 @@
         }
     }
 
+    /*Rejection Reasons*/
+
+    public async Task onRejectForm()
+    {
+        try
+        {
+            if (BscData.Employeeid == null)
+            {
+                toastService.ShowWarning("Please select the employee.");
+            }
+
+            else if (BscData.DateofReview == null)
+            {
+                toastService.ShowWarning("Please enter the date of review.");
+            }            
+
+            else if (BscData.AppraisalReasonId == null)
+            {
+                toastService.ShowWarning("Please select the reason for appraisal.");
+            }  
+
+            else if (BscData.AppraiserName == null)
+            {
+                toastService.ShowWarning("Please select the appraiser.");
+            }
+
+            else if (BscData.FinancialYearId == null)
+            {
+                toastService.ShowWarning("Please select the financial year.");
+            }
+            else
+            {
+                ConfirmationText = "<p>Are you sure you want to reject this appraisal! </p>";
+                await this.RejectLeaveDialogueCHRO.Show();
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {            
+            StateHasChanged();
+        }
+    }
+
+    private async Task RejectReasonYesCHRO()
+    {
+        try
+        {
+            if (TargetsettingGrid != null)
+            {
+                await TargetsettingGrid.EndEditAsync();
+                BscData.BalanceScoreCardTargetSetting = gridData;
+            }
+
+            if (BehavioralGrid != null)
+            {
+                await BehavioralGrid.EndEditAsync();
+            }
+
+            if (DevelopmentPlanGrid != null)
+            {
+                await DevelopmentPlanGrid.EndEditAsync();
+            }
+
+            if (AppraiseeCommentsGrid != null)
+            {
+                await AppraiseeCommentsGrid.EndEditAsync();
+            }
+
+            if (SupervisorCommentsGrid != null)
+            {
+                await SupervisorCommentsGrid.EndEditAsync();
+            }
+
+            if (HODCommentsGrid != null)
+            {
+                await HODCommentsGrid.EndEditAsync();
+            }
+
+            if (CEOCommentsGrid != null)
+            {
+                await CEOCommentsGrid.EndEditAsync();
+            }
+
+            if (DataGrid != null)
+            {
+                if(string.IsNullOrEmpty(BscData.RejectionReason))
+                {
+                    toastService.ShowWarning("Please enter the reason why you are rejecting this appraisal.");                
+                }
+                else
+                {
+                    await LoadingDialogue.ShowAsync();
+                    BscData.LeaveApprovalStatusId = 4;
+                    await DataGrid.EndEditAsync();
+                }                
+            }
+        }
+        catch (Exception ex)
+        {
+            //toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            DataGrid.Refresh();
+            await this.RejectLeaveDialogueCHRO.Hide();
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+
+            string? _baseurl = Navigation.BaseUri;
+
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(BscData);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            var result = await Http.PostAsync($"BalanceScoreCard/RejectedAppraisalMail?_baseurl={_baseurl}", httpContent);
+        }
+    }
+
+    private void RejectReasonNoCHRO()
+    {
+        DataGrid.Refresh();
+        this.RejectLeaveDialogueCHRO.Hide();
+    }
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -1704,10 +1920,10 @@
         var responseapprovalstatus = await Http.GetAsync($"Utilities/GetLeaveApprovalStatus");
         var contentapprovalstatus = await responseapprovalstatus.Content.ReadAsStringAsync();
         if (responseapprovalstatus.IsSuccessStatusCode)
-            {
-                ApprovalStatusData = await Http.GetFromJsonAsync<List<ALeaveApprovalStatusDto>>
-                ($"Utilities/GetLeaveApprovalStatus");
-            }
+        {
+            ApprovalStatusData = await Http.GetFromJsonAsync<List<ALeaveApprovalStatusDto>>
+            ($"Utilities/GetLeaveApprovalStatus");
+        }
 
     }
 
@@ -2323,7 +2539,7 @@
         }
     }
 
-        public async void LoadHandler()
+    public async void LoadHandler()
     {
         SpinnerObj.ShowAsync();
         GridAttributes.Add("disable", "yes");
@@ -2346,47 +2562,48 @@
     public async void ActionBeginMain(ActionEventArgs<BalanceScoreCardDto> Args)
     {
         var data = Args.Data;
+
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
         {
-            if (Args.Data.Employeeid == null)
-            {
-                toastService.ShowWarning("Please select the employee.");
-                Args.Cancel = true;
-            }
+            //if (Args.Data.Employeeid == null)
+            //{
+            //    toastService.ShowWarning("Please select the employee.");
+            //    Args.Cancel = true;
+            //}
 
-            else if (Args.Data.DateofReview == null)
-            {
-                toastService.ShowWarning("Please enter the date of review.");
-                Args.Cancel = true;
-            }            
+            //else if (Args.Data.DateofReview == null)
+            //{
+            //    toastService.ShowWarning("Please enter the date of review.");
+            //    Args.Cancel = true;
+            //}            
 
-            else if (Args.Data.AppraisalReasonId == null)
-            {
-                toastService.ShowWarning("Please select the reason for appraisal.");
-                Args.Cancel = true;
-            }  
+            //else if (Args.Data.AppraisalReasonId == null)
+            //{
+            //    toastService.ShowWarning("Please select the reason for appraisal.");
+            //    Args.Cancel = true;
+            //}  
 
-            else if (Args.Data.AppraiserName == null)
-            {
-                toastService.ShowWarning("Please select the appraiser.");
-                Args.Cancel = true;
-            }
+            //else if (Args.Data.AppraiserName == null)
+            //{
+            //    toastService.ShowWarning("Please select the appraiser.");
+            //    Args.Cancel = true;
+            //}
 
-            else if (Args.Data.FinancialYearId == null)
-            {
-                toastService.ShowWarning("Please select the financial year.");
-                Args.Cancel = true;
-            }
+            //else if (Args.Data.FinancialYearId == null)
+            //{
+            //    toastService.ShowWarning("Please select the financial year.");
+            //    Args.Cancel = true;
+            //}
 
-            else
-            {
-                await LoadingDialogue.ShowAsync();
-                int? employid = Args.Data.Employeeid;
+            //else
+            //{
+            //    await LoadingDialogue.ShowAsync();
+            //    int? employid = Args.Data.Employeeid;
 
-                string json = Newtonsoft.Json.JsonConvert.SerializeObject(BscData);
-                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            //    string json = Newtonsoft.Json.JsonConvert.SerializeObject(BscData);
+            //    StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-            }
+            //}
 
         }
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
@@ -2395,6 +2612,8 @@
             isFinancialYearEnabled = true;
             employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
             appraiserdetails = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.AppraiserName);
+            statusdecsription = ApprovalStatusData.FirstOrDefault(o=>o.LeaveApprovalStatusId == Args.RowData.LeaveApprovalStatusId);
+
 
             if (Args.RowData.BalanceScoreCardTargetSetting == null)
             {
@@ -2451,46 +2670,129 @@
                             });
                     }
                 }
-            
-                }            
 
-            //Hide / Show Buttons
-            if(Args.RowData.Employeeid != Credentials.StaffId
-            && Args.RowData.LeaveApprovalStatusId == 2)
+            }            
+
+            //Approved
+            if(Args.RowData.LeaveApprovalStatusId == 3)
             {
+                //Hide Buttons
+                IsHiddenDraft =  true;
+                IsHiddenPersonSubmit =  true;
+                IsHiddenApprove =  true;
+                IsHiddenRejected =  true;
+                IsHiddenSubmitEdit =  true;
+
+                //Disable Fields
+                EmployeeDDEnabled = false;
+                ReviewDateEnabled = false;
+                AppraisalReasonEnabled = false;
+                AppraiserNameEnabled = false;
+                isFinancialYearEnabled = false;
+            }
+            //Under Review by Supervisor and not someone's application
+            else if(Args.RowData.LeaveApprovalStatusId == 2 
+                && Args.RowData.Employeeid != Credentials.StaffId)
+            {
+                IsHiddenDraft = false;
                 IsHiddenApprove = false;
+                IsHiddenRejected = false;
                 IsHiddenSubmitEdit =  true;
             }
+             //Under Review by Supervisor and someone's application
+            else if(Args.RowData.LeaveApprovalStatusId == 2 
+                && Args.RowData.Employeeid == Credentials.StaffId)
+            {
+                //Hide Buttons
+                IsHiddenDraft = true;
+                IsHiddenPersonSubmit = true;
+                IsHiddenApprove = true;
+                IsHiddenRejected = true;
+                IsHiddenSubmitEdit = true;
+
+                //Disable Fields
+                EmployeeDDEnabled = false;
+                ReviewDateEnabled = false;
+                AppraisalReasonEnabled = false;
+                AppraiserNameEnabled = false;
+                isFinancialYearEnabled = false;
+            }
+            //Rejected for Employee
+            else if(Args.RowData.LeaveApprovalStatusId == 4 
+                && Args.RowData.Employeeid == Credentials.StaffId)
+            {
+                IsHiddenDraft = false;
+                IsHiddenSubmitEdit = false;
+                IsHiddenApprove = true;                
+                IsHiddenRejected = true;
+            }
+
+             //After being Rejected By Supervisor
+            else if(Args.RowData.LeaveApprovalStatusId == 4 
+                && Args.RowData.Employeeid != Credentials.StaffId)
+            {
+                //Hide Buttons
+                IsHiddenDraft = true;
+                IsHiddenPersonSubmit = true;
+                IsHiddenApprove = true;
+                IsHiddenRejected = true;
+                IsHiddenSubmitEdit = true;
+
+                //Disable Fields
+                EmployeeDDEnabled = false;
+                ReviewDateEnabled = false;
+                AppraisalReasonEnabled = false;
+                AppraiserNameEnabled = false;
+                isFinancialYearEnabled = false;
+            }
+            //Draft Applications for Employee
+            else if(Args.RowData.LeaveApprovalStatusId == 1 
+                && Args.RowData.Employeeid == Credentials.StaffId)
+            {
+                IsHiddenDraft = false;
+                IsHiddenSubmitEdit = false;
+                IsHiddenApprove = true;                
+                IsHiddenRejected = true;              
+                IsHiddenRejected = true;
+            }
+
+            //Draft Applications for Supervisors on Approval
+            else if(Args.RowData.LeaveApprovalStatusId == 1 
+                && Args.RowData.Employeeid != Credentials.StaffId)
+            {
+                IsHiddenDraft = false;
+                IsHiddenApprove = false;
+                IsHiddenRejected = false;
+                IsHiddenSubmitEdit = true;
+            }
+
             else
             {
-                IsHiddenApprove = true;
-                IsHiddenSubmitEdit = false;
+                //IsHiddenApprove = true;
+                //IsHiddenSubmitEdit = false;
+                //IsRejectedDisabled = true;
             }
-        
+
+            StateHasChanged();
         }
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
         {
             employeeno = null;
             _previous = Args.RequestType;
 
+            //Enable save buttons on add
+            IsHiddenDraft = false;
+            IsHiddenPersonSubmit = false;
+
+            //Enable Fields
+            EmployeeDDEnabled = true;
+            ReviewDateEnabled = true;
+            AppraisalReasonEnabled = true;
+            AppraiserNameEnabled = true;
+            isFinancialYearEnabled = false;
+
             Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSettingDto>();
             Args.RowData.BalanceScoreCardBehavioral = new List<BalanceScoreCardBehavioralDto>();
-
-            //if(BscPerspectiveData!=null)
-            //{
-            //    foreach (var n in TargetData)
-            //    {
-            //        Random random = new Random();
-            //        Args.RowData.BalanceScoreCardTargetSetting.Add(new BalanceScoreCardTargetSettingDto
-            //            {
-            //                TargetSettingId = random.Next(1000, 10000),
-            //                BscPerspectiveId = n.BscPerspectiveId,
-            //                PerspectiveTotalWeight = n.PerspectiveTotalWeight,
-            //                MeasurementMetricId = n.MeasurementMetricId,
-            //                Bsckpiid = n.Bsckpiid,
-            //            });
-            //    }
-            //} 
 
             if (CompetenceData != null)
             {
@@ -2503,6 +2805,13 @@
                             CompetenceId = n.CompetenceId,
                         });
                 }
+            }
+
+            if(Credentials.StaffId > 0)
+            {
+                Args.Data.Employeeid = Credentials.StaffId;
+                employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Credentials.StaffId);
+                isFinancialYearEnabled = true;
             }
         }
     }
@@ -2526,6 +2835,24 @@
         }
     }
 
+    public string GetEmployeeHeader(BalanceScoreCardDto Value)
+    {
+        if (Value.Employeeid == 0)
+        {
+            return "Add a new Appraisal";
+        }
+        else
+        {
+            return "Edit Appraisal Details";
+        }
+    }
+
+
+    public async Task RowSelectingHandler(RowSelectingEventArgs<BalanceScoreCardDto> args)
+    { 
+        await DataGrid.ClearSelection();   //clear selection
+    } 
+
     #endregion BSCAdapter
 }
 
@@ -2546,7 +2873,7 @@
     /*QueryCellInfo*/
     /*.Draft*/
     .e-grid .e-gridcontent .e-rowcell.Draft {
-        color: ghostwhite;
+        color: black;
     }
 
     /*.Approved*/
@@ -2555,8 +2882,8 @@
     }
 
      /*.Rejected*/
-    .e-grid .e-gridcontent .e-rowcell.Approved {
-        color: black;
+    .e-grid .e-gridcontent .e-rowcell.Rejected {
+        color: white;
     }
 
      /*.hiderecord*/
