@@ -7,8 +7,9 @@
 @inject IToastService toastService;
 @inject IUtilityRepository PrimaryRepo;
 @inject NavigationManager NavManager;
+@inject HttpClient Http;
+@using System.Text.Json;
 
-@*<h3>RegistrationPage</h3>*@
 <div class="row">
     <div class="col-md-12">
         @*<BreadcrumbPage CategoryName="Account" PageName="Registration" />*@
@@ -17,11 +18,28 @@
         <EditForm Model="@inputModel" class="row" style="margin-left:10%; margin-right:10%;" OnValidSubmit="@RegisterUser">
             <div class="form-group col-md-6">
                 <p>Employee:<span style="color:red;">*</span></p>
-                @*<label class="label" style="float:left;">Employee<span style="color:red;">*</span></label>*@
-                <SfDropDownList @bind-Value="@(inputModel.Employeeid)" Enabled="true" TItem="ViewBscEmployeeDto" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                       <DropDownListFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></DropDownListFieldSettings>
-                       <DropDownListEvents TValue="int?" TItem="ViewBscEmployeeDto" ValueChange="OnEmployeeChange"></DropDownListEvents>
-                </SfDropDownList>
+                <SfDropDownList @bind-Value="@(inputModel.Employeeid)" TValue="int?" TItem="EmployeeDto"
+                               AllowFiltering="true" Placeholder="Please select"
+                               DataSource="@EmployeeData"
+                               FilterBarPlaceholder="Search Employee"
+                               FloatLabelType="FloatLabelType.Never"
+                               PopupHeight="350px"
+                               FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                    <DropDownListFieldSettings Text="@nameof(EmployeeDto.LastName)" Value="@nameof(EmployeeDto.Employeeid)"></DropDownListFieldSettings>
+                    <DropDownListTemplates TItem="EmployeeDto">
+                        <ValueTemplate Context="NameContext">
+                            <span class='name'>@((NameContext as EmployeeDto).FirstName) @((NameContext as EmployeeDto).MiddleName) @((NameContext as EmployeeDto).LastName)</span>
+                        </ValueTemplate>
+                        <ItemTemplate Context="ItemContext">
+                            <span class='name'>@((ItemContext as EmployeeDto).FirstName) @((ItemContext as EmployeeDto).MiddleName) @((ItemContext as EmployeeDto).LastName)</span>
+                        </ItemTemplate>
+                    </DropDownListTemplates>
+                    <DropDownListEvents 
+                        TValue="int?"
+                    TItem="EmployeeDto"
+                    ValueChange="OnEmployeeChange">
+                    </DropDownListEvents>
+                    </SfDropDownList>
             </div>
             <div class="form-group col-md-6">
                 <p>Email:<span style="color:red;">*</span></p>
@@ -67,7 +85,7 @@
 @code {
     RegisterModel inputModel { get; set; } = new RegisterModel();
     SfSpinner? RegSpinner;
-    List<ViewBscEmployeeDto>? EmployeeData { get; set; }
+    List<EmployeeDto>? EmployeeData { get; set; }
     List<AspNetRoles>? UserRoleData { get; set; }
     RegisterModel? model { get; set; } = new();
 
@@ -89,7 +107,7 @@
         }
     }
 
-    public void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,ViewBscEmployeeDto> args)
+    public void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, EmployeeDto> args)
     {
         if (args.ItemData != null)
         {
@@ -133,10 +151,8 @@
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        @*
-        
-        FacilityData = await PrimaryRepo.GetViewFacilities();
-        *@
+        JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
         inputModel.url = NavManager.BaseUri;
         inputModel = new RegisterModel();
         inputModel.Password = AccountService.RandomPassword();

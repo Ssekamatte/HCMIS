@@ -1488,48 +1488,77 @@
     {
         try
         {
-            if (TargetsettingGrid != null)
+            if (BscData.Employeeid == null)
             {
-                await TargetsettingGrid.EndEditAsync();
-                BscData.BalanceScoreCardTargetSetting = gridData;
+                toastService.ShowWarning("Please select the employee.");
             }
 
-            if (BehavioralGrid != null)
+            else if (BscData.DateofReview == null)
             {
-                await BehavioralGrid.EndEditAsync();
+                toastService.ShowWarning("Please enter the date of review.");
+            }            
+
+            else if (BscData.AppraisalReasonId == null)
+            {
+                toastService.ShowWarning("Please select the reason for appraisal.");
+            }  
+
+            else if (BscData.AppraiserName == null)
+            {
+                toastService.ShowWarning("Please select the appraiser.");
             }
 
-            if (DevelopmentPlanGrid != null)
+            else if (BscData.FinancialYearId == null)
             {
-                await DevelopmentPlanGrid.EndEditAsync();
+                toastService.ShowWarning("Please select the financial year.");
             }
 
-            if (AppraiseeCommentsGrid != null)
+            else
             {
-                await AppraiseeCommentsGrid.EndEditAsync();
-            }
+                if (TargetsettingGrid != null)
+                {
+                    await TargetsettingGrid.EndEditAsync();
+                    BscData.BalanceScoreCardTargetSetting = gridData;
+                }
 
-            if (SupervisorCommentsGrid != null)
-            {
-                await SupervisorCommentsGrid.EndEditAsync();
-            }
+                if (BehavioralGrid != null)
+                {
+                    await BehavioralGrid.EndEditAsync();
+                }
 
-            if (HODCommentsGrid != null)
-            {
-                await HODCommentsGrid.EndEditAsync();
-            }
+                if (DevelopmentPlanGrid != null)
+                {
+                    await DevelopmentPlanGrid.EndEditAsync();
+                }
 
-            if (CEOCommentsGrid != null)
-            {
-                await CEOCommentsGrid.EndEditAsync();
-            }
+                if (AppraiseeCommentsGrid != null)
+                {
+                    await AppraiseeCommentsGrid.EndEditAsync();
+                }
 
-            if (DataGrid != null)
-            {
-                BscData.LeaveApprovalStatusId = 2;
-                BscData.AddedDate = DateTime.Now;
-                await DataGrid.EndEditAsync();
-            }
+                if (SupervisorCommentsGrid != null)
+                {
+                    await SupervisorCommentsGrid.EndEditAsync();
+                }
+
+                if (HODCommentsGrid != null)
+                {
+                    await HODCommentsGrid.EndEditAsync();
+                }
+
+                if (CEOCommentsGrid != null)
+                {
+                    await CEOCommentsGrid.EndEditAsync();
+                }
+
+                if (DataGrid != null)
+                {
+                    BscData.LeaveApprovalStatusId = 2;
+                    BscData.AddedDate = DateTime.Now;
+                    await DataGrid.EndEditAsync();
+                }
+            
+            }            
         }
         catch (Exception ex)
         {
@@ -1829,15 +1858,13 @@
             }
         }));
         
-        
-        //---
         t.Add(Task.Run(async () =>
         {
             var responsejobtitle = await Http.GetAsync($"HumanResource/GetJobTitle");
             if (responsejobtitle.IsSuccessStatusCode)
             {
                 var contentjobtitle = await responsejobtitle.Content.ReadAsStringAsync();
-                JobTitleData = JsonSerializer.Deserialize<List<JobTitleDto>>(contentemployee, _options);
+                JobTitleData = JsonSerializer.Deserialize<List<JobTitleDto>>(contentjobtitle, _options);
             }
         }));
         
@@ -1847,7 +1874,7 @@
             if (responsefinyear.IsSuccessStatusCode)
             {
                 var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
-                FinancialYearData = JsonSerializer.Deserialize<List<ViewFinancialYearDto>>(contentemployee, _options);
+                FinancialYearData = JsonSerializer.Deserialize<List<ViewFinancialYearDto>>(contentfinyear, _options);
             }
         }));
 
@@ -1903,126 +1930,65 @@
             }
         }));
 
-        //START ON THIS HERE
-
         t.Add(Task.Run(async () =>
         {
-            var responseemployee = await Http.GetAsync($"BalanceScoreCard/GetEmployeeData");
-            if (responseemployee.IsSuccessStatusCode)
+            var responseevidence = await Http.GetAsync($"EmployeeEvidence/GetEmployeeEvidence");
+            if (responseevidence.IsSuccessStatusCode)
             {
-                var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-                EmployeeData = JsonSerializer.Deserialize<List<ViewBscEmployeeDto>>(contentemployee, _options);
+                var contentevidence = await responseevidence.Content.ReadAsStringAsync();
+                EvidenceData = JsonSerializer.Deserialize<List<EmployeeEvidenceDto>>(contentevidence, _options);
             }
         }));
 
         t.Add(Task.Run(async () =>
         {
-            var responseemployee = await Http.GetAsync($"BalanceScoreCard/GetEmployeeData");
-            if (responseemployee.IsSuccessStatusCode)
+            var responseperformancedescriptor = await Http.GetAsync($"PerformanceDescriptor/GetPerformanceDescriptor");
+            if (responseperformancedescriptor.IsSuccessStatusCode)
             {
-                var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-                EmployeeData = JsonSerializer.Deserialize<List<ViewBscEmployeeDto>>(contentemployee, _options);
+                var contentperformancedescriptor = await responseperformancedescriptor.Content.ReadAsStringAsync();
+                PerformanceDescriptorData = JsonSerializer.Deserialize<List<PerformanceDescriptorDto>>(contentperformancedescriptor, _options);
             }
         }));
 
         t.Add(Task.Run(async () =>
         {
-            var responseemployee = await Http.GetAsync($"BalanceScoreCard/GetEmployeeData");
-            if (responseemployee.IsSuccessStatusCode)
+            var responsecompetence = await Http.GetAsync($"BehavioralCompetencies/GetCompetence");
+            if (responsecompetence.IsSuccessStatusCode)
             {
-                var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-                EmployeeData = JsonSerializer.Deserialize<List<ViewBscEmployeeDto>>(contentemployee, _options);
+                var contentcompetence = await responsecompetence.Content.ReadAsStringAsync();
+                CompetenceData = JsonSerializer.Deserialize<List<BehavioralCompetenciesDto>>(contentcompetence, _options);
             }
         }));
 
         t.Add(Task.Run(async () =>
         {
-            var responseemployee = await Http.GetAsync($"BalanceScoreCard/GetEmployeeData");
-            if (responseemployee.IsSuccessStatusCode)
+            var responsetarget = await Http.GetAsync($"TargetSetting/GetAllTargetData");
+            if (responsetarget.IsSuccessStatusCode)
             {
-                var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-                EmployeeData = JsonSerializer.Deserialize<List<ViewBscEmployeeDto>>(contentemployee, _options);
+                var contenttarget = await responsetarget.Content.ReadAsStringAsync();
+                TargetData = JsonSerializer.Deserialize<List<TargetSettingDto>>(contenttarget, _options);
             }
         }));
 
         t.Add(Task.Run(async () =>
         {
-            var responseemployee = await Http.GetAsync($"BalanceScoreCard/GetEmployeeData");
-            if (responseemployee.IsSuccessStatusCode)
+            var responseapprovalstatus = await Http.GetAsync($"Utilities/GetLeaveApprovalStatus");
+            if (responseapprovalstatus.IsSuccessStatusCode)
             {
-                var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-                EmployeeData = JsonSerializer.Deserialize<List<ViewBscEmployeeDto>>(contentemployee, _options);
+                var contentapprovalstatus = await responseapprovalstatus.Content.ReadAsStringAsync();
+                ApprovalStatusData = JsonSerializer.Deserialize<List<ALeaveApprovalStatusDto>>(contentapprovalstatus, _options);
             }
         }));
 
-        //---
-        
-        
-        
-        
-        //START ON CHANGING THIS
-        
-        
-        
-       
-        
-        
-        var responsecompetence = await Http.GetAsync($"BehavioralCompetencies/GetCompetence");
-        var contentcompetence = await responsecompetence.Content.ReadAsStringAsync();
-        var responsetarget = await Http.GetAsync($"TargetSetting/GetAllTargetData");
-        var contenttarget = await responsetarget.Content.ReadAsStringAsync();
-        var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
-        var contentbscperspectivetype = await responsebscperspective.Content.ReadAsStringAsync();
-
-        
-
-        
-        
-
-        if (responsebscperspective.IsSuccessStatusCode)
+        t.Add(Task.Run(async () =>
         {
-            BscPerspectiveData = await Http.GetFromJsonAsync<List<BscPerspectivesDto>>
-            ($"BscPerspectives/GetBscPerspectives");
-        }
-
-         
-
-        var responseevidence = await Http.GetAsync($"EmployeeEvidence/GetEmployeeEvidence");
-        var contentevidence = await responseevidence.Content.ReadAsStringAsync();
-        if (responseevidence.IsSuccessStatusCode)
-        {
-            EvidenceData = await Http.GetFromJsonAsync<List<EmployeeEvidenceDto>>
-            ($"EmployeeEvidence/GetEmployeeEvidence");
-        }
-
-        var responseperformancedescriptor = await Http.GetAsync($"PerformanceDescriptor/GetPerformanceDescriptor");
-        var contentperformancedescriptor = await responseperformancedescriptor.Content.ReadAsStringAsync();
-        if (responseperformancedescriptor.IsSuccessStatusCode)
-        {
-            PerformanceDescriptorData = await Http.GetFromJsonAsync<List<PerformanceDescriptorDto>>
-            ($"PerformanceDescriptor/GetPerformanceDescriptor");
-        }
-
-        if (responsecompetence.IsSuccessStatusCode)
-        {
-            CompetenceData = await Http.GetFromJsonAsync<List<BehavioralCompetenciesDto>>
-            ($"BehavioralCompetencies/GetCompetence");
-        }
-
-        if (responsetarget.IsSuccessStatusCode)
-        {
-            TargetData = await Http.GetFromJsonAsync<List<TargetSettingDto>>
-            ($"TargetSetting/GetAllTargetData");
-        }
-
-        var responseapprovalstatus = await Http.GetAsync($"Utilities/GetLeaveApprovalStatus");
-        var contentapprovalstatus = await responseapprovalstatus.Content.ReadAsStringAsync();
-        if (responseapprovalstatus.IsSuccessStatusCode)
-        {
-            ApprovalStatusData = await Http.GetFromJsonAsync<List<ALeaveApprovalStatusDto>>
-            ($"Utilities/GetLeaveApprovalStatus");
-        }
-
+            var responsebscperspective = await Http.GetAsync($"BscPerspectives/GetBscPerspectives");
+            if (responsebscperspective.IsSuccessStatusCode)
+            {
+                var contentbscperspective = await responsebscperspective.Content.ReadAsStringAsync();
+                BscPerspectiveData = JsonSerializer.Deserialize<List<BscPerspectivesDto>>(contentbscperspective, _options);
+            }
+        }));
     }
 
     public void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewBscEmployeeDto> args)

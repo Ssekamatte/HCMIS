@@ -71,22 +71,33 @@
     </div>
 </div>
 
-<center>
-    <h5>
-        <strong>TRAINING NEEDS ASSESSMENT SURVEY- @DateTime.Now.Year</strong>
-    </h5>
-</center>
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="color: brown;">
+        <strong>
+            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
+        </strong>| TRAINING NEEDS ASSESSMENT SURVEY- @DateTime.Now.Year
+    </li>
+</ol>
+
     <div class="row">
         <div class="col-md-12">
             <h4>Introduction</h4>
-            <h3>
-                To enable the Human Resource and Administration 
-                department arrange appropriate Skills enhancement 
-                training programmes, you are requested to participate 
-                in the Training Needs Assessment Survey. Kindly respond
-                by <strong>@DeadlineDate</strong>, to enable us consolidate the
-                training calendar for <strong>@DeadlineYear</strong> 
-            </h3>
+                @if (DeadlineData != null && DeadlineData.Count > 0 @* && DeadlineData.DeadlineDate.HasValue*@)
+                {
+                    var ddate = DeadlineData.OrderByDescending(o=>o.DeadlineId).FirstOrDefault();
+                    DeadlineDate = ddate.DeadlineDate.Value.ToString("dd/MMMM/yyyy");
+                    DeadlineYear = ddate.DeadlineDate.Value.Year;
+
+                    <h3>
+                        To enable the Human Resource and Administration
+                        department arrange appropriate Skills enhancement
+                        training programmes, you are requested to participate
+                        in the Training Needs Assessment Survey. Kindly respond
+                        by <strong>@DeadlineDate</strong>, to enable us consolidate the
+                        training calendar for <strong>@DeadlineYear</strong>
+                    </h3>
+                }
+            
         </div>
     <SfGrid ID="Grid" @ref="AssessmentSurveyGrid" TValue="TrainingAssessmentSurveyDto"
             Toolbar="@ToolbarMenu" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
@@ -193,9 +204,9 @@
     private SfGrid<TrainingAssessmentSurveyDto>? AssessmentSurveyGrid;
     private static TrainingAssessmentSurveyDto? assessmentdata { get; set; }
     List<JobTitleDto>? JobTitleData { get; set; }
-    TrainingAssessmentSurveyDeadlineDto? DeadlineData { get; set; }
+    List<TrainingAssessmentSurveyDeadlineDto>? DeadlineData { get; set; }
     string DeadlineDate = string.Empty;
-    int DeadlineYear = 2021;
+    int DeadlineYear = 0000;
     List<ViewBscEmployeeDto>? EmployeeData { get; set; }
 
     Query mainQuery { get; set; } = new();
@@ -214,31 +225,38 @@
 
     protected override async Task OnInitializedAsync()
     {
-        
+        JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-        
-        var responseJobTitle = await Http.GetAsync($"HumanResource/GetJobTitle");
-        var contentJobTitle = await responseJobTitle.Content.ReadAsStringAsync();
-
-        var responseemployee = await Http.GetAsync($"BalanceScoreCard/GetEmployeeData");
-        var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-
-        if (responseJobTitle.IsSuccessStatusCode && responseemployee.IsSuccessStatusCode)
+        List<Task> t = new List<Task>();
+        t.Add(Task.Run(async () =>
         {
-            JobTitleData = await Http.GetFromJsonAsync<List<JobTitleDto>>
-            ($"HumanResource/GetJobTitle");
-
-            EmployeeData = await Http.GetFromJsonAsync<List<ViewBscEmployeeDto>>
-            ($"BalanceScoreCard/GetEmployeeData");
-
-            DeadlineData = await Http.GetFromJsonAsync<TrainingAssessmentSurveyDeadlineDto>
-            ($"AssessmentSurveyDeadline/GetAssessmentDeadline");
-            if (DeadlineData != null && DeadlineData.DeadlineDate.HasValue)
+            var responseJobTitle = await Http.GetAsync($"HumanResource/GetJobTitle");
+            if (responseJobTitle.IsSuccessStatusCode)
             {
-                DeadlineDate = DeadlineData.DeadlineDate.Value.ToString("dd/MMMM/yyyy");
-                DeadlineYear = DeadlineData.DeadlineDate.Value.Year;
+                var contentJobTitle = await responseJobTitle.Content.ReadAsStringAsync();
+                JobTitleData = JsonSerializer.Deserialize<List<JobTitleDto>>(contentJobTitle, _options);
             }
-        }
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
+            var responseemployee = await Http.GetAsync($"BalanceScoreCard/GetEmployeeData");
+            if (responseemployee.IsSuccessStatusCode)
+            {
+                var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+                EmployeeData = JsonSerializer.Deserialize<List<ViewBscEmployeeDto>>(contentemployee, _options);
+            }
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
+            var responsedeadlinedate = await Http.GetAsync($"AssessmentSurveyDeadline/GetAssessmentDeadline");
+            if (responsedeadlinedate.IsSuccessStatusCode)
+            {
+                var contentdeadlinedate = await responsedeadlinedate.Content.ReadAsStringAsync();
+                DeadlineData = JsonSerializer.Deserialize<List<TrainingAssessmentSurveyDeadlineDto>>(contentdeadlinedate, _options);
+            }
+        }));
 
         ToolbarMenu = new List<object>(){
         new ItemModel() { Text = "Capture Survey", PrefixIcon = "e-add", Id = "Grid_add" },//Here Grid is SfGrid ID
@@ -576,7 +594,7 @@
         }
         else
         {
-            return "Edit Details for " + Value.AssessmentId;
+            return "Edit Training Assessment Survey Details";
         }
     }
 

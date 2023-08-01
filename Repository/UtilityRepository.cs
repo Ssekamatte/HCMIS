@@ -8,6 +8,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using static System.Net.WebRequestMethods;
 using HCMIS.SHARED.DTOs;
+using HCMIS.SHARED;
 
 namespace HCMIS.Repository
 {
@@ -31,18 +32,16 @@ namespace HCMIS.Repository
             this.settingsRepo = settingsRepo;
         }
 
-        public async Task<List<ViewBscEmployeeDto>?> GetEmployees()
+        public async Task<List<EmployeeDto>?> GetEmployees()
         {
-            List<ViewBscEmployeeDto>? data = new List<ViewBscEmployeeDto>();
+            List<EmployeeDto>? data = new List<EmployeeDto>();
             try
             {
-                string? accessToken = await settingsRepo.GetAccessToken();
-                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                var response = await _httpClient.GetAsync($"BalanceScoreCard/GetEmployeeData");
+                var response = await _httpClient.GetAsync($"Employeez/GetMasterList");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    data = JsonSerializer.Deserialize<List<ViewBscEmployeeDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<EmployeeDto>>(content, _options);
                 }
                 else
                 {
