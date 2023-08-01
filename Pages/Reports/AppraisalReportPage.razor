@@ -18,12 +18,18 @@
     }
 </style>
 
-<BreadcrumbPage CategoryName="APPRAISAL" PageName="REPORT" />
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="color: brown;">
+        <strong>
+            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
+        </strong>| APPRAISAL REPORT
+    </li>
+</ol>
 
 <EditForm Model="@InputModel" OnValidSubmit="@OnSearchSubmit">
     <DataAnnotationsValidator />
     <div class="row" style="margin-bottom:10px;">
-        <div class="col-md-6">
+        <div class="col-md-4">
             <p>Review Date Range</p>
             <div class="row">
                 <div class="col-md-6">
@@ -34,31 +40,44 @@
                 </div>
             </div>
         </div>
-        <div class="col col-md-6">
+        <div class="col col-md-4">
             <p>Employee</p>
             <SfMultiSelect @bind-Value="@InputModel.Employeeid" TValue="int?[]" TItem="ViewBscEmployeeDto" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
                 <MultiSelectFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></MultiSelectFieldSettings>
             </SfMultiSelect>
         </div>
-        <div class="col col-md-6">
+        <div class="col col-md-4">
             <p>Appraisal Reason</p>
             <SfMultiSelect @bind-Value="@InputModel.AppraisalReasonId" TValue="int?[]" TItem="AppraisalReasonDto" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@AppraisalData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Appraisal Reason" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
                 <MultiSelectFieldSettings Value="@nameof(AppraisalReasonDto.AppraisalReasonId)" Text="@nameof(AppraisalReasonDto.AppraisalReason)"></MultiSelectFieldSettings>
             </SfMultiSelect>
         </div>
-        <div class="col col-md-6">
+        <div class="col col-md-4">
             <p>Financial Year</p>
             <SfMultiSelect @bind-Value="@InputModel.FinancialYearId" TValue="int?[]" TItem="ViewFinancialYearDto" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@FinancialYearData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Year" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
                 <MultiSelectFieldSettings Value="@nameof(AFinancialYear.Id)" Text="@nameof(AFinancialYear.FinancialYear)"></MultiSelectFieldSettings>
             </SfMultiSelect>
         </div>
-        <div class="col col-md-6">
+        <div class="col col-md-4">
             <p>Perspective</p>
             <SfMultiSelect @bind-Value="@InputModel.BscPerspectiveTypeId" TValue="int?[]" TItem="ABscPerspectivesTypeDto" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@BscPerspectiveTypeData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
                 <MultiSelectFieldSettings Value="@nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeId)" Text="@nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeDescription)"></MultiSelectFieldSettings>
             </SfMultiSelect>
         </div>
+                
+        <div class="form-group col-md-12">
+            <SfSpinner @ref="DownloadingSpinner" Label="Downloading Report Please Wait....." Size="50"></SfSpinner>
+        </div>
+        @if (!string.IsNullOrEmpty(InputModel.Response))
+        {
+            <div class="col col-md-12" style="margin-top:10px;">
+                <div class="alert alert-success">@InputModel.Response</div>
+            </div>
+        }
 
+    </div>
+
+    <div class="row" style="margin-bottom:10px;">
         @if (Downloadreport == false)
         {
             <div class="col col-md-3">
@@ -67,16 +86,6 @@
             </div>
         }
 
-        <div class="form-group col-md-12">
-            <SfSpinner @ref="DownloadingSpinner" Label="Downloading Report Please Wait....." Size="50"></SfSpinner>
-        </div>
-
-        @if (!string.IsNullOrEmpty(InputModel.Response))
-        {
-            <div class="col col-md-12" style="margin-top:10px;">
-                <div class="alert alert-success">@InputModel.Response</div>
-            </div>
-        }
     </div>
     <ValidationSummary />
 </EditForm>
@@ -97,6 +106,7 @@
     List<BscPerformanceMeasurementDto>? BscMeasurementData { get; set; }
     List<BehavioralCompetenciesDto>? CompetenceData { get; set; }
     List<ABscPerspectivesTypeDto>? BscPerspectiveTypeData { get; set; }
+    List<ViewBalanceScoreCardTargetSettingReportDto>? TargetSettingReportData { get; set; }
 
     protected override async Task OnInitializedAsync()
     {        
@@ -177,6 +187,16 @@
             CompetenceData = await Http.GetFromJsonAsync<List<BehavioralCompetenciesDto>>
             ($"BehavioralCompetencies/GetCompetence");
         }
+
+
+        var responsetargetdata = await Http.GetAsync($"Utilities/GetTargetSettingReportData");
+        var contenttargetdata = await responsetargetdata.Content.ReadAsStringAsync();
+
+        if (responsetargetdata.IsSuccessStatusCode)
+        {
+            TargetSettingReportData = await Http.GetFromJsonAsync<List<ViewBalanceScoreCardTargetSettingReportDto>>
+            ($"Utilities/GetTargetSettingReportData");
+        }
     }
 
     private async Task OnSearchSubmit()
@@ -187,171 +207,262 @@
         try
         {
             var data = await reportservice.GetAppraisal(InputModel);
-            if (data.Count > 0)
+            var datatarget = await reportservice.GetAppraisalTarget(InputModel);
+            if (EmployeeData != null && BscPerspectiveTypeData != null && AppraisalData != null && FinancialYearData != null)
             {
-                using (ExcelEngine excelEngine = new ExcelEngine())
+                var _employeedata = EmployeeData.Where(o => InputModel.Employeeid == null || InputModel.Employeeid.Any(a => a == o.Employeeid)).ToList();
+                if (data.Count > 0)
                 {
-                    IApplication application = excelEngine.Excel;
-                    application.DefaultVersion = ExcelVersion.Excel2013;
-                    IWorkbook workbook = application.Workbooks.Create(1);
-                    IWorksheet worksheet = workbook.Worksheets[0];
-                    worksheet.Name = "Appraisal Report";
-
-                    #region Styles
-                    var headerStyle = workbook.Styles.Add("headerStyle");
-
-                    headerStyle.BeginUpdate();
-                    headerStyle.Color = Syncfusion.Drawing.Color.Black;
-                    headerStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
-                    headerStyle.Font.Bold = true;
-                    headerStyle.Font.FontName = "Arial";
-                    headerStyle.Font.Size = 8f;
-                    headerStyle.Font.Color = ExcelKnownColors.White;
-
-                    headerStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
-                    headerStyle.Borders.Color = ExcelKnownColors.White;
-                    headerStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
-                    headerStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
-                    headerStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
-
-                    headerStyle.WrapText = true;
-
-                    headerStyle.EndUpdate();
-
-                    var Style = workbook.Styles.Add("bodyStyle");
-
-                    Style.BeginUpdate();
-                    Style.HorizontalAlignment = ExcelHAlign.HAlignLeft;
-                    Style.VerticalAlignment = ExcelVAlign.VAlignTop;
-                    Style.Font.Bold = false;
-                    Style.Font.FontName = "Arial";
-                    Style.Font.Size = 8f;
-                    Style.Font.Color = ExcelKnownColors.Black;
-                    Style.WrapText = true;
-                    Style.Borders.Color = ExcelKnownColors.Black;
-                    Style.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
-                    Style.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
-                    Style.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
-                    Style.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
-                    Style.EndUpdate();
-
-
-                    var CategoryStyle = workbook.Styles.Add("CategoryStyle");
-
-                    CategoryStyle.BeginUpdate();
-                    CategoryStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
-                    CategoryStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 255, 255);
-                    CategoryStyle.Font.Bold = true;
-                    CategoryStyle.Font.FontName = "Arial";
-                    CategoryStyle.Font.Size = 20f;
-                    CategoryStyle.Font.Color = ExcelKnownColors.Brown;
-                    CategoryStyle.WrapText = true;
-                    CategoryStyle.Borders.Color = ExcelKnownColors.White;
-                    CategoryStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
-                    CategoryStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
-                    CategoryStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
-                    CategoryStyle.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
-                    CategoryStyle.EndUpdate();
-
-                    var DivisionStyle = workbook.Styles.Add("DivisionStyle");
-
-                    DivisionStyle.BeginUpdate();
-                    DivisionStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
-                    DivisionStyle.Color = Syncfusion.Drawing.Color.FromArgb(255, 0, 0); //RED
-                    DivisionStyle.Font.Bold = true;
-                    DivisionStyle.Font.FontName = "Arial";
-                    DivisionStyle.Font.Size = 8f;
-                    DivisionStyle.Font.Color = ExcelKnownColors.White;
-                    DivisionStyle.WrapText = true;
-                    DivisionStyle.Borders.Color = ExcelKnownColors.White;
-                    DivisionStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.None;
-                    DivisionStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.None;
-                    DivisionStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.None;
-                    DivisionStyle.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.None;
-                    DivisionStyle.EndUpdate();
-
-                    #endregion
-
-                    int row = 1;
-                    worksheet.Range["A" + row].Text = "Appraisal Report";
-                    worksheet.Range["A" + row + ":R" + row].CellStyle = CategoryStyle;
-                    worksheet.Range["A" + row + ":R" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
-                    worksheet.Range["A" + row + ":R" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
-                    worksheet.Range["A" + row].RowHeight = 30;
-                    worksheet.Range["A" + row + ":R" + row].Merge();
-                    row++;
-                    row++;
-
-                    //var yeardata = data.Select(o => o.YearPrepared).ToList().Distinct().OrderBy(o => o.Value).ToList();
-
-                    worksheet.Range[row, 1].Text = "#";
-                    worksheet.Range[row, 1].CellStyle = headerStyle;
-                    worksheet.Range[row, 1].ColumnWidth = 5;
-                    worksheet.Range[row, 1].WrapText = true;
-
-                    worksheet.Range[row, 2].Text = "Employee";
-                    worksheet.Range[row, 2].CellStyle = headerStyle;
-                    worksheet.Range[row, 2].ColumnWidth = 20;
-                    worksheet.Range[row, 2].WrapText = true;
-
-                    worksheet.Range[row, 3].Text = "Employee No.";
-                    worksheet.Range[row, 3].CellStyle = headerStyle;
-                    worksheet.Range[row, 3].ColumnWidth = 20;
-                    worksheet.Range[row, 3].WrapText = true;
-
-                    worksheet.Range[row, 4].Text = "Review Date";
-                    worksheet.Range[row, 4].CellStyle = headerStyle;
-                    worksheet.Range[row, 4].ColumnWidth = 20;
-                    worksheet.Range[row, 4].WrapText = true;
-
-                    worksheet.Range[row, 5].Text = "Product";
-                    worksheet.Range[row, 5].CellStyle = headerStyle;
-                    worksheet.Range[row, 5].ColumnWidth = 20;
-                    worksheet.Range[row, 5].WrapText = true;
-
-                    worksheet.Range[row, 6].Text = "Product Category";
-                    worksheet.Range[row, 6].CellStyle = headerStyle;
-                    worksheet.Range[row, 6].ColumnWidth = 20;
-                    worksheet.Range[row, 6].WrapText = true;
-
-                    row++;
-                    int count = 1;
-
-                    foreach (var item in data)
+                    using (ExcelEngine excelEngine = new ExcelEngine())
                     {
-                            worksheet.Range[row,1].Text = count.ToString();
-                            worksheet.Range[row, 2].Text = item.FullName;
-                            worksheet.Range[row, 3].Text = item.EmployeeNumber;
-                            if (item.DateofReview.HasValue)
+                        IApplication application = excelEngine.Excel;
+                        application.DefaultVersion = ExcelVersion.Excel2013;
+                        IWorkbook workbook = application.Workbooks.Create(1);
+                        IWorksheet worksheet = workbook.Worksheets[0];
+                        worksheet.Name = "Appraisal Report";
+
+                        #region Styles
+                        var headerStyle = workbook.Styles.Add("headerStyle");
+
+                        headerStyle.BeginUpdate();
+                        headerStyle.Color = Syncfusion.Drawing.Color.Black;
+                        headerStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+                        headerStyle.Font.Bold = true;
+                        headerStyle.Font.FontName = "Arial";
+                        headerStyle.Font.Size = 8f;
+                        headerStyle.Font.Color = ExcelKnownColors.White;
+
+                        headerStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                        headerStyle.Borders.Color = ExcelKnownColors.White;
+                        headerStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+                        headerStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+                        headerStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+
+                        headerStyle.WrapText = true;
+
+                        headerStyle.EndUpdate();
+
+                        var Style = workbook.Styles.Add("bodyStyle");
+
+                        Style.BeginUpdate();
+                        Style.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+                        Style.VerticalAlignment = ExcelVAlign.VAlignTop;
+                        Style.Font.Bold = false;
+                        Style.Font.FontName = "Arial";
+                        Style.Font.Size = 8f;
+                        Style.Font.Color = ExcelKnownColors.Black;
+                        Style.WrapText = true;
+                        Style.Borders.Color = ExcelKnownColors.Black;
+                        Style.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+                        Style.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+                        Style.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+                        Style.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
+                        Style.EndUpdate();
+
+
+                        var CategoryStyle = workbook.Styles.Add("CategoryStyle");
+
+                        CategoryStyle.BeginUpdate();
+                        CategoryStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                        CategoryStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 255, 255);
+                        CategoryStyle.Font.Bold = true;
+                        CategoryStyle.Font.FontName = "Arial";
+                        CategoryStyle.Font.Size = 20f;
+                        CategoryStyle.Font.Color = ExcelKnownColors.Brown;
+                        CategoryStyle.WrapText = true;
+                        CategoryStyle.Borders.Color = ExcelKnownColors.White;
+                        CategoryStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+                        CategoryStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+                        CategoryStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+                        CategoryStyle.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
+                        CategoryStyle.EndUpdate();
+
+                        var DivisionStyle = workbook.Styles.Add("DivisionStyle");
+
+                        DivisionStyle.BeginUpdate();
+                        DivisionStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                        DivisionStyle.Color = Syncfusion.Drawing.Color.FromArgb(255, 0, 0); //RED
+                        DivisionStyle.Font.Bold = true;
+                        DivisionStyle.Font.FontName = "Arial";
+                        DivisionStyle.Font.Size = 8f;
+                        DivisionStyle.Font.Color = ExcelKnownColors.White;
+                        DivisionStyle.WrapText = true;
+                        DivisionStyle.Borders.Color = ExcelKnownColors.White;
+                        DivisionStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.None;
+                        DivisionStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.None;
+                        DivisionStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.None;
+                        DivisionStyle.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.None;
+                        DivisionStyle.EndUpdate();
+
+                        var PerspectiveStyle = workbook.Styles.Add("PerspectiveStyle");
+
+                        PerspectiveStyle.BeginUpdate();
+                        PerspectiveStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                        PerspectiveStyle.Color = Syncfusion.Drawing.Color.FromArgb(128, 0, 128); //Purple
+                        PerspectiveStyle.Font.Bold = true;
+                        PerspectiveStyle.Font.FontName = "Arial";
+                        PerspectiveStyle.Font.Size = 8f;
+                        PerspectiveStyle.Font.Color = ExcelKnownColors.White;
+                        PerspectiveStyle.WrapText = true;
+                        PerspectiveStyle.Borders.Color = ExcelKnownColors.White;
+                        PerspectiveStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.None;
+                        PerspectiveStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.None;
+                        PerspectiveStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.None;
+                        PerspectiveStyle.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.None;
+                        PerspectiveStyle.EndUpdate();
+
+                        #endregion
+
+                        int row = 1;
+                        worksheet.Range["A" + row].Text = "Appraisal Report";
+                        worksheet.Range["A" + row + ":R" + row].CellStyle = CategoryStyle;
+                        worksheet.Range["A" + row + ":R" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                        worksheet.Range["A" + row + ":R" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+                        worksheet.Range["A" + row].RowHeight = 30;
+                        worksheet.Range["A" + row + ":R" + row].Merge();
+                        row++;
+                        row++;
+
+                        //var yeardata = data.Select(o => o.YearPrepared).ToList().Distinct().OrderBy(o => o.Value).ToList();
+
+                        worksheet.Range[row, 1].Text = "#";
+                        worksheet.Range[row, 1].CellStyle = headerStyle;
+                        worksheet.Range[row, 1].ColumnWidth = 5;
+                        worksheet.Range[row, 1].WrapText = true;
+
+                        worksheet.Range[row, 2].Text = "Review Date";
+                        worksheet.Range[row, 2].CellStyle = headerStyle;
+                        worksheet.Range[row, 2].ColumnWidth = 20;
+                        worksheet.Range[row, 2].WrapText = true;
+
+                        worksheet.Range[row, 3].Text = "Appraisal No";
+                        worksheet.Range[row, 3].CellStyle = headerStyle;
+                        worksheet.Range[row, 3].ColumnWidth = 20;
+                        worksheet.Range[row, 3].WrapText = true;
+
+                        worksheet.Range[row, 4].Text = "Appraisal Reason";
+                        worksheet.Range[row, 4].CellStyle = headerStyle;
+                        worksheet.Range[row, 4].ColumnWidth = 20;
+                        worksheet.Range[row, 4].WrapText = true;
+
+                        worksheet.Range[row, 5].Text = "Appraiser Name";
+                        worksheet.Range[row, 5].CellStyle = headerStyle;
+                        worksheet.Range[row, 5].ColumnWidth = 20;
+                        worksheet.Range[row, 5].WrapText = true;
+
+                        worksheet.Range[row, 6].Text = "Financial Year";
+                        worksheet.Range[row, 6].CellStyle = headerStyle;
+                        worksheet.Range[row, 6].ColumnWidth = 20;
+                        worksheet.Range[row, 6].WrapText = true;
+
+                        worksheet.Range[row, 7].Text = "Perspective Score";
+                        worksheet.Range[row, 7].CellStyle = headerStyle;
+                        worksheet.Range[row, 7].ColumnWidth = 20;
+                        worksheet.Range[row, 7].WrapText = true;
+
+                        row++;
+                        int count = 1;
+                        var perstype = BscPerspectiveTypeData.Select(o => new { o.BscPerspectiveTypeId, o.BscPerspectiveTypeDescription }).Distinct().ToList();
+                        var empl = EmployeeData.Select(o => new { o.Employeeid, o.FirstName, o.MiddleName, o.LastName, o.EmployeeNumber }).Distinct().ToList();
+                        var _targetdata = datatarget.Select(o => new { o.BscPerspectiveTypeId }).Distinct().ToList();
+
+                        foreach (var x in empl)
+                        {
+                            var IndData = data.Where(o => o.Employeeid == x.Employeeid).ToList();
+                            if (IndData.Count > 0)
                             {
-                                worksheet.Range[row, 4].Text = item.DateofReview.Value.ToString("dd/MM/yyyy");
+                                #region Header
+                                worksheet.Range["A" + row].Text = "EMPLOYEE: " + x.FirstName + " " + x.MiddleName + " " + x.LastName + " - " + x.EmployeeNumber;
+                                worksheet.Range["A" + row + ":J" + row].CellStyle = DivisionStyle;
+                                worksheet.Range["A" + row + ":J" + row].Merge();
+                                worksheet.Range["A" + row + ":J" + row].WrapText = true;
+                                worksheet.Range["A" + row + ":J" + row].RowHeight = 20;
+                                worksheet.Range["A" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+
+                                #endregion
+                                row++;
+
+                                foreach (var n in perstype)
+                                {
+                                    var TargetData = datatarget.Where(o => o.BscPerspectiveTypeId == n.BscPerspectiveTypeId && o.Employeeid == x.Employeeid).ToList();
+                                    if (TargetData.Count > 0)
+                                    {
+                                        var perstypedesc = BscPerspectiveTypeData.FirstOrDefault(o => o.BscPerspectiveTypeId == n.BscPerspectiveTypeId);
+                                        #region Header
+                                        worksheet.Range["A" + row].Text = "PERSPECTIVE: " + perstypedesc.BscPerspectiveTypeDescription;
+                                        worksheet.Range["A" + row + ":J" + row].CellStyle = PerspectiveStyle;
+                                        worksheet.Range["A" + row + ":J" + row].Merge();
+                                        worksheet.Range["A" + row + ":J" + row].WrapText = true;
+                                        worksheet.Range["A" + row + ":J" + row].RowHeight = 20;
+                                        worksheet.Range["A" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+
+                                        #endregion
+                                        row++;
+
+                                        foreach (var tar in TargetData)
+                                        {
+                                            var appraisalreasondesc = AppraisalData.FirstOrDefault(o => o.AppraisalReasonId == tar.AppraisalReasonId);
+                                            var appraisername = EmployeeData.FirstOrDefault(o => o.Employeeid == tar.Employeeid);
+                                            var financialyearname = FinancialYearData.FirstOrDefault(o => o.Id == tar.FinancialYearId);
+
+                                            var datadetail = data.FirstOrDefault(o => o.BalanceScoreCardId == tar.BalanceScoreCardId);
+
+                                            if (datadetail.DateofReview.HasValue)
+                                            {
+                                                worksheet.Range[row, 2].Text = datadetail.DateofReview.Value.ToString("dd/MM/yyyy");
+                                            }
+
+                                            worksheet.Range[row, 3].Text = datadetail.AppraisalNo;
+                                            worksheet.Range[row, 3].WrapText = true;
+
+                                            //if(!string.IsNullOrEmpty(appraisalreasondesc.AppraisalReason))
+                                            //{
+                                            //    worksheet.Range[row, 4].Text = appraisalreasondesc.AppraisalReason;
+                                            //}
+
+                                            worksheet.Range[row, 5].Text = appraisername.FirstName + " " + appraisername.MiddleName + " " + appraisername.LastName;
+
+                                            if (datadetail.FinancialYearId.HasValue)
+                                            {
+                                                worksheet.Range[row, 6].Text = financialyearname.FinancialYear;
+                                            }
+
+                                            if (tar.IndividualTargetWeight.HasValue)
+                                            {
+                                                worksheet.Range[row, 7].Number = Convert.ToDouble(tar.IndividualTargetWeight);
+                                            }
+                                            row += 1;
+                                            count++;
+                                        }
+
+                                    }
+
+                                }
                             }
-                            //if (n.Year.HasValue)
-                            //{
-                            //    worksheet.Range["B" + row].Number = n.Year.Value;
-                            //}
 
-                            //worksheet.Range["C" + row].Text = n.Region;
+                        }
 
-                        row += 1;
-                        count++;
+                        MemoryStream ms = new MemoryStream();
+                        // Save and close the document.
+                        workbook.SaveAs(ms);
+                        //Reset the memory stream position.
+                        ms.Position = 0;
+                        string _filename = "Appraisal Report.xlsx";
+                        filename = _filename;
+                        JS.InvokeAsync<object>("saveAsFile", filename, Convert.ToBase64String(ms.ToArray()));
+                        ms.Dispose();
+                        workbook.Close();
+                        Downloadreport = false;
+                        InputModel.Response = "Report Downloaded Successfully";
                     }
-
-
-                    MemoryStream ms = new MemoryStream();
-                    // Save and close the document.
-                    workbook.SaveAs(ms);
-                    //Reset the memory stream position.
-                    ms.Position = 0;
-                    string _filename = "Appraisal Report.xlsx";
-                    filename = _filename;
-                    JS.InvokeAsync<object>("saveAsFile", filename, Convert.ToBase64String(ms.ToArray()));
-                    ms.Dispose();
-                    workbook.Close();
-                    Downloadreport = false;
-                    InputModel.Response = "Report Downloaded Successfully";
                 }
             }
+                
+            else if (EmployeeData == null || BscPerspectiveTypeData == null || AppraisalData == null || FinancialYearData == null)
+            {
+                toastService.ShowWarning("An issue has occurred while dowloading the report. Kindly refresh the system and try again");
+            }
+
             else
             {
                 InputModel.Response = "There were no records found that match the given search parameters";

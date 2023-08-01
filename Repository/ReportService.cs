@@ -6,6 +6,7 @@ using HCMIS.Interface;
 using HCMIS.Model;
 using HCMIS.SHARED;
 using HCMIS.SHARED.Data;
+using HCMIS.SHARED.DTOs.BSC;
 using HCMIS.SHARED.Models.SPModel;
 using System.Text.Json;
 using static System.Net.WebRequestMethods;
@@ -27,9 +28,9 @@ namespace HCMIS.Repository
             this.sessionStorage = sessionStorage;
         }
 
-        public async Task<List<spViewBalanceScoreCardReportResult>> GetAppraisal(UtilitiesSearchPanel SearchModel)
+        public async Task<List<BalanceScoreCardDto>> GetAppraisal(UtilitiesSearchPanel SearchModel)
         {
-            List<spViewBalanceScoreCardReportResult>? data = new List<spViewBalanceScoreCardReportResult>();
+            List<BalanceScoreCardDto>? data = new List<BalanceScoreCardDto>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -39,7 +40,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<spViewBalanceScoreCardReportResult>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<BalanceScoreCardDto>>(content, _options);
                 }
                 else
                 {
@@ -52,6 +53,33 @@ namespace HCMIS.Repository
             }
             return data;
         }
+
+        public async Task<List<ViewBalanceScoreCardTargetSettingReportDto>> GetAppraisalTarget(UtilitiesSearchPanel SearchModel)
+        {
+            List<ViewBalanceScoreCardTargetSettingReportDto>? data = new List<ViewBalanceScoreCardTargetSettingReportDto>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetAppraisalTarget", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<ViewBalanceScoreCardTargetSettingReportDto>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
+
 
         public async Task<List<spViewEmployeeLeavesReportResult>> GetLeaveRequest(UtilitiesSearchPanel SearchModel)
         {
