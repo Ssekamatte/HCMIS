@@ -1,4 +1,4 @@
-﻿@page "/BankPage"
+﻿@page "/MeasurementUnitPage"
 @inject ApiConfig _ApiConfig;
 @inject HttpClient Http
 @using HCMIS.Data
@@ -43,41 +43,41 @@
     <li class="breadcrumb-item active" style="color: brown;">
         <strong>
             <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
-        </strong>| BANKS
+        </strong>| BASIC UNIT
     </li>
 </ol>
 
-<SfGrid @ref="@BankGrid" ID="Grid" TValue="ABankDto" AllowPaging="true"
+<SfGrid @ref="@BasicUnitGrid" ID="Grid" TValue="AMeasurementMetricDto" AllowPaging="true"
         AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
         AllowSorting="true" Toolbar="@ToolbarMenu">
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
     <GridPageSettings PageSizes="true"></GridPageSettings>
     <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
-    <SfDataManager AdaptorInstance="@typeof(BankAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-    <GridEvents OnActionComplete="@BankActionComplete" OnActionBegin="@BankActionBegin" TValue="ABankDto"></GridEvents>
+    <SfDataManager AdaptorInstance="@typeof(BasicUnitAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <GridEvents OnActionComplete="@MeasurementActionComplete" OnActionBegin="@MeasurementActionBegin" TValue="AMeasurementMetricDto"></GridEvents>
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog" Dialog="DialogParams">
         <HeaderTemplate>
             @{
-                var text = GetHolidayHeader((context as ABankDto));
+                var text = GetMeasurementHeader((context as AMeasurementMetricDto));
                 <div class="headerbandimg">
                     <span>@text</span>
                 </div>
             }
         </HeaderTemplate>
-        <Template Context="BankContext">
+        <Template Context="MeasurementContext">
             @{
-                BankData = (BankContext as ABankDto);
-                @if (BankData != null)
+                MetricData = (MeasurementContext as AMeasurementMetricDto);
+                @if (MetricData != null)
                 {
                     <div class="row">
                         <div class="col-md-12" hidden>
-                            <SfNumericTextBox @bind-Value="@(BankData.BankId)" Enabled="false" Placeholder="Bank Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                            <SfNumericTextBox @bind-Value="@(MetricData.MeasurementMetricId)" Enabled="false" Placeholder="Measurement Metric Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
                         </div>
 
 
                         <div class="col-md-12">
-                            <p>Bank:<span style="color:red;">*</span></p>
-                            <SfTextBox Multiline="false" @bind-Value="@(BankData.BankDesc)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                            <p>Measurement Metric:<span style="color:red;">*</span></p>
+                            <SfTextBox Multiline="false" @bind-Value="@(MetricData.MeasurementMetricDesc)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
                         </div>
                     </div>
                 }
@@ -87,14 +87,14 @@
     <GridColumns>
         <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn>
         <GridColumn 
-            Field=@nameof(ABankDto.BankId) 
+            Field=@nameof(AMeasurementMetricDto.MeasurementMetricId) 
             Visible=false 
-            HeaderText="Holiday Id" 
+            HeaderText="MeasurementMetric Id" 
             AllowEditing="false" 
             IsPrimaryKey="true">
         </GridColumn>
-        <GridColumn Field=@nameof(ABankDto.BankDesc)
-                    HeaderText="Holiday Name"
+        <GridColumn Field=@nameof(AMeasurementMetricDto.MeasurementMetricDesc)
+                    HeaderText="Measurement Metric"
                     TextAlign="TextAlign.Justify"
                     Width="80"
                     ClipMode="ClipMode.EllipsisWithTooltip"
@@ -105,36 +105,35 @@
 </SfGrid>
 
 @code {
-    SfGrid<ABankDto>? BankGrid;
-    private static ABankDto? BankData { get; set; }
+    SfGrid<AMeasurementMetricDto>? BasicUnitGrid;
+    private static AMeasurementMetricDto? MetricData { get; set; }
     public bool? radiovalue;
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "65%" };
-    List<ABankDto>? BankCountData { get; set; }
+    List<AMeasurementMetricDto>? MeasurementMetricData { get; set; }
 
     private List<object> ToolbarMenu = new List<object>()
     {
-        new ItemModel() { Text = "Add Bank", PrefixIcon = "e-add", Id = "Grid_add"},
-        new ItemModel(){ Text = "Edit Bank", PrefixIcon= "e-edit", Id="Grid_edit"},
+        new ItemModel() { Text = "Add Unit", PrefixIcon = "e-add", Id = "Grid_add"},
+        new ItemModel(){ Text = "Edit Unit", PrefixIcon= "e-edit", Id="Grid_edit"},
         //new ItemModel(){ Text = "Delete Training Plan", PrefixIcon= "e-delete", Id="Grid_delete"},
-        new ItemModel(){ Text = "Update Bank", PrefixIcon= "e-update", Id="Grid_update"},
+        new ItemModel(){ Text = "Update Unit", PrefixIcon= "e-update", Id="Grid_update"},
         new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
     };
 
     protected override async Task OnInitializedAsync()
-    {       
-
+    {
         var responsebankcount = await Http.GetAsync($"Utilities/GetBank");
         var bankcount = await responsebankcount.Content.ReadAsStringAsync();
 
         if (responsebankcount.IsSuccessStatusCode)
         {
-            BankCountData = await Http.GetFromJsonAsync<List<ABankDto>>
-            ($"Utilities/GetBankCount");
+            MeasurementMetricData = await Http.GetFromJsonAsync<List<AMeasurementMetricDto>>
+            ($"Utilities/GetMeasurementMetric");
         }
     }
 
-    #region BankAdapter
-    public class BankAdapter : DataAdaptor
+    #region BasicUnitAdapter
+    public class BasicUnitAdapter : DataAdaptor
     {
         HttpClient Http;
         ApiConfig _ApiConfig;
@@ -142,7 +141,7 @@
         private readonly JsonSerializerOptions _options;
         public IToastService toastService;
         private readonly NavigationManager Navigation;
-        public BankAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+        public BasicUnitAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
             , SystemSettings systemSettings, ApiConfig apiConfig)
         {
             Http = _http;
@@ -156,16 +155,16 @@
 
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         {
-            var data = new List<ABankDto>();
+            var data = new List<AMeasurementMetricDto>();
             try
             {
-                var response = await Http.GetAsync($"Utilities/GetBank");
+                var response = await Http.GetAsync($"Utilities/GetMeasurementMetric");
                 var content = await response.Content.ReadAsStringAsync();
                 if (!response.IsSuccessStatusCode)
                 {
                     toastService.ShowError(response.ReasonPhrase);
                 }
-                data = JsonSerializer.Deserialize<List<ABankDto>>(content, _options);
+                data = JsonSerializer.Deserialize<List<AMeasurementMetricDto>>(content, _options);
             }
             catch (Exception ex)
             {
@@ -205,7 +204,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<ABankDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<AMeasurementMetricDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -215,13 +214,13 @@
         {
             try
             {
-                var val = (value as ABankDto);
+                var val = (value as AMeasurementMetricDto);
 
-                if (val.BankId == 0)
+                if (val.MeasurementMetricId == 0)
                 {
                     string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                     StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                    var result = await Http.PostAsync($"Utilities/CreateBank", httpContent);
+                    var result = await Http.PostAsync($"Utilities/CreateMeasurementMetric", httpContent);
                     if (result.IsSuccessStatusCode)
                     {
                         toastService.ShowSuccess("Record sucessfully added");
@@ -235,7 +234,7 @@
                 {
                     string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                     StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                    var result = await Http.PutAsync($"Utilities/UpdateBank", httpContent);
+                    var result = await Http.PutAsync($"Utilities/UpdateMeasurementMetric", httpContent);
                     if (result.IsSuccessStatusCode)
                     {
                         toastService.ShowSuccess("Record sucessfully saved");
@@ -256,12 +255,12 @@
         {
             try
             {
-                var val = (value as ABankDto);
-                
-                
+                var val = (value as AMeasurementMetricDto);
+
+
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                var result = await Http.PutAsync($"Utilities/UpdateBank", httpContent);
+                var result = await Http.PutAsync($"Utilities/UpdateMeasurementMetric", httpContent);
                 if (result.IsSuccessStatusCode)
                 {
                     toastService.ShowSuccess("Record sucessfully updated");
@@ -282,46 +281,46 @@
 
     }
 
-    public async void BankActionComplete(ActionEventArgs<ABankDto> args)
+    public async void MeasurementActionComplete(ActionEventArgs<AMeasurementMetricDto> args)
     {
-        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) 
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add)
         || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
         {
-            BankGrid.PreventRender(false);
+            BasicUnitGrid.PreventRender(false);
         }
 
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
         {
-            var responsebankcount = await Http.GetAsync($"Utilities/GetBankCount");
+            var responsebankcount = await Http.GetAsync($"Utilities/GetMeasurementMetric");
             var bankcount = await responsebankcount.Content.ReadAsStringAsync();
 
             if (responsebankcount.IsSuccessStatusCode)
             {
-                BankCountData = await Http.GetFromJsonAsync<List<ABankDto>>
-                ($"Utilities/GetBankCount");
+                MeasurementMetricData = await Http.GetFromJsonAsync<List<AMeasurementMetricDto>>
+                ($"Utilities/GetMeasurementMetric");
             }
         }
     }
 
-    public async void BankActionBegin(ActionEventArgs<ABankDto> Args)
+    public async void MeasurementActionBegin(ActionEventArgs<AMeasurementMetricDto> Args)
     {
         var data = Args.Data;
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
         {
-            if (Args.Data.BankDesc == null)
+            if (Args.Data.MeasurementMetricDesc == null)
             {
-                toastService.ShowWarning("Please enter the bank !");
+                toastService.ShowWarning("Please enter the Basic Unit !");
                 Args.Cancel = true;
             }
             else
             {
-                var countdata = BankCountData?
-                .FirstOrDefault(o => o.BankDesc.Trim().ToLower() 
-                == Args.Data.BankDesc.Trim().ToLower());
+                var countdata = MeasurementMetricData?
+                .FirstOrDefault(o => o.MeasurementMetricDesc?.Trim().ToLower()
+                == Args.Data.MeasurementMetricDesc.Trim().ToLower());
 
                 if (countdata != null)
                 {
-                    toastService.ShowWarning("This bank has arleady been captured in the database as " + countdata.BankDesc + ". Record Not Saved");
+                    toastService.ShowWarning("This basic unit has arleady been captured in the database as " + countdata.MeasurementMetricDesc + ". Record Not Saved");
                     Args.Cancel = true;
                 }
             }
@@ -337,17 +336,20 @@
     }
 
 
-    public string GetHolidayHeader(ABankDto Value)
+    public string GetMeasurementHeader(AMeasurementMetricDto Value)
     {
-        if (Value.BankId == 0)
+        if (Value.MeasurementMetricId == 0)
         {
             return "Add a new Bank";
         }
         else
         {
-            return "Edit " + Value.BankDesc;
+            return "Edit " + Value.MeasurementMetricDesc;
         }
     }
 
-    #endregion BankAdapter
+    #endregion BasicUnitAdapter
 }
+
+
+

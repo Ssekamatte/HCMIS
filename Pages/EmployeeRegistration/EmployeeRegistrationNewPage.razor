@@ -154,6 +154,7 @@
     </div>
 </div>
 
+
 <SfSpinner @ref="SpinnerObj" Label="Loading Please Wait....." Size="50">
         @*Render custom spinner component.*@
 </SfSpinner>
@@ -326,8 +327,8 @@
                              </div>
                              <div class=" col-md-3">
                                     <p style="margin-bottom:29px;">Village <span style="color:red;">*</span></p>
-                                    @*<SfDropDownList @bind-Value="@(EmployeeReviewData.PlaceofResidenceVillageId)" Query=@(new Query().Where(new WhereFilter() { Field = "ParishId", Operator = "equal", value = EmployeeReviewData.PlaceofResidenceParishId, IgnoreCase = false, IgnoreAccent = false })) Enabled="@isVillageEnabled" TItem="ViewAvillage" TValue="int?" DataSource="@VillageData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">*@
-                                    <SfDropDownList @bind-Value="@(EmployeeReviewData.PlaceofResidenceVillageId)" Query="@ParishRChange" Enabled="@isVillageREnabled" TItem="ViewAvillage" TValue="int?" DataSource="@VillageData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                    <SfDropDownList @bind-Value="@(EmployeeReviewData.PlaceofResidenceVillageId)" Query=@(new Query().Where(new WhereFilter() { Field = "ParishId", Operator = "equal", value = EmployeeReviewData.PlaceofResidenceParishId, IgnoreCase = false, IgnoreAccent = false })) Enabled="@isVillageREnabled" TItem="ViewAvillage" TValue="int?" DataSource="@VillageData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                    @*<SfDropDownList @bind-Value="@(EmployeeReviewData.PlaceofResidenceVillageId)" Query="@ParishRChange" Enabled="@isVillageREnabled" TItem="ViewAvillage" TValue="int?" DataSource="@VillageData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">*@
                                         <DropDownListFieldSettings Value="@nameof(ViewAvillage.VillageId)" Text="@nameof(ViewAvillage.ViallgeDescription)"></DropDownListFieldSettings>
                                     </SfDropDownList>
                              </div>
@@ -1009,177 +1010,165 @@
         try
         {
             Credentials = await AuthenticationService.GetUserCredentials();
+            JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            List<Task> t = new List<Task>();
             RowDetails = null;
 
-            var responseemployee = await Http.GetAsync($"Employeez/GetMasterList");
-            var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-            if (responseemployee.IsSuccessStatusCode)
+            //Get Administrative Units Primary Data at once Because its too big
+            var response = await Http.GetAsync($"Employeez/GetEmployeePrimaryDataList");
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode)
             {
-                EmployeeData = await Http.GetFromJsonAsync<List<EmployeeDto>>
-                ($"Employeez/GetMasterList");
-            }
+                var _EmployeeRegistrationModel = JsonSerializer.Deserialize<EmployeeRegistrationModel>(content, _options);
 
-            var responsegender = await Http.GetAsync($"Utilities/GetEmployeeLevel");
-            var contentemployeegender = await responsegender.Content.ReadAsStringAsync();
-            if (responsegender.IsSuccessStatusCode)
+                if (_EmployeeRegistrationModel != null)
+                {
+                    DistrictData = _EmployeeRegistrationModel.District;
+                    SubCountyData = _EmployeeRegistrationModel.SubCounty;
+                    VillageData = _EmployeeRegistrationModel.Village;
+                    ParishData = _EmployeeRegistrationModel.Parish;
+                }
+            }
+            
+            t.Add(Task.Run(async () =>
             {
-                GenderData = await Http.GetFromJsonAsync<List<AGenderDto>>
-                ($"Utilities/GetGender");
-            }
+                var responseemployee = await Http.GetAsync($"Employeez/GetMasterList");
+                if (responseemployee.IsSuccessStatusCode)
+                {
+                    var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+                    EmployeeData = JsonSerializer.Deserialize<List<EmployeeDto>>(contentemployee, _options);
+                }
+            }));
 
-            var responseemployeelevel = await Http.GetAsync($"Utilities/GetEmployeeLevel");
-            var contentemployeelevel = await responseemployeelevel.Content.ReadAsStringAsync();
-            if (responseemployeelevel.IsSuccessStatusCode)
+            t.Add(Task.Run(async () =>
             {
-                EmployeeLevelData = await Http.GetFromJsonAsync<List<AEmployeeLevelDto>>
-                ($"Utilities/GetEmployeeLevel");
-            }
+                var responsegender = await Http.GetAsync($"Utilities/GetEmployeeLevel");
+                if (responsegender.IsSuccessStatusCode)
+                {
+                    var contentemployeegender = await responsegender.Content.ReadAsStringAsync();
+                    GenderData = JsonSerializer.Deserialize<List<AGenderDto>>(contentemployeegender, _options);
+                }
+            }));
 
-            var responsemaritalstatus = await Http.GetAsync($"Utilities/GetMaritalStatus");
-            var contentmaritalstatus = await responsemaritalstatus.Content.ReadAsStringAsync();
-            if (responsemaritalstatus.IsSuccessStatusCode)
+            t.Add(Task.Run(async () =>
             {
-                MaritalStatusData = await Http.GetFromJsonAsync<List<AMaritalStatusDto>>
-                ($"Utilities/GetMaritalStatus");
-            }
-
-            var responsecountry = await Http.GetAsync($"Utilities/GetCountry");
-            var contentcountry = await responsecountry.Content.ReadAsStringAsync();
-            if (responsecountry.IsSuccessStatusCode)
+                var responseemployeelevel = await Http.GetAsync($"Utilities/GetEmployeeLevel");
+                if (responseemployeelevel.IsSuccessStatusCode)
+                {
+                    var contentemployeelevel = await responseemployeelevel.Content.ReadAsStringAsync();
+                    EmployeeLevelData = JsonSerializer.Deserialize<List<AEmployeeLevelDto>>(contentemployeelevel, _options);
+                }
+            }));
+            
+            t.Add(Task.Run(async () =>
             {
-                CountryData = await Http.GetFromJsonAsync<List<ACountryDto>>
-                ($"Utilities/GetCountry");
-            }
-
-            var responseuserrole = await Http.GetAsync($"Utilities/GetUserRoleId");
-            var contentuserrole = await responseuserrole.Content.ReadAsStringAsync();            
-            if (responseuserrole.IsSuccessStatusCode)
+                var responsemaritalstatus = await Http.GetAsync($"Utilities/GetMaritalStatus");
+                if (responsemaritalstatus.IsSuccessStatusCode)
+                {
+                    var contentmaritalstatus = await responsemaritalstatus.Content.ReadAsStringAsync();
+                    MaritalStatusData = JsonSerializer.Deserialize<List<AMaritalStatusDto>>(contentmaritalstatus, _options);
+                }
+            }));
+            
+            t.Add(Task.Run(async () =>
             {
-                UserRole = contentuserrole;
-            }
+                var responsecountry = await Http.GetAsync($"Utilities/GetCountry");
+                if (responsecountry.IsSuccessStatusCode)
+                {
+                    var contentcountry = await responsecountry.Content.ReadAsStringAsync();
+                    CountryData = JsonSerializer.Deserialize<List<ACountryDto>>(contentcountry, _options);
+                }
+            }));
 
-            var responseuserjobtitleid = await Http.GetAsync($"Utilities/GetUserJobTitleId");
-            var contentuserjobtitleid = await responseuserjobtitleid.Content.ReadAsStringAsync();
-            if (responseuserjobtitleid.IsSuccessStatusCode)
+            t.Add(Task.Run(async () =>
             {
-                UserJobTitleId = Convert.ToInt32(contentuserjobtitleid);
-            }
+                var responseuserrole = await Http.GetAsync($"Utilities/GetUserRoleId");
+                if (responseuserrole.IsSuccessStatusCode)
+                {
+                    var contentuserrole = await responseuserrole.Content.ReadAsStringAsync();  
+                    UserRole = contentuserrole;
+                }
+            }));
 
-            var responsedistrict = await Http.GetAsync($"Utilities/GetDistrict");
-            var contentdistrict = await responsedistrict.Content.ReadAsStringAsync();
-            if (responsedistrict.IsSuccessStatusCode)
+            t.Add(Task.Run(async () =>
             {
-                DistrictData = await Http.GetFromJsonAsync<List<ADistrict>>
-                ($"Utilities/GetDistrict");
-            }
+                var responseuserjobtitleid = await Http.GetAsync($"Utilities/GetUserJobTitleId");
+                if (responseuserjobtitleid.IsSuccessStatusCode)
+                {
+                    var contentuserjobtitleid = await responseuserjobtitleid.Content.ReadAsStringAsync(); 
+                    UserJobTitleId = Convert.ToInt32(contentuserjobtitleid);
+                }
+            }));
 
-            var responsesubcounty = await Http.GetAsync($"Utilities/GetSubcounty");
-            var contentsubcounty = await responsesubcounty.Content.ReadAsStringAsync();
-            if (responsesubcounty.IsSuccessStatusCode)
+            t.Add(Task.Run(async () =>
             {
-                SubCountyData = await Http.GetFromJsonAsync<List<ASubCounty>>
-                ($"Utilities/GetSubcounty");
-            }
+                var responseseparationreason = await Http.GetAsync($"Utilities/GetSeparationReason");
+                if (responseseparationreason.IsSuccessStatusCode)
+                {
+                    var contentseparationreason = await responseseparationreason.Content.ReadAsStringAsync();
+                    DutyReasonData = JsonSerializer.Deserialize<List<ASeparationofDutyDto>>(contentseparationreason, _options);
+                }
+            }));
 
-            var responseparish = await Http.GetAsync($"Utilities/GetParishDropDown");
-            var contentparish = await responseparish.Content.ReadAsStringAsync();
-            if (responseparish.IsSuccessStatusCode)
+            t.Add(Task.Run(async () =>
             {
-                ParishData = await Http.GetFromJsonAsync<List<ViewAparish>>
-                ($"Utilities/GetParishDropDown");
-            }
+                var responserelationship = await Http.GetAsync($"Utilities/GetRelationship");
+                if (responserelationship.IsSuccessStatusCode)
+                {
+                    var contentrelationship = await responserelationship.Content.ReadAsStringAsync();
+                    ARelationshipData = JsonSerializer.Deserialize<List<ARelationshipDto>>(contentrelationship, _options);
+                }
+            }));
 
-            var responseseparationreason = await Http.GetAsync($"Utilities/GetSeparationReason");
-            var contentseparationreason = await responseseparationreason.Content.ReadAsStringAsync();
-            if (responseseparationreason.IsSuccessStatusCode)
+            t.Add(Task.Run(async () =>
             {
-                DutyReasonData = await Http.GetFromJsonAsync<List<ASeparationofDutyDto>>
-                ($"Utilities/GetSeparationReason");
-            }
+                var responseEducationLevel = await Http.GetAsync($"Utilities/GetLevelofEducation");
+                if (responseEducationLevel.IsSuccessStatusCode)
+                {
+                    var contentEducationLevel = await responseEducationLevel.Content.ReadAsStringAsync();
+                    LevelofEducationData = JsonSerializer.Deserialize<List<ALevelofEducationDto>>(contentEducationLevel, _options);
+                }
+            }));
 
-            //var responsevillage = await Http.GetAsync($"Utilities/GetVillageDropDown");
-            //var contentvillage = await responsevillage.Content.ReadAsStringAsync();
-            //if (responsevillage.IsSuccessStatusCode)
-            //{
-            //    VillageData = await Http.GetFromJsonAsync<List<ViewAvillage>>
-            //    ($"Utilities/GetVillageDropDown");
-            //} 
-
-            var responserelationship = await Http.GetAsync($"Utilities/GetRelationship");
-            var contentrelationship = await responserelationship.Content.ReadAsStringAsync();
-            if (responserelationship.IsSuccessStatusCode)
+            t.Add(Task.Run(async () =>
             {
-                ARelationshipData = await Http.GetFromJsonAsync<List<ARelationshipDto>>
-                ($"Utilities/GetRelationship");
-            }
+                var responseDegreeClass = await Http.GetAsync($"Utilities/GetDegreeClass");
+                if (responseDegreeClass.IsSuccessStatusCode)
+                {
+                    var contentDegreeClass = await responseDegreeClass.Content.ReadAsStringAsync();
+                    DegreeClassData = JsonSerializer.Deserialize<List<ADegreeClassDto>>(contentDegreeClass, _options);
+                }
+            }));
 
-            var responseEducationLevel = await Http.GetAsync($"Utilities/GetLevelofEducation");
-            var contentEducationLevel = await responseEducationLevel.Content.ReadAsStringAsync();
-            if (responseEducationLevel.IsSuccessStatusCode)
+            t.Add(Task.Run(async () =>
             {
-                LevelofEducationData = await Http.GetFromJsonAsync<List<ALevelofEducationDto>>
-                ($"Utilities/GetLevelofEducation");
-            }
-
-            var responseDegreeClass = await Http.GetAsync($"Utilities/GetDegreeClass");
-            var contentDegreeClass = await responseDegreeClass.Content.ReadAsStringAsync();
-            if (responseDegreeClass.IsSuccessStatusCode)
+                var responseIdentificationType = await Http.GetAsync($"Utilities/GetIdentificationType");
+                if (responseIdentificationType.IsSuccessStatusCode)
+                {
+                    var contentIdentificationType = await responseIdentificationType.Content.ReadAsStringAsync();
+                    IdentificationTypeData = JsonSerializer.Deserialize<List<AIdentificationTypeDto>>(contentIdentificationType, _options);
+                }
+            }));
+            
+            t.Add(Task.Run(async () =>
             {
-                DegreeClassData = await Http.GetFromJsonAsync<List<ADegreeClassDto>>
-                ($"Utilities/GetDegreeClass");
-            }
+                var responseBank = await Http.GetAsync($"Utilities/GetBank");
+                if (responseBank.IsSuccessStatusCode)
+                {
+                    var contentBank = await responseBank.Content.ReadAsStringAsync();
+                    BankData = JsonSerializer.Deserialize<List<ABankDto>>(contentBank, _options);
+                }
+            }));
 
-            var responseIdentificationType = await Http.GetAsync($"Utilities/GetIdentificationType");
-            var contentIdentificationType = await responseIdentificationType.Content.ReadAsStringAsync();
-            if (responseIdentificationType.IsSuccessStatusCode)
+            t.Add(Task.Run(async () =>
             {
-                IdentificationTypeData = await Http.GetFromJsonAsync<List<AIdentificationTypeDto>>
-                ($"Utilities/GetIdentificationType");
-            }
-
-            var responseBank = await Http.GetAsync($"Utilities/GetBank");
-            var contentBank = await responseBank.Content.ReadAsStringAsync();
-            if (responseBank.IsSuccessStatusCode)
-            {
-                BankData = await Http.GetFromJsonAsync<List<ABankDto>>
-                ($"Utilities/GetBank");
-            }
-
-            var responseJobDescription = await Http.GetAsync($"Utilities/GetJobDescription");
-            var contentJobDescription = await responseJobDescription.Content.ReadAsStringAsync();
-            if (responseJobDescription.IsSuccessStatusCode)
-            {
-                JobDescriptionData = await Http.GetFromJsonAsync<List<JobDescriptionDto>>
-                ($"Utilities/GetJobDescription");
-            }
-
-
-            //if ((!string.IsNullOrEmpty(_SystemSettings.UserRole) != null &&
-            //(_SystemSettings.UserRole.Contains("Administrator"))) 
-            //|| (UserJobTitleId == 44))
-            //{
-            //        hide = true;
-            //        ToolbarMenu = new List<object>()
-            //        {
-            //            new ItemModel() { Text = "Add Employee", PrefixIcon = "e-add", Id = "GridMain_add"},
-            //            new ItemModel(){ Text = "Edit Employee", PrefixIcon= "e-edit", Id="GridMain_edit"},
-            //            //new ItemModel(){ Text = "Delete Employee", PrefixIcon= "e-delete", Id="Grid_delete"},
-            //            new ItemModel(){ Text = "Update Employee", PrefixIcon= "e-update", Id="GridMain_update"},
-            //            new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="GridMain_cancel"}
-            //        };
-            //}
-            //else
-            //{
-            //        hide = false;
-            //        ToolbarMenu = new List<object>()
-            //        {
-            //            //new ItemModel() { Text = "Add Employee", PrefixIcon = "e-add", Id = "GridMain_add"},
-            //            new ItemModel(){ Text = "Edit Employee", PrefixIcon= "e-edit", Id="GridMain_edit"},
-            //            //new ItemModel(){ Text = "Delete Employee", PrefixIcon= "e-delete", Id="Grid_delete"},
-            //            new ItemModel(){ Text = "Update Employee", PrefixIcon= "e-update", Id="GridMain_update"},
-            //            new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="GridMain_cancel"}
-            //        };
-            //}
+                var responseJobDescription = await Http.GetAsync($"Utilities/GetJobDescription");
+                if (responseJobDescription.IsSuccessStatusCode)
+                {
+                    var contentJobDescription = await responseJobDescription.Content.ReadAsStringAsync();
+                    JobDescriptionData = JsonSerializer.Deserialize<List<JobDescriptionDto>>(contentJobDescription, _options);
+                }
+            }));
         }
         catch (Exception ex)
         {
@@ -1797,11 +1786,11 @@
                     else
                     {
                         var countdata = EmployeeData?
-                        .FirstOrDefault(o => o.FirstName.Trim().ToLower()
+                        .FirstOrDefault(o => o.FirstName?.Trim().ToLower()
                         == args.Data.FirstName.Trim().ToLower()
-                        && o.LastName.Trim().ToLower()
+                        && o.LastName?.Trim().ToLower()
                         == args.Data.LastName.Trim().ToLower()
-                        && o.EmailAddress.Trim().ToLower()
+                        && o.EmailAddress?.Trim().ToLower()
                         == args.Data.EmailAddress.Trim().ToLower()
                         );
 
@@ -2204,14 +2193,14 @@
         if (args.ItemData != null)
         {
             isVillageEnabled= true;
-            var responsevillage = await Http.GetAsync($"Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
-            var contentvillage = await responsevillage.Content.ReadAsStringAsync();
-            if (responsevillage.IsSuccessStatusCode)
-            {
-                VillageData = await Http.GetFromJsonAsync<List<ViewAvillage>>
-                ($"Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
-            } 
-            ParishChange = new Query().Where(new WhereFilter() { Field = "ParishId", Operator = "equal", value = args.ItemData.ParishId, IgnoreCase = false, IgnoreAccent = false });
+            //var responsevillage = await Http.GetAsync($"Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
+            //var contentvillage = await responsevillage.Content.ReadAsStringAsync();
+            //if (responsevillage.IsSuccessStatusCode)
+            //{
+            //    VillageData = await Http.GetFromJsonAsync<List<ViewAvillage>>
+            //    ($"Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
+            //} 
+            //ParishChange = new Query().Where(new WhereFilter() { Field = "ParishId", Operator = "equal", value = args.ItemData.ParishId, IgnoreCase = false, IgnoreAccent = false });
         }
     }
 
@@ -2234,14 +2223,14 @@
         if (args.ItemData != null)
         {
             isVillageREnabled= true;
-            var responsevillage = await Http.GetAsync($"Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
-            var contentvillage = await responsevillage.Content.ReadAsStringAsync();
-            if (responsevillage.IsSuccessStatusCode)
-            {
-                VillageData = await Http.GetFromJsonAsync<List<ViewAvillage>>
-                ($"Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
-            } 
-            ParishRChange = new Query().Where(new WhereFilter() { Field = "ParishId", Operator = "equal", value = args.ItemData.ParishId, IgnoreCase = false, IgnoreAccent = false });
+            //var responsevillage = await Http.GetAsync($"Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
+            //var contentvillage = await responsevillage.Content.ReadAsStringAsync();
+            //if (responsevillage.IsSuccessStatusCode)
+            //{
+            //    VillageData = await Http.GetFromJsonAsync<List<ViewAvillage>>
+            //    ($"Utilities/GetVillageSearch?ParishId={args.ItemData.ParishId}");
+            //} 
+            //ParishRChange = new Query().Where(new WhereFilter() { Field = "ParishId", Operator = "equal", value = args.ItemData.ParishId, IgnoreCase = false, IgnoreAccent = false });
         }
     }
 

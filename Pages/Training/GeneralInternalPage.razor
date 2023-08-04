@@ -164,7 +164,7 @@
                                         <GridColumn Field=@nameof(ViewGeneralInternalBudgetDto.GeneralInternalId) HeaderText="GeneralInternalId" Visible="false" Width="150"></GridColumn>
                                         <GridForeignColumn Field="@nameof(ViewGeneralInternalBudgetDto.FinancialYear)"
                                                        Visible="true"
-                                                       HeaderText="Budget"
+                                                       HeaderText="Financial Year"
                                                        Width="100"
                                                        ForeignKeyField="@nameof(AFinancialYear.Id)"
                                                        ForeignKeyValue="@nameof(AFinancialYear.FinancialYear)"
@@ -347,47 +347,59 @@
         }
 
         Credentials = await AuthService.GetUserCredentials();
+        JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        List<Task> t = new List<Task>();
 
-        var responsemethod = await Http.GetAsync($"Utilities/GetTrainingMethod");
-        var contentmethod = await responsemethod.Content.ReadAsStringAsync();
-        if (responsemethod.IsSuccessStatusCode)
+        t.Add(Task.Run(async () =>
         {
-            TrainingMethodData = await Http.GetFromJsonAsync<List<TrainingAMethodDto>>
-            ($"Utilities/GetTrainingMethod");
-        }
+            var responsemethod = await Http.GetAsync($"Utilities/GetTrainingMethod");
+            if (responsemethod.IsSuccessStatusCode)
+            {
+                var contentmethod = await responsemethod.Content.ReadAsStringAsync();
+                TrainingMethodData = JsonSerializer.Deserialize<List<TrainingAMethodDto>>(contentmethod, _options);
+            }
+        }));
 
-        var responsetarget = await Http.GetAsync($"Utilities/GetTargetTeam");
-        var contenttarget = await responsetarget.Content.ReadAsStringAsync();
-        if (responsetarget.IsSuccessStatusCode)
+        t.Add(Task.Run(async () =>
         {
-            TrainingTargetData = await Http.GetFromJsonAsync<List<TrainingATargetTeamDto>>
-            ($"Utilities/GetTargetTeam");
-        }
+            var responsetarget = await Http.GetAsync($"Utilities/GetTargetTeam");
+            if (responsetarget.IsSuccessStatusCode)
+            {
+                var contenttarget = await responsetarget.Content.ReadAsStringAsync();
+                TrainingTargetData = JsonSerializer.Deserialize<List<TrainingATargetTeamDto>>(contenttarget, _options);
+            }
+        }));
 
-        var responsefinancialyear = await Http.GetAsync($"FinancialYear/list");
-        var contentfinancialyear = await responsefinancialyear.Content.ReadAsStringAsync();
-        if (responsefinancialyear.IsSuccessStatusCode)
+        t.Add(Task.Run(async () =>
         {
-            FinancialYearData = await Http.GetFromJsonAsync<List<AFinancialYear>>
-            ($"FinancialYear/list");
-        }
+            var responsefinancialyear = await Http.GetAsync($"FinancialYear/list");
+            if (responsefinancialyear.IsSuccessStatusCode)
+            {
+                var contentfinancialyear = await responsefinancialyear.Content.ReadAsStringAsync();
+                FinancialYearData = JsonSerializer.Deserialize<List<AFinancialYear>>(contentfinancialyear, _options);
+            }
+        }));
 
-
-        var responseuserrole = await Http.GetAsync($"Utilities/GetUserRole");     
-        var contentuserrole = await responseuserrole.Content.ReadAsStringAsync();
-        if (responseuserrole.IsSuccessStatusCode)
+        t.Add(Task.Run(async () =>
         {
-            UserRole = contentuserrole;
-        }
+            var responseuserrole = await Http.GetAsync($"Utilities/GetUserRole"); 
+            if (responseuserrole.IsSuccessStatusCode)
+            {
+                var contentuserrole = await responseuserrole.Content.ReadAsStringAsync();
+                UserRole = contentuserrole;
+            }
+        }));
 
-        var responselocality = await Http.GetAsync($"Utilities/GetLocality");
-        var contentlocality = await responselocality.Content.ReadAsStringAsync();
-        if (responselocality.IsSuccessStatusCode)
+           
+        t.Add(Task.Run(async () =>
         {
-            LocalityData = await Http.GetFromJsonAsync<List<ATrainingLocalityDto>>
-            ($"Utilities/GetLocality");
-        }
-
+            var responselocality = await Http.GetAsync($"Utilities/GetLocality");
+            if (responselocality.IsSuccessStatusCode)
+            {
+                var contentlocality = await responselocality.Content.ReadAsStringAsync();
+                LocalityData = JsonSerializer.Deserialize<List<ATrainingLocalityDto>>(contentlocality, _options);
+            }
+        }));
     }
 
     public async Task onSubmitForm()

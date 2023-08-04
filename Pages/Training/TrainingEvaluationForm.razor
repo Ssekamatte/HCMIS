@@ -1,5 +1,6 @@
 ﻿@page "/TrainingEvaluationFormPage"
 @using HCMIS.Model
+@using HCMIS.SHARED.DTOs.Utilities;
 @using HCMIS.ViewModel
 @using System.Text.Json
 @using System.Text.RegularExpressions
@@ -192,7 +193,7 @@
                             </AccordionItem>
 
                             <AccordionItem Expanded="false">
-                                <HeaderTemplate>Instructions: Please tick your level of agreement with the statements</HeaderTemplate>
+                                <HeaderTemplate>Instructions: Please choose your level of agreement with the statements from the dropdown</HeaderTemplate>
                                 <ContentTemplate>
                                     <div>
                                         <div class="row">
@@ -244,7 +245,17 @@
                                                             CustomAttributes="@(new Dictionary<string,
                                                             object>(){ { "class", "e-attr1" }})">
                                                         </GridForeignColumn>
-
+                                                        <GridForeignColumn Field="@nameof(TrainingEvaluationInstructionsDto.AgreementLevelId)"
+                                                                           Visible="true"
+                                                                           HeaderText="Agreement Level"
+                                                                           Width="100"
+                                                                           ForeignKeyField="@nameof(AAgreementLevelDto.AgreementLevelId)"
+                                                                           ForeignKeyValue="@nameof(AAgreementLevelDto.AgreementLevelDesc)"
+                                                                           ForeignDataSource="@AgreementLevelData"
+                                                                           AllowEditing="true"
+                                                                           CustomAttributes="@(new Dictionary<string,
+                                                            object>(){ { "class", "e-attr1" }})">
+                                                        </GridForeignColumn>
                                                             @*<GridColumn Field=@nameof(TrainingEvaluationInstructionsDto.StronglyAgree) HeaderText="StronglyAgree" DisplayAsCheckBox="true" Width="150">
                                                                         <EditTemplate Context = "templatecontext">
                                                                         @{
@@ -269,7 +280,7 @@
                                                                         </EditTemplate>
                                                         </GridColumn>*@
 
-                                                        <GridColumn Field=@nameof(TrainingEvaluationInstructionsDto.StronglyAgree) HeaderText="Strongly Agree" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="80"
+                                                        @*<GridColumn Field=@nameof(TrainingEvaluationInstructionsDto.StronglyAgree) HeaderText="Strongly Agree" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="80"
                                                         CustomAttributes="@(new Dictionary<string,
                                                         object>(){ { "class", "e-attr1" }})"></GridColumn>
                                                         <GridColumn Field=@nameof(TrainingEvaluationInstructionsDto.Agree) HeaderText="Agree" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="80"
@@ -279,7 +290,7 @@
                                                         <GridColumn Field=@nameof(TrainingEvaluationInstructionsDto.Disagree) HeaderText="Disagree" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="80"
                                                         CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"></GridColumn>
                                                         <GridColumn Field=@nameof(TrainingEvaluationInstructionsDto.StronglyDisagree) HeaderText="Strongly Disagree" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="80"
-                                                        CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"></GridColumn>
+                                                        CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"></GridColumn>*@
                                                     </GridColumns>
                                                 </SfGrid>
                                                 </div>
@@ -428,6 +439,7 @@
     List<TrainingTopicDTO>? TopicData { get; set; }
     List<TrainingEvaluationInstructionsDto>? InstructionsData { get; set; }
     List<AGender>? GenderData { get; set; }
+    List<AAgreementLevelDto>? AgreementLevelData { get; set; }
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
     public bool? radiovalue;
@@ -536,39 +548,63 @@
 
     protected override async Task OnInitializedAsync()
     {
-        
-
         if(TrainingStatementsList!=null)
         {
             TrainingStatementsList.Clear();
         }     
 
-        
-        var responsetopic = await Http.GetAsync($"TrainingTopic/GetTrainingTopic");
-        var responsestatement = await Http.GetAsync($"TrainingStatements/GetTrainingStatements");
-        var responseInstruction = await Http.GetAsync($"TrainingEvaluationInstructions/GetTrainingEvaluationInstructions");
-        var responseGender = await Http.GetAsync($"Utilities/GetGender");
+        JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        List<Task> t = new List<Task>();
 
-        var contenttopic = await responsetopic.Content.ReadAsStringAsync();
-        var contentstatement = await responsestatement.Content.ReadAsStringAsync();
-        var contentinstruction = await responseInstruction.Content.ReadAsStringAsync();
-        var contentGender = await responseGender.Content.ReadAsStringAsync();
-
-        if (responsetopic.IsSuccessStatusCode && responsestatement.IsSuccessStatusCode 
-            && responseInstruction.IsSuccessStatusCode && responseGender.IsSuccessStatusCode)
+        t.Add(Task.Run(async () =>
         {
-            TopicData = await Http.GetFromJsonAsync<List<TrainingTopicDTO>>
-            ($"TrainingTopic/GetTrainingTopic");
+            var responseagreementlevel = await Http.GetAsync($"Utilities/GetAgreementLevel");
+            if (responseagreementlevel.IsSuccessStatusCode)
+            {
+                var contentagreementlevel = await responseagreementlevel.Content.ReadAsStringAsync();
+                AgreementLevelData = JsonSerializer.Deserialize<List<AAgreementLevelDto>>(contentagreementlevel, _options);
+            }
+        }));
 
-            StatementsData = await Http.GetFromJsonAsync<List<ATrainingStatementsDto>>
-            ($"TrainingStatements/GetTrainingStatements");
+        t.Add(Task.Run(async () =>
+        {
+            var responsetopic = await Http.GetAsync($"TrainingTopic/GetTrainingTopic");
+            if (responsetopic.IsSuccessStatusCode)
+            {
+                var contenttopic = await responsetopic.Content.ReadAsStringAsync();
+                TopicData = JsonSerializer.Deserialize<List<TrainingTopicDTO>>(contenttopic, _options);
+            }
+        }));
+        
+        t.Add(Task.Run(async () =>
+        {
+            var responsestatement = await Http.GetAsync($"TrainingStatements/GetTrainingStatements");
+            if (responsestatement.IsSuccessStatusCode)
+            {
+                var contentstatement = await responsestatement.Content.ReadAsStringAsync();
+                StatementsData = JsonSerializer.Deserialize<List<ATrainingStatementsDto>>(contentstatement, _options);
+            }
+        }));
+        
+        t.Add(Task.Run(async () =>
+        {
+            var responseInstruction = await Http.GetAsync($"TrainingEvaluationInstructions/GetTrainingEvaluationInstructions");
+            if (responseInstruction.IsSuccessStatusCode)
+            {
+                var contentinstruction = await responseInstruction.Content.ReadAsStringAsync();
+                InstructionsData = JsonSerializer.Deserialize<List<TrainingEvaluationInstructionsDto>>(contentinstruction, _options);
+            }
+        }));
 
-            InstructionsData = await Http.GetFromJsonAsync<List<TrainingEvaluationInstructionsDto>>
-            ($"TrainingEvaluationInstructions/GetTrainingEvaluationInstructions");
-
-            GenderData = await Http.GetFromJsonAsync<List<AGender>>
-            ($"Utilities/GetGender");
-        }
+        t.Add(Task.Run(async () =>
+        {
+            var responseGender = await Http.GetAsync($"Utilities/GetGender");
+            if (responseGender.IsSuccessStatusCode)
+            {
+                var contentGender = await responseGender.Content.ReadAsStringAsync();
+                GenderData = JsonSerializer.Deserialize<List<AGender>>(contentGender, _options);
+            }
+        }));
 
         ToolbarMenu = new List<object>(){
         new ItemModel() { Text = "Capture Evaluation", PrefixIcon = "e-add", Id = "Grid_add" },//Here Grid is SfGrid ID

@@ -1,5 +1,9 @@
 ﻿@using HCMIS.Interface;
-@inject IAuthenticationService IAuthService;
+@using HCMIS.SHARED.DTOs.Utilities;
+@using System.Text.Json;
+@inject IAuthenticationService AuthService;
+@inject HttpClient Http;
+@*@inject IAuthenticationService AccountService;*@
 
 <MudDrawer @bind-Open="@SideBarOpen" Elevation="1" ClipMode="DrawerClipMode.Never" Style="margin-top:2px;">
     <MudDrawerHeader>
@@ -12,9 +16,14 @@
     </MudDrawerHeader>
     <MudNavMenu>
         <MudNavLink Href="/DashboardPage" Match="NavLinkMatch.All" Icon="fa fa-tachometer">DASHBOARD</MudNavLink>
-        @if (user != null)
+        @if (Credentials != null)
         {
-            if (user.UserRole.Contains("SUPER ADMINISTRATOR", StringComparison.CurrentCultureIgnoreCase))
+            if (SystemUsersData != null)
+            {
+                //Show for only Head of Departments
+                var hoddetail = SystemUsersData.FirstOrDefault(o => o.HoDemployeeId == Credentials.StaffId);
+
+            if (Credentials.UserRole.Contains("SUPER ADMINISTRATOR", StringComparison.CurrentCultureIgnoreCase))
             {
                 <MudNavGroup Title="HR" Icon="fa fa-users" Expanded="false">
                     <MudNavLink Href="/EmployeeRegistrationNewPage" Icon="fa fa-indent">EMPLOYEE REGISTRATION</MudNavLink>
@@ -29,7 +38,8 @@
                     <MudNavLink Href="/FinalApplicationAssessmentPage" Icon="fa fa-list-alt">FINAL REVIEW</MudNavLink>
                 </MudNavGroup>
                 <MudNavGroup Title="EMPLOYEE" Icon="fa fa-user" Expanded="false">
-                    <MudNavGroup Title="PERFORMANCE APPRAISAL" Icon="fa fa-weibo" Expanded="false">
+                    <MudNavGroup Title="PERFORMANCE APPRAISAL" Icon="fa fa-weibo" Expanded="false">                        
+                        <MudNavLink Href="/BscPerspectivesPage" Icon="fa fa-free-code-camp">SET PERSPECTIVE TOTAL WEIGHT</MudNavLink>
                         <MudNavLink Href="/BSCKeyPerformanceIndicatorsPage" Icon="fa fa-bullseye">SET TARGETS</MudNavLink>
                         <MudNavLink Href="/AppraisalFormPage" Icon="fa fa-street-view">APPRAISAL</MudNavLink>
                     </MudNavGroup>
@@ -70,7 +80,7 @@
                 </MudNavGroup>
             }
 
-            else if (user.UserRole.Contains("ADMINISTRATOR", StringComparison.CurrentCultureIgnoreCase))
+            else if (Credentials.UserRole.Contains("ADMINISTRATOR", StringComparison.CurrentCultureIgnoreCase))
             {
                 <MudNavGroup Title="HR" Icon="fa fa-users" Expanded="false">
                     <MudNavLink Href="/EmployeeExitsPage" Icon="fa fa-times-circle">SEPARATION OF SERVICE</MudNavLink>
@@ -85,6 +95,11 @@
                 </MudNavGroup>
                 <MudNavGroup Title="EMPLOYEE" Icon="fa fa-user" Expanded="false">
                     <MudNavGroup Title="PERFORMANCE APPRAISAL" Icon="fa fa-weibo" Expanded="false">
+                        @if(hoddetail != null)
+                        {
+                            <MudNavLink Href="/BscPerspectivesPage" Icon="fa fa-free-code-camp">SET PERSPECTIVE TOTAL WEIGHT</MudNavLink>
+                        }
+                        
                         <MudNavLink Href="/BSCKeyPerformanceIndicatorsPage" Icon="fa fa-bullseye">SET TARGETS</MudNavLink>
                         <MudNavLink Href="/AppraisalFormPage" Icon="fa fa-street-view">APPRAISAL</MudNavLink>
                     </MudNavGroup>
@@ -118,10 +133,49 @@
                 </MudNavGroup>
             }
 
-            else if (user.UserRole.Contains("OFFICER", StringComparison.CurrentCultureIgnoreCase))
+            else if (Credentials.UserRole.Contains("EDITOR", StringComparison.CurrentCultureIgnoreCase))
+            {
+                <MudNavGroup Title="EMPLOYEE" Icon="fa fa-user" Expanded="false">
+                    <MudNavLink Href="/EmployeeRegistrationNewPage" Icon="fa fa-indent">EMPLOYEE REGISTRATION</MudNavLink>
+                    <MudNavGroup Title="PERFORMANCE APPRAISAL" Icon="fa fa-weibo" Expanded="false">
+                        @if(hoddetail != null)
+                        {
+                            <MudNavLink Href="/BscPerspectivesPage" Icon="fa fa-free-code-camp">SET PERSPECTIVE TOTAL WEIGHT</MudNavLink>
+                        }
+                        <MudNavLink Href="/BSCKeyPerformanceIndicatorsPage" Icon="fa fa-bullseye">SET TARGETS</MudNavLink>
+                        <MudNavLink Href="/AppraisalFormPage" Icon="fa fa-street-view">APPRAISAL</MudNavLink>
+                    </MudNavGroup>
+                    <MudNavGroup Title="EMPLOYEE LEAVE" Icon="fa fa-university" Expanded="false">
+                        <MudNavLink Href="/AnnualLeavePlanPage" Icon="fa fa-calendar">ANNUAL LEAVE ROASTER</MudNavLink>
+                        <MudNavLink Href="/EmployeeLeaveRequestPage" Icon="fa fa-pencil-square-o">LEAVE REQUEST</MudNavLink>
+                    </MudNavGroup>
+                    <MudNavGroup Title="LEARNING AND DEVELOPMENT" Icon="fa fa-exchange" Expanded="false">
+                        <MudNavLink Href="/AssessmentSurveyPage" Icon="fa fa-assistive-listening-systems">ASSESSMENT SURVEY</MudNavLink>
+                        <MudNavGroup Title="CPD" Icon="fa fa-eercast" Expanded="false">
+                            <MudNavLink Href="/CPDPage" Icon="fa fa-snowflake-">CPD</MudNavLink>
+                            <MudNavLink Href="/CPDSummaryPage" Icon="fa fa-bandcamp">CPD SUMMARY</MudNavLink>
+                        </MudNavGroup>
+                        <MudNavLink Href="/GeneralInternalPage" Icon="fa fa-certificate">TRAINING PLAN</MudNavLink>
+                        <MudNavLink Href="/SubscriptionPage" Icon="fa fa-bolt">SUBSCRIPTION</MudNavLink>
+                        <MudNavLink Href="/TrainingEvaluationFormPage" Icon="fa fa-bomb">TRAINING EVALUATION</MudNavLink>
+                    </MudNavGroup>
+                </MudNavGroup>
+
+                <MudNavGroup Title="REPORTS" Icon="fa fa-file-excel-o" Expanded="false">
+                    <MudNavLink Href="/AppraisalReport" Icon="fa fa-file-excel-o">APPRAISAL REPORT</MudNavLink>
+                    <MudNavLink Href="/LeaveRequestReportPage" Icon="fa fa-file-excel-o">LEAVE REQUEST REPORT</MudNavLink>
+                </MudNavGroup>
+                
+            }
+
+            else if (Credentials.UserRole.Contains("OFFICER", StringComparison.CurrentCultureIgnoreCase))
             {
                 <MudNavGroup Title="EMPLOYEE" Icon="fa fa-user" Expanded="false">
                     <MudNavGroup Title="PERFORMANCE APPRAISAL" Icon="fa fa-weibo" Expanded="false">
+                        @if(hoddetail != null)
+                        {
+                            <MudNavLink Href="/BscPerspectivesPage" Icon="fa fa-free-code-camp">SET PERSPECTIVE TOTAL WEIGHT</MudNavLink>
+                        }
                         <MudNavLink Href="/BSCKeyPerformanceIndicatorsPage" Icon="fa fa-bullseye">SET TARGETS</MudNavLink>
                         <MudNavLink Href="/AppraisalFormPage" Icon="fa fa-street-view">APPRAISAL</MudNavLink>
                     </MudNavGroup>
@@ -147,7 +201,7 @@
                 </MudNavGroup>
             }
 
-            else if (user.UserRole.Contains("NON-STAFF", StringComparison.CurrentCultureIgnoreCase))
+            else if (Credentials.UserRole.Contains("NON-STAFF", StringComparison.CurrentCultureIgnoreCase))
             {
                 <MudNavGroup Title="EMPLOYEE PROFILE" Icon="fa fa-user-md" Expanded="false">
                     <MudNavGroup Title="PROFILE" Icon="fa fa-user" Expanded="false">
@@ -156,8 +210,8 @@
                     </MudNavGroup>
                 </MudNavGroup>
             }
-        
-            <MudNavGroup Title="@user.AccountHolderName.ToUpper()" Icon="fa fa-user" Expanded="false">
+            }
+            <MudNavGroup Title="@Credentials.AccountHolderName.ToUpper()" Icon="fa fa-user" Expanded="false">
                 <MudNavLink Href="/ChangePasswordPage" Icon="fa fa-key">CHANGE PASSWORD</MudNavLink>
                 @*<MudNavLink Href="/" Icon="fa fa-sign-out">LOG OUT</MudNavLink>*@
             </MudNavGroup>
@@ -167,13 +221,29 @@
 
 @code {
     [Parameter]
-    public bool SideBarOpen { get; set; }      
-    LoginResultModel user { get; set; }
+    public bool SideBarOpen { get; set; } 
+    LoginResultModel? Credentials { get; set; }
 
+    List<ADepartmentDto>? DepartmentsData { get; set; }
+    List<ViewUserManagement>? SystemUsersData { get; set; }
 
     protected async override void OnInitialized()
     {
         await base.OnInitializedAsync();
-        user = await IAuthService.GetUserCredentials();
+        Credentials = await AuthService.GetUserCredentials();
+        JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+        List<Task> t = new List<Task>();
+        t.Add(Task.Run(async () =>
+        {
+            var responsedepartment = await Http.GetAsync($"Utilities/GetDepartment");
+            if (responsedepartment.IsSuccessStatusCode)
+            {
+                var contentdepartment = await responsedepartment.Content.ReadAsStringAsync();
+                DepartmentsData = JsonSerializer.Deserialize<List<ADepartmentDto>>(contentdepartment, _options);
+            }
+        }));
+
+        SystemUsersData = await AuthService.GetSystemUsers();
     }
 }

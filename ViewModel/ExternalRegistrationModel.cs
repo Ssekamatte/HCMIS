@@ -30,9 +30,9 @@ namespace HCMIS.ViewModel
         public List<AGender>? Gender { get; set; }
         public List<AIdentificationType>? IdentificationType { get; set; }
         public List<ADistrict>? District { get; set; }
-        public List<AParish>? Parish { get; set; }
+        public List<ViewAparish>? Parish { get; set; }
         public List<ASubCounty>? SubCounty { get; set; }
-        public List<AVillage>? Village { get; set; }
+        public List<ViewAvillage>? Village { get; set; }
         public List<AMaritalStatus>? MaritalStatus { get; set; }
         public List<ABank>? Bank { get; set; }
         public List<AFieldOfStudy>? FieldOfStudy { get; set; }
