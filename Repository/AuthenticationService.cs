@@ -390,7 +390,7 @@ namespace HCMIS.Repository
 
                 if (!authResult.IsSuccessStatusCode)
                 {
-                    toastService.ShowError(authResult.ReasonPhrase);
+                    toastService.ShowWarning(authResult.ReasonPhrase);
                 }
                 else
                 {
@@ -403,7 +403,7 @@ namespace HCMIS.Repository
                         }
                         else
                         {
-                            toastService.ShowError(m.Message);
+                            toastService.ShowWarning(m.Message);
                         }
                     }
 

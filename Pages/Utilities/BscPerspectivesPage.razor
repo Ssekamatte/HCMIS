@@ -554,7 +554,8 @@
         {
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
             {
-
+                BasicUnitDD = true;
+                WeightTextBox = true;
             }
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
             {
@@ -611,7 +612,7 @@
                     var countdata = BscPerspectiveData?.FirstOrDefault(o => o.BscPerspectiveTypeId == args.Data.BscPerspectiveTypeId && o.FinancialYearId == args.Data.FinancialYearId && o.DepartmentId == args.Data.DepartmentId);
                     var sumdata = BscPerspectiveSumData?.FirstOrDefault(o =>o.FinancialYearId == args.Data.FinancialYearId && o.DepartmentId == args.Data.DepartmentId);
 
-                    if (countdata != null && args.Data.BscPerspectiveId == 0)
+                    if (countdata != null && args.Action == "Add")
                     {
                         var findesc = FinancialYearData?.FirstOrDefault(o=>o.Id == countdata.FinancialYearId);
                         var perdesc = BscPerspectiveTypeData?.FirstOrDefault(o => o.BscPerspectiveTypeId == countdata.BscPerspectiveTypeId);
@@ -623,15 +624,34 @@
 
                     else if (sumdata != null)
                     {
-                        //To ensure that all the four perspectives do not exceed 70%
-                        double? setpercentage = 70;
-                        double? newtotal = sumdata.TotalWeight + args.Data.PerspectiveTotalWeight;
-                        if (newtotal > setpercentage || newtotal < setpercentage)
+                        if(args.Action == "Add")
                         {
-                            var basicunitdesc = MeasurementUnitData?.FirstOrDefault(o => o.MeasurementMetricId == args.Data.MeasurementMetricId);
-                            toastService.ShowWarning("Make sure all the four perspectives are not exceeding 70 and are not less than 70 " + basicunitdesc.MeasurementMetricDesc + ". Your acceptable percentage is ( " + (setpercentage - sumdata.TotalWeight) + "). Record Not Saved");
-                            args.Cancel = true;
-                        }      
+                            //To ensure that all the four perspectives do not exceed 70%
+                            double? setpercentage = 70;
+                            double? newtotal = sumdata.TotalWeight + args.Data.PerspectiveTotalWeight;
+                            if (newtotal > setpercentage)
+                            {
+                                var basicunitdesc = MeasurementUnitData?.FirstOrDefault(o => o.MeasurementMetricId == args.Data.MeasurementMetricId);
+                                toastService.ShowWarning("Make sure all the four perspectives are not exceeding 70 and are not less than 70 " + basicunitdesc.MeasurementMetricDesc + " Record Not Saved");
+                                //toastService.ShowWarning("Make sure all the four perspectives are not exceeding 70 and are not less than 70 " + basicunitdesc.MeasurementMetricDesc + ". Your acceptable percentage is ( " + (setpercentage - sumdata.TotalWeight) + "). Record Not Saved");
+                                args.Cancel = true;
+                            }
+                        }
+                        else if(args.Action == "Edit")
+                        {
+                            //To ensure that all the four perspectives do not exceed 70%
+                            double? balance = args.RowData.PerspectiveTotalWeight;
+                            double? newtotal = (sumdata.TotalWeight - args.RowData.PerspectiveTotalWeight) + args.Data.PerspectiveTotalWeight;
+
+                            double? setpercentage = 70;
+                            if (newtotal > setpercentage)
+                            {
+                                var basicunitdesc = MeasurementUnitData?.FirstOrDefault(o => o.MeasurementMetricId == args.Data.MeasurementMetricId);
+                                toastService.ShowWarning("Make sure all the four perspectives are not exceeding 70 and are not less than 70 " + basicunitdesc.MeasurementMetricDesc + " Record Not Saved");
+                                //toastService.ShowWarning("Make sure all the four perspectives are not exceeding 70 and are not less than 70 " + basicunitdesc.MeasurementMetricDesc + ". Your acceptable percentage is ( " + (setpercentage - sumdata.TotalWeight) + "). Record Not Saved");
+                                args.Cancel = true;
+                            }
+                        }
                     }
                 }
             }

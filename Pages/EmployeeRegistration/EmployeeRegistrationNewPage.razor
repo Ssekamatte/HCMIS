@@ -245,7 +245,7 @@
                              </div>
                          </div>
 
-                         <div class="col-md-4">
+                         <div class="col-md-4" hidden>
                              @if (!string.IsNullOrEmpty(EmployeeReviewData.FirstName) && !string.IsNullOrEmpty(EmployeeReviewData.LastName))
                              {
                                  if (!string.IsNullOrEmpty(ProfilePicString))
@@ -258,9 +258,10 @@
                                  }
                                  <div class="col-md-12">
                                  <p class="alert-primary" style="padding:10px;">Upload  png or Jpeg image</p>
-                                     <SfUploader AutoUpload="true" ShowFileList="false">
+                                     @*<SfUploader AutoUpload="true" ShowFileList="false">
                                         <UploaderEvents ValueChange="OnImageChange"></UploaderEvents>
-                                     </SfUploader>
+                                     </SfUploader>*@
+                                     <InputFile class="form-control" OnChange="@SingleUpload" />
                                      <SfSpinner @ref="@UploadImageSpinner" Visible="false" Label="Uploading Image Please Wait.."></SfSpinner>
                                  </div>
                              }
@@ -375,7 +376,8 @@
                                                 AllowPaging="true"
                                                 AllowFiltering="true"
                                                 GridLines="GridLine.Both"
-                                                AllowSelection="true">
+                                                AllowSelection="true"
+                                                Toolbar="@(new List<string>() {"Add", "Edit", "Delete", "Update"})">
                                             <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Both"
                                                                    Type="Syncfusion.Blazor.Grids.SelectionType.Single">
                                             </GridSelectionSettings>
@@ -451,7 +453,8 @@
                                                 AllowPaging="true"
                                                 AllowFiltering="true"
                                                 GridLines="GridLine.Both"
-                                                AllowSelection="true">
+                                                AllowSelection="true"
+                                                Toolbar="@(new List<string>() {"Add", "Edit", "Delete", "Update"})">
                                             <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Both"
                                                                    Type="Syncfusion.Blazor.Grids.SelectionType.Single">
                                             </GridSelectionSettings>
@@ -563,12 +566,13 @@
                                                 AllowPaging="true"
                                                 AllowFiltering="true"
                                                 GridLines="GridLine.Both"
-                                                AllowSelection="true">
+                                                AllowSelection="true"
+                                                Toolbar="@(new List<string>() {"Add", "Edit", "Delete", "Update"})">
                                             <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Both"
                                                                    Type="Syncfusion.Blazor.Grids.SelectionType.Single">
                                             </GridSelectionSettings>
                                             <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
-                                            <GridEditSettings AllowAdding="true" AllowDeleting="true" AllowEditing="true"
+                                            <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true"
                                                 ShowConfirmDialog="false" Mode="@EditMode.Batch"
                                                 NewRowPosition="NewRowPosition.Bottom">
                                             </GridEditSettings>
@@ -629,7 +633,8 @@
                                                <GridColumn Field=@nameof(EmployeeQualificationDto.IsCurrent)  
                                                    HeaderText="Current" 
                                                    DisplayAsCheckBox="true" 
-                                                   Width="150">
+                                                   Width="150"
+                                                   CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
                                                </GridColumn>
                                                <GridColumn Field=@nameof(EmployeeQualificationDto.EndDate) 
                                                         HeaderText="To" 
@@ -657,9 +662,9 @@
                         <div class="col-md-12">
                         <p class="alert alert-primary"><b>Administration Particulars</b></p>
                         </div>
-                        <div class="col-md-3" hidden>
+                        <div class="col-md-3">
                                 <p>Employee Number <span style="color:red;">*</span></p>
-                                <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.EmployeeNumber" CssClass="form-control" Enabled=false FloatLabelType="FloatLabelType.Never"></SfTextBox>                               
+                                <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.EmployeeNumber" CssClass="form-control" Enabled="@employeenumberenabled" FloatLabelType="FloatLabelType.Never"></SfTextBox>                               
                         </div>
                         <div class="col-md-3">
                                   <p>NSSF Number</p>
@@ -993,6 +998,8 @@
     SfMultiSelect<int[],EmployeeDto> EmployeeObj;
     bool SaveButtons { get; set; } = false;
     LoginResultModel? Credentials { get; set; }
+    long maxFileSize = 1024L * 1024L * 1024L * 2L;
+    bool employeenumberenabled { get; set; } = true;
 
     #endregion Declarations
 
@@ -1029,7 +1036,7 @@
                     ParishData = _EmployeeRegistrationModel.Parish;
                 }
             }
-            
+
             t.Add(Task.Run(async () =>
             {
                 var responseemployee = await Http.GetAsync($"Employeez/GetMasterList");
@@ -1042,7 +1049,7 @@
 
             t.Add(Task.Run(async () =>
             {
-                var responsegender = await Http.GetAsync($"Utilities/GetEmployeeLevel");
+                var responsegender = await Http.GetAsync($"Utilities/GetGender");
                 if (responsegender.IsSuccessStatusCode)
                 {
                     var contentemployeegender = await responsegender.Content.ReadAsStringAsync();
@@ -1059,7 +1066,7 @@
                     EmployeeLevelData = JsonSerializer.Deserialize<List<AEmployeeLevelDto>>(contentemployeelevel, _options);
                 }
             }));
-            
+
             t.Add(Task.Run(async () =>
             {
                 var responsemaritalstatus = await Http.GetAsync($"Utilities/GetMaritalStatus");
@@ -1069,7 +1076,7 @@
                     MaritalStatusData = JsonSerializer.Deserialize<List<AMaritalStatusDto>>(contentmaritalstatus, _options);
                 }
             }));
-            
+
             t.Add(Task.Run(async () =>
             {
                 var responsecountry = await Http.GetAsync($"Utilities/GetCountry");
@@ -1149,7 +1156,7 @@
                     IdentificationTypeData = JsonSerializer.Deserialize<List<AIdentificationTypeDto>>(contentIdentificationType, _options);
                 }
             }));
-            
+
             t.Add(Task.Run(async () =>
             {
                 var responseBank = await Http.GetAsync($"Utilities/GetBank");
@@ -1350,7 +1357,7 @@
             }
 
             await SavingDialog.ShowAsync();
-            
+
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(selectedemployee);
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -1638,6 +1645,15 @@
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
             {
                 SaveButtons = false;
+
+                employeenumberenabled = true;
+                isSubcountyEnabled = true;
+                isParishEnabled = true;
+                isVillageEnabled = true;
+                isSubcountyREnabled = true;
+                isParishREnabled = true;
+                isVillageREnabled = true;
+
                 if (args.RowData.AEmployeeChildren == null)
                 {
                     args.RowData.AEmployeeChildren = new List<AEmployeeChildrenDto>();
@@ -1655,6 +1671,7 @@
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
             {
                 SaveButtons = false;
+                employeenumberenabled = false;
                 args.RowData.AEmployeeChildren = new List<AEmployeeChildrenDto>();
                 args.RowData.EmployeeSpouse = new List<EmployeeSpouseDto>();
                 args.RowData.EmployeeQualification = new List<EmployeeQualificationDto>();
@@ -1764,14 +1781,14 @@
                         toastService.ShowWarning("Please provide the official email address.");
                         args.Cancel = true;
                     }
-                    
+
                     else if (!string.IsNullOrEmpty(args.Data.EmailAddress) && 
                     IsValid(args.Data.EmailAddress) == false)
                     {
                         toastService.ShowWarning("Please enter a valid email address.");
                         args.Cancel = true;
                     }
-                    
+
                     else if (args.Data.JobDescriptionId == null)
                     {
                         toastService.ShowWarning("Please select the designation.");
@@ -1804,7 +1821,7 @@
                             SaveButtons = true;
                             await LoadingDialogue.ShowAsync();
                         }
-                        
+
                     }
                 }
                 catch (Exception ex)
@@ -1824,7 +1841,7 @@
         }
         finally
         {
-            
+
         }
     }
 
@@ -1846,9 +1863,9 @@
                 EmployeeData = await Http.GetFromJsonAsync<List<EmployeeDto>>
                 ($"Employeez/GetMasterList");
             }
-         }
+        }
     }
-   
+
     //Enable cell edit on single click
     public async Task ChildrenCellSelectHandler(CellSelectEventArgs<AEmployeeChildrenDto> args)
     {
@@ -1929,7 +1946,90 @@
     }
     #endregion Employee
 
+    //Converting STream to Binary Array
+    //url: https://code-maze.com/create-byte-array-from-stream-in-csharp/#:~:text=Convert%20Stream%20to%20Byte%20Array%20With%20the%20StreamReader%20Class&text=Then%2C%20we%20call%20the%20ReadToEnd,return%20it%20to%20the%20caller.
+    public byte[] UseBinaryReader(Stream stream)
+    {
+        byte[] bytes;
+        using (var binaryReader = new BinaryReader(stream))
+        {
+            bytes = binaryReader.ReadBytes((int)stream.Length);
+        }
+        return bytes;
+    }
+
     #region image
+
+    private async Task SingleUpload(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            //MemoryStream ms = new MemoryStream();
+            //await e.File.OpenReadStream(maxFileSize).CopyToAsync(ms);
+            //var bytes = ms.ToArray
+
+            await UploadImageSpinner.ShowAsync();
+            MemoryStream ms = new MemoryStream();
+            await e.File.OpenReadStream(maxFileSize).CopyToAsync(ms);
+            
+
+            ms.Position = 0;
+
+                    if (e.File.ContentType.ToLower().Contains("png") || e.File.ContentType.ToLower().Contains("gif") || e.File.ContentType.ToLower().Contains("jpeg") || e.File.ContentType.ToLower().Contains("jpg"))
+                    {
+                        string fileName = "Profile_" + EmployeeReviewData.FirstName + "_" + EmployeeReviewData.LastName + "_" + EmployeeReviewData.Employeeid + "." + e.File.ContentType.Trim();
+                        byte[] bytes = ms.ToArray();
+                        //byte[] bytes = file.Stream.ToArray();
+                        string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                        ImageUpload m = new ImageUpload()
+                            {
+                                ImageName = fileName,
+                                ImageExt = e.File.ContentType.Trim(),
+                                Imagebyte = bytes,
+                                Rootfolder = "ProfilePic"
+                            };
+                        var Requestresult = await _DocumentUploadModel.SaveDocument(m,Credentials.token);
+                        if (Requestresult != null && Requestresult.IsSuccess)
+                        {
+                            var result = "data:image/" + e.File.ContentType.Trim() + ";base64," + base64;
+                            EmployeeReviewData.Photograph = fileName;
+                            EmployeeReviewData.PhotographExt = e.File.ContentType.Trim();
+                            ProfilePicString = result;
+                            bytes = null;
+                        }
+                        else if (Requestresult != null)
+                        {
+                            toastService.ShowWarning(Requestresult.Message);
+                        }
+                    }
+                    else
+                    {
+                        toastService.ShowWarning("Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg).");
+                    }
+                    
+
+            //foreach (var file in e.File)
+            //{
+            //    if (file.FileInfo.Size <= 5242880)
+            //    {
+                    
+            //    }
+            //}
+        }
+        catch(Exception ex)
+
+        {
+            throw ex;
+        }
+
+        finally
+        {
+            await UploadImageSpinner.HideAsync();
+            StateHasChanged();
+        }
+
+    }
+
     private async void OnImageChange(UploadChangeEventArgs args)
     {
         try
@@ -1984,6 +2084,7 @@
         }
 
     }
+    
     private async Task<string> GetImageString(string imageUrl, string ext, string Rootfolder)
     {
         string? result = null;

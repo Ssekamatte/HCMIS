@@ -130,7 +130,7 @@
 
 <SfGrid @ref="@BscKpiGrid" TValue="ABscKpi" AllowPaging="true" Query="@mainQuery"
         AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
-        AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit"/*, "Delete"*/, "Cancel", "Update"})">
+        AllowSorting="true" AllowTextWrap="true" Toolbar="@(new List<string>() {"Add", "Edit"/*, "Delete"*/, "Cancel", "Update"})">
             <GridGroupSettings Columns="@Div" ShowDropArea="false">
              <CaptionTemplate>
             @{
@@ -230,6 +230,29 @@
                             <SfTextBox Multiline=false @bind-Value="@(KpiData.Bsckpidescription)" Width="100%" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                         </div>
 
+                        <div class="col-md-12">
+                            <p>Individual Target Weight (%):<span style="color:red;">*</span></p>
+                            <SfNumericTextBox                                 
+                                @bind-Value="@(KpiData.IndividualTargetWeight)"
+                                Min=0
+                                Enabled="true" 
+                                Format="###.##" 
+                                FloatLabelType="FloatLabelType.Always">
+                            </SfNumericTextBox>
+                        </div>
+
+                         @*<div class="col-md-12">
+                            <p>Individual Target Weight (%):<span style="color:red;">*</span></p>
+                            <SfNumericTextBox 
+                                Min=0 
+                                Max=1
+                                @bind-Value="@(KpiData.IndividualTargetWeight)"                                 
+                                Enabled="true" 
+                                Format="p1" 
+                                FloatLabelType="FloatLabelType.Always">
+                            </SfNumericTextBox>
+                        </div>*@
+
                     </div>
                 }
             }
@@ -241,7 +264,7 @@
         </GridColumn>
         <GridForeignColumn Field=@nameof(ABscPerspectives.BscPerspectiveTypeId)
                            HeaderText="Perspective"
-                           Width="180"
+                           Width="120"
                            AllowEditing="false"
                            ForeignKeyField="@(nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeId))"
                            ForeignKeyValue="@(nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeDescription))"
@@ -252,7 +275,7 @@
         </GridForeignColumn>
         <GridForeignColumn Field=@nameof(ABscKpi.FinancialYearId)
                            HeaderText="Financial Year"
-                           Width="180"
+                           Width="80"
                            AllowEditing="false"
                            ForeignKeyField="@(nameof(ViewFinancialYearDto.Id))"
                            ForeignKeyValue="@(nameof(ViewFinancialYearDto.FinancialYear))"
@@ -263,7 +286,7 @@
         </GridForeignColumn>
         <GridForeignColumn Field=@nameof(ABscKpi.MeasurementMetricId)
                            HeaderText="Measurement Metric"
-                           Width="180"
+                           Width="80"
                            AllowEditing="false"
                            ForeignKeyField="@(nameof(BscPerformanceMeasurementDto.MeasurementMetricId))"
                            ForeignKeyValue="@(nameof(BscPerformanceMeasurementDto.MeasurementMetricDescription))"
@@ -274,12 +297,24 @@
         </GridForeignColumn>
         <GridColumn 
             Field=@nameof(ABscKpi.Bsckpidescription) 
-            HeaderText="KPI Target" 
+            HeaderText="Target" 
             TextAlign="TextAlign.Left" 
             AllowEditing="true"  
             Visible=true 
-            Width="180"
+            Width="80"
             CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridColumn>
+        <GridColumn Field=@nameof(ABscKpi.IndividualTargetWeight)
+                    HeaderText="Individual Target Weight (%)"
+                    TextAlign="TextAlign.Right"
+                    AllowEditing="true"
+                    ValidationRules="@(new ValidationRules { Required = false })"
+                    EditType="EditType.NumericEdit"
+                    Format="###.##"
+                    Width="60"
+                    IsFrozen="false"
+                    ClipMode="ClipMode.EllipsisWithTooltip"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
         </GridColumn>
         <GridForeignColumn Field=@nameof(ABscKpi.UserId)
                            HeaderText="User"
@@ -578,7 +613,7 @@
                 {
                     string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                     StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                    var result = await Http.PutAsync($"BscKeyPerformanceIndicator/CreateKeyPerformanceIndicator", httpContent);
+                    var result = await Http.PutAsync($"BscKeyPerformanceIndicator/UpdateKeyPerformanceIndicator", httpContent);
                     if (result.IsSuccessStatusCode)
                     {
                         toastService.ShowSuccess(val.Bsckpidescription + " was sucessfully added");
@@ -604,7 +639,7 @@
 
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                var result = await Http.PostAsync($"BscKeyPerformanceIndicator/CreateKeyPerformanceIndicator", httpContent);
+                var result = await Http.PutAsync($"BscKeyPerformanceIndicator/UpdateKeyPerformanceIndicator", httpContent);
                 if (result.IsSuccessStatusCode)
                 {
                     toastService.ShowSuccess($"The {val.Bsckpidescription}  was sucessfully updated");
@@ -681,6 +716,18 @@
                 else if (string.IsNullOrEmpty(args.Data.Bsckpidescription))
                 {
                     toastService.ShowWarning("Please fill in the key performance indicator description before saving this record.");
+                    args.Cancel = true;
+                }
+
+                else if (args.Data.IndividualTargetWeight > 100)
+                {
+                    toastService.ShowWarning("The individual target weight cannot be beyond 100%. Please revise the value.");
+                    args.Cancel = true;
+                }
+
+                else if (args.Data.IndividualTargetWeight == null)
+                {
+                    toastService.ShowWarning("Please fill in the individual target weight before saving this record.");
                     args.Cancel = true;
                 }
 
