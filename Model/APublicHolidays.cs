@@ -14,5 +14,7 @@ namespace HCMIS.Model
         public bool? ReoccursSameDate { get; set; }
         public bool? IsBlock { get; set; }
         public bool? IsAllDay { get; set; }
+        public DateTime? DataCaptured { get; set; }
+        public string? CapturedBy { get; set; }
     }
 }
