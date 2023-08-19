@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HCMIS.SHARED.DTOs.Employeez;
+using System;
 using System.Collections.Generic;
 
 namespace HCMIS.Model
@@ -11,6 +12,6 @@ namespace HCMIS.Model
         public string? AppealCreatedBy { get; set; }
         public DateTime? AppealCreatedDate { get; set; }
 
-        public virtual EmployeeDisplinary? EmployeeDisplinary { get; set; }
+        public virtual EmployeeDisciplinaryDto? EmployeeDisplinary { get; set; }
     }
 }

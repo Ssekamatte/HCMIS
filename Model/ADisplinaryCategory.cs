@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HCMIS.SHARED.DTOs.Employeez;
+using System;
 using System.Collections.Generic;
 
 namespace HCMIS.Model
@@ -7,12 +8,12 @@ namespace HCMIS.Model
     {
         public ADisplinaryCategory()
         {
-            EmployeeDisplinary = new HashSet<EmployeeDisplinary>();
+            EmployeeDisplinary = new HashSet<EmployeeDisciplinaryDto>();
         }
 
         public int DisplinaryCategoryId { get; set; }
         public string? DisplinaryCategoryDescription { get; set; }
 
-        public virtual ICollection<EmployeeDisplinary> EmployeeDisplinary { get; set; }
+        public virtual ICollection<EmployeeDisciplinaryDto> EmployeeDisplinary { get; set; }
     }
 }
