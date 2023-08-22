@@ -11,5 +11,6 @@
         public string? UserRoleId { get; set; }
         public bool IsLockedOut { get; set; }
         public string? ErrorMsg { get; set; }
+        public int? JobTitleId { get; set; }
     }
 }
