@@ -1,6 +1,7 @@
 ﻿@page "/AnnualLeaveRosterPage"
 @using System.Text.Json;
 @using HCMIS.SHARED.DTOs;
+@using HCMIS.SHARED.DTOs.Employeez;
 @using HCMIS.SHARED.DTOs.Utilities;
 @using Syncfusion.Blazor.Schedule
 @using static System.Net.WebRequestMethods;
@@ -13,6 +14,43 @@
 @inject IToastService toastService;
 @using HCMIS.Interface;
 @inject IAuthenticationService AuthService;
+
+@*Calender Improvement*@
+
+<style>
+    #display-date {
+        max-width: 300px;
+        margin: 0 auto;
+        padding: 15px 0;
+        font-size: 13px;
+    }
+
+    .control-wrapper {
+        width: 300px;
+        margin: 0 auto;
+        padding-top: 20px;
+    }
+
+    .e-calendar .e-content .e-cell.personal-appointment span.e-day,
+    .e-calendar .e-content td:hover.e-cell.personal-appointment span.e-day,
+    .e-calendar .e-content td.e-selected.e-focused-date.e-cell.personal-appointment span.e-day {
+        color: #28a745;
+        font-weight: 800;
+    }
+
+    .e-calendar .e-content .e-cell.official-appointment span.e-day,
+    .e-calendar .e-content td:hover.e-cell.official-appointment span.e-day,
+    .e-calendar .e-content td.e-selected.e-focused-date.e-cell.official-appointment span.e-day {
+        color: #dc3545;
+        font-weight: 800;
+    }
+
+    .e-calendar .e-content td.e-selected.e-focused-date.e-cell.personal-appointment span.e-day,
+    .e-calendar .e-content td.e-selected.e-focused-date.e-cell.official-appointment span.e-day {
+        background-color: #b511485e;
+    }
+</style>
+
 
 <style>
 /*Hide Time Icon in sfdatetime picker*/
@@ -345,21 +383,23 @@ color: ghostwhite;
                             @*Format="dd-MMMM-yyyy h:mm:ss tt"*@
                             <div class="col col-md-6">
                                 <p>Proposed Start Date:<span style="color:red;">*</span></p>
-                                @*<SfDatePicker @bind-Value="@(LeaveRosterData.ProposedLeaveStartDate)" Enabled=@IsEnabled ID="ProposedLeaveStartDate" Format="dd-MMMM-yyyy" FloatLabelType="FloatLabelType.Always"></SfDatePicker>*@
-                                <SfDateTimePicker @bind-Value="@(LeaveRosterData.ProposedLeaveStartDate)" Enabled=@IsEnabled ID="ProposedLeaveStartDate" Format="dd-MMMM-yyyy" FloatLabelType="FloatLabelType.Always"></SfDateTimePicker>
+                                <SfDateTimePicker @bind-Value="@(LeaveRosterData.ProposedLeaveStartDate)" Enabled=@IsEnabled ID="ProposedLeaveStartDate" Format="dd-MMMM-yyyy" FloatLabelType="FloatLabelType.Always">
+                                    <DateTimePickerEvents OnRenderDayCell="CustomDates" TValue="DateTime?"></DateTimePickerEvents>
+                                </SfDateTimePicker>
                             </div>
                             <div class="col col-md-6">
                                 <p>Proposed End Date:<span style="color:red;">*</span></p>
-                                @*<SfDatePicker @bind-Value="@(LeaveRosterData.ProposedLeaveEndDate)" Enabled=@IsEnabled ID="ProposedLeaveEndDate" Format="dd-MMMM-yyyy" FloatLabelType="FloatLabelType.Always">
-                                    <DatePickerEvents TValue="DateTime?" ValueChange="OnChange"></DatePickerEvents>
-                                </SfDatePicker>*@
                                 <SfDateTimePicker @bind-Value="@(LeaveRosterData.ProposedLeaveEndDate)" Enabled=@IsEnabled ID="ProposedLeaveEndDate" Format="dd-MMMM-yyyy" FloatLabelType="FloatLabelType.Always">
-                                    <DateTimePickerEvents TValue="DateTime?" ValueChange="OnChange"></DateTimePickerEvents>
+                                    <DateTimePickerEvents TValue="DateTime?" OnRenderDayCell="CustomDates" ValueChange="OnChange"></DateTimePickerEvents>
                                 </SfDateTimePicker>
                             </div>  
                             
                             <div class="col col-md-6">
-                                <p>Days Selected:</p>                                
+                                <p>Days Selected: @selecteddays</p>
+                            </div>
+
+                             <div class="col col-md-6">
+                                <p>Overrall No of Days: @overralldays</p>
                             </div>
 
                         </div>
@@ -426,6 +466,7 @@ color: ghostwhite;
 </div>
 
 @code {
+
     private DateTime CurrentDate = DateTime.Now;
     private ViewEmployeeLeaveRoster? LeaveRosterData { get; set; }
     List<ViewEmployeeDropDownDto>? EmployeeData { get; set; }
@@ -436,6 +477,7 @@ color: ghostwhite;
     List<ViewUserManagementDto>? UsersData { get; set; }
     List<ViewEmployeePlannedDays>? LeaveRosterCountData { get; set; }
     List<ViewEmployeeLeaveRoster>? LeaveData { get; set; }
+    public static int OverrallDaysData { get; set; } = 0;
     public DateTime? StartDateValue { get; set; }
     public static int LeaveDays { get; set; } = 0;
     public static int PublicHolidays { get; set; } = 0;
@@ -446,13 +488,20 @@ color: ghostwhite;
     public bool EmployeeDD = true;
     SfDialog? SavingDialog { get; set; }
     private DepartmentCounts DepCounts = new DepartmentCounts();
+    public DateTime? SelectedDate { get; set; }
+    public string SelectedValue { get; set; } = DateTime.Now.ToString("M/d/yyyy");
+    int selecteddays = 0;
+    int overralldays = 0;
+    DateTime StartDate = DateTime.Now;
+    DateTime EndDate = DateTime.Now;
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             Credentials = await AuthService.GetUserCredentials();
-            JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            //JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
             List<Task> t = new List<Task>();
             t.Add(Task.Run(async () =>
@@ -571,17 +620,87 @@ color: ghostwhite;
         }
     }
 
-    protected async Task OnChange(ChangedEventArgs<DateTime?> value)
+    public void CustomDates(RenderDayCellEventArgs args)
     {
+        //var CurrentMonth = CurrentDate.Month;
+        //if (args.Date.Month == CurrentMonth && (args.Date.Day == 7 || args.Date.Day == 14 || args.Date.Day == 24 || args.Date.Day == 29))
+        //{
+        //    args.CellData.ClassList += " personal-appointment";
+        //}
+        //if (args.Date.Month == CurrentMonth && (args.Date.Day == 3 || args.Date.Day == 11 || args.Date.Day == 17 || args.Date.Day == 22))
+        //{
+        //    args.CellData.ClassList += " official-appointment";
+        //}
 
-        //DateTime StartDate = Convert.ToDateTime(LeaveRosterData.ProposedLeaveStartDate);
-        //DateTime EndDate = Convert.ToDateTime(LeaveRosterData.ProposedLeaveEndDate);
-        //int numberOfDays2 = GetNumberOfDates(StartDate,EndDate);
-        //GetNumberOfPublicHolidays(StartDate, EndDate);
-        //LeaveDays = numberOfDays2 - PublicHolidays;
+        var phol = PublicHolidaysData.ToList();
 
-        //TotalDays = LeaveDays + RoasterCount.TotalDays.Value;
+        foreach (var n in phol)
+        {
+            var CurrentMonth = n.HolidayDate.Value.Month;
+            if (n.Month == CurrentMonth && n.HolidayDate.Value.Day == n.Day)
+            {
+                args.CellData.ClassList += " official-appointment";
+            }
+            else
+            {
+                args.CellData.ClassList += " personal-appointment";                
+            }
+
+        }
     }
+
+    public void OnChange(ChangedEventArgs<DateTime?> args)
+    {
+        int? employeeid = Credentials.StaffId;
+
+            List<Task> t = new List<Task>();
+            t.Add(Task.Run(async () =>
+            {
+            var responseleavedays = await Http.GetAsync($"Employeez/GetEmployeeLeaveDays?employeeid={employeeid}");
+                if (responseleavedays.IsSuccessStatusCode)
+                {
+                    var contentleavedays = await responseleavedays.Content.ReadAsStringAsync();
+                OverrallDaysData = Convert.ToInt32(contentleavedays) /*JsonSerializer.Deserialize<List<EmployeeLeaveRosterDto>>(contentleavedays, _options)*/;
+                }
+            }));
+
+        StartDate = Convert.ToDateTime(LeaveRosterData.ProposedLeaveStartDate.Value);
+        EndDate = Convert.ToDateTime(args.Value.Value);
+
+        int numberOfDays2 = GetNumberOfDates(StartDate,EndDate);
+        PublicHolidays = GetNumberOfPublicHolidays(StartDate,EndDate);
+
+        //If the Start and End Dates are the same, then the days selected are 1
+        if (StartDate == EndDate)
+        {
+            selecteddays = 1;
+            overralldays = selecteddays + OverrallDaysData;
+        }
+        else
+        {
+            selecteddays = numberOfDays2 - PublicHolidays;
+            overralldays = selecteddays + OverrallDaysData;
+        }
+
+        
+        //var Count = 0;
+        //var CurrentMonth = CurrentDate.Month;
+        //if (args.Value.Value.Month == CurrentMonth && (args.Value.Value.Day == 7 || args.Value.Value.Day == 14 || args.Value.Value.Day == 24 || args.Value.Value.Day == 29))
+        //{
+        //    this.SelectedValue = this.SelectedDate?.ToString("M/d/yyyy") + " (Personal appointment)";
+        //    Count++;
+        //}
+        //if (args.Value.Value.Month == CurrentMonth && (args.Value.Value.Day == 3 || args.Value.Value.Day == 11 || args.Value.Value.Day == 17 || args.Value.Value.Day == 22))
+        //{
+        //    this.SelectedValue = this.SelectedDate?.ToString("M/d/yyyy") + " (Official appointment)";
+        //    Count++;
+        //}
+        //if (Count == 0)
+        //{
+        //    this.SelectedValue = this.SelectedDate?.ToString("M/d/yyyy");
+        //}
+    }
+
 
     //Function to return number of days minus weekends
     static int GetNumberOfDates(DateTime from, DateTime to)
@@ -617,7 +736,7 @@ color: ghostwhite;
         {
             await SavingDialog.ShowAsync();
             await ScheduleRef.AddEventAsync(LeaveRosterData);
-            ScheduleRef.CloseEditor();
+            ScheduleRef.CloseEditor();            
         }
         catch (Exception ex)
         {
@@ -669,19 +788,28 @@ color: ghostwhite;
                 }   
                 else
                 {
-                    await SavingDialog.ShowAsync();
-                    await ScheduleRef.AddEvent(data);
-                    ScheduleRef.CloseEditor();
+                    if (LeaveRosterData.ProposedLeaveStartDate != null && LeaveRosterData.ProposedLeaveEndDate.Value != null)
+                    {
+                        await SavingDialog.ShowAsync();
+                        data.NoofDays = overralldays;
+                        //int numberOfDays2 = GetNumberOfDates(LeaveRosterData.ProposedLeaveStartDate.Value, LeaveRosterData.ProposedLeaveEndDate.Value);
+                        //PublicHolidays = GetNumberOfPublicHolidays(LeaveRosterData.ProposedLeaveStartDate.Value, LeaveRosterData.ProposedLeaveEndDate.Value);
+
+                        ////If the Start and End Dates are the same, then the days selected are 1
+                        //if (LeaveRosterData.ProposedLeaveStartDate.Value.Date == LeaveRosterData.ProposedLeaveEndDate.Value.Date)
+                        //{
+                        //    data.NoofDays = 1;
+                        //}
+                        //else
+                        //{
+                        //    data.NoofDays = numberOfDays2 - PublicHolidays;
+                        //}
+
+                        await ScheduleRef.AddEvent(data);
+                        ScheduleRef.CloseEditor();
+                    }                    
                 }
             }
-
-            //else
-            //{
-            //    await SavingDialog.ShowAsync();
-            //    await ScheduleRef.AddEvent(data);
-            //    ScheduleRef.CloseEditor();
-            //}
-
         }
         catch (Exception ex)
         {
@@ -730,6 +858,19 @@ color: ghostwhite;
 
     public async void OnPopupOpen(PopupOpenEventArgs<ViewEmployeeLeaveRoster> args)
     {
+        int? employeeid = args.Data.EmployeeId;
+
+            List<Task> t = new List<Task>();
+            t.Add(Task.Run(async () =>
+            {
+                var responseleavedays = await Http.GetAsync($"Employeez/GetEmployeeLeaveDays?employeeid={employeeid}");
+                if (responseleavedays.IsSuccessStatusCode)
+                {
+                    var contentleavedays = await responseleavedays.Content.ReadAsStringAsync();
+                    OverrallDaysData = Convert.ToInt32(contentleavedays) /*JsonSerializer.Deserialize<List<EmployeeLeaveRosterDto>>(contentleavedays, _options)*/;
+                }
+            }));
+
         if (LeaveRosterData != null && LeaveRosterData.IsBlock != null && LeaveRosterData.IsBlock == true)
         {
             args.Cancel = true;
@@ -777,6 +918,24 @@ color: ghostwhite;
 
             //}
 
+        }
+
+        StartDate = Convert.ToDateTime(args.Data.ProposedLeaveStartDate.Value);
+        EndDate = Convert.ToDateTime(args.Data.ProposedLeaveEndDate);
+
+        int numberOfDays2 = GetNumberOfDates(StartDate, EndDate);
+        PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDate);
+
+        //If the Start and End Dates are the same, then the days selected are 1
+        if (StartDate == EndDate)
+        {
+            selecteddays = 1;
+            overralldays = selecteddays + OverrallDaysData;
+        }
+        else
+        {
+            selecteddays = numberOfDays2 - PublicHolidays;
+            overralldays = selecteddays + OverrallDaysData;
         }
 
     }
