@@ -5,8 +5,8 @@ namespace HCMIS.Model
 {
     public partial class ViewEmployeePlannedDays
     {
-        public int? Employeeid { get; set; }
-        public string? EmployeeDetails { get; set; }
-        public int? TotalDays { get; set; }
+        public int? EmployeeId { get; set; }
+        public DateTime? ProposedLeaveStartDate { get; set; }
+        public DateTime? ProposedLeaveEndDate { get; set; }
     }
 }
