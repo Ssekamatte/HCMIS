@@ -7,6 +7,7 @@ using HCMIS.Model;
 using HCMIS.SHARED;
 using HCMIS.SHARED.Data;
 using HCMIS.SHARED.DTOs.BSC;
+using HCMIS.SHARED.DTOs.Employeez;
 using HCMIS.SHARED.Models.SPModel;
 using System.Text.Json;
 using static System.Net.WebRequestMethods;
@@ -172,6 +173,32 @@ namespace HCMIS.Repository
                 {
                     var content = await result.Content.ReadAsStringAsync();
                     data = JsonSerializer.Deserialize<List<ViewEmployeeFamilyDto>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
+
+        public async Task<List<ViewEmployeeLeaveRoasterReportDto>> GetAnnualLeaveRoaster(UtilitiesSearchPanel SearchModel)
+        {
+            List<ViewEmployeeLeaveRoasterReportDto>? data = new List<ViewEmployeeLeaveRoasterReportDto>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetAnnualLeaveRoasterReport", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveRoasterReportDto>>(content, _options);
                 }
                 else
                 {
