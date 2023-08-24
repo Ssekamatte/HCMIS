@@ -245,8 +245,12 @@ color: ghostwhite;
 </ol>
 
 
-@if (Credentials != null && (!string.IsNullOrEmpty(Credentials.UserRole) &&
+@*@if (Credentials != null && (!string.IsNullOrEmpty(Credentials.UserRole) &&
      Credentials.UserRole.Contains("Administrator")) || Credentials.JobTitleId == 44)
+{*@
+
+@if(Credentials != null && (!string.IsNullOrEmpty(Credentials.UserRole) &&
+     Credentials.UserRole.Contains("Administrator")))
 {
         <div class="form-group col-md-12">
             <SfAccordion ExpandMode="@ExpandMode.Single">
@@ -486,6 +490,7 @@ color: ghostwhite;
     public DateTime? StartDateValue { get; set; }
     public static int LeaveDays { get; set; } = 0;
     public static int PublicHolidays { get; set; } = 0;
+    public static int numberOfDays2 { get; set; } = 0;
     public static int TotalDays { get; set; } = 0;
     private static ViewEmployeePlannedDays RoasterCount { get; set; }
     LoginResultModel? Credentials { get; set; }
@@ -509,7 +514,7 @@ color: ghostwhite;
         try
         {
             Credentials = await AuthService.GetUserCredentials();
-            
+
             List<Task> t = new List<Task>();
             t.Add(Task.Run(async () =>
             {
@@ -565,7 +570,7 @@ color: ghostwhite;
 
                 }
             }));       
-            
+
             t.Add(Task.Run(async () =>
             {
                 var responsetotalplanneddaysdata = await Http.GetAsync($"Employeez/GetCountLeaveDays");
@@ -674,9 +679,9 @@ color: ghostwhite;
         StartDate = Convert.ToDateTime(LeaveRosterData.ProposedLeaveStartDate.Value);
         EndDate = Convert.ToDateTime(args.Value.Value);
 
-        int numberOfDays2 = GetNumberOfDates(StartDate,EndDate);
+        numberOfDays2 = GetNumberOfDates(StartDate,EndDate);
         PublicHolidays = GetNumberOfPublicHolidays(StartDate,EndDate);
-        
+
         //if (OverrallDaysData != null)
         //{
         //    var daysentered = OverrallDaysData
@@ -703,24 +708,27 @@ color: ghostwhite;
         //        overralldays = selecteddays + overralldays;
         //    }
         //}
-    
-    
+
+
         if (LeaveTotalPlannedDaysData != null)
         {
             var daysentered = LeaveTotalPlannedDaysData
             .FirstOrDefault(o => o.EmployeeId == employeeid);
 
-            int numberOfDays2 = GetNumberOfDates(daysentered.ProposedLeaveStartDate, daysentered.ProposedLeaveEndDate);
-            PublicHolidays = GetNumberOfPublicHolidays(daysentered.ProposedLeaveStartDate, daysentered.ProposedLeaveEndDate);
+            numberOfDays2 = GetNumberOfDates(daysentered.ProposedLeaveStartDate.Value, daysentered.ProposedLeaveEndDate.Value);
+            PublicHolidays = GetNumberOfPublicHolidays(daysentered.ProposedLeaveStartDate.Value, daysentered.ProposedLeaveEndDate.Value);
 
-            if (daysentered.NoofDays != null)
-            {
-                overralldays = daysentered.NoofDays.Value;
-            }
-            else
-            {
-                overralldays = 0;
-            }
+            overralldays = numberOfDays2 + PublicHolidays;
+
+            //if (daysentered.NoofDays != null)
+            //{
+            //    overralldays = daysentered.NoofDays.Value;
+            //}
+            //else
+            //{
+            //    overralldays = 0;
+            //}
+
             //If the Start and End Dates are the same, then the days selected are 1
             if (StartDate == EndDate)
             {
@@ -861,37 +869,11 @@ color: ghostwhite;
         {
             args.CssClasses = CustomClass;
         }
-
-        //if (PublicHolidaysData != null)
-        //{
-        //    if (PublicHolidaysData != null)
-        //    {
-        //        foreach (var n in PublicHolidaysData)
-        //        {
-        //            if (n.IsBlock != null && n.IsBlock == true)
-        //            {
-        //                args.CssClasses = CustomClass;
-        //            }
-        //        }
-        //    }
-        //}
     }
 
     public async void OnPopupOpen(PopupOpenEventArgs<ViewEmployeeLeaveRoster> args)
     {
         int? employeeid = args.Data.EmployeeId;
-
-        //List<Task> t = new List<Task>();
-        //t.Add(Task.Run(async () =>
-        //{
-        //    var responseleavedays = await Http.GetAsync($"Employeez/GetEmployeeLeaveDays?employeeid={employeeid}");
-        //    if (responseleavedays.IsSuccessStatusCode)
-        //    {
-        //        var contentleavedays = await responseleavedays.Content.ReadAsStringAsync();
-        //        OverrallDaysData = JsonSerializer.Deserialize<List<EmployeeLeaveRosterDto>>(contentleavedays, _options);
-        //        //OverrallDaysData = Convert.ToInt32(contentleavedays) ;
-        //    }
-        //}));
 
         if (LeaveRosterData != null && LeaveRosterData.IsBlock != null && LeaveRosterData.IsBlock == true)
         {
@@ -910,7 +892,7 @@ color: ghostwhite;
                 StartDate = Convert.ToDateTime(args.Data.ProposedLeaveStartDate.Value);
                 EndDate = Convert.ToDateTime(args.Data.ProposedLeaveEndDate);
 
-                int numberOfDays2 = GetNumberOfDates(StartDate, EndDate);
+                numberOfDays2 = GetNumberOfDates(StartDate, EndDate);
                 PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDate);
 
                 if (OverrallDaysData != null)
@@ -950,7 +932,7 @@ color: ghostwhite;
                 StartDate = Convert.ToDateTime(args.Data.ProposedLeaveStartDate.Value);
                 EndDate = Convert.ToDateTime(args.Data.ProposedLeaveEndDate);
 
-                int numberOfDays2 = GetNumberOfDates(StartDate, EndDate);
+                numberOfDays2 = GetNumberOfDates(StartDate, EndDate);
                 PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDate);
 
                 if (OverrallDaysData != null)
@@ -1156,16 +1138,6 @@ color: ghostwhite;
             HttpResponseMessage response = null;
             response = await Http.GetAsync($"Employeez/GetEmployeeLeaverRoster");
 
-            //@if (credentials != null && (!string.IsNullOrEmpty(credentials.UserRole) &&
-            //           credentials.UserRole.Contains("Administrator"))) 
-            //{
-            //    response = await Http.GetAsync($"Employeez/GetEmployeeLeaverRoster");
-            //}
-            //else
-            //{
-            //    response = await Http.GetAsync($"Employeez/GetEmployeeLeaverRosterUser?Employeeid={Employeeid}");
-            //}
-
             var content = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
             {
@@ -1335,11 +1307,6 @@ color: ghostwhite;
 
     public async Task OnDataBound(Syncfusion.Blazor.Schedule.DataBoundEventArgs<ViewEmployeeLeaveRoster> args)
     {
-        //if(LeaveData != null)
-        //{
-        //    await getstatusCount();
-        //}
-        
         List<ViewEmployeeLeaveRoster> eventCollection = await ScheduleRef.GetEvents();   //You can get the entire appointment collections in the EventCollection variable
     }
 }
