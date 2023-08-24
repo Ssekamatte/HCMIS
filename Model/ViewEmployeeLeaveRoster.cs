@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HCMIS.SHARED.DTOs.Employeez;
+using System;
 using System.Collections.Generic;
 
 namespace HCMIS.Model
