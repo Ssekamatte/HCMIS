@@ -17,6 +17,7 @@ namespace HCMIS.Interface
         Task<List<ViewEmployeeQualificationDto>> GetEmployeeQualifications(UtilitiesSearchPanel SearchModel);
         Task<List<ViewEmployeeFamilyDto>> GetEmployeeFamily(UtilitiesSearchPanel SearchModel);
         Task<List<ViewBalanceScoreCardTargetSettingReportDto>> GetAppraisalTarget(UtilitiesSearchPanel SearchModel);
-        Task<List<ViewEmployeeLeaveRoasterReportDto>> GetAnnualLeaveRoaster(UtilitiesSearchPanel SearchModel);
+        Task<List<ViewEmployeeLeaveRoasterReportPivotedDto>> GetAnnualLeaveRoaster(UtilitiesSearchPanel SearchModel);
+        Task<List<ViewEmployeeLeaveRoasterDatesReportDto>> GetSelectedDates(UtilitiesSearchPanel SearchModel);
     }
 }

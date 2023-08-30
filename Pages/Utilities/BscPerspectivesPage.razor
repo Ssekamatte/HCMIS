@@ -151,7 +151,7 @@
                         <div class="col-md-6">
                             <p>Financial Year:<span style="color:red;">*</span></p>
                             <SfDropDownList @bind-Value="@(KpiData.FinancialYearId)"
-                                    Enabled="true" TItem="ViewFinancialYearDto" TValue="int?"
+                                            Enabled="@isFinancialYearEnabled" TItem="ViewFinancialYearDto" TValue="int?"
                                     DataSource="@FinancialYearData" Placeholder="Please select"
                                     FloatLabelType="FloatLabelType.Never" AllowFiltering="true"
                                     FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
@@ -292,6 +292,8 @@
     List<EmployeeDto>? EmployeeData { get; set; }
     SfSpinner? SpinnerObj;
     private Dictionary<string, object> GridAttributes { get; set; } = new Dictionary<string, object>();
+    bool isFinancialYearEnabled { get; set; } = false;
+    int? finyearid = null;
 
     #endregion Declarations
 
@@ -329,6 +331,23 @@
             {
                 var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
                 FinancialYearData = JsonSerializer.Deserialize<List<ViewFinancialYearDto>>(contentfinyear, _options);
+
+                DateTime currentdate = DateTime.Now;
+                string? financialyeardesc = null;
+                if (currentdate.Month >= 6)
+                {
+                    financialyeardesc = $"{currentdate.Year}/{(currentdate.Year + 1)}";
+                }
+                else if (currentdate.Month < 6)
+                {
+                    financialyeardesc = $"{(currentdate.Year - 1)}/{currentdate.Year}";
+                }
+
+                var b = FinancialYearData.FirstOrDefault(o => o.FinancialYear.Trim() == financialyeardesc.Trim());
+                if (b != null)
+                {
+                    finyearid = b.Id;
+                }
             }
         }));
 
@@ -384,6 +403,9 @@
         //        DepartmentsData = _EmployeeRegistrationModel.Departments;
         //    }
         //}
+
+        Task _t = Task.WhenAll(t);
+        await _t;
     }
 
     public async void OnPerspectiveChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ABscPerspectivesTypeDto> args)
@@ -559,6 +581,8 @@
             }
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
             {
+                args.RowData.FinancialYearId = finyearid;
+
                 if(Credentials.StaffId > 0)
                 {
                     employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Credentials.StaffId);

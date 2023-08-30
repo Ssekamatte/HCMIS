@@ -1,4 +1,4 @@
-﻿@page "/BankPage"
+﻿@page "/FinancialYearPage"
 @inject ApiConfig _ApiConfig;
 @inject HttpClient Http
 @using HCMIS.Data
@@ -15,7 +15,7 @@
 @inject IToastService toastService;
 
 <style>
- 
+
     /*Change Cell Color */
     .e-headercell.e-attr1 {
         background: #964B00;
@@ -43,23 +43,23 @@
     <li class="breadcrumb-item active" style="color: brown;">
         <strong>
             <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
-        </strong>| BANKS
+        </strong>| FINANCIAL YEARS
     </li>
 </ol>
 
-<SfGrid @ref="@BankGrid" ID="Grid" TValue="ABankDto" AllowPaging="true"
+<SfGrid @ref="@FinancialYearGrid" ID="Grid" TValue="ViewFinancialYearDto" AllowPaging="true"
         AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
         AllowSorting="true" Toolbar="@ToolbarMenu">
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
     <GridPageSettings PageSizes="true"></GridPageSettings>
     <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Both"
                            Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
-    <SfDataManager AdaptorInstance="@typeof(BankAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-    <GridEvents OnActionComplete="@BankActionComplete" OnActionBegin="@BankActionBegin" TValue="ABankDto"></GridEvents>
-    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" Dialog="DialogParams">
+    <SfDataManager AdaptorInstance="@typeof(FinancialYearAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <GridEvents OnActionComplete="@FinancialYearActionComplete" OnActionBegin="@FinancialYearActionBegin" TValue="ViewFinancialYearDto"></GridEvents>
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog" ShowConfirmDialog="false">
         <HeaderTemplate>
             @{
-                var text = GetHolidayHeader((context as ABankDto));
+                var text = GetYearHeader((context as ViewFinancialYearDto));
                 <div class="headerbandimg">
                     <span>@text</span>
                 </div>
@@ -67,18 +67,17 @@
         </HeaderTemplate>
         <Template Context="BankContext">
             @{
-                BankData = (BankContext as ABankDto);
-                @if (BankData != null)
+                YYData = (BankContext as ViewFinancialYearDto);
+                @if (YYData != null)
                 {
                     <div class="row">
                         <div class="col-md-12" hidden>
-                            <SfNumericTextBox @bind-Value="@(BankData.BankId)" Enabled="false" Placeholder="Bank Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                            <SfNumericTextBox @bind-Value="@(YYData.Id)" Enabled="false" Placeholder="Year Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
                         </div>
 
-
                         <div class="col-md-12">
-                            <p>Bank:<span style="color:red;">*</span></p>
-                            <SfTextBox Multiline="false" @bind-Value="@(BankData.BankDesc)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                            <p>Financial Year:<span style="color:red;">*</span></p>
+                            <SfTextBox Multiline="false" @bind-Value="@(YYData.FinancialYear)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
                         </div>
                     </div>
                 }
@@ -86,18 +85,17 @@
         </Template>
     </GridEditSettings>
     <GridColumns>
-        <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn>
-        <GridColumn 
-            Field=@nameof(ABankDto.BankId) 
-            Visible=false 
-            HeaderText="Holiday Id" 
-            AllowEditing="false" 
-            IsPrimaryKey="true">
+        <GridColumn Type="ColumnType.CheckBox" Width="30" Visible=false></GridColumn>
+        <GridColumn Field=@nameof(ViewFinancialYearDto.Id)
+                    Visible=false
+                    HeaderText="Year Id"
+                    AllowEditing="false"
+                    IsPrimaryKey="true">
         </GridColumn>
-        <GridColumn Field=@nameof(ABankDto.BankDesc)
-                    HeaderText="Holiday Name"
+        <GridColumn Field=@nameof(ViewFinancialYearDto.FinancialYear)
+                    HeaderText="Financial Year"
                     TextAlign="TextAlign.Justify"
-                    Width="80"
+                    Width="120"
                     ClipMode="ClipMode.EllipsisWithTooltip"
                     Type="ColumnType.String"
                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
@@ -106,36 +104,44 @@
 </SfGrid>
 
 @code {
-    SfGrid<ABankDto>? BankGrid;
-    private static ABankDto? BankData { get; set; }
+    SfGrid<ViewFinancialYearDto>? FinancialYearGrid;
+    private static ViewFinancialYearDto? YYData { get; set; }
     public bool? radiovalue;
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "65%" };
-    List<ABankDto>? BankCountData { get; set; }
+    List<ViewFinancialYearDto>? FYearData { get; set; }
+    SfRadioButton<bool?> RadioButtonInstance;
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    private List<ViewFinancialYearDto> selectedrecords { get; set; }
 
     private List<object> ToolbarMenu = new List<object>()
     {
-        new ItemModel() { Text = "Add Bank", PrefixIcon = "e-add", Id = "Grid_add"},
-        new ItemModel(){ Text = "Edit Bank", PrefixIcon= "e-edit", Id="Grid_edit"},
+        new ItemModel() { Text = "Add Financial Year", PrefixIcon = "e-add", Id = "Grid_add"},
+        new ItemModel(){ Text = "Edit Financial Year", PrefixIcon= "e-edit", Id="Grid_edit"},
         //new ItemModel(){ Text = "Delete Training Plan", PrefixIcon= "e-delete", Id="Grid_delete"},
-        new ItemModel(){ Text = "Update Bank", PrefixIcon= "e-update", Id="Grid_update"},
+        new ItemModel(){ Text = "Update Financial Year", PrefixIcon= "e-update", Id="Grid_update"},
         new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
     };
 
     protected override async Task OnInitializedAsync()
-    {       
-
-        var responsebankcount = await Http.GetAsync($"Utilities/GetBank");
-        var bankcount = await responsebankcount.Content.ReadAsStringAsync();
-
-        if (responsebankcount.IsSuccessStatusCode)
+    {
+        List<Task> t = new List<Task>();
+        t.Add(Task.Run(async () =>
         {
-            BankCountData = await Http.GetFromJsonAsync<List<ABankDto>>
-            ($"Utilities/GetBankCount");
-        }
+            var responsefinyear = await Http.GetAsync($"FinancialYear/list");
+            if (responsefinyear.IsSuccessStatusCode)
+            {
+                var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
+                FYearData = JsonSerializer.Deserialize<List<ViewFinancialYearDto>>(contentfinyear, _options);
+            }
+        }));
+
+        Task _t = Task.WhenAll(t);
+        await _t;
     }
 
-    #region BankAdapter
-    public class BankAdapter : DataAdaptor
+
+    #region FinancialYearAdapter
+    public class FinancialYearAdapter : DataAdaptor
     {
         HttpClient Http;
         ApiConfig _ApiConfig;
@@ -143,7 +149,7 @@
         private readonly JsonSerializerOptions _options;
         public IToastService toastService;
         private readonly NavigationManager Navigation;
-        public BankAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+        public FinancialYearAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
             , SystemSettings systemSettings, ApiConfig apiConfig)
         {
             Http = _http;
@@ -157,16 +163,16 @@
 
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         {
-            var data = new List<ABankDto>();
+            var data = new List<ViewFinancialYearDto>();
             try
             {
-                var response = await Http.GetAsync($"Utilities/GetBank");
+                var response = await Http.GetAsync($"FinancialYear/list");
                 var content = await response.Content.ReadAsStringAsync();
                 if (!response.IsSuccessStatusCode)
                 {
                     toastService.ShowError(response.ReasonPhrase);
                 }
-                data = JsonSerializer.Deserialize<List<ABankDto>>(content, _options);
+                data = JsonSerializer.Deserialize<List<ViewFinancialYearDto>>(content, _options);
             }
             catch (Exception ex)
             {
@@ -206,7 +212,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<ABankDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<ViewFinancialYearDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -216,13 +222,13 @@
         {
             try
             {
-                var val = (value as ABankDto);
+                var val = (value as ViewFinancialYearDto);
 
-                if (val.BankId == 0)
+                if (val.Id == 0)
                 {
                     string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                     StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                    var result = await Http.PostAsync($"Utilities/CreateBank", httpContent);
+                    var result = await Http.PostAsync($"FinancialYear/CreateFinancialYear", httpContent);
                     if (result.IsSuccessStatusCode)
                     {
                         toastService.ShowSuccess("Record sucessfully added");
@@ -236,7 +242,7 @@
                 {
                     string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                     StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                    var result = await Http.PutAsync($"Utilities/UpdateBank", httpContent);
+                    var result = await Http.PutAsync($"FinancialYear/UpdateFinancialYear", httpContent);
                     if (result.IsSuccessStatusCode)
                     {
                         toastService.ShowSuccess("Record sucessfully saved");
@@ -257,12 +263,12 @@
         {
             try
             {
-                var val = (value as ABankDto);
-                
-                
+                var val = (value as ViewFinancialYearDto);
+
+
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                var result = await Http.PutAsync($"Utilities/UpdateBank", httpContent);
+                var result = await Http.PutAsync($"FinancialYear/UpdateFinancialYear", httpContent);
                 if (result.IsSuccessStatusCode)
                 {
                     toastService.ShowSuccess("Record sucessfully updated");
@@ -283,46 +289,48 @@
 
     }
 
-    public async void BankActionComplete(ActionEventArgs<ABankDto> args)
+    public async void FinancialYearActionComplete(ActionEventArgs<ViewFinancialYearDto> args)
     {
-        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) 
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add)
         || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
         {
-            BankGrid.PreventRender(false);
+            FinancialYearGrid.PreventRender(false);
         }
 
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
         {
-            var responsebankcount = await Http.GetAsync($"Utilities/GetBankCount");
-            var bankcount = await responsebankcount.Content.ReadAsStringAsync();
-
-            if (responsebankcount.IsSuccessStatusCode)
+            List<Task> t = new List<Task>();
+            t.Add(Task.Run(async () =>
             {
-                BankCountData = await Http.GetFromJsonAsync<List<ABankDto>>
-                ($"Utilities/GetBankCount");
-            }
+                var responsefinyear = await Http.GetAsync($"FinancialYear/list");
+                if (responsefinyear.IsSuccessStatusCode)
+                {
+                    var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
+                    FYearData = JsonSerializer.Deserialize<List<ViewFinancialYearDto>>(contentfinyear, _options);
+                }
+            }));
         }
     }
 
-    public async void BankActionBegin(ActionEventArgs<ABankDto> Args)
+    public async void FinancialYearActionBegin(ActionEventArgs<ViewFinancialYearDto> Args)
     {
         var data = Args.Data;
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
         {
-            if (Args.Data.BankDesc == null)
+            if (Args.Data.FinancialYear == null)
             {
-                toastService.ShowWarning("Please enter the bank !");
+                toastService.ShowWarning("Please enter the financial year !");
                 Args.Cancel = true;
             }
             else
             {
-                var countdata = BankCountData?
-                .FirstOrDefault(o => o.BankDesc.Trim().ToLower() 
-                == Args.Data.BankDesc.Trim().ToLower());
+                var countdata = FYearData?
+                .FirstOrDefault(o => o.FinancialYear.Trim().ToLower()
+                == Args.Data.FinancialYear.Trim().ToLower());
 
                 if (countdata != null)
                 {
-                    toastService.ShowWarning("This bank has arleady been captured in the database as " + countdata.BankDesc + ". Record Not Saved");
+                    toastService.ShowWarning("This financial year has arleady been captured in the database as " + countdata.FinancialYear + ". Record Not Saved");
                     Args.Cancel = true;
                 }
             }
@@ -337,18 +345,17 @@
         }
     }
 
-
-    public string GetHolidayHeader(ABankDto Value)
+    public string GetYearHeader(ViewFinancialYearDto Value)
     {
-        if (Value.BankId == 0)
+        if (Value.Id == 0)
         {
-            return "Add a new Bank";
+            return "Add a new Financial Year";
         }
         else
         {
-            return "Edit " + Value.BankDesc;
+            return "Edit " + Value.FinancialYear;
         }
     }
 
-    #endregion BankAdapter
+    #endregion FinancialYearAdapter
 }

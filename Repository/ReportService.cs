@@ -186,9 +186,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<ViewEmployeeLeaveRoasterReportDto>> GetAnnualLeaveRoaster(UtilitiesSearchPanel SearchModel)
+        public async Task<List<ViewEmployeeLeaveRoasterReportPivotedDto>> GetAnnualLeaveRoaster(UtilitiesSearchPanel SearchModel)
         {
-            List<ViewEmployeeLeaveRoasterReportDto>? data = new List<ViewEmployeeLeaveRoasterReportDto>();
+            List<ViewEmployeeLeaveRoasterReportPivotedDto>? data = new List<ViewEmployeeLeaveRoasterReportPivotedDto>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -198,7 +198,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveRoasterReportDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveRoasterReportPivotedDto>>(content, _options);
                 }
                 else
                 {
@@ -211,5 +211,32 @@ namespace HCMIS.Repository
             }
             return data;
         }
+
+        public async Task<List<ViewEmployeeLeaveRoasterDatesReportDto>> GetSelectedDates(UtilitiesSearchPanel SearchModel)
+        {
+            List<ViewEmployeeLeaveRoasterDatesReportDto>? data = new List<ViewEmployeeLeaveRoasterDatesReportDto>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetSelectedDates", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveRoasterDatesReportDto>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
+
     }
 }

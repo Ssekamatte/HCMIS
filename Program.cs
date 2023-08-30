@@ -66,6 +66,7 @@ using MudBlazor.Services;
 using static HCMIS.Pages.Utilities.MeasurementUnitPage;
 using static HCMIS.Pages.EmployeeLeave.AnnualLeaveRosterPage;
 using static HCMIS.Pages.EmployeeDisplinary.DisciplinaryPage;
+using static HCMIS.Pages.Utilities.FinancialYearPage;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.Services.AddSyncfusionBlazor();
@@ -154,6 +155,7 @@ builder.Services.AddScoped<EmployeeRecordNewAdapter>();
 builder.Services.AddScoped<LeavePlanHeaderAdapter>();
 builder.Services.AddScoped<BasicUnitAdapter>();
 builder.Services.AddScoped<AnnualLeaveRosterAdapter>();
+builder.Services.AddScoped<FinancialYearAdapter>();
 
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IReportService, ReportService>();
