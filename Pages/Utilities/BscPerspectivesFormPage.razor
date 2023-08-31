@@ -1,0 +1,401 @@
+﻿@page "/BscPerspectivesFormPage"
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using System.Collections;
+@using System.IO;
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager navigation;
+@using HCMIS.SHARED.DTOs.BSC;
+@using HCMIS.SHARED.DTOs.Utilities;
+@using HCMIS.ViewModel;
+@inject IToastService toastService;
+@using HCMIS.Interface;
+@inject IAuthenticationService AuthService;
+
+<style>
+ 
+    /*Disable Grid on Load and Enable it on DataBound*/
+    .e-grid[disable="yes"] {
+        opacity: .5;
+        pointer-events: none;
+        -ms-touch-action: none;
+        touch-action: none;
+        cursor: no-drop;
+    }
+
+     /*hide the Default Grid spinner */
+    .e-grid .e-spinner-pane {
+        display: none;
+    }
+
+    /*Disable select all on grid checkbox*/
+    .e-headercelldiv.e-headerchkcelldiv .e-checkbox-wrapper.e-css {
+        pointer-events: none;
+        opacity: 0.5;
+    }
+
+    /*Change Dialog Header Close Button*/
+    .e-dialog .e-btn .e-btn-icon.e-icon-dlg-close {
+        float: right;
+        font-size: 12px;
+        width: auto;
+    }
+
+    .e-dialog .e-dlg-header-content .e-btn.e-dlg-closeicon-btn {
+        background-color: #d9edf7;
+        border-color: #d9edf7;
+        border-radius: 1px;
+        bottom: 0;
+        float: right;
+        height: 32px;
+        left: 15px;
+        position: relative;
+        width: 15px;
+        padding: 1px 9px;
+    }
+
+    /*Change Cell Color */
+    .e-headercell.e-attr1 {
+        background: #964B00;
+        color: white;
+    }
+
+    .e-headercell.e-attr2 {
+        background: #FFFF00;
+        color: darkred;
+    }
+
+    .e-headercell.e-attr3 {
+        background: grey;
+        color: white;
+    }
+
+    .pp {
+        color: ghostwhite;
+        background-color: #2ecc71;
+        padding: 10px;
+    }
+</style>
+
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="color: brown;">
+        <strong>
+            <img src="/Image/logonhcc.png" width="40" height="25"/> HCMIS
+        </strong>| PERSPECTIVES
+    </li>
+</ol>
+
+<SfSpinner @ref="SpinnerObj" Label="Loading Please Wait....." Size="50">
+    @*Render custom spinner component.*@
+</SfSpinner>
+
+<SfGrid @ref="@BscPerspectiveGrid" TValue="ABscPerspectivesDto" AllowPaging="true"
+        AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
+        AllowTextWrap="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Cancel", "Update"})">
+    
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+    @*<SfDataManager AdaptorInstance="@typeof(BscPerspectiveAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>*@
+    <GridEvents OnActionComplete="@OnPerspectiveActionComplete"
+                OnActionBegin="@OnPerspectivesActionBegin"
+                RowSelecting="RowSelectingHandler"
+                OnLoad="LoadHandler"
+                DataBound="DataBound"
+                TValue="ABscPerspectivesDto">
+    </GridEvents>
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+        
+        <Template Context="BscPerspectivesContext"> 
+             @{
+                 <center>
+                     <h5>
+                        <strong>CAPTURE PERCENTAGES</strong>
+                     </h5>
+                 </center>
+
+                KpiData = (BscPerspectivesContext as ABscPerspectivesDto);
+                @if (KpiData != null)
+                {
+                    <div class="row">
+                        <div class="col-md-12" hidden>
+                            <SfNumericTextBox @bind-Value="@(KpiData.BscPerspectiveId)" Enabled="false" Placeholder="Perspective Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                        </div>
+
+                        <div class="col-md-6">
+                            <p>Financial Year:<span style="color:red;">*</span></p>
+                            <SfDropDownList @bind-Value="@(KpiData.FinancialYearId)"
+                                            Enabled="@isFinancialYearEnabled" TItem="ViewFinancialYearDto" TValue="int?"
+                                            DataSource="@FinancialYearData" Placeholder="Please select"
+                                            FloatLabelType="FloatLabelType.Never" AllowFiltering="true"
+                                            FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                <DropDownListFieldSettings Value="@nameof(AFinancialYear.Id)"
+                                                           Text="@nameof(AFinancialYear.FinancialYear)">
+                                </DropDownListFieldSettings>
+                                @*<DropDownListEvents TValue="int?"
+                        TItem="ViewBscEmployeeDto" ValueChange="OnEmployeeChange">
+                        </DropDownListEvents>*@
+                            </SfDropDownList>
+                        </div>
+
+                        <div class="col-md-6">
+                            <p>Department:<span style="color:red;">*</span></p>
+                            <SfDropDownList @bind-Value="@(KpiData.DepartmentId)"
+                                            Enabled="@DepartmentDD" TItem="ADepartmentDto" TValue="int?"
+                                            DataSource="@DepartmentsData" Placeholder="Please select"
+                                            FloatLabelType="FloatLabelType.Never" AllowFiltering="true"
+                                            FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                <DropDownListFieldSettings Value="@nameof(ADepartmentDto.DepartmentId)"
+                                                           Text="@nameof(ADepartmentDto.DepartmentDescription)">
+                                </DropDownListFieldSettings>
+                            </SfDropDownList>
+                        </div>
+                    </div>
+                }
+            }
+        </Template> 
+
+    </GridEditSettings>
+    <GridColumns>
+        <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn>
+        <GridColumn Field=@nameof(ABscPerspectivesDto.BscPerspectiveId) Visible=false HeaderText="Perspective Id" AllowEditing="false" IsPrimaryKey="true"></GridColumn>
+        
+        <GridForeignColumn Field=@nameof(ABscPerspectivesDto.FinancialYearId)
+                           HeaderText="Financial Year"
+                           Width="80"
+                           AllowEditing="true"
+                           ForeignKeyField="@(nameof(AFinancialYear.Id))"
+                           ForeignKeyValue="@(nameof(AFinancialYear.FinancialYear))"
+                           ForeignDataSource="@FinancialYearData"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridForeignColumn>
+        <GridForeignColumn Field=@nameof(ABscPerspectivesDto.DepartmentId)
+                           HeaderText="Department"
+                           Width="80"
+                           AllowEditing="true"
+                           ForeignKeyField="@(nameof(ADepartment.DepartmentId))"
+                           ForeignKeyValue="@(nameof(ADepartment.DepartmentDescription))"
+                           ForeignDataSource="@DepartmentsData"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridForeignColumn>
+    </GridColumns>
+</SfGrid>
+
+@code {
+    #region Declarations
+    private static ABscPerspectivesDto? KpiData { get; set; }
+    SfGrid<ABscPerspectivesDto>? BscPerspectiveGrid;
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "65%" };
+    List<BscPerspectivesDto>? BscPerspectiveData { get; set; }
+    List<ViewPerspectiveTotalWeightSumDto>? BscPerspectiveSumData { get; set; }
+    List<ViewFinancialYearDto>? FinancialYearData { get; set; }
+    List<ADepartmentDto>? DepartmentsData { get; set; }
+    List<ABscPerspectivesTypeDto>? BscPerspectiveTypeData { get; set; }
+    List<AMeasurementMetricDto>? MeasurementUnitData { get; set; }
+
+    EmployeeRegistrationModel inputmodel { get; set; } = new EmployeeRegistrationModel();
+    private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    [Parameter]
+    public int? finyear { get; set; }
+    LoginResultModel? Credentials { get; set; }
+    public bool WeightTextBox = true;
+    public bool BasicUnitDD = true;
+    public bool DepartmentDD = false;
+    private static EmployeeDto? employeeno { get; set; }
+    List<EmployeeDto>? EmployeeData { get; set; }
+    SfSpinner? SpinnerObj;
+    private Dictionary<string, object> GridAttributes { get; set; } = new Dictionary<string, object>();
+    bool isFinancialYearEnabled { get; set; } = false;
+    int? finyearid = null;
+
+    #endregion Declarations
+
+    protected override async Task OnInitializedAsync()
+    {
+        Credentials = await AuthService.GetUserCredentials();
+        JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+        employeeno = null;
+        List<Task> t = new List<Task>();
+        t.Add(Task.Run(async () =>
+        {
+            var responsebscperspective = await Http.GetAsync($"BscPerspectives/GetBscPerspectives");
+            if (responsebscperspective.IsSuccessStatusCode)
+            {
+                var contentbscperspective = await responsebscperspective.Content.ReadAsStringAsync();
+                BscPerspectiveData = JsonSerializer.Deserialize<List<BscPerspectivesDto>>(contentbscperspective, _options);
+            }
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
+            var responsebscperspectivesum = await Http.GetAsync($"BscPerspectives/GetBscPerspectivesSum");
+            if (responsebscperspectivesum.IsSuccessStatusCode)
+            {
+                var contentbscperspectivesum = await responsebscperspectivesum.Content.ReadAsStringAsync();
+                BscPerspectiveSumData = JsonSerializer.Deserialize<List<ViewPerspectiveTotalWeightSumDto>>(contentbscperspectivesum, _options);
+            }
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
+            var responsefinyear = await Http.GetAsync($"FinancialYear/list");
+            if (responsefinyear.IsSuccessStatusCode)
+            {
+                var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
+                FinancialYearData = JsonSerializer.Deserialize<List<ViewFinancialYearDto>>(contentfinyear, _options);
+
+                DateTime currentdate = DateTime.Now;
+                string? financialyeardesc = null;
+                if (currentdate.Month >= 6)
+                {
+                    financialyeardesc = $"{currentdate.Year}/{(currentdate.Year + 1)}";
+                }
+                else if (currentdate.Month < 6)
+                {
+                    financialyeardesc = $"{(currentdate.Year - 1)}/{currentdate.Year}";
+                }
+
+                var b = FinancialYearData.FirstOrDefault(o => o.FinancialYear.Trim() == financialyeardesc.Trim());
+                if (b != null)
+                {
+                    finyearid = b.Id;
+                }
+            }
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
+            var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
+            if (responsebscperspectivetype.IsSuccessStatusCode)
+            {
+                var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
+                BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesTypeDto>>(contentbscperspectivetype, _options);
+            }
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
+            var responsedepartment = await Http.GetAsync($"Utilities/GetDepartment");
+            if (responsedepartment.IsSuccessStatusCode)
+            {
+                var contentdepartment = await responsedepartment.Content.ReadAsStringAsync();
+                DepartmentsData = JsonSerializer.Deserialize<List<ADepartmentDto>>(contentdepartment, _options);
+            }
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
+            var responsemetric = await Http.GetAsync($"Utilities/GetMeasurementMetric");
+            if (responsemetric.IsSuccessStatusCode)
+            {
+                var contentmetric = await responsemetric.Content.ReadAsStringAsync();
+                MeasurementUnitData = JsonSerializer.Deserialize<List<AMeasurementMetricDto>>(contentmetric, _options);
+            }
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
+            var responseemployee = await Http.GetAsync($"Employeez/GetMasterList");
+            if (responseemployee.IsSuccessStatusCode)
+            {
+                var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+                EmployeeData = JsonSerializer.Deserialize<List<EmployeeDto>>(contentemployee, _options);
+            }
+        }));
+
+        ////To Get Department Data
+        //var response = await Http.GetAsync($"Employeez/GetEmployeePrimaryDataList");
+        //var content = await response.Content.ReadAsStringAsync();
+        //if (response.IsSuccessStatusCode)
+        //{
+        //    var _EmployeeRegistrationModel = JsonSerializer.Deserialize<EmployeeRegistrationModel>(content, _options);
+
+        //    if (_EmployeeRegistrationModel != null)
+        //    {
+        //        DepartmentsData = _EmployeeRegistrationModel.Departments;
+        //    }
+        //}
+
+        Task _t = Task.WhenAll(t);
+        await _t;
+    }
+
+    public async Task RowSelectingHandler(RowSelectingEventArgs<ABscPerspectivesDto> args)
+    {
+        await BscPerspectiveGrid.ClearSelection();   //clear selection
+    }
+
+    public async void OnPerspectivesActionBegin(ActionEventArgs<ABscPerspectivesDto> args)
+    {
+        try
+        {
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+                
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+            {
+                args.RowData.FinancialYearId = finyearid;
+
+                if (Credentials.StaffId > 0)
+                {
+                    employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Credentials.StaffId);
+                    if (employeeno != null)
+                    {
+                        args.Data.DepartmentId = employeeno.DepartmentId;
+                    }
+                }
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+            {
+                if (args.Data.FinancialYearId == null)
+                {
+                    toastService.ShowWarning("Please select a financial year.");
+                    args.Cancel = true;
+                }
+                else if (args.Data.DepartmentId == null)
+                {
+                    toastService.ShowWarning("Please select a department.");
+                    args.Cancel = true;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+    }
+
+
+    public void OnPerspectiveActionComplete(ActionEventArgs<ABscPerspectivesDto> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            BscPerspectiveGrid?.PreventRender(false);
+        }
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+        {
+            
+        }
+    }
+
+    public async void LoadHandler()
+    {
+        SpinnerObj.ShowAsync();
+        GridAttributes.Add("disable", "yes");
+    }
+    public async void DataBound()
+    {
+        GridAttributes["disable"] = "no";
+        SpinnerObj.HideAsync();
+    }
+}
