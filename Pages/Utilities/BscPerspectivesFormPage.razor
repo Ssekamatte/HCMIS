@@ -97,6 +97,20 @@
         min-height: 98%;
     }
 
+    .disablecell {
+        background-color: red;
+        pointer-events: none;
+        display: none;
+    }
+
+    h6 {
+        color: ghostwhite;
+        background-color: #268cff;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+
 </style>
 
 <ol class="breadcrumb" style="margin-top:5px;">
@@ -189,10 +203,35 @@
                                 </GridEditSettings>
                                 <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
                                 <GridPageSettings PageSizes="true"></GridPageSettings>
+
+                                <GridAggregates>
+                                    <GridAggregate>
+                                        <GridAggregateColumns>
+                                            <GridAggregateColumn Field=@nameof(ViewABscPerspectivesDetailDto.PerspectiveTotalWeight) Type="Syncfusion.Blazor.Grids.AggregateType.Sum">
+                                                <FooterTemplate>
+                                                    @{
+                                                        var aggregate = (context as AggregateTemplateContext);
+                                                        <div>
+                                                            @*@weighttotalpercentage = @aggregate.Sum*@
+                                                            <p>Total Weight: @aggregate.Sum</p>
+                                                            <p><span style="color:Purple;">Total Weight1: @GetFinancialPerspectiveScore()</span></p>
+                                                        </div>
+                                                    }
+                                                </FooterTemplate>
+                                            </GridAggregateColumn>
+                                        </GridAggregateColumns>
+                                    </GridAggregate>
+                                </GridAggregates>
+
                                 <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell" CellSelectionMode="CellSelectionMode.Box"></GridSelectionSettings>
 
-                                <GridEvents CellSelected="PerspectiveCellSelectHandler"
-                                            TValue="ViewABscPerspectivesDetailDto">
+                                <GridEvents 
+                                    CellSelected="PerspectiveCellSelectHandler"
+                                    CellSaved="DetailCellSavedHandler"
+                                    DataBound="DataBoundChild"
+                                    RowDataBound="RowDataBoundHandler"
+                                    QueryCellInfo="QueryCellInfoHandlerChild"
+                                    TValue="ViewABscPerspectivesDetailDto">
                                   </GridEvents>
 
                                 <GridColumns>
@@ -243,9 +282,18 @@
         </Template> 
 
         <FooterTemplate>
-            <button @onclick="@onSubmitForm" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Save</button>
-            <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel</button>
+            @*@if(!string.IsNullOrEmpty(GetFinancialPerspectiveScore()) && int.Parse(GetFinancialPerspectiveScore()) <= 70)*@
+           @if (weighttotalpercentage <= 70)
+            {
+                <button @onclick="@onSubmitForm" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Save</button>
+                <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel</button>
+            }
+            else
+            {
+                <h6>You cannot exceed 70 %. Please revise your scores</h6>
+            }
         </FooterTemplate>
+
 
     </GridEditSettings>
     <GridColumns>
@@ -335,6 +383,7 @@
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     int countid = -1000;
     int? YrId = null;
+    int? weighttotalpercentage  = 0;
 
     private List<object> ToolbarMenu = new List<object>()
     {
@@ -564,6 +613,71 @@
         {
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
             {
+                //var datasource = new List<ViewABscPerspectivesDetailDto>();
+                //var dist = PerspectivesDetailData
+                //.Where(o => o.DepartmentId == args.RowData.DepartmentId)
+                //.ToList();
+
+                //var TargetCaptureDataSource = PerspectivesDetailData
+                //.Where(o => o.FinancialYearId == args.Data.FinancialYearId 
+                //    && o.DepartmentId == args.Data.DepartmentId).ToList();
+
+                //if (TargetCaptureDataSource.Count > 0)
+                //{
+                //    foreach (var n in TargetCaptureDataSource)
+                //    {
+                //        var countdata = PerspectivesDetailData
+                //        .Where(o => o.FinancialYearId == args.Data.FinancialYearId
+                //            && o.DepartmentId == args.Data.DepartmentId).ToList();
+
+                //        if (countdata == null)
+                //        {
+                //            foreach (var item in dist)
+                //            {
+                //                var exist = datasource.FirstOrDefault(o => o.BscPerspectiveTypeId == item.BscPerspectiveTypeId);
+                //                if (exist == null)
+                //                {
+                //                    var m = new ViewABscPerspectivesDetailDto();
+
+                //                    m.BscPerspectiveDetailId = countid;
+                //                    m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
+                //                    m.PerspectiveTotalWeight = 0;
+
+                //                    TargetCaptureDataSource.Add(m);
+                //                    countid++;
+                //                }
+                //            }
+
+                //        }
+
+                //        else
+                //        {
+                //            foreach (var item in dist)
+                //            {
+                //                var exist = datasource.FirstOrDefault(o => o.BscPerspectiveTypeId == item.BscPerspectiveTypeId);
+                //                var countdata1 = PerspectivesDetailData
+                //                .FirstOrDefault(o => o.FinancialYearId == args.Data.FinancialYearId
+                //                    && o.DepartmentId == args.Data.DepartmentId);
+
+                //                if (exist == null)
+                //                {
+                //                    if (countdata1 != null)
+                //                    {
+                //                        var m = new ViewABscPerspectivesDetailDto();
+                //                        m.BscPerspectiveDetailId = countid;
+                //                        m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
+                //                        m.PerspectiveTotalWeight = countdata1.PerspectiveTotalWeight;
+
+                //                        TargetCaptureDataSource.Add(m);
+                //                        countid++;
+                //                    }
+
+                //                }
+                //            }
+                //        }
+                //    }
+                //}
+
                 if (PerspectivesDetailData != null)
                 {
                     args.RowData.ABscPerspectivesDetail = PerspectivesDetailData;
@@ -578,7 +692,7 @@
                     //var exist = args.RowData.ABscPerspectivesDetail.FirstOrDefault(o => o.BscPerspectiveTypeId == item.BscPerspectiveTypeId);
 
                     var exist = args.RowData.ABscPerspectivesDetail.FirstOrDefault(o => /*o.BscPerspectiveTypeId == item.BscPerspectiveTypeId
-                        &&*/ o.FinancialYearId == args.Data.FinancialYearId && o.DepartmentId == args.Data.DepartmentId);
+                &&*/ o.FinancialYearId == args.Data.FinancialYearId && o.DepartmentId == args.Data.DepartmentId);
 
                     if (exist == null)
                     {
@@ -836,6 +950,70 @@
             // throw ex;
         }
     }
+
+    private async Task DetailCellSavedHandler(CellSaveArgs<ViewABscPerspectivesDetailDto> args)
+    {
+        try
+        {
+            var index = await ChildDataGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.BscPerspectiveDetailId);
+            if (args.ColumnName == nameof(ViewABscPerspectivesDetailDto.PerspectiveTotalWeight))
+            {
+                //var a = PerformanceDescriptorData.FirstOrDefault(o => o.PerformanceDescriptorId == args.Data.PerformanceDescriptorId);
+                //if (a != null)
+                //{
+                //    await ChildDataGrid.UpdateCellAsync(index, nameof(BalanceScoreCardBehavioralDto.SupervisorAssessment), Convert.ToDouble(a.PerformanceScore.Value));
+
+                //}
+
+            }
+
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message);
+        }
+        finally
+        {
+            await ChildDataGrid.EndEditAsync();
+        }
+    }
+
+    public async Task RowDataBoundHandler(RowDataBoundEventArgs<ViewABscPerspectivesDetailDto> args)
+    {
+        var index = await ChildDataGrid.GetRowIndexByPrimaryKeyAsync(args.Data.BscPerspectiveDetailId);
+        if (args.Data.BscPerspectiveTypeId == 4)
+        {
+            await ChildDataGrid.UpdateCellAsync(index, nameof(ViewABscPerspectivesDetailDto.PerspectiveTotalWeight),Convert.ToDouble(10));
+        }
+    }
+
+    public async void QueryCellInfoHandlerChild(QueryCellInfoEventArgs<ViewABscPerspectivesDetailDto> Args)
+    {
+        if (Args.Column.Field == nameof(ViewABscPerspectivesDetailDto.PerspectiveTotalWeight))
+        {
+            //Disable Learning and Growth
+            if (Args.Data.BscPerspectiveTypeId == 4)
+            {
+                Args.Cell.AddClass(new string[] { "disablecell" });
+            }
+        }
+    }
+
+    public string GetFinancialPerspectiveScore()
+    {
+        var data = KpiData.ABscPerspectivesDetail;
+
+        return Queryable
+        .Sum(data.Select(x => x.PerspectiveTotalWeight)
+        .AsQueryable())
+        .ToString();
+    }
+
+    public async void DataBoundChild()
+    {
+        
+    }
+
 
     public async void LoadHandler()
     {
