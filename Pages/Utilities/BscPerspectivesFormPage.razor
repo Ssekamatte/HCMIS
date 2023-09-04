@@ -16,7 +16,7 @@
 @inject IAuthenticationService AuthService;
 
 <style>
- 
+
     /*Disable Grid on Load and Enable it on DataBound*/
     .e-grid[disable="yes"] {
         opacity: .5;
@@ -26,10 +26,21 @@
         cursor: no-drop;
     }
 
-     /*hide the Default Grid spinner */
+    /*hide the Default Grid spinner */
     .e-grid .e-spinner-pane {
         display: none;
     }
+
+    /*to remove the edit button alone*/
+    .e-removeEditcommand .e-unboundcell .e-unboundcelldiv button.e-Editbutton {
+        display: none;
+    }
+
+    /*to remove the delete button alone*/
+    .e-removeDeletecommand .e-unboundcell .e-unboundcelldiv button.e-Deletebutton {
+        display: none;
+    }
+
 
     /*Disable select all on grid checkbox*/
     .e-headercelldiv.e-headerchkcelldiv .e-checkbox-wrapper.e-css {
@@ -78,6 +89,14 @@
         background-color: #2ecc71;
         padding: 10px;
     }
+
+    .e-edit-dialog {
+        max-height: 98%;
+        max-width: 98%;
+        min-width: 98%;
+        min-height: 98%;
+    }
+
 </style>
 
 <ol class="breadcrumb" style="margin-top:5px;">
@@ -92,19 +111,20 @@
     @*Render custom spinner component.*@
 </SfSpinner>
 
-<SfGrid @ref="@BscPerspectiveGrid" TValue="ABscPerspectivesDto" AllowPaging="true"
+<SfGrid @ref="@BscPerspectiveGrid" ID="Grid" TValue="ABscPerspectivesDto" @attributes="@GridAttributes" AllowPaging="true"
         AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
-        AllowTextWrap="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Cancel", "Update"})">
+        AllowTextWrap="true" AllowSorting="true" Toolbar="@ToolbarMenu">
     
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
     <GridPageSettings PageSizes="true"></GridPageSettings>
     <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
-    @*<SfDataManager AdaptorInstance="@typeof(BscPerspectiveAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>*@
+    <SfDataManager AdaptorInstance="@typeof(BscPerspectiveAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
     <GridEvents OnActionComplete="@OnPerspectiveActionComplete"
                 OnActionBegin="@OnPerspectivesActionBegin"
                 RowSelecting="RowSelectingHandler"
                 OnLoad="LoadHandler"
                 DataBound="DataBound"
+                Created="CreatedHandler"
                 TValue="ABscPerspectivesDto">
     </GridEvents>
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
@@ -135,9 +155,9 @@
                                 <DropDownListFieldSettings Value="@nameof(AFinancialYear.Id)"
                                                            Text="@nameof(AFinancialYear.FinancialYear)">
                                 </DropDownListFieldSettings>
-                                @*<DropDownListEvents TValue="int?"
-                        TItem="ViewBscEmployeeDto" ValueChange="OnEmployeeChange">
-                        </DropDownListEvents>*@
+                                <DropDownListEvents TValue="int?"
+                                            TItem="ViewFinancialYearDto" ValueChange="OnYearChange">
+                                </DropDownListEvents>
                             </SfDropDownList>
                         </div>
 
@@ -153,10 +173,79 @@
                                 </DropDownListFieldSettings>
                             </SfDropDownList>
                         </div>
+
+                        @*GridPerspectives*@
+                        <div class="form-group col-md-12" style="padding-top:10px">
+                            <SfGrid @ref="@ChildDataGrid"
+                                    TValue="ViewABscPerspectivesDetailDto"
+                                    ID="ChGrid"
+                                    DataSource="@KpiData.ABscPerspectivesDetail"
+                                    AllowPaging="false" AllowFiltering="false" AllowReordering="true"
+                                    AllowResizing="true" AllowGrouping="true" AllowExcelExport="true"
+                                    AllowPdfExport="true" AllowSelection="true" AllowSorting="true"
+                                    AllowTextWrap="true" Height="250px" GridLines="GridLine.Both">
+                                <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false" Dialog="@DialogParams">
+
+                                </GridEditSettings>
+                                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                                <GridPageSettings PageSizes="true"></GridPageSettings>
+                                <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell" CellSelectionMode="CellSelectionMode.Box"></GridSelectionSettings>
+
+                                <GridEvents CellSelected="PerspectiveCellSelectHandler"
+                                            TValue="ViewABscPerspectivesDetailDto">
+                                  </GridEvents>
+
+                                <GridColumns>
+                                    <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
+                                    <GridColumn Field=@nameof(ViewABscPerspectivesDetailDto.BscPerspectiveDetailId) HeaderText="BscPerspectiveDetailId" AllowEditing="false" IsPrimaryKey="true" Width="150" Visible="true"></GridColumn>
+                                    <GridForeignColumn Field=@nameof(ViewABscPerspectivesDetailDto.BscPerspectiveTypeId)
+                                                       HeaderText="Perspective"
+                                                       Width="120"
+                                                       AllowEditing="false"
+                                                       ForeignKeyField="@(nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeId))"
+                                                       ForeignKeyValue="@(nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeDescription))"
+                                                       ForeignDataSource="@BscPerspectiveTypeData"
+                                                       AllowFiltering="false"
+                                                       IsFrozen="false"
+                                                       CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+                                    </GridForeignColumn>
+
+                                    <GridColumn Field=@nameof(ViewABscPerspectivesDetailDto.PerspectiveTotalWeight)
+                                                HeaderText="Perspective Total Weight"
+                                                TextAlign="TextAlign.Right"
+                                                AllowEditing="true"
+                                                ValidationRules="@(new ValidationRules { Required = false, Min = 0 , Max=100 })"
+                                                EditType="EditType.NumericEdit"
+                                                Format="###.##"
+                                                Width="70"                                                
+                                                ClipMode="ClipMode.EllipsisWithTooltip"
+                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+                                    </GridColumn>
+
+                                    <GridForeignColumn Field=@nameof(ViewABscPerspectivesDetailDto.MeasurementMetricId)
+                                                       HeaderText="Basic Unit"
+                                                       Width="70"
+                                                       AllowEditing="true"
+                                                       ForeignKeyField="@(nameof(AMeasurementMetricDto.MeasurementMetricId))"
+                                                       ForeignKeyValue="@(nameof(AMeasurementMetricDto.MeasurementMetricDesc))"
+                                                       ForeignDataSource="@MeasurementUnitData"
+                                                       CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+                                    </GridForeignColumn>
+
+                                </GridColumns>
+                            </SfGrid>
+
+                        </div>
+
                     </div>
                 }
             }
         </Template> 
+
+        <FooterTemplate>
+            <button @onclick="@onSubmitForm" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Save</button>
+            <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel</button>
+        </FooterTemplate>
 
     </GridEditSettings>
     <GridColumns>
@@ -184,10 +273,41 @@
     </GridColumns>
 </SfGrid>
 
+<div>
+    <SfDialog @ref="@LoadingDialogue"
+              ID="LoadingDialog"
+              Height="auto"
+              Width="20%"
+              AllowDragging="true"
+              Target=".mainbody"
+              ShowCloseIcon="false"
+              IsModal=true
+              Visible="false">
+        <DialogTemplates>
+            <Content>
+                <div style="padding:25px">
+                    <div class="loader">
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                    </div>
+                </div>
+            </Content>
+            <FooterTemplate>
+
+            </FooterTemplate>
+        </DialogTemplates>
+    </SfDialog>
+</div>
+
 @code {
     #region Declarations
     private static ABscPerspectivesDto? KpiData { get; set; }
     SfGrid<ABscPerspectivesDto>? BscPerspectiveGrid;
+    SfGrid<ViewABscPerspectivesDetailDto>? ChildDataGrid;
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "65%" };
     List<BscPerspectivesDto>? BscPerspectiveData { get; set; }
     List<ViewPerspectiveTotalWeightSumDto>? BscPerspectiveSumData { get; set; }
@@ -195,9 +315,10 @@
     List<ADepartmentDto>? DepartmentsData { get; set; }
     List<ABscPerspectivesTypeDto>? BscPerspectiveTypeData { get; set; }
     List<AMeasurementMetricDto>? MeasurementUnitData { get; set; }
+    List<ViewABscPerspectivesDetailDto>? PerspectivesDetailData { get; set; }
+    //List<ABscPerspectivesDetailDto>? PerspectivesDetailData { get; set; }
 
     EmployeeRegistrationModel inputmodel { get; set; } = new EmployeeRegistrationModel();
-    private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     [Parameter]
     public int? finyear { get; set; }
     LoginResultModel? Credentials { get; set; }
@@ -210,13 +331,22 @@
     private Dictionary<string, object> GridAttributes { get; set; } = new Dictionary<string, object>();
     bool isFinancialYearEnabled { get; set; } = false;
     int? finyearid = null;
+    SfDialog? LoadingDialogue;
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    int countid = -1000;
+    int? YrId = null;
+
+    private List<object> ToolbarMenu = new List<object>()
+    {
+            new ItemModel() { Text = "Add Weight", PrefixIcon = "e-add", Id = "Grid_add"},
+            new ItemModel(){ Text = "Edit Weight", PrefixIcon= "e-edit", Id="Grid_edit"},
+    };
 
     #endregion Declarations
 
     protected override async Task OnInitializedAsync()
     {
         Credentials = await AuthService.GetUserCredentials();
-        JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
         employeeno = null;
         List<Task> t = new List<Task>();
@@ -232,11 +362,11 @@
 
         t.Add(Task.Run(async () =>
         {
-            var responsebscperspectivesum = await Http.GetAsync($"BscPerspectives/GetBscPerspectivesSum");
-            if (responsebscperspectivesum.IsSuccessStatusCode)
+            var responsebscperspectivedetail = await Http.GetAsync($"BscPerspectives/GetBscPerspectivesDetail");
+            if (responsebscperspectivedetail.IsSuccessStatusCode)
             {
-                var contentbscperspectivesum = await responsebscperspectivesum.Content.ReadAsStringAsync();
-                BscPerspectiveSumData = JsonSerializer.Deserialize<List<ViewPerspectiveTotalWeightSumDto>>(contentbscperspectivesum, _options);
+                var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
+                PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscPerspectivesDetailDto>>(contentbscperspectivedetail, _options);
             }
         }));
 
@@ -307,26 +437,125 @@
             }
         }));
 
-        ////To Get Department Data
-        //var response = await Http.GetAsync($"Employeez/GetEmployeePrimaryDataList");
-        //var content = await response.Content.ReadAsStringAsync();
-        //if (response.IsSuccessStatusCode)
-        //{
-        //    var _EmployeeRegistrationModel = JsonSerializer.Deserialize<EmployeeRegistrationModel>(content, _options);
-
-        //    if (_EmployeeRegistrationModel != null)
-        //    {
-        //        DepartmentsData = _EmployeeRegistrationModel.Departments;
-        //    }
-        //}
-
         Task _t = Task.WhenAll(t);
         await _t;
     }
 
+    public async Task onSubmitForm()
+    {
+        try
+        {
+            await LoadingDialogue.ShowAsync();
+            if (ChildDataGrid != null)
+            {
+                await ChildDataGrid.EndEditAsync();
+            }
+
+            if (BscPerspectiveGrid != null)
+            {
+                await BscPerspectiveGrid.EndEditAsync();
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowWarning(ex.Message.ToString());
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    public async void DialogCancelBtnclicked()
+    {
+        if (ChildDataGrid != null)
+        {
+            await ChildDataGrid.CloseEditAsync();
+        }
+        if (BscPerspectiveGrid != null)
+        {
+            await BscPerspectiveGrid.CloseEditAsync();
+        }
+    }
+
+    public async void OnYearChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewFinancialYearDto> args)
+    {
+        try
+        {
+            await LoadingDialogue.ShowAsync();
+            YrId = args.ItemData.Id;
+
+            List<Task> t = new List<Task>();
+
+            t.Add(Task.Run(async () =>
+            {
+                var responsebscperspectivedetail = await Http.GetAsync($"BscPerspectives/GetBscPerspectivesDetail?YearId={YrId}");
+                if (responsebscperspectivedetail.IsSuccessStatusCode)
+                {
+                    var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
+                    PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscPerspectivesDetailDto>>(contentbscperspectivedetail, _options);
+                }
+            }));
+
+
+            t.Add(Task.Run(async () =>
+            {
+                var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
+                if (responsebscperspectivetype.IsSuccessStatusCode)
+                {
+                    var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
+                    BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesTypeDto>>(contentbscperspectivetype, _options);
+                }
+            }));
+
+
+            if (PerspectivesDetailData != null)
+            {
+                KpiData.ABscPerspectivesDetail = PerspectivesDetailData;
+            }
+            if (KpiData.ABscPerspectivesDetail == null)
+            {
+                KpiData.ABscPerspectivesDetail = new List<ViewABscPerspectivesDetailDto>();
+            }
+
+            foreach (var item in BscPerspectiveTypeData)
+            {
+                var exist = KpiData.ABscPerspectivesDetail
+                .FirstOrDefault(o => o.BscPerspectiveTypeId == item.BscPerspectiveTypeId);
+
+                if (exist == null)
+                {
+                    var m = new ABscPerspectivesDetailDto();
+                    m.BscPerspectiveDetailId = countid;
+                    m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
+
+                    //KpiData.ABscPerspectivesDetail.Add(m);
+                    countid++;
+                }
+            }
+            KpiData.ABscPerspectivesDetail = KpiData.ABscPerspectivesDetail.OrderBy(o => o.BscPerspectiveTypeId).ToList();
+
+            StateHasChanged();
+
+            Task _t = Task.WhenAll(t);
+            await _t;
+        }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+        }
+    }
+
     public async Task RowSelectingHandler(RowSelectingEventArgs<ABscPerspectivesDto> args)
     {
-        await BscPerspectiveGrid.ClearSelection();   //clear selection
+        await BscPerspectiveGrid.ClearSelectionAsync();   //clear selection
     }
 
     public async void OnPerspectivesActionBegin(ActionEventArgs<ABscPerspectivesDto> args)
@@ -335,11 +564,49 @@
         {
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
             {
-                
+                if (PerspectivesDetailData != null)
+                {
+                    args.RowData.ABscPerspectivesDetail = PerspectivesDetailData;
+                }
+                if (args.RowData.ABscPerspectivesDetail == null)
+                {
+                    args.RowData.ABscPerspectivesDetail = new List<ViewABscPerspectivesDetailDto>();
+                }
+
+                foreach (var item in BscPerspectiveTypeData)
+                {
+                    //var exist = args.RowData.ABscPerspectivesDetail.FirstOrDefault(o => o.BscPerspectiveTypeId == item.BscPerspectiveTypeId);
+
+                    var exist = args.RowData.ABscPerspectivesDetail.FirstOrDefault(o => /*o.BscPerspectiveTypeId == item.BscPerspectiveTypeId
+                        &&*/ o.FinancialYearId == args.Data.FinancialYearId && o.DepartmentId == args.Data.DepartmentId);
+
+                    if (exist == null)
+                    {
+                        var m = new ViewABscPerspectivesDetailDto();
+                        m.BscPerspectiveDetailId = countid;
+                        m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
+
+                        args.RowData.ABscPerspectivesDetail.Add(m);
+                        countid++;
+                    }
+                    else
+                    {
+                        var m = new ViewABscPerspectivesDetailDto();
+                        m.BscPerspectiveDetailId = exist.BscPerspectiveDetailId;
+                        m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
+                        m.PerspectiveTotalWeight = exist.PerspectiveTotalWeight;
+
+                        args.RowData.ABscPerspectivesDetail.Add(m);
+                    }
+                }
+                args.RowData.ABscPerspectivesDetail = args.RowData.ABscPerspectivesDetail.OrderBy(o => o.BscPerspectiveTypeId).ToList();
+
             }
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
             {
+
                 args.RowData.FinancialYearId = finyearid;
+                args.RowData.ABscPerspectivesDetail = new List<ViewABscPerspectivesDetailDto>();
 
                 if (Credentials.StaffId > 0)
                 {
@@ -350,6 +617,57 @@
                     }
                 }
 
+                List<Task> t = new List<Task>();
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responsebscperspectivedetail = await Http.GetAsync($"BscPerspectives/GetBscPerspectivesDetail?YearId={finyearid}");
+                    if (responsebscperspectivedetail.IsSuccessStatusCode)
+                    {
+                        var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
+                        PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscPerspectivesDetailDto>>(contentbscperspectivedetail, _options);
+                    }
+                }));
+
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
+                    if (responsebscperspectivetype.IsSuccessStatusCode)
+                    {
+                        var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
+                        BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesTypeDto>>(contentbscperspectivetype, _options);
+                    }
+                }));
+
+                Task _t = Task.WhenAll(t);
+                await _t;
+
+                if (PerspectivesDetailData != null)
+                {
+                    args.RowData.ABscPerspectivesDetail = PerspectivesDetailData;
+                }
+                if (args.RowData.ABscPerspectivesDetail == null)
+                {
+                    args.RowData.ABscPerspectivesDetail = new List<ViewABscPerspectivesDetailDto>();
+                }
+
+                foreach (var item in BscPerspectiveTypeData)
+                {
+                    var exist = args.RowData.ABscPerspectivesDetail.FirstOrDefault(o => o.BscPerspectiveTypeId == item.BscPerspectiveTypeId);
+                    if (exist == null)
+                    {
+                        var m = new ViewABscPerspectivesDetailDto();
+                        m.BscPerspectiveDetailId = countid;
+                        m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
+
+                        args.RowData.ABscPerspectivesDetail.Add(m);
+                        countid++;
+                    }
+                }
+                args.RowData.ABscPerspectivesDetail = args.RowData.ABscPerspectivesDetail.OrderBy(o => o.BscPerspectiveTypeId).ToList();
+
+                StateHasChanged();
             }
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
             {
@@ -367,6 +685,20 @@
                     toastService.ShowWarning("Please select a department.");
                     args.Cancel = true;
                 }
+
+                else
+                {
+                    var countdata = BscPerspectiveData?.FirstOrDefault(o => o.FinancialYearId == args.Data.FinancialYearId && o.DepartmentId == args.Data.DepartmentId);
+
+                    if (countdata != null && args.Action == "Add")
+                    {
+                        var findesc = FinancialYearData?.FirstOrDefault(o=>o.Id == countdata.FinancialYearId);
+                        var depdesc = DepartmentsData?.FirstOrDefault(o => o.DepartmentId == countdata.DepartmentId);
+
+                        toastService.ShowWarning("You have arleady captured weights for your department (" + depdesc.DepartmentDescription + ") in the Financial Year (" + findesc.FinancialYear + ") . Record Not Saved");
+                        args.Cancel = true;
+                    }
+                }
             }
         }
         catch (Exception ex)
@@ -375,8 +707,12 @@
         }
     }
 
+    public void CreatedHandler(object args)
+    {
+        // Here, you can customize your code.
+    }
 
-    public void OnPerspectiveActionComplete(ActionEventArgs<ABscPerspectivesDto> args)
+    public async Task OnPerspectiveActionComplete(ActionEventArgs<ABscPerspectivesDto> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
         {
@@ -384,7 +720,120 @@
         }
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
         {
-            
+            List<Task> t = new List<Task>();
+            t.Add(Task.Run(async () =>
+            {
+                var responsebscperspective = await Http.GetAsync($"BscPerspectives/GetBscPerspectives");
+                if (responsebscperspective.IsSuccessStatusCode)
+                {
+                    var contentbscperspective = await responsebscperspective.Content.ReadAsStringAsync();
+                    BscPerspectiveData = JsonSerializer.Deserialize<List<BscPerspectivesDto>>(contentbscperspective, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responsebscperspectivedetail = await Http.GetAsync($"BscPerspectives/GetBscPerspectivesDetail");
+                if (responsebscperspectivedetail.IsSuccessStatusCode)
+                {
+                    var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
+                    PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscPerspectivesDetailDto>>(contentbscperspectivedetail, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responsefinyear = await Http.GetAsync($"FinancialYear/list");
+                if (responsefinyear.IsSuccessStatusCode)
+                {
+                    var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
+                    FinancialYearData = JsonSerializer.Deserialize<List<ViewFinancialYearDto>>(contentfinyear, _options);
+
+                    DateTime currentdate = DateTime.Now;
+                    string? financialyeardesc = null;
+                    if (currentdate.Month >= 6)
+                    {
+                        financialyeardesc = $"{currentdate.Year}/{(currentdate.Year + 1)}";
+                    }
+                    else if (currentdate.Month < 6)
+                    {
+                        financialyeardesc = $"{(currentdate.Year - 1)}/{currentdate.Year}";
+                    }
+
+                    var b = FinancialYearData.FirstOrDefault(o => o.FinancialYear.Trim() == financialyeardesc.Trim());
+                    if (b != null)
+                    {
+                        finyearid = b.Id;
+                    }
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
+                if (responsebscperspectivetype.IsSuccessStatusCode)
+                {
+                    var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
+                    BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesTypeDto>>(contentbscperspectivetype, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responsedepartment = await Http.GetAsync($"Utilities/GetDepartment");
+                if (responsedepartment.IsSuccessStatusCode)
+                {
+                    var contentdepartment = await responsedepartment.Content.ReadAsStringAsync();
+                    DepartmentsData = JsonSerializer.Deserialize<List<ADepartmentDto>>(contentdepartment, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responsemetric = await Http.GetAsync($"Utilities/GetMeasurementMetric");
+                if (responsemetric.IsSuccessStatusCode)
+                {
+                    var contentmetric = await responsemetric.Content.ReadAsStringAsync();
+                    MeasurementUnitData = JsonSerializer.Deserialize<List<AMeasurementMetricDto>>(contentmetric, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responseemployee = await Http.GetAsync($"Employeez/GetMasterList");
+                if (responseemployee.IsSuccessStatusCode)
+                {
+                    var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+                    EmployeeData = JsonSerializer.Deserialize<List<EmployeeDto>>(contentemployee, _options);
+                }
+            }));
+
+            Task _t = Task.WhenAll(t);
+            await _t;
+        }
+    }
+
+    //For Child Grid
+    //Enable cell edit on single click
+    public async Task PerspectiveCellSelectHandler(CellSelectEventArgs<ViewABscPerspectivesDetailDto> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await ChildDataGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await ChildDataGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await ChildDataGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
         }
     }
 
@@ -393,9 +842,193 @@
         SpinnerObj.ShowAsync();
         GridAttributes.Add("disable", "yes");
     }
+
     public async void DataBound()
     {
         GridAttributes["disable"] = "no";
-        SpinnerObj.HideAsync();
+        await SpinnerObj.HideAsync();
+
+        //Check if there are records arleady and only allow editing
+        if(BscPerspectiveGrid != null && BscPerspectiveGrid.CurrentViewData.Count() > 0)
+        {
+            ToolbarMenu = new List<object>()
+            {
+                new ItemModel(){ Text = "Edit Weight", PrefixIcon= "e-edit", Id="Grid_edit"}
+            };
+        }
     }
+
+    #region BscPerspectiveAdapter
+    public class BscPerspectiveAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        IAuthenticationService _AuthService;
+        ApiConfig _ApiConfig;
+        public IToastService toastService;
+        private readonly NavigationManager Navigation;
+
+        public BscPerspectiveAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+            , IAuthenticationService authservice, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            Navigation = _Navigation;
+            _ApiConfig = apiConfig;
+            _AuthService = authservice;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var credentials = await _AuthService.GetUserCredentials();
+            
+            int? EmployeeId = credentials.StaffId;
+            var data = new List<ABscPerspectivesDto>();
+
+            try
+            {
+                var response = await Http.GetAsync($"BscPerspectives/GetBscPerspectives");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    data = JsonSerializer.Deserialize<List<ABscPerspectivesDto>>(content, _options);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<ABscPerspectivesDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                var val = (value as ABscPerspectivesDto);
+                if (val != null)
+                {
+                    if (val.BscPerspectiveId == 0)
+                    {
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"BscPerspectives/CreateBSCPerspective", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+
+                var val = (value as ABscPerspectivesDto);
+                if (val != null)
+                {
+                    if (val.BscPerspectiveId != 0)
+                    {
+
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"BscPerspectives/UpdateBSCPerspective", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+    }
+    #endregion BscPerspectiveAdapter
+
 }

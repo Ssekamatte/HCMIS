@@ -26,7 +26,7 @@ using static HCMIS.Pages.HR.Applicants.InterviewApplicationPage;
 using static HCMIS.Pages.HR.Applicants.FinalApplicationAssessmentPage;
 
 using static HCMIS.Pages.Utilities.BSCKeyPerformanceIndicatorsPage;
-using static HCMIS.Pages.Utilities.BscPerspectivesPage;
+using static HCMIS.Pages.Utilities.BscPerspectivesFormPage;
 using static HCMIS.Pages.Training.AssessmentSurveyPage;
 using static HCMIS.Pages.Training.SurveyDeadlinePage;
 using static HCMIS.Pages.Training.TrainingEvaluationForm;
