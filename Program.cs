@@ -25,7 +25,6 @@ using static HCMIS.Pages.HR.Applicants.SubmittedApplicationPage;
 using static HCMIS.Pages.HR.Applicants.InterviewApplicationPage;
 using static HCMIS.Pages.HR.Applicants.FinalApplicationAssessmentPage;
 
-using static HCMIS.Pages.Utilities.BSCKeyPerformanceIndicatorsPage;
 using static HCMIS.Pages.Utilities.BscPerspectivesFormPage;
 using static HCMIS.Pages.Training.AssessmentSurveyPage;
 using static HCMIS.Pages.Training.SurveyDeadlinePage;
@@ -67,6 +66,7 @@ using static HCMIS.Pages.Utilities.MeasurementUnitPage;
 using static HCMIS.Pages.EmployeeLeave.AnnualLeaveRosterPage;
 using static HCMIS.Pages.EmployeeDisplinary.DisciplinaryPage;
 using static HCMIS.Pages.Utilities.FinancialYearPage;
+using static HCMIS.Pages.Utilities.BSCKPIFormPage;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.Services.AddSyncfusionBlazor();
@@ -109,7 +109,6 @@ builder.Services.AddScoped<AptituddeTestAdapter>();
 builder.Services.AddScoped<SubmittedApplicationAdapter>();
 builder.Services.AddScoped<InterviewApplicationAdapter>();
 builder.Services.AddScoped<FinalStageApplicationAdapter>();
-builder.Services.AddScoped<BscKpiAdapter>(); 
 builder.Services.AddScoped<BscPerspectiveAdapter>();
 builder.Services.AddScoped<AssessmentAdapter>(); 
 builder.Services.AddScoped<AssessmentDeadlineAdapter>();
@@ -156,6 +155,7 @@ builder.Services.AddScoped<LeavePlanHeaderAdapter>();
 builder.Services.AddScoped<BasicUnitAdapter>();
 builder.Services.AddScoped<AnnualLeaveRosterAdapter>();
 builder.Services.AddScoped<FinancialYearAdapter>();
+builder.Services.AddScoped<ObjectivesAdapter>();
 
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IReportService, ReportService>();
