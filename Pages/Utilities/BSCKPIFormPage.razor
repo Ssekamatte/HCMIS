@@ -126,7 +126,7 @@
     @*Render custom spinner component.*@
 </SfSpinner>
 
-<SfGrid @ref="@ObjectivesGrid" ID="Grid" TValue="ABscKpiDto" @attributes="@GridAttributes" AllowPaging="true"
+<SfGrid @ref="@ObjectivesGrid" ID="Grid" TValue="ABscKpiDto" @attributes="@GridAttributes" Query="@ChildQuery" AllowPaging="true"
         AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
         AllowTextWrap="true" AllowSorting="true" Toolbar="@ToolbarMenu">
 
@@ -141,6 +141,60 @@
                 DataBound="DataBound"
                 TValue="ABscKpiDto">
     </GridEvents>
+
+    @*Child Grid*@
+    <GridTemplates>
+        <DetailTemplate>
+            @{
+                KpiData = (context as ABscKpiDto);
+
+                <div class="form-group col-md-12">
+
+                    <SfGrid @ref="@DetailsDataGrid" TValue="ABscKpidetailsDto" ID="DetailsGrid" Query=@(new Query().Where(new WhereFilter() { Field = "Bsckpiid", Operator = "equal", value = KpiData.Bsckpiid, IgnoreCase = false, IgnoreAccent = false })) AllowPaging="true" AllowFiltering="true"
+                        AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" 
+                        GridLines="GridLine.Both" AllowSelection="true" AllowSorting="false"  AllowTextWrap="true">
+                        <GridEditSettings AllowAdding="false" AllowEditing="false" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch"></GridEditSettings>
+                        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.FilterBar"></GridFilterSettings>
+                        <GridPageSettings PageSizes="true"></GridPageSettings>
+                        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+                        <GridEvents OnToolbarClick="@GridToolbarClick" TValue="ABscKpidetailsDto"></GridEvents>
+                        <SfDataManager AdaptorInstance="@typeof(ObjectivesDetailsAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+                        <GridColumns>
+                            <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
+                        	<GridColumn Field=@nameof(ABscKpidetailsDto.BsckpidetailsId) Visible="false" HeaderText="BsckpidetailsId" IsPrimaryKey="true" Width="150"></GridColumn>
+                            <GridColumn Field=@nameof(ABscKpidetailsDto.Bsckpiid) Visible="false" HeaderText="Bsckpiid" TextAlign="TextAlign.Right" Width="110"> </GridColumn>
+                            <GridForeignColumn Field=@nameof(ABscKpidetailsDto.BscPerspectiveTypeId)
+                                               HeaderText="Perspective"
+                                               Width="80"
+                                               AllowEditing="false"
+                                               ForeignKeyField="@(nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeId))"
+                                               ForeignKeyValue="@(nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeDescription))"
+                                               ForeignDataSource="@BscPerspectiveTypeData"
+                                               AllowFiltering="false"
+                                               IsFrozen="false"
+                                               CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+                            </GridForeignColumn>
+                            <GridColumn Field=@nameof(ABscKpidetailsDto.Objective) HeaderText="Objective" Width="150" CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})"></GridColumn>
+                            <GridColumn Field=@nameof(ABscKpidetailsDto.IndividualTargetWeight) HeaderText="IndividualTargetWeight"  Width="60" CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})"></GridColumn>
+
+                            <GridForeignColumn Field=@nameof(ABscKpidetailsDto.MeasurementMetricId)
+                                               HeaderText="Basic Unit"
+                                               TextAlign="TextAlign.Justify"
+                                               Width="60"
+                                               AllowEditing="true"
+                                               ValidationRules="@(new ValidationRules { Required = true})"
+                                               ForeignKeyField="@(nameof(AMeasurementMetricDto.MeasurementMetricId))"
+                                               ForeignKeyValue="@(nameof(AMeasurementMetricDto.MeasurementMetricDesc))"
+                                               ForeignDataSource="@MeasurementUnitData"
+                                               CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+                            </GridForeignColumn>
+                        </GridColumns>
+                    </SfGrid>
+
+                </div>
+            }
+        </DetailTemplate>
+    </GridTemplates>
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
         <HeaderTemplate>
             @{
@@ -258,18 +312,7 @@
                                                        IsFrozen="false"
                                                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
                                     </GridForeignColumn>
-
-                                    <GridForeignColumn Field=@nameof(ViewABscKpidetailsDto.MeasurementMetricId)
-                                                       HeaderText="Basic Unit"
-                                                       Width="60"
-                                                       AllowEditing="true"
-                                                       ValidationRules="@(new ValidationRules { Required = true})"
-                                                       ForeignKeyField="@(nameof(AMeasurementMetricDto.MeasurementMetricId))"
-                                                       ForeignKeyValue="@(nameof(AMeasurementMetricDto.MeasurementMetricDesc))"
-                                                       ForeignDataSource="@MeasurementUnitData"
-                                                       CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
-                                    </GridForeignColumn>
-
+                                                                        
                                     <GridColumn Field=@nameof(ViewABscKpidetailsDto.Objective)
                                                 HeaderText="Objective (s)"
                                                 TextAlign="TextAlign.Justify"
@@ -281,7 +324,7 @@
 
                                     <GridColumn Field=@nameof(ViewABscKpidetailsDto.IndividualTargetWeight)
                                                 HeaderText="Individual Target Weight"
-                                                TextAlign="TextAlign.Right"
+                                                TextAlign="TextAlign.Justify"
                                                 AllowEditing="true"
                                                 ValidationRules="@(new ValidationRules { Required = true, Min = 1 , Max=100 })"
                                                 EditType="EditType.NumericEdit"
@@ -290,6 +333,18 @@
                                                 ClipMode="ClipMode.EllipsisWithTooltip"
                                                 CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
                                     </GridColumn>
+
+                                    <GridForeignColumn Field=@nameof(ViewABscKpidetailsDto.MeasurementMetricId)
+                                                       HeaderText="Basic Unit"
+                                                       TextAlign="TextAlign.Justify"
+                                                       Width="60"
+                                                       AllowEditing="true"
+                                                       ValidationRules="@(new ValidationRules { Required = true})"
+                                                       ForeignKeyField="@(nameof(AMeasurementMetricDto.MeasurementMetricId))"
+                                                       ForeignKeyValue="@(nameof(AMeasurementMetricDto.MeasurementMetricDesc))"
+                                                       ForeignDataSource="@MeasurementUnitData"
+                                                       CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+                                    </GridForeignColumn>
                                 </GridColumns>
                             </SfGrid>
 
@@ -363,7 +418,28 @@
 </div>
 
 
-@code {
+@code {  
+    SfGrid<ABscKpidetailsDto> DetailsDataGrid { get; set; }
+    /// <summary>
+    /// Event for Toolbar click for Grid Exporting
+    /// </summary>
+    public void GridToolbarClick(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+    	if (args.Item.Id == "Grid1_excelexport")
+        {
+            this.DetailsDataGrid.ExportToExcelAsync();
+        }
+    	if (args.Item.Id == "Grid1_pdfexport")
+        {
+            this.DetailsDataGrid.ExportToPdfAsync();
+        }
+    	if (args.Item.Id == "Grid1_csvexport")
+        {
+            this.DetailsDataGrid.ExportToCsvAsync();
+        }
+    }
+    
+
     #region Declarations
     private static ABscKpiDto? KpiData { get; set; }
     SfGrid<ABscKpiDto>? ObjectivesGrid;
@@ -396,6 +472,8 @@
     int? YrId = null;
     string? weighttotalpercentage  = "70";
     Syncfusion.Blazor.Grids.Action _previous { get; set; }
+    public Query ChildQuery = new Query();
+    public Query MainQuery = new Query();
 
     private List<object> ToolbarMenu = new List<object>()
     {
@@ -1079,4 +1157,88 @@
     }
     #endregion ObjectivesAdapter
 
+
+   #region DetailsRegion
+    public class ObjectivesDetailsAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        IAuthenticationService _AuthService;
+        ApiConfig _ApiConfig;
+        public IToastService toastService;
+        private readonly NavigationManager Navigation;
+
+        public ObjectivesDetailsAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+            , IAuthenticationService authservice, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            Navigation = _Navigation;
+            _ApiConfig = apiConfig;
+            _AuthService = authservice;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var credentials = await _AuthService.GetUserCredentials();
+            
+            int? EmployeeId = credentials.StaffId;
+            var data = new List<ABscKpidetailsDto>();
+
+            try
+            {
+                var response = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicatorDetailAll");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    data = JsonSerializer.Deserialize<List<ABscKpidetailsDto>>(content, _options);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<ABscKpidetailsDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+    }
+
+    #endregion DetailsRegion
 }
