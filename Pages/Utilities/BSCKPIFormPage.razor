@@ -97,11 +97,14 @@
         min-height: 98%;
     }
 
-    .disablecell {        
-        color: white;
+    .disablecell {  
         background-color: #8e44ad; /*wisteria*/
         pointer-events: none;
         display: none;
+    }
+
+    .e-grid .e-gridcontent .e-rowcell.disablecell {
+        color: ghostwhite;
     }
 
     h6 {
@@ -112,6 +115,45 @@
         font-size: 15px;
     }
 
+     .financial {   
+        background-color: #8e44ad; 
+        pointer-events: none;
+        display: none;
+    }
+
+    .e-grid .e-gridcontent .e-rowcell.financial {
+        color: ghostwhite;
+    }
+
+    .Internal {
+        background-color: #2c3e50; 
+        pointer-events: none;
+        display: none;
+    }
+
+    .e-grid .e-gridcontent .e-rowcell.Internal {
+        color: ghostwhite;
+    }
+
+    .Customer {
+        background-color: #1abc9c;
+        pointer-events: none;
+        display: none;
+    }
+
+    .e-grid .e-gridcontent .e-rowcell.Customer {
+        color: ghostwhite;
+    }
+
+    .Learning {
+        background-color: #1e3799;
+        pointer-events: none;
+        display: none;
+    }
+
+    .e-grid .e-gridcontent .e-rowcell.Learning {
+        color: ghostwhite;
+    }
 </style>
 
 <ol class="breadcrumb" style="margin-top:5px;">
@@ -121,6 +163,10 @@
         </strong>| FINANCIAL YEAR OBJECTIVES
     </li>
 </ol>
+
+@{
+    var Div = (new string[] { "BscPerspectiveTypeId"});
+}
 
 <SfSpinner @ref="SpinnerObj" Label="Loading Please Wait....." Size="50">
     @*Render custom spinner component.*@
@@ -150,10 +196,42 @@
 
                 <div class="form-group col-md-12">
 
-                    <SfGrid @ref="@DetailsDataGrid" TValue="ABscKpidetailsDto" ID="DetailsGrid" Query=@(new Query().Where(new WhereFilter() { Field = "Bsckpiid", Operator = "equal", value = KpiData.Bsckpiid, IgnoreCase = false, IgnoreAccent = false })) AllowPaging="true" AllowFiltering="true"
-                        AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" 
-                        GridLines="GridLine.Both" AllowSelection="true" AllowSorting="false"  AllowTextWrap="true">
+                    <SfGrid @ref="@DetailsDataGrid" 
+                    TValue="ABscKpidetailsDto" 
+                    ID="DetailsGrid" 
+                    Query=@(new Query().Where(new WhereFilter() { Field = "Bsckpiid", Operator = "equal", value = KpiData.Bsckpiid, IgnoreCase = false, IgnoreAccent = false })) 
+                    AllowPaging="true" 
+                    AllowFiltering="false"
+                        AllowReordering="false" 
+                        AllowResizing="true" 
+                        AllowGrouping="true" 
+                        AllowExcelExport="true" 
+                        AllowPdfExport="true" 
+                        GridLines="GridLine.Both" 
+                        AllowSelection="false"
+                        AllowSorting="false" 
+                        AllowTextWrap="true">
                         <GridEditSettings AllowAdding="false" AllowEditing="false" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch"></GridEditSettings>
+
+                        <GridGroupSettings Columns="@Div" ShowDropArea="false">
+                            <CaptionTemplate Context="HeaderCaptionTemplateContext">
+                                @{
+                                    var dvn = (HeaderCaptionTemplateContext as CaptionTemplateContext);
+
+                                    string text = string.Empty;
+                                    if (dvn.Field == "BscPerspectiveTypeId" && BscPerspectiveTypeData != null)
+                                    {
+                                        var data = BscPerspectiveTypeData.FirstOrDefault(o => o.BscPerspectiveTypeId.ToString() == dvn.Key);
+                                        if (data != null)
+                                        {
+                                            text = "Perspective: " + data.BscPerspectiveTypeDescription;
+                                        }
+                                    }
+                                    <div><p class="pp"><strong>@text</strong></p></div>
+                                }
+                            </CaptionTemplate>
+                        </GridGroupSettings>
+                        
                         <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.FilterBar"></GridFilterSettings>
                         <GridPageSettings PageSizes="true"></GridPageSettings>
                         <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
@@ -255,11 +333,17 @@
                                     TValue="ViewABscKpidetailsDto"
                                     ID="ChGrid"
                                     DataSource="@KpiData.ABscKpidetails"
-                                    AllowPaging="false" AllowFiltering="false" AllowReordering="true"
-                                    AllowResizing="true" AllowGrouping="true" AllowExcelExport="true"
-                                    AllowPdfExport="true" AllowSelection="true" AllowSorting="true"
-                                    AllowTextWrap="true" Height="250px" GridLines="GridLine.Both">
-                                <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false" Dialog="@DialogParams">
+                                    AllowPaging="false" 
+                                    AllowFiltering="false" 
+                                    AllowReordering="true"
+                                    AllowResizing="true" 
+                                    AllowGrouping="true" 
+                                    AllowExcelExport="true"
+                                    AllowPdfExport="true" 
+                                    AllowSelection="true" 
+                                    AllowSorting="true"
+                                    AllowTextWrap="true"GridLines="GridLine.Both"  Height="600px">
+                                <GridEditSettings AllowAdding="false" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false" Dialog="@DialogParams">
 
                                 </GridEditSettings>
                                 <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
@@ -299,7 +383,7 @@
                                                 AllowEditing="false"
                                                 IsPrimaryKey="true"
                                                 Width="80"
-                                                Visible="true">
+                                                Visible="false">
                                     </GridColumn>
                                     <GridForeignColumn Field=@nameof(ViewABscKpidetailsDto.BscPerspectiveTypeId)
                                                        HeaderText="Perspective"
@@ -450,6 +534,7 @@
     List<ViewFinancialYearDto>? FinancialYearData { get; set; }
     List<ADepartmentDto>? DepartmentsData { get; set; }
     List<ABscPerspectivesTypeDto>? BscPerspectiveTypeData { get; set; }
+    List<ABscPerspectivesTypeDto>? BscPerspectiveTypeDataRepeated { get; set; }
     List<AMeasurementMetricDto>? MeasurementUnitData { get; set; }
     List<ViewABscKpidetailsDto>? PerspectivesDetailData { get; set; }
     List<ViewEmployeeDropDownDto>? EmployeeData { get; set; }
@@ -573,6 +658,16 @@
             {
                 var contentemployee = await responseemployee.Content.ReadAsStringAsync();
                 EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDownDto>>(contentemployee, _options);
+            }
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
+            var responsebscperspectivetyperepeated = await Http.GetAsync($"Utilities/BSCPerspectiveTypeRepeat");
+            if (responsebscperspectivetyperepeated.IsSuccessStatusCode)
+            {
+                var contentbscperspectivetyperepeated = await responsebscperspectivetyperepeated.Content.ReadAsStringAsync();
+                BscPerspectiveTypeDataRepeated = JsonSerializer.Deserialize<List<ABscPerspectivesTypeDto>>(contentbscperspectivetyperepeated, _options);
             }
         }));
 
@@ -739,6 +834,16 @@
                     }
                 }));
 
+                t.Add(Task.Run(async () =>
+                {
+                    var responsebscperspectivetyperepeated = await Http.GetAsync($"Utilities/BSCPerspectiveTypeRepeat");
+                    if (responsebscperspectivetyperepeated.IsSuccessStatusCode)
+                    {
+                        var contentbscperspectivetyperepeated = await responsebscperspectivetyperepeated.Content.ReadAsStringAsync();
+                        BscPerspectiveTypeDataRepeated = JsonSerializer.Deserialize<List<ABscPerspectivesTypeDto>>(contentbscperspectivetyperepeated, _options);
+                    }
+                }));
+
                 Task _t = Task.WhenAll(t);
                 await _t;
 
@@ -751,19 +856,16 @@
                     args.RowData.ABscKpidetails = new List<ViewABscKpidetailsDto>();
                 }
 
-                foreach (var item in BscPerspectiveTypeData)
+                foreach (var item in BscPerspectiveTypeDataRepeated)
                 {
-                    var exist = args.RowData.ABscKpidetails.FirstOrDefault(o => o.BscPerspectiveTypeId == item.BscPerspectiveTypeId);
-                    if (exist == null)
-                    {
-                        var m = new ViewABscKpidetailsDto();
-                        m.BsckpidetailsId = countid;
-                        m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
+                    var m = new ViewABscKpidetailsDto();
+                    m.BsckpidetailsId = countid;
+                    m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
 
-                        args.RowData.ABscKpidetails.Add(m);
-                        countid++;
-                    }
+                    args.RowData.ABscKpidetails.Add(m);
+                    countid++;
                 }
+
                 args.RowData.ABscKpidetails = args.RowData.ABscKpidetails.OrderBy(o => o.BscPerspectiveTypeId).ToList();
 
                 StateHasChanged();
@@ -933,20 +1035,26 @@
         
     public async void QueryCellInfoHandlerChild(QueryCellInfoEventArgs<ViewABscKpidetailsDto> Args)
     {
-        //if (Args.Column.Field == nameof(ViewABscKpidetailsDto.IndividualTargetWeight))
-        //{
-        //    //Disable Learning and Growth
-        //    if (Args.Data.BscPerspectiveTypeId == 4)
-        //    {
-        //        Args.Cell.AddClass(new string[] { "disablecell" });
-        //    }
-        //}
-
-        //if (Args.Column.Field == nameof(ViewABscKpidetailsDto.MeasurementMetricId))
-        //{
-        //    //Disable Basic Unit
-        //    Args.Cell.AddClass(new string[] { "disablecell" });
-        //}
+        if (Args.Column.Field == nameof(ViewABscKpidetailsDto.BscPerspectiveTypeId))
+        {
+            //Assign color to different perspectives
+            if (Args.Data.BscPerspectiveTypeId == 1)
+            {
+                Args.Cell.AddClass(new string[] { "financial" });
+            }
+            if (Args.Data.BscPerspectiveTypeId == 2)
+            {
+                Args.Cell.AddClass(new string[] { "Internal" });
+            }
+            if (Args.Data.BscPerspectiveTypeId == 3)
+            {
+                Args.Cell.AddClass(new string[] { "Customer" });
+            }
+            if (Args.Data.BscPerspectiveTypeId == 4)
+            {
+                Args.Cell.AddClass(new string[] { "Learning" });
+            }
+        }
     }
 
 
