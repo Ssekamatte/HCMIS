@@ -16,6 +16,14 @@
 @inject IAuthenticationService AuthService;
 
 <style>
+/*Grid Aggregate Column Color*/
+.e-grid .e-summaryrow .e-summarycell, .e-grid .e-summaryrow .e-templatecell, .e-grid .e-summarycontent .e-indentcell, .e-grid .e-indentcell.e-detailindentcelltop, .e-grid .e-groupfooterrow.e-summaryrow .e-indentcell.e-indentcelltop {
+    background-color: orange;
+    border-color: black;
+    color: #201f1e;
+    border-bottom-color: black;
+    font-size: x-large;
+}
 
     /*Disable Grid on Load and Enable it on DataBound*/
     .e-grid[disable="yes"] {
@@ -216,7 +224,7 @@
                         <GridGroupSettings Columns="@Div" ShowDropArea="false">
                             <CaptionTemplate Context="HeaderCaptionTemplateContext">
                                 @{
-                                    var dvn = (HeaderCaptionTemplateContext as CaptionTemplateContext);
+                                    dvn = (HeaderCaptionTemplateContext as CaptionTemplateContext);
 
                                     string text = string.Empty;
                                     if (dvn.Field == "BscPerspectiveTypeId" && BscPerspectiveTypeData != null)
@@ -335,7 +343,7 @@
                                 </div>                                
 
                                 <div class="col-md-3">
-                                    <p>
+                                    <p style="color:#0c2461; font-weight:bold; font-size:larger;">
                                         Financial:
 
                                         @if (perspweightsfinancial != null)
@@ -350,7 +358,7 @@
                                 </div>
 
                                 <div class="col-md-3">
-                                    <p>
+                                    <p style="color:#0c2461; font-weight:bold; font-size:larger;">
                                         Internal Processes:
                                         @if (perspweightsinternal != null)
                                         {
@@ -364,7 +372,7 @@
                                 </div>
 
                                 <div class="col-md-3">
-                                    <p>
+                                    <p style="color:#0c2461; font-weight:bold; font-size:larger;">
                                         Customer:
                                         @if (perspweightscustomer != null)
                                         {
@@ -378,7 +386,7 @@
                                 </div>
 
                                 <div class="col-md-3">
-                                    <p>
+                                    <p style="color:#0c2461; font-weight:bold; font-size:larger;">
                                         Learning and Growth:
                                         @if (perspweightslearning != null)
                                         {
@@ -417,7 +425,7 @@
                                 <GridGroupSettings Columns="@Div" ShowDropArea="false">
                                     <CaptionTemplate Context="HeaderCaptionTemplateContext">
                                         @{
-                                            var dvn = (HeaderCaptionTemplateContext as CaptionTemplateContext);
+                                            dvn = (HeaderCaptionTemplateContext as CaptionTemplateContext);
 
                                             string text = string.Empty;
                                             if (dvn.Field == "BscPerspectiveTypeId" && BscPerspectiveTypeData != null)
@@ -440,27 +448,14 @@
                                     <GridAggregate>
                                         <GridAggregateColumns>
                                             <GridAggregateColumn Field=@nameof(ViewABscKpidetailsDto.IndividualTargetWeight) Type="Syncfusion.Blazor.Grids.AggregateType.Sum">
-                                                <FooterTemplate>
+                                                <GroupFooterTemplate>
                                                     @{
-                                                        @*aggregate = (context as AggregateTemplateContext);
+                                                        aggregate = (context as AggregateTemplateContext);
                                                         <div>
-                                                            @if (@aggregate != null && ViewABscKpidetailsDto.BscPerspectiveTypeId == 1)
-                                                            {
-                                                                <p style="color:purple;">Financial: @aggregate.Sum %</p>
-                                                            }  
-                                                            @if (@aggregate != null && ViewABscKpidetailsDto.BscPerspectiveTypeId == 2)
-                                                            {
-                                                                <p style="color:purple;">Internal: @aggregate.Sum %</p>
-                                                            } 
-                                                        </div>*@
-                                                        <div>
-                                                            <p><span style="color:Purple;">Financial: @GetFinancialPerspectiveScore()</span></p>
-                                                            <p><span style="color:Purple;">Internal Processes: @GetInternalProcessScore()</span></p>
-                                                            <p><span style="color:Purple;">Customer: @GetCustomerPerspectiveScore()</span></p>
-                                                            <p><span style="color:Purple;">Learning and Growth: @GetLearningGrowthScore()</span></p>
+                                                            <p span style="color:Purple;">Total: @aggregate.Sum</p>
                                                         </div>
                                                     }
-                                                </FooterTemplate>
+                                                </GroupFooterTemplate>
                                             </GridAggregateColumn>
                                         </GridAggregateColumns>
                                     </GridAggregate>
@@ -539,7 +534,7 @@
 
         <FooterTemplate>
             <button @onclick="@onSubmitForm" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Save</button>
-            <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel</button>            
+            <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel</button> 
         </FooterTemplate>
 
 
@@ -639,6 +634,8 @@
     List<ViewABscPerspectivesDetailDto>? PerspectivesDetailData { get; set; }
 
     Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
+    Syncfusion.Blazor.Grids.CaptionTemplateContext? dvn { get; set; }
+
     EmployeeRegistrationModel inputmodel { get; set; } = new EmployeeRegistrationModel();
     [Parameter]
     public int? finyear { get; set; }
@@ -1048,6 +1045,16 @@
             }
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
             {
+                _previous = args.RequestType;
+
+                if(PerspectivesDetailData != null)
+                {
+                    perspweightsfinancial = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 1);
+                    perspweightsinternal = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 2);
+                    perspweightscustomer = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 3);
+                    perspweightslearning = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 4);
+                }
+                
                 if (args.Data.FinancialYearId == null)
                 {
                     toastService.ShowWarning("Please select a financial year.");
@@ -1059,18 +1066,66 @@
                     args.Cancel = true;
                 }
 
+
                 else
                 {
-                    //var countdata = BscPerspectiveData?.FirstOrDefault(o => o.FinancialYearId == args.Data.FinancialYearId && o.DepartmentId == args.Data.DepartmentId);
+                    double? financialtotalscore = 0;
+                    double? internaltotalscore = 0;
+                    double? customertotalscore = 0;
+                    double? learningtotalscore = 0;
 
-                    //if (countdata != null && args.Action == "Add")
-                    //{
-                    //    var findesc = FinancialYearData?.FirstOrDefault(o=>o.Id == countdata.FinancialYearId);
-                    //    var depdesc = DepartmentsData?.FirstOrDefault(o => o.DepartmentId == countdata.DepartmentId);
+                    var financialscores = args.Data.ABscKpidetails.Where(o=>o.BscPerspectiveTypeId == 1).ToList();
+                    var internalscores = args.Data.ABscKpidetails.Where(o=>o.BscPerspectiveTypeId == 2).ToList();
+                    var customerscores = args.Data.ABscKpidetails.Where(o=>o.BscPerspectiveTypeId == 3).ToList();
+                    var learningscores = args.Data.ABscKpidetails.Where(o=>o.BscPerspectiveTypeId == 4).ToList();
 
-                    //    toastService.ShowWarning("You have arleady captured weights for your department (" + depdesc.DepartmentDescription + ") in the Financial Year (" + findesc.FinancialYear + ") . Record Not Saved");
-                    //    args.Cancel = true;
-                    //}
+
+                    //Sum entered scores
+                    foreach (var n in financialscores)
+                    {
+                        financialtotalscore += n.IndividualTargetWeight; 
+                    }
+
+                    foreach (var n in internalscores)
+                    {
+                        internaltotalscore += n.IndividualTargetWeight; 
+                    }
+
+                    foreach (var n in customerscores)
+                    {
+                        customertotalscore += n.IndividualTargetWeight; 
+                    }
+
+                    foreach (var n in learningscores)
+                    {
+                        learningtotalscore += n.IndividualTargetWeight;
+                    }
+
+                    //Compare Scores with Weights
+
+                    if (perspweightsfinancial != null && (financialtotalscore > perspweightsfinancial.PerspectiveTotalWeight))
+                    {
+                        toastService.ShowWarning("You have suppassed the set departmentatl target weight for financial) . Record Not Saved");
+                        args.Cancel = true;
+                    }
+
+                    else if (perspweightsinternal != null && (internaltotalscore > perspweightsinternal.PerspectiveTotalWeight))
+                    {
+                        toastService.ShowWarning("You have suppassed the set departmentatl target weight for internal) . Record Not Saved");
+                        args.Cancel = true;
+                    }
+
+                    else if (perspweightscustomer != null && (customertotalscore > perspweightscustomer.PerspectiveTotalWeight))
+                    {
+                        toastService.ShowWarning("You have suppassed the set departmentatl target weight for customer) . Record Not Saved");
+                        args.Cancel = true;
+                    }
+
+                    else if (perspweightslearning != null && (learningtotalscore > perspweightslearning.PerspectiveTotalWeight))
+                    {
+                        toastService.ShowWarning("You have suppassed the set departmentatl target weight for learning and growth) . Record Not Saved");
+                        args.Cancel = true;
+                    }
                 }
             }
         }
@@ -1208,7 +1263,7 @@
     
     public void CellSaveHandler(CellSaveArgs<ViewABscKpidetailsDto> args)
     {
-        var datainfo = ChildDataGrid.CurrentViewData;
+        //var datainfo = ChildDataGrid.CurrentViewData;
         
     }
 
