@@ -231,7 +231,7 @@
                                 }
                             </CaptionTemplate>
                         </GridGroupSettings>
-                        
+
                         <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.FilterBar"></GridFilterSettings>
                         <GridPageSettings PageSizes="true"></GridPageSettings>
                         <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
@@ -286,7 +286,7 @@
             @{
                 <center>
                     <h5>
-                        <strong>CAPTURE PERCENTAGES</strong>
+                        <strong>CAPTURE YOUR ANNUAL OBJECTIVES</strong>
                     </h5>
                 </center>
 
@@ -327,6 +327,73 @@
                             </SfDropDownList>
                         </div>
 
+                        <div class="col-md-12" style="margin-top:5px;">
+
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <h6 style="color:ghostwhite; font-weight:bold;background-color:#00cc00;"> Department Perspective Total Weights</h6>
+                                </div>                                
+
+                                <div class="col-md-3">
+                                    <p>
+                                        Financial:
+
+                                        @if (perspweightsfinancial != null)
+                                        {
+                                            @perspweightsfinancial.WeightPercentage
+                                        }
+                                        else
+                                        {
+                                            <h6 style="color:red;background-color:ghostwhite; font-weight:bold;">Not Captured</h6>
+                                        }
+                                    </p>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <p>
+                                        Internal Processes:
+                                        @if (perspweightsinternal != null)
+                                        {
+                                            @perspweightsinternal.WeightPercentage
+                                        }
+                                        else
+                                        {
+                                            <h6 style="color:red;background-color:ghostwhite; font-weight:bold;">Not Captured</h6>
+                                        }
+                                    </p>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <p>
+                                        Customer:
+                                        @if (perspweightscustomer != null)
+                                        {
+                                            @perspweightscustomer.WeightPercentage
+                                        }
+                                        else
+                                        {
+                                            <h6 style="color:red;background-color:ghostwhite; font-weight:bold;">Not Captured</h6>
+                                        }
+                                    </p>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <p>
+                                        Learning and Growth:
+                                        @if (perspweightslearning != null)
+                                        {
+                                            @perspweightslearning.WeightPercentage
+                                        }
+                                        else
+                                        {
+                                            <h6 style="color:red;background-color:ghostwhite; font-weight:bold;">Not Captured</h6>
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+
                         @*GridPerspectives*@
                         <div class="form-group col-md-12" style="padding-top:10px">
                             <SfGrid @ref="@ChildDataGrid"
@@ -346,6 +413,26 @@
                                 <GridEditSettings AllowAdding="false" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false" Dialog="@DialogParams">
 
                                 </GridEditSettings>
+
+                                <GridGroupSettings Columns="@Div" ShowDropArea="false">
+                                    <CaptionTemplate Context="HeaderCaptionTemplateContext">
+                                        @{
+                                            var dvn = (HeaderCaptionTemplateContext as CaptionTemplateContext);
+
+                                            string text = string.Empty;
+                                            if (dvn.Field == "BscPerspectiveTypeId" && BscPerspectiveTypeData != null)
+                                            {
+                                                var data = BscPerspectiveTypeData.FirstOrDefault(o => o.BscPerspectiveTypeId.ToString() == dvn.Key);
+                                                if (data != null)
+                                                {
+                                                    text = "Perspective: " + data.BscPerspectiveTypeDescription;
+                                                }
+                                            }
+                                            <div><p class="pp"><strong>@text</strong></p></div>
+                                        }
+                                    </CaptionTemplate>
+                                </GridGroupSettings>
+
                                 <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
                                 <GridPageSettings PageSizes="true"></GridPageSettings>
 
@@ -355,12 +442,22 @@
                                             <GridAggregateColumn Field=@nameof(ViewABscKpidetailsDto.IndividualTargetWeight) Type="Syncfusion.Blazor.Grids.AggregateType.Sum">
                                                 <FooterTemplate>
                                                     @{
-                                                        aggregate = (context as AggregateTemplateContext);
+                                                        @*aggregate = (context as AggregateTemplateContext);
                                                         <div>
-                                                            @if (@aggregate != null)
+                                                            @if (@aggregate != null && ViewABscKpidetailsDto.BscPerspectiveTypeId == 1)
                                                             {
-                                                                <p style="color:purple;">Total Percentage: @aggregate.Sum %</p>
-                                                            }
+                                                                <p style="color:purple;">Financial: @aggregate.Sum %</p>
+                                                            }  
+                                                            @if (@aggregate != null && ViewABscKpidetailsDto.BscPerspectiveTypeId == 2)
+                                                            {
+                                                                <p style="color:purple;">Internal: @aggregate.Sum %</p>
+                                                            } 
+                                                        </div>*@
+                                                        <div>
+                                                            <p><span style="color:Purple;">Financial: @GetFinancialPerspectiveScore()</span></p>
+                                                            <p><span style="color:Purple;">Internal Processes: @GetInternalProcessScore()</span></p>
+                                                            <p><span style="color:Purple;">Customer: @GetCustomerPerspectiveScore()</span></p>
+                                                            <p><span style="color:Purple;">Learning and Growth: @GetLearningGrowthScore()</span></p>
                                                         </div>
                                                     }
                                                 </FooterTemplate>
@@ -373,6 +470,7 @@
 
                                 <GridEvents CellSelected="PerspectiveCellSelectHandler"
                                             QueryCellInfo="QueryCellInfoHandlerChild"
+                                            OnCellSave="CellSaveHandler"
                                             TValue="ViewABscKpidetailsDto">
                                 </GridEvents>
 
@@ -502,27 +600,27 @@
 </div>
 
 
-@code {  
+@code {
     SfGrid<ABscKpidetailsDto> DetailsDataGrid { get; set; }
     /// <summary>
     /// Event for Toolbar click for Grid Exporting
     /// </summary>
     public void GridToolbarClick(Syncfusion.Blazor.Navigations.ClickEventArgs args)
     {
-    	if (args.Item.Id == "Grid1_excelexport")
+        if (args.Item.Id == "Grid1_excelexport")
         {
             this.DetailsDataGrid.ExportToExcelAsync();
         }
-    	if (args.Item.Id == "Grid1_pdfexport")
+        if (args.Item.Id == "Grid1_pdfexport")
         {
             this.DetailsDataGrid.ExportToPdfAsync();
         }
-    	if (args.Item.Id == "Grid1_csvexport")
+        if (args.Item.Id == "Grid1_csvexport")
         {
             this.DetailsDataGrid.ExportToCsvAsync();
         }
     }
-    
+
 
     #region Declarations
     private static ABscKpiDto? KpiData { get; set; }
@@ -536,8 +634,10 @@
     List<ABscPerspectivesTypeDto>? BscPerspectiveTypeData { get; set; }
     List<ABscPerspectivesTypeDto>? BscPerspectiveTypeDataRepeated { get; set; }
     List<AMeasurementMetricDto>? MeasurementUnitData { get; set; }
-    List<ViewABscKpidetailsDto>? PerspectivesDetailData { get; set; }
+    List<ViewABscKpidetailsDto>? BscKpiDetailData { get; set; }
     List<ViewEmployeeDropDownDto>? EmployeeData { get; set; }
+    List<ViewABscPerspectivesDetailDto>? PerspectivesDetailData { get; set; }
+
     Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
     EmployeeRegistrationModel inputmodel { get; set; } = new EmployeeRegistrationModel();
     [Parameter]
@@ -559,6 +659,11 @@
     Syncfusion.Blazor.Grids.Action _previous { get; set; }
     public Query ChildQuery = new Query();
     public Query MainQuery = new Query();
+    private static ViewABscPerspectivesDetailDto? perspweights { get; set; }
+    private static ViewABscPerspectivesDetailDto? perspweightsfinancial { get; set; }
+    private static ViewABscPerspectivesDetailDto? perspweightsinternal { get; set; }
+    private static ViewABscPerspectivesDetailDto? perspweightscustomer { get; set; }
+    private static ViewABscPerspectivesDetailDto? perspweightslearning { get; set; }
 
     private List<object> ToolbarMenu = new List<object>()
     {
@@ -573,6 +678,11 @@
         Credentials = await AuthService.GetUserCredentials();
 
         employeeno = null;
+        perspweightsfinancial = null;
+        perspweightsinternal = null;
+        perspweightscustomer = null;
+        perspweightslearning = null;
+
         List<Task> t = new List<Task>();
         t.Add(Task.Run(async () =>
         {
@@ -590,7 +700,7 @@
             if (responsebscperspectivedetail.IsSuccessStatusCode)
             {
                 var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
-                PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscKpidetailsDto>>(contentbscperspectivedetail, _options);
+                BscKpiDetailData = JsonSerializer.Deserialize<List<ViewABscKpidetailsDto>>(contentbscperspectivedetail, _options);
             }
         }));
 
@@ -617,6 +727,14 @@
                 if (b != null)
                 {
                     finyearid = b.Id;
+
+                    //Load ABscPerspectivesDetail Data after getting current Financial Year ID
+                    var responsebscperspectivedetail = await Http.GetAsync($"BscPerspectives/GetBscPerspectivesDetail?YearId={finyearid}");
+                    if (responsebscperspectivedetail.IsSuccessStatusCode)
+                    {
+                        var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
+                        PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscPerspectivesDetailDto>>(contentbscperspectivedetail, _options);
+                    }
                 }
             }
         }));
@@ -675,6 +793,51 @@
         await _t;
     }
 
+    public string GetFinancialPerspectiveScore()
+    {
+        var data = KpiData.ABscKpidetails
+        .Where(e => e.BscPerspectiveTypeId == 1);
+
+        return Queryable
+        .Sum(data.Select(x => x.IndividualTargetWeight)
+        .AsQueryable())
+        .ToString();
+    }
+
+    public string GetInternalProcessScore()
+    {
+        var data = KpiData.ABscKpidetails
+        .Where(e => e.BscPerspectiveTypeId == 2);
+
+        return Queryable
+        .Sum(data.Select(x => x.IndividualTargetWeight)
+        .AsQueryable())
+        .ToString();
+    }
+
+    public string GetCustomerPerspectiveScore()
+    {
+        var data = KpiData.ABscKpidetails
+        .Where(e => e.BscPerspectiveTypeId == 3);
+
+        return Queryable
+        .Sum(data.Select(x => x.IndividualTargetWeight)
+        .AsQueryable())
+        .ToString();
+    }
+
+    public string GetLearningGrowthScore()
+    {
+        var data = KpiData.ABscKpidetails
+        .Where(e => e.BscPerspectiveTypeId == 4);
+
+        return Queryable
+        .Sum(data.Select(x => x.IndividualTargetWeight)
+        .AsQueryable())
+        .ToString();
+    }
+
+
     public async Task onSubmitForm()
     {
         try
@@ -730,7 +893,7 @@
                 if (responsebscperspectivedetail.IsSuccessStatusCode)
                 {
                     var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
-                    PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscKpidetailsDto>>(contentbscperspectivedetail, _options);
+                    BscKpiDetailData = JsonSerializer.Deserialize<List<ViewABscKpidetailsDto>>(contentbscperspectivedetail, _options);
                 }
             }));
 
@@ -746,9 +909,9 @@
             }));
 
 
-            if (PerspectivesDetailData != null)
+            if (BscKpiDetailData != null)
             {
-                KpiData.ABscKpidetails = PerspectivesDetailData;
+                KpiData.ABscKpidetails = BscKpiDetailData;
             }
             if (KpiData.ABscKpidetails == null)
             {
@@ -798,14 +961,23 @@
         {
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
             {
-                _previous = args.RequestType;                   
+                _previous = args.RequestType;
+                perspweightsfinancial = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 1);
+                perspweightsinternal = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 2);
+                perspweightscustomer = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 3);
+                perspweightslearning = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 4);
             }
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
             {
                 _previous = args.RequestType;
+                perspweightsfinancial = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 1);
+                perspweightsinternal = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 2);
+                perspweightscustomer = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 3);
+                perspweightslearning = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 4);
+
                 args.RowData.FinancialYearId = finyearid;
                 args.RowData.ABscKpidetails = new List<ViewABscKpidetailsDto>();
-                
+
                 if (Credentials.StaffId > 0)
                 {
                     args.Data.EmployeeId = Credentials.StaffId;
@@ -819,7 +991,7 @@
                     if (responsebscperspectivedetail.IsSuccessStatusCode)
                     {
                         var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
-                        PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscKpidetailsDto>>(contentbscperspectivedetail, _options);
+                        BscKpiDetailData = JsonSerializer.Deserialize<List<ViewABscKpidetailsDto>>(contentbscperspectivedetail, _options);
                     }
                 }));
 
@@ -847,9 +1019,9 @@
                 Task _t = Task.WhenAll(t);
                 await _t;
 
-                if (PerspectivesDetailData != null)
+                if (BscKpiDetailData != null)
                 {
-                    args.RowData.ABscKpidetails = PerspectivesDetailData;
+                    args.RowData.ABscKpidetails = BscKpiDetailData;
                 }
                 if (args.RowData.ABscKpidetails == null)
                 {
@@ -933,7 +1105,7 @@
                 if (responsebscperspectivedetail.IsSuccessStatusCode)
                 {
                     var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
-                    PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscKpidetailsDto>>(contentbscperspectivedetail, _options);
+                    BscKpiDetailData = JsonSerializer.Deserialize<List<ViewABscKpidetailsDto>>(contentbscperspectivedetail, _options);
                 }
             }));
 
@@ -1032,7 +1204,14 @@
             // throw ex;
         }
     }
+       
+    
+    public void CellSaveHandler(CellSaveArgs<ViewABscKpidetailsDto> args)
+    {
+        var datainfo = ChildDataGrid.CurrentViewData;
         
+    }
+
     public async void QueryCellInfoHandlerChild(QueryCellInfoEventArgs<ViewABscKpidetailsDto> Args)
     {
         if (Args.Column.Field == nameof(ViewABscKpidetailsDto.BscPerspectiveTypeId))
