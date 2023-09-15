@@ -394,8 +394,8 @@
                             <AccordionItem Expanded="true">
                                 <HeaderTemplate><strong>SECTION 2: TARGET SETTING AND EVALUATION /  EXPECTED  ROLE KPIs or DELIVERABLES</strong></HeaderTemplate>
                                 <ContentTemplate>  
-                                    @if(gridData.Count > 0)
-                                    {
+                                    @*@if(BscData != null && BscData.BalanceScoreCardTargetSetting.Count > 0)
+                                    {*@
                                      <h6>
                                         Employee performance will be
                                         assessed against set the agreed
@@ -404,7 +404,7 @@
                                         evidence the Appraisee's Performance /
                                         Achievement and / or Non - Achievement during the Period.
                                     </h6>
-                                    <SfGrid @ref="@TargetsettingGrid" DataSource="@gridData" Height="600px"
+                                    <SfGrid @ref="@TargetsettingGrid" DataSource="@BscData.BalanceScoreCardTargetSetting" Height="600px"
                                     TValue="BalanceScoreCardTargetSettingDto"
                                     ID="Grid1" AllowPaging="true"
                                     AllowFiltering="false" AllowReordering="true"
@@ -439,12 +439,12 @@
                                         <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
                                         <GridPageSettings PageSizes="true"></GridPageSettings>
                                         <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
-                                        <GridEvents CellSelected="CellSelectHandler"
+                                        @*<GridEvents CellSelected="CellSelectHandler"
                                             CellSaved="CellSavedHandler"
                                             OnCellSave="CellSaveHandler"
                                             OnCellEdit="CellEditHandler"
                                             TValue="BalanceScoreCardTargetSettingDto">
-                                        </GridEvents>
+                                        </GridEvents>*@
 
                                         <GridColumns>
                                             <GridColumn Type="ColumnType.CheckBox" Width="50" Visible=false></GridColumn>
@@ -474,23 +474,13 @@
                                             <GridColumn HeaderText="Employee Performance Setting"
                                                 CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
                                                 <GridColumns>
-                                                    @*<GridColumn
-                                                        HeaderText="Perspective Total Weight"
-                                                        Width="150"
-                                                        AllowEditing="false"
-                                                        Field=@nameof(BalanceScoreCardTargetSettingDto.PerspectiveTotalWeight)
-                                                        EditType="EditType.NumericEdit"
-                                                        IsFrozen="false"
-                                                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
-                                                        </GridColumn>*@
-
-                                                    <GridForeignColumn Field=@nameof(BalanceScoreCardTargetSettingDto.Bsckpiid)
+                                                <GridForeignColumn Field=@nameof(BalanceScoreCardTargetSettingDto.BsckpidetailsId)
                                                                HeaderText="Key Performance Indicator (KPI)"
                                                                Width="120"
                                                                AllowEditing="false"
-                                                               ForeignKeyField="@(nameof(ABscKpi.Bsckpiid))"
-                                                               ForeignKeyValue="@(nameof(ABscKpi.Bsckpidescription))"
-                                                               ForeignDataSource="@KpiData"
+                                                               ForeignKeyField="@(nameof(ABscKpidetailsDto.BsckpidetailsId))"
+                                                                   ForeignKeyValue="@(nameof(ABscKpidetailsDto.Objective))"
+                                                               ForeignDataSource="@KpiDetailsData"
                                                                IsFrozen="false"
                                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
                                                     </GridForeignColumn>
@@ -595,8 +585,8 @@
                                             </GridColumn>
                                         </GridColumns>
                                     </SfGrid>
-                                    }
-                                    else
+                                    @*}*@
+                                    @*else
                                     {                                        
                                         var yeardesc = FinancialYearData?
                                         .FirstOrDefault(o => o.Id == @finyear);
@@ -604,7 +594,7 @@
                                         {
                                             <p><span style="font-size: 20px; color:#ecf0f1 background-color:#c0392b;">You currently have no targets set for the financial year @yeardesc.FinancialYear. Kindly go under the targets menu to have your targets set.</span></p>
                                         }                                    
-                                    }
+                                    }*@
 
                                     
                                 </ContentTemplate>
@@ -1160,13 +1150,14 @@
     List<ViewFinancialYearDto>? FinancialYearData { get; set; }
     List<AppraisalReasonDto>? AppraisalData { get; set; }
     List<BscKpiDto>? KpiData { get; set; }
+    List<ABscKpidetailsDto>? KpiDetailsData { get; set; }
     List<BscPerspectivesDto>? BscPerspectiveData { get; set; }
     List<PerformanceDescriptorDto>? PerformanceDescriptorData { get; set; }
     List<BscPerformanceMeasurementDto>? BscMeasurementData { get; set; }
     List<EmployeeEvidenceDto>? EvidenceData { get; set; }
     List<BehavioralCompetenciesDto>? CompetenceData { get; set; }
-    List<TargetSettingDto>? TargetData { get; set; }
-    List<BalanceScoreCardTargetSettingDto>? TargetDataa { get; set; }
+    List<BalanceScoreCardTargetSettingDto>? TargetData { get; set; }
+    List<BalanceScoreCardTargetSettingDto>? TargetMainData { get; set; }
     List<ABscPerspectivesTypeDto>? BscPerspectiveTypeData { get; set; }
     List<ALeaveApprovalStatusDto>? ApprovalStatusData { get; set; }
     SfSpinner? SpinnerObj;
@@ -1211,6 +1202,7 @@
 
     int? finyear = null;
     int? finyearid = null;
+    int countid = -1000;
 
     //Section 2 Class
     public class TargetSettingEvaluation
@@ -1300,126 +1292,6 @@
     private List<TargetSettingEvaluation> TargetSettingEvaluationList = new List<TargetSettingEvaluation>();
     private List<ValuesBehavioralCompetencies> BehavioralCompetenciesList = new List<ValuesBehavioralCompetencies>();
 
-    private async void GenerateTargetSettingEvaluationList()
-    {
-        try
-        {
-            if (BscPerspectiveData == null)
-            {
-                return;
-            }
-
-            if (BscData != null && BscData.BalanceScoreCardTargetSetting == null)
-            {
-                List<BalanceScoreCardTargetSettingDto> m = new List<BalanceScoreCardTargetSettingDto>();
-
-                foreach (var n in TargetData)
-                {
-                    Random random = new Random();
-                    m.Add(new BalanceScoreCardTargetSettingDto
-                        {
-                            TargetSettingId = random.Next(1000, 10000),
-                            BscPerspectiveTypeId = n.BscPerspectiveId,
-                            PerspectiveTotalWeight = n.PerspectiveTotalWeight,
-                            MeasurementMetricId = n.MeasurementMetricId,
-                            Bsckpiid = n.Bsckpiid,
-                        });
-                }
-                BscData.BalanceScoreCardTargetSetting = m;
-            }
-
-            else
-            {
-                foreach (var n in TargetData)
-                {
-                    var x = BscData.BalanceScoreCardTargetSetting.FirstOrDefault(o => o.BscPerspectiveTypeId == n.BscPerspectiveTypeId);
-                    if (x == null)
-                    {
-                        Random random = new Random();
-                        BscData.BalanceScoreCardTargetSetting.Add(new BalanceScoreCardTargetSettingDto
-                            {
-                                TargetSettingId = random.Next(1000, 10000),
-                                BscPerspectiveTypeId = n.BscPerspectiveId,
-                                PerspectiveTotalWeight = n.PerspectiveTotalWeight,
-                                MeasurementMetricId = n.MeasurementMetricId,
-                                Bsckpiid = n.Bsckpiid,
-                            });
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-
-        }
-
-        finally
-        {
-
-        }
-    }
-
-    private async void GenerateBehavioralCompetenciesList()
-    {
-        try
-        {
-            if (CompetenceData == null)
-            {
-                return;
-            }
-
-            if (BscData != null && BscData.BalanceScoreCardBehavioral == null)
-            {
-                List<BalanceScoreCardBehavioralDto> m = new List<BalanceScoreCardBehavioralDto>();
-
-                foreach (var n in CompetenceData)
-                {
-                    Random random = new Random();
-                    m.Add(new BalanceScoreCardBehavioralDto
-                        {
-                            BehavioralId = random.Next(1000, 10000),
-                            CompetenceId = n.CompetenceId,
-                        });
-                }
-                BscData.BalanceScoreCardBehavioral = m;
-            }
-
-            else
-            {
-                foreach (var n in CompetenceData)
-                {
-                    var x = BscData.BalanceScoreCardBehavioral.FirstOrDefault(o => o.CompetenceId == n.CompetenceId);
-                    if (x == null)
-                    {
-                        Random random = new Random();
-                        BscData.BalanceScoreCardBehavioral.Add(new BalanceScoreCardBehavioralDto
-                            {
-                                BehavioralId = random.Next(1000, 10000),
-                                CompetenceId = n.CompetenceId,
-                            });
-                    }
-                }
-            }
-
-        }
-        catch (Exception ex)
-        {
-
-        }
-
-        finally
-        {
-
-        }
-    }
-
-
-    protected override async Task OnParametersSetAsync()
-    {
-        GenerateTargetSettingEvaluationList();
-        GenerateBehavioralCompetenciesList();
-    }
-
     public async Task onSaveDraftForm()
     {
         try
@@ -1427,7 +1299,7 @@
             if (TargetsettingGrid != null)
             {
                 await TargetsettingGrid.EndEditAsync();
-                BscData.BalanceScoreCardTargetSetting = gridData;
+                //BscData.BalanceScoreCardTargetSetting = gridData;
             }
 
             if (BehavioralGrid != null)
@@ -1513,7 +1385,7 @@
                 if (TargetsettingGrid != null)
                 {
                     await TargetsettingGrid.EndEditAsync();
-                    BscData.BalanceScoreCardTargetSetting = gridData;
+                    //BscData.BalanceScoreCardTargetSetting = gridData;
                 }
 
                 if (BehavioralGrid != null)
@@ -1620,7 +1492,7 @@
             if (TargetsettingGrid != null)
             {
                 await TargetsettingGrid.EndEditAsync();
-                BscData.BalanceScoreCardTargetSetting = gridData;
+                //BscData.BalanceScoreCardTargetSetting = gridData;
             }
 
             if (BehavioralGrid != null)
@@ -1750,7 +1622,7 @@
             if (TargetsettingGrid != null)
             {
                 await TargetsettingGrid.EndEditAsync();
-                BscData.BalanceScoreCardTargetSetting = gridData;
+                //BscData.BalanceScoreCardTargetSetting = gridData;
             }
 
             if (BehavioralGrid != null)
@@ -1926,6 +1798,16 @@
 
         t.Add(Task.Run(async () =>
         {
+            var responseKpi = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicatorDetails");
+            if (responseKpi.IsSuccessStatusCode)
+            {
+                var contentKpi = await responseKpi.Content.ReadAsStringAsync();
+                KpiDetailsData = JsonSerializer.Deserialize<List<ABscKpidetailsDto>>(contentKpi, _options);
+            }
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
             var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
             if (responsebscperspectivetype.IsSuccessStatusCode)
             {
@@ -1976,11 +1858,21 @@
 
         t.Add(Task.Run(async () =>
         {
+            var responsetarget = await Http.GetAsync($"TargetSetting/GetTargetMainData");
+            if (responsetarget.IsSuccessStatusCode)
+            {
+                var contenttarget = await responsetarget.Content.ReadAsStringAsync();
+                TargetMainData = JsonSerializer.Deserialize<List<BalanceScoreCardTargetSettingDto>>(contenttarget, _options);
+            }
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
             var responsetarget = await Http.GetAsync($"TargetSetting/GetAllTargetData");
             if (responsetarget.IsSuccessStatusCode)
             {
                 var contenttarget = await responsetarget.Content.ReadAsStringAsync();
-                TargetData = JsonSerializer.Deserialize<List<TargetSettingDto>>(contenttarget, _options);
+                TargetData = JsonSerializer.Deserialize<List<BalanceScoreCardTargetSettingDto>>(contenttarget, _options);
             }
         }));
 
@@ -2026,34 +1918,75 @@
             await LoadingDialogue.ShowAsync();
             finyear = args.ItemData.Id;
 
-            string json = Newtonsoft.Json.JsonConvert.SerializeObject(BscData);
-            StringContent HttpCompletionOption = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-            var resulttarget = await Http.GetAsync($"TargetSetting/GetAllTargetDataFiltered/{finyear}");
-            var contenttarget = await resulttarget.Content.ReadAsStringAsync();
+            List<Task> t = new List<Task>();
 
-            if (resulttarget.IsSuccessStatusCode)
+            t.Add(Task.Run(async () =>
             {
-                List<ViewBscPerspectiveperformanceIndicatorDto>? data = new List<ViewBscPerspectiveperformanceIndicatorDto>();
-                data = JsonSerializer.Deserialize<List<ViewBscPerspectiveperformanceIndicatorDto>>(contenttarget, _options);
-
-                List<BalanceScoreCardTargetSettingDto> m = new List<BalanceScoreCardTargetSettingDto>();
-
-                foreach (var n in data)
+                var responsetarget = await Http.GetAsync($"TargetSetting/GetAllTargetData");
+                if (responsetarget.IsSuccessStatusCode)
                 {
-                    Random random = new Random();
-                    m.Add(new BalanceScoreCardTargetSettingDto
-                        {
-                            TargetSettingId = random.Next(1000, 10000),
-                            BscPerspectiveTypeId = n.BscPerspectiveTypeId,
-                            PerspectiveTotalWeight = n.PerspectiveTotalWeight /*Convert.ToDouble(n.PerspectiveTypeDescriptionandWeight)*/,
-                            MeasurementMetricId = n.MeasurementMetricId,
-                            Bsckpiid = n.Bsckpiid,
-                        });
+                    var contenttarget = await responsetarget.Content.ReadAsStringAsync();
+                    TargetData = JsonSerializer.Deserialize<List<BalanceScoreCardTargetSettingDto>>(contenttarget, _options);
                 }
-                gridData = m;
+            }));
+
+            Task _t = Task.WhenAll(t);
+            await _t;
+
+            if (TargetData != null)
+            {
+                BscData.BalanceScoreCardTargetSetting = TargetData;
+            }
+            if (BscData.BalanceScoreCardTargetSetting == null)
+            {
+                BscData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSettingDto>();
             }
 
-            StateHasChanged();
+            foreach (var item in BscPerspectiveTypeData)
+            {
+                var exist = BscData.BalanceScoreCardTargetSetting
+                .FirstOrDefault(o => o.BscPerspectiveTypeId == item.BscPerspectiveTypeId);
+
+                if (exist == null)
+                {
+                    var m = new BalanceScoreCardTargetSettingDto();
+                    //m.BscPerspectiveDetailId = countid;
+                    //m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
+
+                    //KpiData.ABscPerspectivesDetail.Add(m);
+                    //countid++;
+                }
+            }
+            BscData.BalanceScoreCardTargetSetting = BscData.BalanceScoreCardTargetSetting.OrderBy(o => o.BscPerspectiveTypeId).ToList();
+
+            //string json = Newtonsoft.Json.JsonConvert.SerializeObject(BscData);
+            //StringContent HttpCompletionOption = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            //var resulttarget = await Http.GetAsync($"TargetSetting/GetAllTargetDataFiltered/{finyear}");
+            //var contenttarget = await resulttarget.Content.ReadAsStringAsync();
+
+            //if (resulttarget.IsSuccessStatusCode)
+            //{
+            //    List<ViewBscPerspectiveperformanceIndicatorDto>? data = new List<ViewBscPerspectiveperformanceIndicatorDto>();
+            //    data = JsonSerializer.Deserialize<List<ViewBscPerspectiveperformanceIndicatorDto>>(contenttarget, _options);
+
+            //    List<BalanceScoreCardTargetSettingDto> m = new List<BalanceScoreCardTargetSettingDto>();
+
+            //    foreach (var n in data)
+            //    {
+            //        Random random = new Random();
+            //        m.Add(new BalanceScoreCardTargetSettingDto
+            //            {
+            //                TargetSettingId = random.Next(1000, 10000),
+            //                BscPerspectiveTypeId = n.BscPerspectiveTypeId,
+            //                PerspectiveTotalWeight = n.PerspectiveTotalWeight /*Convert.ToDouble(n.PerspectiveTypeDescriptionandWeight)*/,
+            //                MeasurementMetricId = n.MeasurementMetricId,
+            //                Bsckpiid = n.Bsckpiid,
+            //            });
+            //    }
+            //    gridData = m;
+            //}
+
+            //StateHasChanged();
         }
         catch(Exception ex)
         {
@@ -2731,44 +2664,15 @@
 
             if (Args.RowData.BalanceScoreCardTargetSetting == null)
             {
-                Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSettingDto>();
+                //Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSettingDto>();
             }
             if (Args.RowData.BalanceScoreCardBehavioral == null)
             {
                 Args.RowData.BalanceScoreCardBehavioral = new List<BalanceScoreCardBehavioralDto>();
             }            
 
-            List<BalanceScoreCardTargetSettingDto> m = new List<BalanceScoreCardTargetSettingDto>();
 
-            foreach (var n in Args.RowData.BalanceScoreCardTargetSetting)
-            {
-                Random random = new Random();
-                m.Add(new BalanceScoreCardTargetSettingDto
-                    {
-                        TargetSettingId = n.TargetSettingId,
-                        BscPerspectiveTypeId = n.BscPerspectiveTypeId,
-                        PerspectiveTotalWeight = n.PerspectiveTotalWeight,
-                        MeasurementMetricId = n.MeasurementMetricId,
-                        Bsckpiid = n.Bsckpiid,
-                        BalanceScoreCardId = n.BalanceScoreCardId,
-                        EmployeeSelfAssessTgt = n.EmployeeSelfAssessTgt,
-                        SupervisorAssessTgt = n.SupervisorAssessTgt,
-                        IntProcessPerspEmployeeSelfAssessTgt = n.IntProcessPerspEmployeeSelfAssessTgt,
-                        IntProcessPerspSupervisorAssessTgt = n.IntProcessPerspSupervisorAssessTgt,
-                        CustomerPerspEmployeeSelfAssessTgt = n.CustomerPerspEmployeeSelfAssessTgt,
-                        CustomerPerspSupervisorAssessTgt = n.CustomerPerspSupervisorAssessTgt,
-                        LearningPerspEmployeeSelfAssessTgt = n.LearningPerspEmployeeSelfAssessTgt,
-                        LearningPerspSupervisorAssessTgt = n.LearningPerspSupervisorAssessTgt,
-                        IndividualTargetWeight = n.IndividualTargetWeight,
-                        EvidenceId = n.EvidenceId,
-                        IndividualTargetObjectiveScore = n.IndividualTargetObjectiveScore,
-                        SupervisorComments = n.SupervisorComments,
-                        AddedBy = n.AddedBy,
-                        AddedDate = n.AddedDate,
-                    });
-            }
-            gridData = m;
-
+            
             if(CompetenceData != null)
             {
                 foreach (var n in CompetenceData)
@@ -2895,6 +2799,64 @@
             employeeno = null;
             _previous = Args.RequestType;
             statusdecsription = null;
+            if(Credentials.StaffId > 0)
+            {
+                Args.Data.Employeeid = Credentials.StaffId;
+                employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Credentials.StaffId);
+                isFinancialYearEnabled = true;
+            }
+
+            List<Task> t = new List<Task>();
+
+            t.Add(Task.Run(async () =>
+            {
+                var responsetarget = await Http.GetAsync($"TargetSetting/GetAllTargetData");
+                if (responsetarget.IsSuccessStatusCode)
+                {
+                    var contenttarget = await responsetarget.Content.ReadAsStringAsync();
+                    TargetData = JsonSerializer.Deserialize<List<BalanceScoreCardTargetSettingDto>>(contenttarget, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responsetarget = await Http.GetAsync($"TargetSetting/GetTargetMainData");
+                if (responsetarget.IsSuccessStatusCode)
+                {
+                    var contenttarget = await responsetarget.Content.ReadAsStringAsync();
+                    TargetMainData = JsonSerializer.Deserialize<List<BalanceScoreCardTargetSettingDto>>(contenttarget, _options);
+                }
+            }));
+
+            Task _t = Task.WhenAll(t);
+            await _t;
+
+            if (TargetMainData != null)
+            {
+                Args.RowData.BalanceScoreCardTargetSetting = TargetMainData;
+            }
+            if (Args.RowData.BalanceScoreCardTargetSetting == null)
+            {
+                Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSettingDto>();
+            }
+
+            foreach (var item in TargetData)
+            {
+                var m = new BalanceScoreCardTargetSettingDto();
+                m.TargetSettingId = countid;
+                m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
+                //totoal weight
+                m.BsckpidetailsId = item.BsckpidetailsId;
+                m.MeasurementMetricId = item.MeasurementMetricId;
+                m.IndividualTargetWeight = item.IndividualTargetWeight;                  
+
+                Args.RowData.BalanceScoreCardTargetSetting.Add(m);
+                countid++;
+            }
+
+            Args.RowData.BalanceScoreCardTargetSetting = Args.RowData.BalanceScoreCardTargetSetting.OrderBy(o => o.BscPerspectiveTypeId).ToList();
+
+            StateHasChanged();
 
             //Enable save buttons on add
             IsHiddenDraft = false;
@@ -2912,7 +2874,7 @@
             Args.RowData.BalanceScoreCardHodcomments = new List<BalanceScoreCardHODCommentsDto>();
             Args.RowData.BalanceScoreCardSupervisorComments = new List<BalanceScoreCardSupervisorCommentsDto>();
             Args.RowData.BalanceScoreCardTargetDevelopmentPlan = new List<BalanceScoreCardTargetDevelopmentPlanDto>();
-            Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSettingDto>();
+            //Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSettingDto>();
             Args.RowData.BalanceScoreCardBehavioral = new List<BalanceScoreCardBehavioralDto>();
 
             if (CompetenceData != null)
@@ -2926,14 +2888,8 @@
                             CompetenceId = n.CompetenceId,
                         });
                 }
-            }
-
-            if(Credentials.StaffId > 0)
-            {
-                Args.Data.Employeeid = Credentials.StaffId;
-                employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Credentials.StaffId);
-                isFinancialYearEnabled = true;
-            }
+            }            
+        
         }
     }
 
