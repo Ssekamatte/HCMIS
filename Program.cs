@@ -157,7 +157,7 @@ builder.Services.AddScoped<AnnualLeaveRosterAdapter>();
 builder.Services.AddScoped<FinancialYearAdapter>();
 builder.Services.AddScoped<ObjectivesAdapter>(); 
 builder.Services.AddScoped<ObjectivesDetailsAdapter>();
-
+builder.Services.AddScoped<PerspectivesDetailsAdapter>();
 
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IReportService, ReportService>();
