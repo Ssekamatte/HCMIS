@@ -404,11 +404,13 @@
                                         evidence the Appraisee's Performance /
                                         Achievement and / or Non - Achievement during the Period.
                                     </h6>
-                                    <SfGrid @ref="@TargetsettingGrid" DataSource="@BscData.BalanceScoreCardTargetSetting" Height="600px"
+                                    <SfGrid @ref="@TargetsettingGrid" 
+                                    DataSource="@BscData.BalanceScoreCardTargetSetting" 
+                                    Height="900px"
                                     TValue="BalanceScoreCardTargetSettingDto"
                                     ID="Grid1" AllowPaging="true"
                                     AllowFiltering="false" AllowReordering="true"
-                                    AllowResizing="true" AllowGrouping="true"
+                                    AllowResizing="true" AllowGrouping="false"
                                     AllowExcelExport="true" AllowPdfExport="true"
                                     AllowSelection="true" AllowSorting="true"
                                     GridLines="GridLine.Both"
@@ -462,19 +464,20 @@
                                                        Visible=true
                                                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
                                             </GridForeignColumn>
-                                            @*<GridColumn HeaderText="Perspective Total Weight"
-                                                Width="150"
+                                            <GridColumn HeaderText="Perspective Total Weight"
+                                                Width="80"
                                                 AllowEditing="false"
                                                 Field=@nameof(BalanceScoreCardTargetSettingDto.PerspectiveTotalWeight)
                                                 EditType="EditType.NumericEdit"
                                                 IsFrozen="false"
+                                                Format="N1"
                                                 CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
-                                            </GridColumn>*@
+                                            </GridColumn>
                                             @*Employee Performance Setting*@
                                             <GridColumn HeaderText="Employee Performance Setting"
                                                 CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
                                                 <GridColumns>
-                                                <GridForeignColumn Field=@nameof(BalanceScoreCardTargetSettingDto.BsckpidetailsId)
+                                                    <GridForeignColumn Field=@nameof(BalanceScoreCardTargetSettingDto.BsckpidetailsId)
                                                                HeaderText="Key Performance Indicator (KPI)"
                                                                Width="120"
                                                                AllowEditing="false"
@@ -488,9 +491,9 @@
                                                                HeaderText="Performance Measurement/Metric"
                                                                Width="70"
                                                                AllowEditing="false"
-                                                               ForeignKeyField="@(nameof(ABscPerformanceMeasurement.MeasurementMetricId))"
-                                                               ForeignKeyValue="@(nameof(ABscPerformanceMeasurement.MeasurementMetricDescription))"
-                                                               ForeignDataSource="@BscMeasurementData"
+                                                                   ForeignKeyField="@(nameof(AMeasurementMetricDto.MeasurementMetricId))"
+                                                               ForeignKeyValue="@(nameof(AMeasurementMetricDto.MeasurementMetricDesc))"
+                                                                   ForeignDataSource="@MeasurementUnitData"
                                                                ClipMode="ClipMode.EllipsisWithTooltip"
                                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
                                                     </GridForeignColumn>
@@ -1157,9 +1160,10 @@
     List<EmployeeEvidenceDto>? EvidenceData { get; set; }
     List<BehavioralCompetenciesDto>? CompetenceData { get; set; }
     List<BalanceScoreCardTargetSettingDto>? TargetData { get; set; }
-    List<BalanceScoreCardTargetSettingDto>? TargetMainData { get; set; }
+    List<ViewBscPerspectiveperformanceIndicatorDto>? PopulatedData { get; set; }
     List<ABscPerspectivesTypeDto>? BscPerspectiveTypeData { get; set; }
     List<ALeaveApprovalStatusDto>? ApprovalStatusData { get; set; }
+    List<AMeasurementMetricDto>? MeasurementUnitData { get; set; }
     SfSpinner? SpinnerObj;
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
@@ -1718,6 +1722,16 @@
         List<Task> t = new List<Task>();
         t.Add(Task.Run(async () =>
         {
+            var responsemetric = await Http.GetAsync($"Utilities/GetMeasurementMetric");
+            if (responsemetric.IsSuccessStatusCode)
+            {
+                var contentmetric = await responsemetric.Content.ReadAsStringAsync();
+                MeasurementUnitData = JsonSerializer.Deserialize<List<AMeasurementMetricDto>>(contentmetric, _options);
+            }
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
             var responseemployee = await Http.GetAsync($"BalanceScoreCard/GetEmployeeData");
             if (responseemployee.IsSuccessStatusCode)
             {
@@ -1858,11 +1872,11 @@
 
         t.Add(Task.Run(async () =>
         {
-            var responsetarget = await Http.GetAsync($"TargetSetting/GetTargetMainData");
+            var responsetarget = await Http.GetAsync($"TargetSetting/GetPopulatedData");
             if (responsetarget.IsSuccessStatusCode)
             {
                 var contenttarget = await responsetarget.Content.ReadAsStringAsync();
-                TargetMainData = JsonSerializer.Deserialize<List<BalanceScoreCardTargetSettingDto>>(contenttarget, _options);
+                PopulatedData = JsonSerializer.Deserialize<List<ViewBscPerspectiveperformanceIndicatorDto>>(contenttarget, _options);
             }
         }));
 
@@ -2809,6 +2823,156 @@
             List<Task> t = new List<Task>();
 
             t.Add(Task.Run(async () =>
+        {
+            var responseemployee = await Http.GetAsync($"BalanceScoreCard/GetEmployeeData");
+            if (responseemployee.IsSuccessStatusCode)
+            {
+                var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+                EmployeeData = JsonSerializer.Deserialize<List<ViewBscEmployeeDto>>(contentemployee, _options);
+            }
+        }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responsejobtitle = await Http.GetAsync($"HumanResource/GetJobTitle");
+                if (responsejobtitle.IsSuccessStatusCode)
+                {
+                    var contentjobtitle = await responsejobtitle.Content.ReadAsStringAsync();
+                    JobTitleData = JsonSerializer.Deserialize<List<JobTitleDto>>(contentjobtitle, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responsefinyear = await Http.GetAsync($"FinancialYear/list");
+                if (responsefinyear.IsSuccessStatusCode)
+                {
+                    var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
+                    FinancialYearData = JsonSerializer.Deserialize<List<ViewFinancialYearDto>>(contentfinyear, _options);
+
+                    DateTime currentdate = DateTime.Now;
+                    string? financialyeardesc = null;
+                    if (currentdate.Month >= 6)
+                    {
+                        financialyeardesc = $"{currentdate.Year}/{(currentdate.Year + 1)}";
+                    }
+                    else if (currentdate.Month < 6)
+                    {
+                        financialyeardesc = $"{(currentdate.Year - 1)}/{currentdate.Year}";
+                    }
+
+                    var b = FinancialYearData.FirstOrDefault(o => o.FinancialYear.Trim() == financialyeardesc.Trim());
+                    if (b != null)
+                    {
+                        finyearid = b.Id;
+                    }
+
+                }
+            }));
+
+            //t.Add(Task.Run(async () =>
+            //{
+            //    var responsebsc = await Http.GetAsync($"BalanceScoreCard/GetBSCData");
+            //    if (responsebsc.IsSuccessStatusCode)
+            //    {
+            //        var contentbsc = await responsebsc.Content.ReadAsStringAsync();
+            //        EmployeeData = JsonSerializer.Deserialize<List<ViewBscEmployeeDto>>(contentemployee, _options);
+            //    }
+            //}));
+
+
+            t.Add(Task.Run(async () =>
+            {
+                var responseappraisal = await Http.GetAsync($"AppraisalReason/GetAppraisalReason");
+                if (responseappraisal.IsSuccessStatusCode)
+                {
+                    var contentappraisal = await responseappraisal.Content.ReadAsStringAsync();
+                    AppraisalData = JsonSerializer.Deserialize<List<AppraisalReasonDto>>(contentappraisal, _options);
+                }
+            }));
+
+
+            t.Add(Task.Run(async () =>
+            {
+                var responseKpi = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicator");
+                if (responseKpi.IsSuccessStatusCode)
+                {
+                    var contentKpi = await responseKpi.Content.ReadAsStringAsync();
+                    KpiData = JsonSerializer.Deserialize<List<BscKpiDto>>(contentKpi, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responseKpi = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicatorDetails");
+                if (responseKpi.IsSuccessStatusCode)
+                {
+                    var contentKpi = await responseKpi.Content.ReadAsStringAsync();
+                    KpiDetailsData = JsonSerializer.Deserialize<List<ABscKpidetailsDto>>(contentKpi, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
+                if (responsebscperspectivetype.IsSuccessStatusCode)
+                {
+                    var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
+                    BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesTypeDto>>(contentbscperspectivetype, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responsebscmeasurement = await Http.GetAsync($"BscPerformanceMeasurement/GetBscPerformanceMeasurement");
+                if (responsebscmeasurement.IsSuccessStatusCode)
+                {
+                    var contentbscmeasurement = await responsebscmeasurement.Content.ReadAsStringAsync();
+                    BscMeasurementData = JsonSerializer.Deserialize<List<BscPerformanceMeasurementDto>>(contentbscmeasurement, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responseevidence = await Http.GetAsync($"EmployeeEvidence/GetEmployeeEvidence");
+                if (responseevidence.IsSuccessStatusCode)
+                {
+                    var contentevidence = await responseevidence.Content.ReadAsStringAsync();
+                    EvidenceData = JsonSerializer.Deserialize<List<EmployeeEvidenceDto>>(contentevidence, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responseperformancedescriptor = await Http.GetAsync($"PerformanceDescriptor/GetPerformanceDescriptor");
+                if (responseperformancedescriptor.IsSuccessStatusCode)
+                {
+                    var contentperformancedescriptor = await responseperformancedescriptor.Content.ReadAsStringAsync();
+                    PerformanceDescriptorData = JsonSerializer.Deserialize<List<PerformanceDescriptorDto>>(contentperformancedescriptor, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responsecompetence = await Http.GetAsync($"BehavioralCompetencies/GetCompetence");
+                if (responsecompetence.IsSuccessStatusCode)
+                {
+                    var contentcompetence = await responsecompetence.Content.ReadAsStringAsync();
+                    CompetenceData = JsonSerializer.Deserialize<List<BehavioralCompetenciesDto>>(contentcompetence, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responsetarget = await Http.GetAsync($"TargetSetting/GetPopulatedData");
+                if (responsetarget.IsSuccessStatusCode)
+                {
+                    var contenttarget = await responsetarget.Content.ReadAsStringAsync();
+                    PopulatedData = JsonSerializer.Deserialize<List<ViewBscPerspectiveperformanceIndicatorDto>>(contenttarget, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
             {
                 var responsetarget = await Http.GetAsync($"TargetSetting/GetAllTargetData");
                 if (responsetarget.IsSuccessStatusCode)
@@ -2820,34 +2984,44 @@
 
             t.Add(Task.Run(async () =>
             {
-                var responsetarget = await Http.GetAsync($"TargetSetting/GetTargetMainData");
-                if (responsetarget.IsSuccessStatusCode)
+                var responseapprovalstatus = await Http.GetAsync($"Utilities/GetLeaveApprovalStatus");
+                if (responseapprovalstatus.IsSuccessStatusCode)
                 {
-                    var contenttarget = await responsetarget.Content.ReadAsStringAsync();
-                    TargetMainData = JsonSerializer.Deserialize<List<BalanceScoreCardTargetSettingDto>>(contenttarget, _options);
+                    var contentapprovalstatus = await responseapprovalstatus.Content.ReadAsStringAsync();
+                    ApprovalStatusData = JsonSerializer.Deserialize<List<ALeaveApprovalStatusDto>>(contentapprovalstatus, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responsebscperspective = await Http.GetAsync($"BscPerspectives/GetBscPerspectives");
+                if (responsebscperspective.IsSuccessStatusCode)
+                {
+                    var contentbscperspective = await responsebscperspective.Content.ReadAsStringAsync();
+                    BscPerspectiveData = JsonSerializer.Deserialize<List<BscPerspectivesDto>>(contentbscperspective, _options);
                 }
             }));
 
             Task _t = Task.WhenAll(t);
             await _t;
 
-            if (TargetMainData != null)
+            if (TargetData != null)
             {
-                Args.RowData.BalanceScoreCardTargetSetting = TargetMainData;
+                Args.RowData.BalanceScoreCardTargetSetting = TargetData;
             }
             if (Args.RowData.BalanceScoreCardTargetSetting == null)
             {
                 Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSettingDto>();
             }
 
-            foreach (var item in TargetData)
+            foreach (var item in PopulatedData)
             {
                 var m = new BalanceScoreCardTargetSettingDto();
                 m.TargetSettingId = countid;
                 m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
-                //totoal weight
+                m.PerspectiveTotalWeight = item.PerspectiveTotalWeight; //Check if department weight is same as this
                 m.BsckpidetailsId = item.BsckpidetailsId;
-                m.MeasurementMetricId = item.MeasurementMetricId;
+                m.MeasurementMetricId = item.BscKpidetailsMeasurementMetricId;
                 m.IndividualTargetWeight = item.IndividualTargetWeight;                  
 
                 Args.RowData.BalanceScoreCardTargetSetting.Add(m);
