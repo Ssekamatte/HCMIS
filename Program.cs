@@ -118,7 +118,7 @@ builder.Services.AddScoped<GeneralInternalAdapter>();
 builder.Services.AddScoped<CPDSummaryAdapter>();
 builder.Services.AddScoped<SubscriptionSummaryAdapter>(); 
 builder.Services.AddScoped<BSCAdapter>();
-///
+
 builder.Services.AddScoped<DocumentUploadModel>();
 builder.Services.AddScoped<NonStaffQualificationAdapter>();
 builder.Services.AddScoped<NonStaffWorkExperienceAdapter>();
