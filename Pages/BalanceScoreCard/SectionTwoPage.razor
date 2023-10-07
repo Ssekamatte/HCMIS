@@ -24,6 +24,15 @@
 @if (datasource != null
 && datasource.Count > 0)
 {
+    <h6>
+        Employee performance will be
+        assessed against set the agreed
+        Targets and overall Role Deliverables.
+        Supervisors will assess and comment with
+        evidence the Appraisee's Performance /
+        Achievement and / or Non - Achievement during the Period.
+    </h6>
+
     <SfGrid @ref="@TargetsettingGrid" DataSource="@datasource" GridLines="GridLine.Both"
             TValue="BalanceScoreCardTargetSettingDto" ID="Grid1" AllowTextWrap="true" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true">
         <GridEditSettings AllowAdding="false" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
@@ -286,8 +295,10 @@ else
     public List<ViewFinancialYearDto>? FinancialYearData { get; set; }
     [Parameter]
     public int? finyearid { get; set; }
-    bool IsEmployeeEnabledColumn = true;
-    bool IsSupervisorEnabledColumn = true;
+    [Parameter]
+    public bool IsEmployeeEnabledColumn  { get; set; } = true;
+    [Parameter]
+    public bool IsSupervisorEnabledColumn { get; set; } = true;
     Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
     int? previousBalanceScoreCardId { get; set; }
 
@@ -326,13 +337,7 @@ else
         }
     }
 
-    #region TargetsAdapter
-
-
-
-
-    #endregion TargetsAdapter
-
+    #region TargetMethods
 
     //For Target Grid
     //Enable cell edit on single click
@@ -397,17 +402,20 @@ else
 
     public void CellSaveHandler(CellSaveArgs<BalanceScoreCardTargetSettingDto> args)
     {
-        //Disable editing next cell if value in previous cell is greater than 100%
-        if (Convert.ToInt32(args.Value) > 100)
+        if (args.ColumnName == nameof(BalanceScoreCardTargetSettingDto.EmployeeSelfAssessTgt)
+        || args.ColumnName == nameof(BalanceScoreCardTargetSettingDto.SupervisorAssessTgt))
         {
-            toastService.ShowWarning("You cannot enter a % greater than 100 %");
-            args.Cancel = true;
+            //Disable editing next cell if value in previous cell is greater than 100%
+            if (Convert.ToInt32(args.Value) > 100)
+            {
+                toastService.ShowWarning("You cannot enter a % greater than 100 %");
+                args.Cancel = true;
+            }
+            else
+            {
+                args.Cancel = false;
+            }
         }
-        else
-        {
-            args.Cancel = false;
-        }
-        // Here, you can customize your code.
     }
 
     public void QueryCellInfoHandlerTargets(QueryCellInfoEventArgs<BalanceScoreCardTargetSettingDto> Args)
@@ -437,5 +445,7 @@ else
         //    args.Cancel = false;
         //}
     }
+
+    #endregion TargetMethods
 }
 

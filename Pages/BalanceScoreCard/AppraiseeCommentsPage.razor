@@ -1,0 +1,136 @@
+﻿@* @page "/AppraiseeCommentsPage" *@
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@using HCMIS.Interface;
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using System.Collections;
+@using System.IO;
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager navigation;
+@inject SystemSettings _SystemSettings;
+@using HCMIS.SHARED.DTOs.BSC;
+@using HCMIS.SHARED.DTOs.Utilities;
+@using HCMIS.ViewModel;
+@inject IToastService toastService;
+@inject IAuthenticationService AuthService;
+
+<SfGrid @ref="@AppraiseeCommentsGrid" DataSource="@datasource" GridLines="GridLine.Both"
+        TValue="BalanceScoreCardAppraiseeCommentsDto" ID="Grid1" AllowTextWrap="true" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit","Cancel"})">
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
+    <GridEvents CellSelected="CellSelectHandlerAppraiseeComments"
+                CellSaved="AppraiseeCommentsCellSavedHandler"
+                TValue="BalanceScoreCardAppraiseeCommentsDto">
+    </GridEvents>
+
+    <GridColumns>
+        <GridColumn Field=@nameof(BalanceScoreCardAppraiseeCommentsDto.AppraiseeCommentsId)
+                    HeaderText="Appraisee Comments Id"
+                    TextAlign="TextAlign.Justify"
+                    IsPrimaryKey="true"
+                    IsIdentity="true"
+                    Visible="false"
+                    Width="180"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+        <GridColumn Field=@nameof(BalanceScoreCardAppraiseeCommentsDto.AppraiseeComments)
+                    HeaderText="Appraisee Comments"
+                    TextAlign="TextAlign.Justify"
+                    AllowEditing="true"
+                    ValidationRules="@(new ValidationRules { Required = false })"
+                    Width="180"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+        <GridColumn Field=@nameof(BalanceScoreCardAppraiseeCommentsDto.AppraiseeDate)
+                    DefaultValue="@(DateTime.Now)"
+                    HeaderText="Appraisee Date"
+                    EditType="EditType.DatePickerEdit"
+                    Format="dd/MM/yyyy"
+                    Type="ColumnType.Date"
+                    Width="160"
+                    AllowEditing="false"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+    </GridColumns>
+</SfGrid>
+
+@code {
+    [Parameter]
+    public List<BalanceScoreCardAppraiseeCommentsDto>? appraiseecommentsdata { get; set; }
+    [Parameter]
+    public int BalanceScoreCardId { get; set; }
+    [Parameter]
+    public EventCallback<List<BalanceScoreCardAppraiseeCommentsDto>?> onscorecardtoggle { get; set; }
+    SfGrid<BalanceScoreCardAppraiseeCommentsDto>? AppraiseeCommentsGrid { get; set; }
+    List<BalanceScoreCardAppraiseeCommentsDto>? datasource { get; set; }
+
+    Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
+    int? previousBalanceScoreCardId { get; set; }
+    [Parameter]
+    public Syncfusion.Blazor.Grids.Action _previous { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (previousBalanceScoreCardId != BalanceScoreCardId)
+        {
+            int countid = -10000;
+            previousBalanceScoreCardId = BalanceScoreCardId;
+            datasource = new List<BalanceScoreCardAppraiseeCommentsDto>();
+            if (appraiseecommentsdata != null && appraiseecommentsdata.Count() > 0)
+            {
+                datasource.AddRange(appraiseecommentsdata);
+            }
+        }
+    }
+    //For Appraisee Comments Grid
+    //Enable cell edit on single click
+    public async Task CellSelectHandlerAppraiseeComments(CellSelectEventArgs<BalanceScoreCardAppraiseeCommentsDto> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await AppraiseeCommentsGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await AppraiseeCommentsGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await AppraiseeCommentsGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
+    private async Task AppraiseeCommentsCellSavedHandler(CellSaveArgs<BalanceScoreCardAppraiseeCommentsDto> args)
+    {
+        try
+        {
+            var index = await AppraiseeCommentsGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.AppraiseeCommentsId);
+            if (args.ColumnName == nameof(BalanceScoreCardAppraiseeCommentsDto.AppraiseeComments))
+            {
+                await AppraiseeCommentsGrid.UpdateCellAsync(index, nameof(BalanceScoreCardAppraiseeCommentsDto.AppraiseeDate), DateTime.Now);
+            }
+
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message);
+        }
+        finally
+        {
+            await AppraiseeCommentsGrid.EndEditAsync();
+            await onscorecardtoggle.InvokeAsync(datasource);
+        }
+    }
+
+}

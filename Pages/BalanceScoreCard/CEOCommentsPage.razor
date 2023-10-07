@@ -1,0 +1,137 @@
+﻿@* @page "/CEOCommentsPage" *@
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@using HCMIS.Interface;
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using System.Collections;
+@using System.IO;
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager navigation;
+@inject SystemSettings _SystemSettings;
+@using HCMIS.SHARED.DTOs.BSC;
+@using HCMIS.SHARED.DTOs.Utilities;
+@using HCMIS.ViewModel;
+@inject IToastService toastService;
+@inject IAuthenticationService AuthService;
+
+<SfGrid @ref="@CEOCommentsGrid" DataSource="@datasource" GridLines="GridLine.Both"
+        TValue="BalanceScoreCardCEOCommentsDto" ID="Grid1" AllowTextWrap="true" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
+    <GridEvents CellSelected="CellSelectHandlerCEOComments"
+                CellSaved="CEOCommentsCellSavedHandler"
+                TValue="BalanceScoreCardCEOCommentsDto">
+    </GridEvents>
+
+    <GridColumns>
+        <GridColumn Field=@nameof(BalanceScoreCardCEOCommentsDto.CeocommentId)
+                    HeaderText="CEO Comment Id"
+                    TextAlign="TextAlign.Justify"
+                    IsPrimaryKey="true"
+                    IsIdentity="true"
+                    Visible="false"
+                    Width="180"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+        <GridColumn Field=@nameof(BalanceScoreCardCEOCommentsDto.Ceocomments)
+                    HeaderText="CEO Comments"
+                    TextAlign="TextAlign.Justify"
+                    AllowEditing="true"
+                    ValidationRules="@(new ValidationRules { Required = false })"
+                    Width="180"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+        <GridColumn Field=@nameof(BalanceScoreCardCEOCommentsDto.Ceodate)
+                    DefaultValue="@(DateTime.Now)"
+                    HeaderText="CEO Date"
+                    EditType="EditType.DatePickerEdit"
+                    Format="dd/MM/yyyy"
+                    Type="ColumnType.Date"
+                    Width="160"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+    </GridColumns>
+
+</SfGrid>
+
+@code {
+    [Parameter]
+    public List<BalanceScoreCardCEOCommentsDto>? ceocommentsdata { get; set; }
+    [Parameter]
+    public int BalanceScoreCardId { get; set; }
+    [Parameter]
+    public EventCallback<List<BalanceScoreCardCEOCommentsDto>?> onscorecardtoggle { get; set; }
+    SfGrid<BalanceScoreCardCEOCommentsDto>? CEOCommentsGrid { get; set; }
+    List<BalanceScoreCardCEOCommentsDto>? datasource { get; set; }
+
+    Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
+    int? previousBalanceScoreCardId { get; set; }
+    [Parameter]
+    public Syncfusion.Blazor.Grids.Action _previous { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (previousBalanceScoreCardId != BalanceScoreCardId)
+        {
+            int countid = -10000;
+            previousBalanceScoreCardId = BalanceScoreCardId;
+            datasource = new List<BalanceScoreCardCEOCommentsDto>();
+            if (ceocommentsdata != null && ceocommentsdata.Count() > 0)
+            {
+                datasource.AddRange(ceocommentsdata);
+            }
+        }
+    }
+
+    //For CEO Comments Grid
+    //Enable cell edit on single click
+    public async Task CellSelectHandlerCEOComments(CellSelectEventArgs<BalanceScoreCardCEOCommentsDto> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await CEOCommentsGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await CEOCommentsGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await CEOCommentsGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
+
+    private async Task CEOCommentsCellSavedHandler(CellSaveArgs<BalanceScoreCardCEOCommentsDto> args)
+    {
+        try
+        {
+            var index = await CEOCommentsGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.CeocommentId);
+            if (args.ColumnName == nameof(BalanceScoreCardCEOCommentsDto.Ceocomments))
+            {
+                await CEOCommentsGrid.UpdateCellAsync(index, nameof(BalanceScoreCardCEOCommentsDto.CeocommentId), DateTime.Now);
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message);
+        }
+        finally
+        {
+            await CEOCommentsGrid.EndEditAsync();
+            await onscorecardtoggle.InvokeAsync(datasource);
+        }
+    }
+
+}

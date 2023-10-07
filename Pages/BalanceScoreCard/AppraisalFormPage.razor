@@ -1,4 +1,5 @@
 ﻿@page "/AppraisalFormPage"
+@using HCMIS.Data;
 @using HCMIS.Model
 @using HCMIS.ViewModel
 @using System.Text.Json
@@ -89,8 +90,8 @@
     }
 
     h6 {
-        color: ghostwhite;
-        background-color: #268cff;
+        color: black;
+        background-color: white;
         padding: 10px;
         width: 100%;
         font-size: 15px;
@@ -152,11 +153,6 @@
 
 </style>
 
-@{
-    //var Div = (new string[] { "BscPerspectiveTypeId", "PerspectiveTotalWeight" });
-    var Div = (new string[] { "BscPerspectiveTypeId" });
-}
-
 <ol class="breadcrumb" style="margin-top:5px;">
     <li class="breadcrumb-item active" style="color: brown;">
         <strong>
@@ -169,7 +165,50 @@
     @*Render custom spinner component.*@
 </SfSpinner>
 
-<SfGrid @ref="@DataGrid" TValue="BalanceScoreCardDto" GridLines="GridLine.Both" ID="Grid" @attributes="@GridAttributes" AllowTextWrap="true" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@ToolbarMenu">
+
+<div class="card">
+    <div class="card-header">
+        <h2>Search Panel</h2>
+    </div>
+    <div class="card-body">
+
+        <div class="row">
+            <div class="col">
+                <EditForm Model="searchpanel" OnValidSubmit="OnValidSubmit">
+                    <div class="row">
+                        <div class="col">
+                            <SfDropDownList @bind-Value="@(searchpanel.finYrId)" TItem="ViewFinancialYearDto" TValue="int?"
+                                            DataSource="@FinancialYearData" Placeholder="Please select"
+                                            FloatLabelType="FloatLabelType.Never" AllowFiltering="true"
+                                            FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                <DropDownListFieldSettings Value="@nameof(AFinancialYear.Id)"
+                                                           Text="@nameof(AFinancialYear.FinancialYear)">
+                                </DropDownListFieldSettings>
+                            </SfDropDownList>
+                        </div>
+                    </div>
+                </EditForm>
+                <br />
+
+            </div>
+        </div>
+         
+    </div>
+    <div class="card-footer">
+
+
+        <div class="creed-total">
+            <div class="col"> </div>
+            <button class="btn btn-primary" @onclick="()=>  OnValidSubmit()">Search</button>
+            
+        </div>
+    </div>
+</div>
+
+
+<SfGrid @ref="@DataGrid" TValue="BalanceScoreCardDto" GridLines="GridLine.Both" ID="Grid" @attributes="@GridAttributes" 
+AllowTextWrap="true" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true"
+        AllowGrouping="true" AllowExcelExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@ToolbarMenu" Query="@MainQuery">
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
         <HeaderTemplate>
             @{
@@ -395,12 +434,12 @@
                                                     </div>
                                                 }
 
-                                                <div class="col-md-5">
+                                                @*<div class="col-md-5">
                                                     <p>Emojis</p>
                                                     <p style="font-size:48px">
                                                         &#128512; &#128516; &#128525; &#128151;
                                                     </p>
-                                                </div>
+                                                </div>*@
 
                                             </div>
                                         </div>
@@ -409,104 +448,36 @@
 
                             </ContentTemplate>
                         </AccordionItem>
-                        <AccordionItem Expanded="true">
+                        <AccordionItem Expanded="false">
                             <HeaderTemplate><strong>SECTION 2: TARGET SETTING AND EVALUATION /  EXPECTED  ROLE KPIs or DELIVERABLES</strong></HeaderTemplate>
                             <ContentTemplate>
                                 <SectionTwoPage BalanceScoreCardId="@BscData.BalanceScoreCardId" onscorecardtoggle="@ToggleBalanceScoreCardTarget" targetdata="@BscData.BalanceScoreCardTargetSetting.ToList()"
                                  BscPerspectiveTypeData="@BscPerspectiveTypeData" KpiDetailsData="@KpiDetailsData" MeasurementUnitData="@MeasurementUnitData"
-                                                PopulatedData="@PopulatedData" FinancialYearData="@FinancialYearData" finyearid="@finyearid"></SectionTwoPage>
+                                                PopulatedData="@PopulatedData" FinancialYearData="@FinancialYearData" finyearid="@finyearid" IsSupervisorEnabledColumn="@IsSupervisorEnabledColumn"
+                                                IsEmployeeEnabledColumn="@IsEmployeeEnabledColumn"></SectionTwoPage>
                             </ContentTemplate>
                         </AccordionItem>
-                        <h6>
+                        @*<h6>
                             Please note each Value / Behavior
                             Assessment is derived from the "Performance
                             Descriptors" selected from the Drop Down
                             Fair Conduct  || Good Conduct || Outstanding Conduct
-                        </h6>
-
-                        @*
+                        </h6>*@
 
                         <AccordionItem Expanded="false">
                             <HeaderTemplate><strong>SECTION 3.VALUES & BEHAVIORAL COMPETENCIES ( RATING USING A SCALE OF 1- 3 AS PER THE COMPETENCE GUIDE)</strong></HeaderTemplate>
                             <ContentTemplate>
-                                <SfGrid @ref="@BehavioralGrid" DataSource="@BscData.BalanceScoreCardBehavioral" GridLines="GridLine.Both"
-                                        TValue="BalanceScoreCardBehavioralDto" ID="Grid1" AllowTextWrap="true" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true">
-                                    <GridEditSettings AllowAdding="false" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
-                                    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
-                                    <GridPageSettings PageSizes="true"></GridPageSettings>
-                                    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
-                                    <GridEvents CellSelected="BehavioralCellSelectHandler"
-                                                CellSaved="BehavioralCellSavedHandler"
-                                                TValue="BalanceScoreCardBehavioralDto">
-                                    </GridEvents>
 
-                                    <GridColumns>
-                                        <GridColumn Type="ColumnType.CheckBox" Width="50" Visible=false></GridColumn>
-                                        <GridColumn Field=@nameof(BalanceScoreCardBehavioralDto.BehavioralId) HeaderText="BehavioralId" Visible=false IsPrimaryKey="true" Width="150"></GridColumn>
-                                        <GridColumn Field=@nameof(BalanceScoreCardBehavioralDto.BalanceScoreCardId) HeaderText="BalanceScoreCardId" TextAlign="TextAlign.Right" AllowEditing="false" ValidationRules="@(new ValidationRules { Required = false })" EditType="EditType.NumericEdit" Visible=false Width="180" IsFrozen="true"></GridColumn>
-                                        <GridForeignColumn Field=@nameof(BalanceScoreCardBehavioralDto.CompetenceId)
-                                                           HeaderText="#"
-                                                           Width="350"
-                                                           AllowEditing="false"
-                                                           ForeignKeyField="@(nameof(BehavioralCompetenciesDto.CompetenceId))"
-                                                           ForeignKeyValue="@(nameof(BehavioralCompetenciesDto.CompetenceDescription))"
-                                                           ForeignDataSource="@CompetenceData"
-                                                           AllowFiltering="true"
-                                                           IsFrozen="true"
-                                                           TextAlign="TextAlign.Justify"
-                                                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
-                                        </GridForeignColumn>
-                                        <GridForeignColumn Field=@nameof(BalanceScoreCardBehavioralDto.PerformanceDescriptorId)
-                                                           HeaderText="Performance Rating"
-                                                           Width="180"
-                                                           AllowEditing="true"
-                                                           ForeignKeyField="@(nameof(APerformanceDescriptor.PerformanceDescriptorId))"
-                                                           ForeignKeyValue="@(nameof(APerformanceDescriptor.PerformanceDescriptor))"
-                                                           ForeignDataSource="@PerformanceDescriptorData"
-                                                           AllowFiltering="true"
-                                                           IsFrozen="false"
-                                                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
-                                        </GridForeignColumn>
-                                        <GridColumn Field=@nameof(BalanceScoreCardBehavioralDto.EmployeeSelfAssessment)
-                                                    HeaderText="Employee Self Assessment"
-                                                    TextAlign="TextAlign.Right"
-                                                    AllowEditing="true"
-                                                    ValidationRules="@(new ValidationRules { Required = false })"
-                                                    EditType="EditType.NumericEdit"
-                                                    Format="###.##"
-                                                    Width="180"
-                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
-                                        </GridColumn>
-                                        <GridColumn Field=@nameof(BalanceScoreCardBehavioralDto.EmployeeComment)
-                                                    HeaderText="Employee Comment"
-                                                    TextAlign="TextAlign.Right"
-                                                    AllowEditing="true"
-                                                    ValidationRules="@(new ValidationRules { Required = false })"
-                                                    Width="180"
-                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
-                                        </GridColumn>
-                                        <GridColumn Field=@nameof(BalanceScoreCardBehavioralDto.SupervisorAssessment)
-                                                    HeaderText="Supervisor Assessment"
-                                                    AllowEditing="false"
-                                                    TextAlign="TextAlign.Right"
-                                                    EditType="EditType.NumericEdit"
-                                                    Width="180"
-                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
-                                        </GridColumn>
-                                        <GridColumn Field=@nameof(BalanceScoreCardBehavioralDto.SupervisorComment)
-                                                    HeaderText="Supervisor Comment"
-                                                    TextAlign="TextAlign.Right"
-                                                    AllowEditing="true"
-                                                    ValidationRules="@(new ValidationRules { Required = false })"
-                                                    Width="180"
-                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
-                                        </GridColumn>
-                                    </GridColumns>
-                                </SfGrid>
                             </ContentTemplate>
                         </AccordionItem>
+
+                        @*<AccordionItem Expanded="false">
+                            <HeaderTemplate><strong>POOR PERFORMANCE</strong></HeaderTemplate>
+                            <ContentTemplate>
+                                <SummaryPage></SummaryPage>
+                            </ContentTemplate>
+                        </AccordionItem>*@
                         
-                        *@
 
                         <h6>
                             Record 2-3 Development
@@ -520,44 +491,8 @@
                         <AccordionItem Expanded="false">
                             <HeaderTemplate><strong>SECTION 4: INDIVIDUAL DEVELOPMENT PLAN</strong></HeaderTemplate>
                             <ContentTemplate>
-                                <SfGrid @ref="@DevelopmentPlanGrid" DataSource="@BscData.BalanceScoreCardTargetDevelopmentPlan" GridLines="GridLine.Both"
-                                        TValue="BalanceScoreCardTargetDevelopmentPlanDto" ID="GridDevelopmentPlan" AllowTextWrap="true" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Cancel", "Update"})">
-                                    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
-                                    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
-                                    <GridPageSettings PageSizes="true"></GridPageSettings>
-                                    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
-                                    <GridEvents CellSelected="CellSelectHandlerDevelopment"
-                                                TValue="BalanceScoreCardTargetDevelopmentPlanDto">
-                                    </GridEvents>
-
-                                    <GridColumns>
-                                        <GridColumn Field=@nameof(BalanceScoreCardTargetDevelopmentPlanDto.DevelopmentPlanId)
-                                                    HeaderText="Development Plan Id"
-                                                    TextAlign="TextAlign.Justify"
-                                                    IsPrimaryKey="true"
-                                                    IsIdentity="true"
-                                                    Visible="false"
-                                                    Width="180"
-                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
-                                        </GridColumn>
-                                        <GridColumn Field=@nameof(BalanceScoreCardTargetDevelopmentPlanDto.DevelopmentNeed)
-                                                    HeaderText="Development Need"
-                                                    TextAlign="TextAlign.Justify"
-                                                    AllowEditing="true"
-                                                    ValidationRules="@(new ValidationRules { Required = false })"
-                                                    Width="180"
-                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
-                                        </GridColumn>
-                                        <GridColumn Field=@nameof(BalanceScoreCardTargetDevelopmentPlanDto.DevelopmentAction)
-                                                    HeaderText="Development Action"
-                                                    TextAlign="TextAlign.Justify"
-                                                    AllowEditing="true"
-                                                    ValidationRules="@(new ValidationRules { Required = false })"
-                                                    Width="180"
-                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
-                                        </GridColumn>
-                                    </GridColumns>
-                                </SfGrid>
+                                <SectionFourPage BalanceScoreCardId="@BscData.BalanceScoreCardId" onscorecardtoggle="@ToggleBalanceScoreCardPlan" plandata="@BscData.BalanceScoreCardTargetDevelopmentPlan.ToList()"
+                                                 _previous="@_previous"></SectionFourPage>
                             </ContentTemplate>
                         </AccordionItem>
                         <AccordionItem Expanded="false">
@@ -565,193 +500,38 @@
                             <ContentTemplate>
                                 <SfAccordion>
                                     <AccordionItem Expanded="false">
-                                        <HeaderTemplate>APPRAISEE'S COMMENTS</HeaderTemplate>
+                                        <HeaderTemplate>Appraisee's Comments</HeaderTemplate>
                                         <ContentTemplate>
-                                            <SfGrid @ref="@AppraiseeCommentsGrid" DataSource="@BscData.BalanceScoreCardAppraiseeComments" GridLines="GridLine.Both"
-                                                    TValue="BalanceScoreCardAppraiseeCommentsDto" ID="Grid1" AllowTextWrap="true" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit","Cancel", "Update"})">
-                                                <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
-                                                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
-                                                <GridPageSettings PageSizes="true"></GridPageSettings>
-                                                <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
-                                                <GridEvents CellSelected="CellSelectHandlerAppraiseeComments"
-                                                            CellSaved="AppraiseeCommentsCellSavedHandler"
-                                                            TValue="BalanceScoreCardAppraiseeCommentsDto">
-                                                </GridEvents>
-
-                                                <GridColumns>
-                                                    <GridColumn Field=@nameof(BalanceScoreCardAppraiseeCommentsDto.AppraiseeCommentsId)
-                                                                HeaderText="Appraisee Comments Id"
-                                                                TextAlign="TextAlign.Justify"
-                                                                IsPrimaryKey="true"
-                                                                IsIdentity="true"
-                                                                Visible="false"
-                                                                Width="180"
-                                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
-                                                    </GridColumn>
-                                                    <GridColumn Field=@nameof(BalanceScoreCardAppraiseeCommentsDto.AppraiseeComments)
-                                                                HeaderText="Appraisee Comments"
-                                                                TextAlign="TextAlign.Justify"
-                                                                AllowEditing="true"
-                                                                ValidationRules="@(new ValidationRules { Required = false })"
-                                                                Width="180"
-                                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
-                                                    </GridColumn>
-                                                    <GridColumn Field=@nameof(BalanceScoreCardAppraiseeCommentsDto.AppraiseeDate)
-                                                                DefaultValue="@(DateTime.Now)"
-                                                                HeaderText="Appraisee Date"
-                                                                EditType="EditType.DatePickerEdit"
-                                                                Format="dd/MM/yyyy"
-                                                                Type="ColumnType.Date"
-                                                                Width="160"
-                                                                AllowEditing="false"
-                                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
-                                                    </GridColumn>
-                                                </GridColumns>
-                                            </SfGrid>
+                                            <AppraiseeCommentsPage BalanceScoreCardId="@BscData.BalanceScoreCardId" onscorecardtoggle="@ToggleBalanceScoreCardAppraiseeComments" appraiseecommentsdata="@BscData.BalanceScoreCardAppraiseeComments.ToList()"
+                                                             _previous="@_previous"></AppraiseeCommentsPage>
                                         </ContentTemplate>
                                     </AccordionItem>
                                     <AccordionItem Expanded="false">
-                                        <HeaderTemplate>SUPERVISOR'S COMMENTS</HeaderTemplate>
+                                        <HeaderTemplate>Supervisor's Comments</HeaderTemplate>
                                         <ContentTemplate>
-                                            <SfGrid @ref="@SupervisorCommentsGrid" DataSource="@BscData.BalanceScoreCardSupervisorComments" GridLines="GridLine.Both"
-                                                    TValue="BalanceScoreCardSupervisorCommentsDto" ID="Grid1" AllowTextWrap="true" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit","Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
-                                                <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
-                                                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
-                                                <GridPageSettings PageSizes="true"></GridPageSettings>
-                                                <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
-                                                <GridEvents CellSelected="CellSelectHandlerSupervisorComments"
-                                                            CellSaved="SupervisorCommentsCellSavedHandler"
-                                                            TValue="BalanceScoreCardSupervisorCommentsDto">
-                                                </GridEvents>
-
-                                                <GridColumns>
-                                                    <GridColumn Field=@nameof(BalanceScoreCardSupervisorCommentsDto.SupervisorCommentId)
-                                                                HeaderText="Supervisor Comment Id"
-                                                                TextAlign="TextAlign.Justify"
-                                                                IsPrimaryKey="true"
-                                                                IsIdentity="true"
-                                                                Visible="false"
-                                                                Width="180"
-                                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
-                                                    </GridColumn>
-                                                    <GridColumn Field=@nameof(BalanceScoreCardSupervisorCommentsDto.SupervisorComments)
-                                                                HeaderText="Supervisor Comments"
-                                                                TextAlign="TextAlign.Justify"
-                                                                AllowEditing="true"
-                                                                ValidationRules="@(new ValidationRules { Required = false })"
-                                                                Width="180"
-                                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
-                                                    </GridColumn>
-                                                    <GridColumn Field=@nameof(BalanceScoreCardSupervisorCommentsDto.SupervisorDate)
-                                                                DefaultValue="@(DateTime.Now)"
-                                                                HeaderText="Supervisor Date"
-                                                                EditType="EditType.DatePickerEdit"
-                                                                Format="dd/MM/yyyy"
-                                                                Type="ColumnType.Date"
-                                                                Width="160"
-                                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
-                                                    </GridColumn>
-                                                </GridColumns>
-                                            </SfGrid>
+                                            <SupervisorCommentsPage BalanceScoreCardId="@BscData.BalanceScoreCardId" onscorecardtoggle="@ToggleBalanceScoreCardSupervisorComments" supervisorcommentsdata="@BscData.BalanceScoreCardSupervisorComments.ToList()"
+                                                                   _previous="@_previous"></SupervisorCommentsPage>
                                         </ContentTemplate>
                                     </AccordionItem>
                                     <AccordionItem Expanded="false">
-                                        <HeaderTemplate>HEAD OF DEPARTMENT'S COMMENTS</HeaderTemplate>
+                                        <HeaderTemplate>HOD Comments</HeaderTemplate>
                                         <ContentTemplate>
-                                            <SfGrid @ref="@HODCommentsGrid" DataSource="@BscData.BalanceScoreCardHodcomments" GridLines="GridLine.Both"
-                                                    TValue="BalanceScoreCardHODCommentsDto" ID="Grid1" AllowTextWrap="true" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
-                                                <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
-                                                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
-                                                <GridPageSettings PageSizes="true"></GridPageSettings>
-                                                <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
-                                                <GridEvents CellSelected="CellSelectHandlerHODComments"
-                                                            CellSaved="HODCommentsCellSavedHandler"
-                                                            TValue="BalanceScoreCardHODCommentsDto">
-                                                </GridEvents>
-
-                                                <GridColumns>
-                                                    <GridColumn Field=@nameof(BalanceScoreCardHODCommentsDto.HodcommentId)
-                                                                HeaderText="HOD Comment Id"
-                                                                TextAlign="TextAlign.Justify"
-                                                                IsPrimaryKey="true"
-                                                                IsIdentity="true"
-                                                                Visible="false"
-                                                                Width="180"
-                                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
-                                                    </GridColumn>
-                                                    <GridColumn Field=@nameof(BalanceScoreCardHODCommentsDto.Hodcomments)
-                                                                HeaderText="HOD Comments"
-                                                                TextAlign="TextAlign.Justify"
-                                                                AllowEditing="true"
-                                                                ValidationRules="@(new ValidationRules { Required = false })"
-                                                                Width="180"
-                                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
-                                                    </GridColumn>
-                                                    <GridColumn Field=@nameof(BalanceScoreCardHODCommentsDto.Hoddate)
-                                                                DefaultValue="@(DateTime.Now)"
-                                                                HeaderText="HOD Date"
-                                                                EditType="EditType.DatePickerEdit"
-                                                                Format="dd/MM/yyyy"
-                                                                Type="ColumnType.Date"
-                                                                Width="160"
-                                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
-                                                    </GridColumn>
-                                                </GridColumns>
-
-                                            </SfGrid>
+                                            <HODCommentsPage BalanceScoreCardId="@BscData.BalanceScoreCardId" onscorecardtoggle="@ToggleBalanceScoreCardHODComments" hodcommentsdata="@BscData.BalanceScoreCardHodcomments.ToList()"
+                                                                   _previous="@_previous"></HODCommentsPage>
                                         </ContentTemplate>
                                     </AccordionItem>
 
-                                    @if (Credentials != null && !string.IsNullOrEmpty(Credentials.UserRole) &&
+                                   @* @if (Credentials != null && !string.IsNullOrEmpty(Credentials.UserRole) &&
                                 Credentials.UserRole.Contains("Administrator"))
-                                    {
+                                    {*@
                                         <AccordionItem Expanded="false">
-                                            <HeaderTemplate>CHIEF EXECUTIVE OFFICER COMMENTS</HeaderTemplate>
+                                            <HeaderTemplate>CEO Comments</HeaderTemplate>
                                             <ContentTemplate>
-                                                <SfGrid @ref="@CEOCommentsGrid" DataSource="@BscData.BalanceScoreCardCeocomments" GridLines="GridLine.Both"
-                                                        TValue="BalanceScoreCardCEOCommentsDto" ID="Grid1" AllowTextWrap="true" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
-                                                    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
-                                                    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
-                                                    <GridPageSettings PageSizes="true"></GridPageSettings>
-                                                    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
-                                                    <GridEvents CellSelected="CellSelectHandlerCEOComments"
-                                                                CellSaved="CEOCommentsCellSavedHandler"
-                                                                TValue="BalanceScoreCardCEOCommentsDto">
-                                                    </GridEvents>
-
-                                                    <GridColumns>
-                                                        <GridColumn Field=@nameof(BalanceScoreCardCEOCommentsDto.CeocommentId)
-                                                                    HeaderText="CEO Comment Id"
-                                                                    TextAlign="TextAlign.Justify"
-                                                                    IsPrimaryKey="true"
-                                                                    IsIdentity="true"
-                                                                    Visible="false"
-                                                                    Width="180"
-                                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
-                                                        </GridColumn>
-                                                        <GridColumn Field=@nameof(BalanceScoreCardCEOCommentsDto.Ceocomments)
-                                                                    HeaderText="CEO Comments"
-                                                                    TextAlign="TextAlign.Justify"
-                                                                    AllowEditing="true"
-                                                                    ValidationRules="@(new ValidationRules { Required = false })"
-                                                                    Width="180"
-                                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
-                                                        </GridColumn>
-                                                        <GridColumn Field=@nameof(BalanceScoreCardCEOCommentsDto.Ceodate)
-                                                                    DefaultValue="@(DateTime.Now)"
-                                                                    HeaderText="CEO Date"
-                                                                    EditType="EditType.DatePickerEdit"
-                                                                    Format="dd/MM/yyyy"
-                                                                    Type="ColumnType.Date"
-                                                                    Width="160"
-                                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
-                                                        </GridColumn>
-                                                    </GridColumns>
-
-                                                </SfGrid>
+                                            <CEOCommentsPage BalanceScoreCardId="@BscData.BalanceScoreCardId" onscorecardtoggle="@ToggleBalanceScoreCardCEOComments" ceocommentsdata="@BscData.BalanceScoreCardCeocomments.ToList()"
+                                                                   _previous="@_previous"></CEOCommentsPage>
                                             </ContentTemplate>
                                         </AccordionItem>
-                                    }
+                                    @*}*@
                                 </SfAccordion>
                             </ContentTemplate>
                         </AccordionItem>
@@ -922,20 +702,16 @@
 </div>
 
 @code {
-    private List<BalanceScoreCardTargetSettingDto> gridData = new List<BalanceScoreCardTargetSettingDto>();
-    SfGrid<BalanceScoreCardTargetSettingDto>? TargetsettingGrid { get; set; }
-    SfGrid<BalanceScoreCardBehavioralDto>? BehavioralGrid { get; set; }
-    SfGrid<BalanceScoreCardTargetDevelopmentPlanDto>? DevelopmentPlanGrid { get; set; }
-    SfGrid<BalanceScoreCardAppraiseeCommentsDto>? AppraiseeCommentsGrid { get; set; }
-    SfGrid<BalanceScoreCardSupervisorCommentsDto>? SupervisorCommentsGrid { get; set; }
-    SfGrid<BalanceScoreCardHODCommentsDto>? HODCommentsGrid { get; set; }
-    SfGrid<BalanceScoreCardCEOCommentsDto>? CEOCommentsGrid { get; set; }
+
+    public int? finyearid { get; set; } = null;
+
     SfGrid<BalanceScoreCardDto>? DataGrid { get; set; }
     DateTime currentdate = DateTime.Now;
     SfDialog? LoadingDialogue;
     Syncfusion.Blazor.Grids.Action _previous { get; set; }
     bool isFinancialYearEnabled { get; set; } = false;
     LoginResultModel? Credentials { get; set; }
+    public AppraisalSearch searchpanel { get; set; } = new AppraisalSearch();
 
     Dictionary<string, object> ToastHtmlAttribute = new Dictionary<string, object>()
         {
@@ -960,6 +736,32 @@
     List<AMeasurementMetricDto>? MeasurementUnitData { get; set; }
     SfSpinner? SpinnerObj;
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    public Query MainQuery = new Query();
+
+    private async void OnValidSubmit() //triggers on save button click
+    { 
+        try
+        {
+            MainQuery = new Query();// .Where("TenantId", "equal", _UserId).Where("StartDate", "greaterthanorequal", edate).Where("EndDate", "lessthanorequal", edate);
+
+            if (searchpanel.finYrId != null)
+            {
+                MainQuery = MainQuery.Where("FinancialYearId", "equal", searchpanel.finYrId);//.Where("EndDate", "lessthanorequal", edate);
+                MainQuery.AddParams("FinancialYearId", searchpanel.finYrId);
+            }
+
+            await DataGrid.Refresh();
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+            //await ReApp.App.Current.MainPage.DisplayAlert("Error", ex.Message, "Ok");
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
 
     private void ToggleBalanceScoreCardTarget(List<BalanceScoreCardTargetSettingDto>? TargetChange)
     {
@@ -973,6 +775,77 @@
         }
     }
 
+    private void ToggleBalanceScoreCardBehaviour(List<BalanceScoreCardBehavioralDto>? BehaviourChange)
+    {
+        if(BscData != null && BehaviourChange != null)
+        {
+            if(BscData.BalanceScoreCardBehavioral == null)
+            {
+                BscData.BalanceScoreCardBehavioral = new List<BalanceScoreCardBehavioralDto>();
+            }
+            BscData.BalanceScoreCardBehavioral = BehaviourChange;
+        }
+    }
+
+    private void ToggleBalanceScoreCardPlan(List<BalanceScoreCardTargetDevelopmentPlanDto>? PlanChange)
+    {
+        if(BscData != null && PlanChange != null)
+        {
+            if(BscData.BalanceScoreCardTargetDevelopmentPlan == null)
+            {
+                BscData.BalanceScoreCardTargetDevelopmentPlan = new List<BalanceScoreCardTargetDevelopmentPlanDto>();
+            }
+            BscData.BalanceScoreCardTargetDevelopmentPlan = PlanChange;
+        }
+    }
+
+    private void ToggleBalanceScoreCardAppraiseeComments(List<BalanceScoreCardAppraiseeCommentsDto>? AppraiseeCommentsChange)
+    {
+        if(BscData != null && AppraiseeCommentsChange != null)
+        {
+            if(BscData.BalanceScoreCardAppraiseeComments == null)
+            {
+                BscData.BalanceScoreCardAppraiseeComments = new List<BalanceScoreCardAppraiseeCommentsDto>();
+            }
+            BscData.BalanceScoreCardAppraiseeComments = AppraiseeCommentsChange;
+        }
+    }
+
+    private void ToggleBalanceScoreCardSupervisorComments(List<BalanceScoreCardSupervisorCommentsDto>? SupervisorCommentsChange)
+    {
+        if (BscData != null && SupervisorCommentsChange != null)
+        {
+            if (BscData.BalanceScoreCardSupervisorComments == null)
+            {
+                BscData.BalanceScoreCardSupervisorComments = new List<BalanceScoreCardSupervisorCommentsDto>();
+            }
+            BscData.BalanceScoreCardSupervisorComments = SupervisorCommentsChange;
+        }
+    }
+
+    private void ToggleBalanceScoreCardHODComments(List<BalanceScoreCardHODCommentsDto>? HODCommentsChange)
+    {
+        if (BscData != null && HODCommentsChange != null)
+        {
+            if (BscData.BalanceScoreCardHodcomments == null)
+            {
+                BscData.BalanceScoreCardHodcomments = new List<BalanceScoreCardHODCommentsDto>();
+            }
+            BscData.BalanceScoreCardHodcomments = HODCommentsChange;
+        }
+    }
+
+    private void ToggleBalanceScoreCardCEOComments(List<BalanceScoreCardCEOCommentsDto>? CEOCommentsChange)
+    {
+        if (BscData != null && CEOCommentsChange != null)
+        {
+            if (BscData.BalanceScoreCardCeocomments == null)
+            {
+                BscData.BalanceScoreCardCeocomments = new List<BalanceScoreCardCEOCommentsDto>();
+            }
+            BscData.BalanceScoreCardCeocomments = CEOCommentsChange;
+        }
+    }
     private static ViewBscEmployeeDto employeeno { get; set; }
     private static ViewBscEmployeeDto appraiserdetails { get; set; }
     private static ALeaveApprovalStatusDto statusdecsription { get; set; }
@@ -991,7 +864,6 @@
     bool IsHiddenPersonSubmit = false;
     bool IsEmployeeEnabledColumn = true;
     bool IsSupervisorEnabledColumn = true;
-
 
     SfDialog ConfirmationApproveDialogue;
     string ConfirmationText { get; set; }
@@ -1016,89 +888,14 @@
     };
 
     int? finyear = null;
-    int? finyearid = null;
+    
+
     int countid = -1000;
-
-    //Section 2 Class
-    public class TargetSettingEvaluation
-    {
-        public int BehavioralId { get; set; }
-        public int? BalanceScoreCardId { get; set; }
-        public int? CompetenceId { get; set; }
-        public int? PerformanceDescriptorId { get; set; }
-        public double? SupervisorAssessment { get; set; }
-        public double? EmployeeSelfAssessment { get; set; }
-        public string? EmployeeComment { get; set; }
-        public string? SupervisorComment { get; set; }
-        public int BscPerspectiveId { get; set; }
-        public string? BscPerspectiveDescription { get; set; }
-        public double? PerspectiveTotalWeight { get; set; }
-        public int? DepartmentId { get; set; }
-        public int? FinancialYearId { get; set; }
-        public string? UserId { get; set; }
-        public int Bsckpiid { get; set; }
-        public string? Bsckpidescription { get; set; }
-        public int MeasurementMetricId { get; set; }
-        public string? MeasurementMetricDescription { get; set; }
-    }
-
-    //Section 3 Class
-    public class ValuesBehavioralCompetencies
-    {
-        public int BehavioralId { get; set; }
-        public int? BalanceScoreCardId { get; set; }
-        public int? CompetenceId { get; set; }
-        public string? CompetenceDescription { get; set; }
-        public int? PerformanceDescriptorId { get; set; }
-        public double? SupervisorAssessment { get; set; }
-        public double? EmployeeSelfAssessment { get; set; }
-        public string? EmployeeComment { get; set; }
-        public string? SupervisorComment { get; set; }
-    }
-
-    private List<TargetSettingEvaluation> TargetSettingEvaluationList = new List<TargetSettingEvaluation>();
-    private List<ValuesBehavioralCompetencies> BehavioralCompetenciesList = new List<ValuesBehavioralCompetencies>();
 
     public async Task onSaveDraftForm()
     {
         try
         {
-            if (TargetsettingGrid != null)
-            {
-                await TargetsettingGrid.EndEditAsync();
-                //BscData.BalanceScoreCardTargetSetting = gridData;
-            }
-
-            if (BehavioralGrid != null)
-            {
-                await BehavioralGrid.EndEditAsync();
-            }
-
-            if (DevelopmentPlanGrid != null)
-            {
-                await DevelopmentPlanGrid.EndEditAsync();
-            }
-
-            if (AppraiseeCommentsGrid != null)
-            {
-                await AppraiseeCommentsGrid.EndEditAsync();
-            }
-
-            if (SupervisorCommentsGrid != null)
-            {
-                await SupervisorCommentsGrid.EndEditAsync();
-            }
-
-            if (HODCommentsGrid != null)
-            {
-                await HODCommentsGrid.EndEditAsync();
-            }
-
-            if (CEOCommentsGrid != null)
-            {
-                await CEOCommentsGrid.EndEditAsync();
-            }
-
             if (DataGrid != null)
             {
                 await LoadingDialogue.ShowAsync();
@@ -1150,35 +947,6 @@
             else
             {
                 await LoadingDialogue.ShowAsync();
-                if (BehavioralGrid != null)
-                {
-                    await BehavioralGrid.EndEditAsync();
-                }
-
-                if (DevelopmentPlanGrid != null)
-                {
-                    await DevelopmentPlanGrid.EndEditAsync();
-                }
-
-                if (AppraiseeCommentsGrid != null)
-                {
-                    await AppraiseeCommentsGrid.EndEditAsync();
-                }
-
-                if (SupervisorCommentsGrid != null)
-                {
-                    await SupervisorCommentsGrid.EndEditAsync();
-                }
-
-                if (HODCommentsGrid != null)
-                {
-                    await HODCommentsGrid.EndEditAsync();
-                }
-
-                if (CEOCommentsGrid != null)
-                {
-                    await CEOCommentsGrid.EndEditAsync();
-                }
 
                 if (DataGrid != null)
                 {
@@ -1251,41 +1019,7 @@
         try
         {
             await this.ConfirmationApproveDialogue.HideAsync();
-            if (TargetsettingGrid != null)
-            {
-                await TargetsettingGrid.EndEditAsync();
-                //BscData.BalanceScoreCardTargetSetting = gridData;
-            }
 
-            if (BehavioralGrid != null)
-            {
-                await BehavioralGrid.EndEditAsync();
-            }
-
-            if (DevelopmentPlanGrid != null)
-            {
-                await DevelopmentPlanGrid.EndEditAsync();
-            }
-
-            if (AppraiseeCommentsGrid != null)
-            {
-                await AppraiseeCommentsGrid.EndEditAsync();
-            }
-
-            if (SupervisorCommentsGrid != null)
-            {
-                await SupervisorCommentsGrid.EndEditAsync();
-            }
-
-            if (HODCommentsGrid != null)
-            {
-                await HODCommentsGrid.EndEditAsync();
-            }
-
-            if (CEOCommentsGrid != null)
-            {
-                await CEOCommentsGrid.EndEditAsync();
-            }
 
             if (DataGrid != null)
             {
@@ -1389,42 +1123,6 @@
     {
         try
         {
-            if (TargetsettingGrid != null)
-            {
-                await TargetsettingGrid.EndEditAsync();
-                //BscData.BalanceScoreCardTargetSetting = gridData;
-            }
-
-            if (BehavioralGrid != null)
-            {
-                await BehavioralGrid.EndEditAsync();
-            }
-
-            if (DevelopmentPlanGrid != null)
-            {
-                await DevelopmentPlanGrid.EndEditAsync();
-            }
-
-            if (AppraiseeCommentsGrid != null)
-            {
-                await AppraiseeCommentsGrid.EndEditAsync();
-            }
-
-            if (SupervisorCommentsGrid != null)
-            {
-                await SupervisorCommentsGrid.EndEditAsync();
-            }
-
-            if (HODCommentsGrid != null)
-            {
-                await HODCommentsGrid.EndEditAsync();
-            }
-
-            if (CEOCommentsGrid != null)
-            {
-                await CEOCommentsGrid.EndEditAsync();
-            }
-
             if (DataGrid != null)
             {
                 if (string.IsNullOrEmpty(BscData.RejectionReason))
@@ -1468,22 +1166,10 @@
     protected override async Task OnInitializedAsync()
     {
         Credentials = await AuthService.GetUserCredentials();
-
+        MainQuery = new Query();
         //Set employeeno and appraiserdetails to null on initialize
         employeeno = null;
         appraiserdetails = null;
-
-        int? finyear = null;
-
-        if (TargetSettingEvaluationList != null)
-        {
-            TargetSettingEvaluationList.Clear();
-        }
-
-        if (BehavioralCompetenciesList != null)
-        {
-            BehavioralCompetenciesList.Clear();
-        }
 
         List<Task> t = new List<Task>();
         t.Add(Task.Run(async () =>
@@ -1539,7 +1225,7 @@
                 if (b != null)
                 {
                     finyearid = b.Id;
-
+                    MainQuery.AddParams("FinancialYearId", finyearid);
                     var responsetargetpopulated = await Http.GetAsync($"TargetSetting/GetPopulatedData?YearId={finyearid}");
                     if (responsetargetpopulated.IsSuccessStatusCode)
                     {
@@ -1621,16 +1307,6 @@
                 CompetenceData = JsonSerializer.Deserialize<List<BehavioralCompetenciesDto>>(contentcompetence, _options);
             }
         }));
-
-        // t.Add(Task.Run(async () =>
-        // {
-        //     var responsetargetpopulated = await Http.GetAsync($"TargetSetting/GetPopulatedData");
-        //     if (responsetargetpopulated.IsSuccessStatusCode)
-        //     {
-        //         var contenttargetpopulated = await responsetargetpopulated.Content.ReadAsStringAsync();
-        //         PopulatedData = JsonSerializer.Deserialize<List<ViewBscPerspectiveperformanceIndicatorDto>>(contenttargetpopulated, _options);
-        //     }
-        // }));
 
         t.Add(Task.Run(async () =>
         {
@@ -1725,34 +1401,6 @@
             }
             BscData.BalanceScoreCardTargetSetting = BscData.BalanceScoreCardTargetSetting.OrderBy(o => o.BscPerspectiveTypeId).ToList();
 
-            //string json = Newtonsoft.Json.JsonConvert.SerializeObject(BscData);
-            //StringContent HttpCompletionOption = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-            //var resulttarget = await Http.GetAsync($"TargetSetting/GetTargetMainDataFiltered/{finyear}");
-            //var contenttarget = await resulttarget.Content.ReadAsStringAsync();
-
-            //if (resulttarget.IsSuccessStatusCode)
-            //{
-            //    List<ViewBscPerspectiveperformanceIndicatorDto>? data = new List<ViewBscPerspectiveperformanceIndicatorDto>();
-            //    data = JsonSerializer.Deserialize<List<ViewBscPerspectiveperformanceIndicatorDto>>(contenttarget, _options);
-
-            //    List<BalanceScoreCardTargetSettingDto> m = new List<BalanceScoreCardTargetSettingDto>();
-
-            //    foreach (var n in data)
-            //    {
-            //        Random random = new Random();
-            //        m.Add(new BalanceScoreCardTargetSettingDto
-            //            {
-            //                TargetSettingId = random.Next(1000, 10000),
-            //                BscPerspectiveTypeId = n.BscPerspectiveTypeId,
-            //                PerspectiveTotalWeight = n.PerspectiveTotalWeight /*Convert.ToDouble(n.PerspectiveTypeDescriptionandWeight)*/,
-            //                MeasurementMetricId = n.MeasurementMetricId,
-            //                Bsckpiid = n.Bsckpiid,
-            //            });
-            //    }
-            //    gridData = m;
-            //}
-
-            //StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -1791,15 +1439,37 @@
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         {
             var data = new List<BalanceScoreCardDto>();
+            bool returnvalidata = false;
             try
-            {
-
-                var response = await Http.GetAsync($"BalanceScoreCard/GetBSCData");
-                var content = await response.Content.ReadAsStringAsync();
-                if (response.IsSuccessStatusCode)
+            {    
+                if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
                 {
-                    data = JsonSerializer.Deserialize<List<BalanceScoreCardDto>>(content, _options);
+                    AppraisalSearch paymentRequestModel = new AppraisalSearch();
+                    var val = dataManagerRequest.Params;
+                    int a;
+                    bool hasValue = val.TryGetValue("FinancialYearId", out object _FinancialYearId);
+                    if (hasValue)
+                    {                        
+                        var res = int.TryParse(_FinancialYearId.ToString(), out a);
+                        paymentRequestModel.finYrId = a;
+
+                        var response = await Http.GetAsync($"BalanceScoreCard/GetBSCData?finyearid={a}");
+                        var content = await response.Content.ReadAsStringAsync();
+                        if (response.IsSuccessStatusCode)
+                        {
+                            data = JsonSerializer.Deserialize<List<BalanceScoreCardDto>>(content, _options);
+                        }
+                    }
+                    else
+
+                    {
+                        data = null;
+                    }
+                    
+                    
                 }
+
+               
             }
             catch (Exception ex)
             {
@@ -1996,336 +1666,13 @@
 
     }
 
-    //For Target Grid
-    //Enable cell edit on single click
-    public async Task CellSelectHandler(CellSelectEventArgs<BalanceScoreCardTargetSettingDto> args)
-    {
-        try
-        {
-            //get selected cell index
-            var CellIndexes = await TargetsettingGrid.GetSelectedRowCellIndexesAsync();
+    
+    
 
-            //get the row and cell index
-            var CurrentEditRowIndex = CellIndexes[0].Item1;
-            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+    
+    
 
-            //get the available fields
-            var fields = await TargetsettingGrid.GetColumnFieldNamesAsync();
-            // edit the selected cell using the cell index and column name
-            await TargetsettingGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
-        }
-        catch (Exception ex)
-        {
-            // throw ex;
-        }
-    }
-
-    //For Behavioral Plan Grid
-    //Enable cell edit on single click
-    public async Task BehavioralCellSelectHandler(CellSelectEventArgs<BalanceScoreCardBehavioralDto> args)
-    {
-        try
-        {
-            //get selected cell index
-            var CellIndexes = await BehavioralGrid.GetSelectedRowCellIndexesAsync();
-
-            //get the row and cell index
-            var CurrentEditRowIndex = CellIndexes[0].Item1;
-            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
-
-            //get the available fields
-            var fields = await BehavioralGrid.GetColumnFieldNamesAsync();
-            // edit the selected cell using the cell index and column name
-            await BehavioralGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
-        }
-        catch (Exception ex)
-        {
-            // throw ex;
-        }
-    }
-
-    //For Development Grid
-    //Enable cell edit on single click
-    public async Task CellSelectHandlerDevelopment(CellSelectEventArgs<BalanceScoreCardTargetDevelopmentPlanDto> args)
-    {
-        try
-        {
-            //get selected cell index
-            var CellIndexes = await DevelopmentPlanGrid.GetSelectedRowCellIndexesAsync();
-
-            //get the row and cell index
-            var CurrentEditRowIndex = CellIndexes[0].Item1;
-            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
-
-            //get the available fields
-            var fields = await DevelopmentPlanGrid.GetColumnFieldNamesAsync();
-            // edit the selected cell using the cell index and column name
-            await DevelopmentPlanGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
-        }
-        catch (Exception ex)
-        {
-            // throw ex;
-        }
-    }
-
-    //For Appraisee Comments Grid
-    //Enable cell edit on single click
-    public async Task CellSelectHandlerAppraiseeComments(CellSelectEventArgs<BalanceScoreCardAppraiseeCommentsDto> args)
-    {
-        try
-        {
-            //get selected cell index
-            var CellIndexes = await AppraiseeCommentsGrid.GetSelectedRowCellIndexesAsync();
-
-            //get the row and cell index
-            var CurrentEditRowIndex = CellIndexes[0].Item1;
-            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
-
-            //get the available fields
-            var fields = await AppraiseeCommentsGrid.GetColumnFieldNamesAsync();
-            // edit the selected cell using the cell index and column name
-            await AppraiseeCommentsGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
-        }
-        catch (Exception ex)
-        {
-            // throw ex;
-        }
-    }
-
-
-    //For Supervisor Comments Grid
-    //Enable cell edit on single click
-    public async Task CellSelectHandlerSupervisorComments(CellSelectEventArgs<BalanceScoreCardSupervisorCommentsDto> args)
-    {
-        try
-        {
-            //get selected cell index
-            var CellIndexes = await SupervisorCommentsGrid.GetSelectedRowCellIndexesAsync();
-
-            //get the row and cell index
-            var CurrentEditRowIndex = CellIndexes[0].Item1;
-            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
-
-            //get the available fields
-            var fields = await SupervisorCommentsGrid.GetColumnFieldNamesAsync();
-            // edit the selected cell using the cell index and column name
-            await SupervisorCommentsGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
-        }
-        catch (Exception ex)
-        {
-            // throw ex;
-        }
-    }
-
-    //For HOD Comments Grid
-    //Enable cell edit on single click
-    public async Task CellSelectHandlerHODComments(CellSelectEventArgs<BalanceScoreCardHODCommentsDto> args)
-    {
-        try
-        {
-            //get selected cell index
-            var CellIndexes = await HODCommentsGrid.GetSelectedRowCellIndexesAsync();
-
-            //get the row and cell index
-            var CurrentEditRowIndex = CellIndexes[0].Item1;
-            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
-
-            //get the available fields
-            var fields = await HODCommentsGrid.GetColumnFieldNamesAsync();
-            // edit the selected cell using the cell index and column name
-            await HODCommentsGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
-        }
-        catch (Exception ex)
-        {
-            // throw ex;
-        }
-    }
-
-    //For CEO Comments Grid
-    //Enable cell edit on single click
-    public async Task CellSelectHandlerCEOComments(CellSelectEventArgs<BalanceScoreCardCEOCommentsDto> args)
-    {
-        try
-        {
-            //get selected cell index
-            var CellIndexes = await CEOCommentsGrid.GetSelectedRowCellIndexesAsync();
-
-            //get the row and cell index
-            var CurrentEditRowIndex = CellIndexes[0].Item1;
-            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
-
-            //get the available fields
-            var fields = await CEOCommentsGrid.GetColumnFieldNamesAsync();
-            // edit the selected cell using the cell index and column name
-            await CEOCommentsGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
-        }
-        catch (Exception ex)
-        {
-            // throw ex;
-        }
-    }
-
-
-    private async Task CellSavedHandler(CellSaveArgs<BalanceScoreCardTargetSettingDto> args)
-    {
-        try
-        {
-            var index = await TargetsettingGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.TargetSettingId);
-            if (args.ColumnName == nameof(BalanceScoreCardTargetSettingDto.IndividualTargetWeight) || args.ColumnName == nameof(BalanceScoreCardTargetSettingDto.SupervisorAssessTgt))
-            {
-                double targetobjectivescore = 0;
-                double individualtargetweight = 0;
-                double supervisorassesstarget = 0;
-
-                if (args.Data.IndividualTargetWeight.HasValue)
-                {
-                    individualtargetweight = args.Data.IndividualTargetWeight.Value;
-                }
-                if (args.Data.SupervisorAssessTgt.HasValue)
-                {
-                    supervisorassesstarget = args.Data.SupervisorAssessTgt.Value;
-                }
-
-                //targetobjectivescore = (((double)individualtargetweight) * ((double)supervisorassesstarget));
-                targetobjectivescore = ((((double)individualtargetweight) / 100 * ((double)supervisorassesstarget) / 100) * 100);
-                await TargetsettingGrid.UpdateCellAsync(index, nameof(BalanceScoreCardTargetSettingDto.IndividualTargetObjectiveScore), targetobjectivescore);
-            }
-
-        }
-        catch (Exception ex)
-        {
-            toastService.ShowError(ex.Message);
-        }
-        finally
-        {
-            await TargetsettingGrid.EndEditAsync();
-        }
-    }
-
-    public void CellSaveHandler(CellSaveArgs<BalanceScoreCardTargetSettingDto> args)
-    {
-        //Disable editing next cell if value in previous cell is greater than 100%
-        if (Convert.ToInt32(args.Value) > 100)
-        {
-            toastService.ShowWarning("You cannot enter a % greater than 100 %");
-            args.Cancel = true;
-        }
-        else
-        {
-            args.Cancel = false;
-        }
-        // Here, you can customize your code.
-    }
-
-    private async Task BehavioralCellSavedHandler(CellSaveArgs<BalanceScoreCardBehavioralDto> args)
-    {
-        try
-        {
-            var index = await BehavioralGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.BehavioralId);
-            if (args.ColumnName == nameof(BalanceScoreCardBehavioralDto.PerformanceDescriptorId))
-            {
-                var a = PerformanceDescriptorData.FirstOrDefault(o => o.PerformanceDescriptorId == args.Data.PerformanceDescriptorId);
-                if (a != null)
-                {
-                    await BehavioralGrid.UpdateCellAsync(index, nameof(BalanceScoreCardBehavioralDto.SupervisorAssessment), Convert.ToDouble(a.PerformanceScore.Value));
-
-                }
-
-            }
-
-        }
-        catch (Exception ex)
-        {
-            toastService.ShowError(ex.Message);
-        }
-        finally
-        {
-            await BehavioralGrid.EndEditAsync();
-        }
-    }
-
-    private async Task AppraiseeCommentsCellSavedHandler(CellSaveArgs<BalanceScoreCardAppraiseeCommentsDto> args)
-    {
-        try
-        {
-            var index = await AppraiseeCommentsGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.AppraiseeCommentsId);
-            if (args.ColumnName == nameof(BalanceScoreCardAppraiseeCommentsDto.AppraiseeComments))
-            {
-                await AppraiseeCommentsGrid.UpdateCellAsync(index, nameof(BalanceScoreCardAppraiseeCommentsDto.AppraiseeDate), currentdate);
-            }
-
-        }
-        catch (Exception ex)
-        {
-            toastService.ShowError(ex.Message);
-        }
-        finally
-        {
-            await AppraiseeCommentsGrid.EndEditAsync();
-        }
-    }
-
-    private async Task SupervisorCommentsCellSavedHandler(CellSaveArgs<BalanceScoreCardSupervisorCommentsDto> args)
-    {
-        try
-        {
-            var index = await SupervisorCommentsGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.SupervisorCommentId);
-            if (args.ColumnName == nameof(BalanceScoreCardSupervisorCommentsDto.SupervisorComments))
-            {
-                await SupervisorCommentsGrid.UpdateCellAsync(index, nameof(BalanceScoreCardSupervisorCommentsDto.SupervisorDate), currentdate);
-            }
-
-        }
-        catch (Exception ex)
-        {
-            toastService.ShowError(ex.Message);
-        }
-        finally
-        {
-            await SupervisorCommentsGrid.EndEditAsync();
-        }
-    }
-
-    private async Task HODCommentsCellSavedHandler(CellSaveArgs<BalanceScoreCardHODCommentsDto> args)
-    {
-        try
-        {
-            var index = await HODCommentsGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.HodcommentId);
-            if (args.ColumnName == nameof(BalanceScoreCardHODCommentsDto.Hodcomments))
-            {
-                await HODCommentsGrid.UpdateCellAsync(index, nameof(BalanceScoreCardHODCommentsDto.Hoddate), currentdate);
-            }
-        }
-        catch (Exception ex)
-        {
-            toastService.ShowError(ex.Message);
-        }
-        finally
-        {
-            await HODCommentsGrid.EndEditAsync();
-        }
-    }
-
-    private async Task CEOCommentsCellSavedHandler(CellSaveArgs<BalanceScoreCardCEOCommentsDto> args)
-    {
-        try
-        {
-            var index = await CEOCommentsGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.CeocommentId);
-            if (args.ColumnName == nameof(BalanceScoreCardCEOCommentsDto.Ceocomments))
-            {
-                await CEOCommentsGrid.UpdateCellAsync(index, nameof(BalanceScoreCardCEOCommentsDto.CeocommentId), currentdate);
-            }
-        }
-        catch (Exception ex)
-        {
-            toastService.ShowError(ex.Message);
-        }
-        finally
-        {
-            await CEOCommentsGrid.EndEditAsync();
-        }
-    }
-
+    
     public async void LoadHandler()
     {
         SpinnerObj.ShowAsync();
@@ -2410,7 +1757,6 @@
                 {
                     Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSettingDto>();
                 }
-
                 if (Args.RowData.BalanceScoreCardAppraiseeComments == null)
                 {
                     Args.RowData.BalanceScoreCardAppraiseeComments = new List<BalanceScoreCardAppraiseeCommentsDto>();
@@ -2431,52 +1777,9 @@
                 {
                     Args.RowData.BalanceScoreCardTargetDevelopmentPlan = new List<BalanceScoreCardTargetDevelopmentPlanDto>();
                 }
-
-                if (Args.RowData.BalanceScoreCardTargetSetting == null)
-                {
-                    Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSettingDto>();
-                }
-
                 if (Args.RowData.BalanceScoreCardBehavioral == null)
                 {
                     Args.RowData.BalanceScoreCardBehavioral = new List<BalanceScoreCardBehavioralDto>();
-                }
-
-                // if (PopulatedData != null)
-                // {
-                //     foreach (var item in PopulatedData)
-                //     {
-                //         var m = new BalanceScoreCardTargetSettingDto();
-                //         m.TargetSettingId = countid;
-                //         m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
-                //         m.PerspectiveTotalWeight = item.PerspectiveTotalWeight; //Check if department weight is same as this
-                //         m.BsckpidetailsId = item.BsckpidetailsId;
-                //         m.MeasurementMetricId = item.BscKpidetailsMeasurementMetricId;
-                //         m.IndividualTargetWeight = item.IndividualTargetWeight;
-
-                //         Args.RowData.BalanceScoreCardTargetSetting.Add(m);
-                //         countid++;
-                //     }
-                // }
-
-                // Args.RowData.BalanceScoreCardTargetSetting = Args.RowData.BalanceScoreCardTargetSetting.OrderBy(o => o.BscPerspectiveTypeId).ToList();
-
-                if (CompetenceData != null)
-                {
-                    foreach (var n in CompetenceData)
-                    {
-                        var x = Args.RowData.BalanceScoreCardBehavioral.FirstOrDefault(o => o.CompetenceId == n.CompetenceId);
-                        if (x == null)
-                        {
-                            Random random = new Random();
-                            Args.RowData.BalanceScoreCardBehavioral.Add(new BalanceScoreCardBehavioralDto
-                                {
-                                    BehavioralId = random.Next(1000, 10000),
-                                    CompetenceId = n.CompetenceId,
-                                });
-                        }
-                    }
-
                 }
 
                 //Approved
@@ -2588,14 +1891,20 @@
                 await LoadingDialogue.HideAsync();
             }
 
-
-
             StateHasChanged();
         }
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
         {
             Args.RowData.FinancialYearId = finyearid;
             Args.RowData.DateofReview = DateTime.Now;
+
+            Args.RowData.BalanceScoreCardAppraiseeComments = new List<BalanceScoreCardAppraiseeCommentsDto>();
+            Args.RowData.BalanceScoreCardCeocomments = new List<BalanceScoreCardCEOCommentsDto>();
+            Args.RowData.BalanceScoreCardHodcomments = new List<BalanceScoreCardHODCommentsDto>();
+            Args.RowData.BalanceScoreCardSupervisorComments = new List<BalanceScoreCardSupervisorCommentsDto>();
+            Args.RowData.BalanceScoreCardTargetDevelopmentPlan = new List<BalanceScoreCardTargetDevelopmentPlanDto>();
+            Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSettingDto>();
+            Args.RowData.BalanceScoreCardBehavioral = new List<BalanceScoreCardBehavioralDto>();
 
             employeeno = null;
             _previous = Args.RequestType;
@@ -2605,12 +1914,6 @@
                 Args.Data.Employeeid = Credentials.StaffId;
                 employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Credentials.StaffId);
                 isFinancialYearEnabled = true;
-            }
-
-            
-            if (Args.RowData.BalanceScoreCardTargetSetting == null)
-            {
-                Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSettingDto>();
             }
 
             //Enable save buttons on add
@@ -2623,27 +1926,6 @@
             AppraisalReasonEnabled = true;
             AppraiserNameEnabled = true;
             isFinancialYearEnabled = false;
-
-            Args.RowData.BalanceScoreCardAppraiseeComments = new List<BalanceScoreCardAppraiseeCommentsDto>();
-            Args.RowData.BalanceScoreCardCeocomments = new List<BalanceScoreCardCEOCommentsDto>();
-            Args.RowData.BalanceScoreCardHodcomments = new List<BalanceScoreCardHODCommentsDto>();
-            Args.RowData.BalanceScoreCardSupervisorComments = new List<BalanceScoreCardSupervisorCommentsDto>();
-            Args.RowData.BalanceScoreCardTargetDevelopmentPlan = new List<BalanceScoreCardTargetDevelopmentPlanDto>();
-            //Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSettingDto>();
-            Args.RowData.BalanceScoreCardBehavioral = new List<BalanceScoreCardBehavioralDto>();
-
-            if (CompetenceData != null)
-            {
-                foreach (var n in CompetenceData)
-                {
-                    Random random = new Random();
-                    Args.RowData.BalanceScoreCardBehavioral.Add(new BalanceScoreCardBehavioralDto
-                        {
-                            BehavioralId = random.Next(1000, 10000),
-                            CompetenceId = n.CompetenceId,
-                        });
-                }
-            }
 
             //Disable All Supervisor fields on capturing a new record
             IsSupervisorEnabledColumn = false;
@@ -2668,35 +1950,7 @@
             }
         }
     }
-
-    public void CellEditHandlerTargets(CellEditArgs<BalanceScoreCardTargetSettingDto> args)
-    {
-        //if(IsSupervisorEnabledColumn == false)
-        //{
-        //    toastService.ShowWarning("Sorry ! You are not permitted to capture details here !");
-        //    args.Cancel = true;
-        //}
-        //else
-        //{
-        //    args.Cancel = false;
-        //}
-    }
-
-    public void QueryCellInfoHandlerTargets(QueryCellInfoEventArgs<BalanceScoreCardTargetSettingDto> Args)
-    {
-        //if (_previous == Syncfusion.Blazor.Grids.Action.Add)
-        //{
-        //    if (Args.Column.Field == nameof(BalanceScoreCardTargetSettingDto.SupervisorAssessTgt))
-        //    {
-        //        Args.Cell.AddClass(new string[] { "disablecolumn" });
-        //    }
-        //}
-        //else if(_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
-        //{
-
-        //}
-    }
-
+ 
     public string GetEmployeeHeader(BalanceScoreCardDto Value)
     {
         if (Value.Employeeid == 0)

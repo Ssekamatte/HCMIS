@@ -1,0 +1,129 @@
+﻿@* @page "/SectionFourPage" *@
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@using HCMIS.Interface;
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using System.Collections;
+@using System.IO;
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager navigation;
+@inject SystemSettings _SystemSettings;
+@using HCMIS.SHARED.DTOs.BSC;
+@using HCMIS.SHARED.DTOs.Utilities;
+@using HCMIS.ViewModel;
+@inject IToastService toastService;
+@inject IAuthenticationService AuthService;
+
+<SfGrid @ref="@DevelopmentPlanGrid" DataSource="datasource" GridLines="GridLine.Both"
+        TValue="BalanceScoreCardTargetDevelopmentPlanDto" ID="GridDevelopmentPlan" AllowTextWrap="true" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Cancel"})">
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
+    <GridEvents CellSelected="CellSelectHandlerDevelopment"
+                CellSaved="PlanCellSavedHandler"
+                TValue="BalanceScoreCardTargetDevelopmentPlanDto">
+    </GridEvents>
+
+    <GridColumns>
+        <GridColumn Field=@nameof(BalanceScoreCardTargetDevelopmentPlanDto.DevelopmentPlanId)
+                    HeaderText="Development Plan Id"
+                    TextAlign="TextAlign.Justify"
+                    IsPrimaryKey="true"
+                    IsIdentity="true"
+                    Visible="false"
+                    Width="180"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+        <GridColumn Field=@nameof(BalanceScoreCardTargetDevelopmentPlanDto.DevelopmentNeed)
+                    HeaderText="Development Need"
+                    TextAlign="TextAlign.Justify"
+                    AllowEditing="true"
+                    ValidationRules="@(new ValidationRules { Required = false })"
+                    Width="180"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+        <GridColumn Field=@nameof(BalanceScoreCardTargetDevelopmentPlanDto.DevelopmentAction)
+                    HeaderText="Development Action"
+                    TextAlign="TextAlign.Justify"
+                    AllowEditing="true"
+                    ValidationRules="@(new ValidationRules { Required = false })"
+                    Width="180"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+    </GridColumns>
+</SfGrid>
+
+@code {
+    [Parameter]
+    public List<BalanceScoreCardTargetDevelopmentPlanDto>? plandata { get; set; }
+    [Parameter]
+    public int BalanceScoreCardId { get; set; }
+    [Parameter]
+    public EventCallback<List<BalanceScoreCardTargetDevelopmentPlanDto>?> onscorecardtoggle { get; set; }
+    SfGrid<BalanceScoreCardTargetDevelopmentPlanDto>? DevelopmentPlanGrid { get; set; }
+    List<BalanceScoreCardTargetDevelopmentPlanDto>? datasource { get; set; }
+    
+    Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
+    int? previousBalanceScoreCardId { get; set; }
+    [Parameter]
+    public Syncfusion.Blazor.Grids.Action _previous { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (previousBalanceScoreCardId != BalanceScoreCardId)
+        {
+            int countid = -10000;
+            previousBalanceScoreCardId = BalanceScoreCardId;
+            datasource = new List<BalanceScoreCardTargetDevelopmentPlanDto>();
+            if (plandata != null && plandata.Count() > 0)
+            {
+                datasource.AddRange(plandata);
+            }
+        }
+    }
+
+    //For Development Grid
+    //Enable cell edit on single click
+    public async Task CellSelectHandlerDevelopment(CellSelectEventArgs<BalanceScoreCardTargetDevelopmentPlanDto> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await DevelopmentPlanGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await DevelopmentPlanGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await DevelopmentPlanGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
+    private async Task PlanCellSavedHandler(CellSaveArgs<BalanceScoreCardTargetDevelopmentPlanDto> args)
+    {
+        try
+        {
+            
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message);
+        }
+        finally
+        {
+            await DevelopmentPlanGrid.EndEditAsync();
+            await onscorecardtoggle.InvokeAsync(datasource);
+        }
+    }
+}

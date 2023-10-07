@@ -1,0 +1,254 @@
+﻿@* @page "/SectionThreePage" *@
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@using HCMIS.Interface;
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using System.Collections;
+@using System.IO;
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager navigation;
+@inject SystemSettings _SystemSettings;
+@using HCMIS.SHARED.DTOs.BSC;
+@using HCMIS.SHARED.DTOs.Utilities;
+@using HCMIS.ViewModel;
+@inject IToastService toastService;
+@inject IAuthenticationService AuthService;
+
+<SfGrid @ref="@BehavioralGrid" DataSource="@datasource" GridLines="GridLine.Both"
+        TValue="BalanceScoreCardBehavioralDto" ID="Grid1" AllowTextWrap="true" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true">
+    <GridEditSettings AllowAdding="false" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+    
+    <GridAggregates>
+        <GridAggregate>
+            <GridAggregateColumns>    
+                <GridAggregateColumn Field=@nameof(BalanceScoreCardBehavioralDto.EmployeeSelfAssessment) Type="Syncfusion.Blazor.Grids.AggregateType.Sum">
+                    <FooterTemplate Context="FooterTemplateContext">
+                        @{
+                            aggregate = (FooterTemplateContext as AggregateTemplateContext);
+                            <div>
+                                @if (@aggregate != null)
+                                {
+                                    <p style="color:purple;">Target Points: @aggregate.Sum %</p>
+                                }
+                            </div>
+                        }
+                    </FooterTemplate>
+                </GridAggregateColumn>
+
+                <GridAggregateColumn Field=@nameof(BalanceScoreCardBehavioralDto.SupervisorAssessment) Type="Syncfusion.Blazor.Grids.AggregateType.Sum">
+                    <FooterTemplate Context="FooterTemplateContext">
+                        @{
+                            aggregate = (FooterTemplateContext as AggregateTemplateContext);
+                            <div>
+                                @if (@aggregate != null)
+                                {
+                                    <p style="color:purple;">Target Points: @aggregate.Sum %</p>
+                                }
+                            </div>
+                        }
+                    </FooterTemplate>
+                </GridAggregateColumn>
+            </GridAggregateColumns>
+
+
+
+        </GridAggregate>
+    </GridAggregates>
+
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
+    <GridEvents CellSelected="BehavioralCellSelectHandler"
+                CellSaved="BehavioralCellSavedHandler"
+                TValue="BalanceScoreCardBehavioralDto">
+    </GridEvents>
+
+    <GridColumns>
+        <GridColumn Type="ColumnType.CheckBox" Width="50" Visible=false></GridColumn>
+        <GridColumn Field=@nameof(BalanceScoreCardBehavioralDto.BehavioralId) HeaderText="BehavioralId" Visible=false IsPrimaryKey="true" Width="150"></GridColumn>
+        <GridColumn Field=@nameof(BalanceScoreCardBehavioralDto.BalanceScoreCardId) HeaderText="BalanceScoreCardId" TextAlign="TextAlign.Right" AllowEditing="false" ValidationRules="@(new ValidationRules { Required = false })" EditType="EditType.NumericEdit" Visible=false Width="180" IsFrozen="true"></GridColumn>
+        <GridForeignColumn Field=@nameof(BalanceScoreCardBehavioralDto.CompetenceId)
+                           HeaderText="#"
+                           Width="350"
+                           AllowEditing="false"
+                           ForeignKeyField="@(nameof(BehavioralCompetenciesDto.CompetenceId))"
+                           ForeignKeyValue="@(nameof(BehavioralCompetenciesDto.CompetenceDescription))"
+                           ForeignDataSource="@CompetenceData"
+                           AllowFiltering="true"
+                           IsFrozen="true"
+                           TextAlign="TextAlign.Justify"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+        </GridForeignColumn>
+        <GridForeignColumn Field=@nameof(BalanceScoreCardBehavioralDto.PerformanceDescriptorId)
+                           HeaderText="Performance Rating"
+                           Width="180"
+                           AllowEditing="true"
+                           ForeignKeyField="@(nameof(APerformanceDescriptor.PerformanceDescriptorId))"
+                           ForeignKeyValue="@(nameof(APerformanceDescriptor.PerformanceDescriptor))"
+                           ForeignDataSource="@PerformanceDescriptorData"
+                           AllowFiltering="true"
+                           IsFrozen="false"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+        </GridForeignColumn>
+        <GridColumn Field=@nameof(BalanceScoreCardBehavioralDto.EmployeeSelfAssessment)
+                    HeaderText="Employee Self Assessment"
+                    TextAlign="TextAlign.Right"
+                    AllowEditing="@IsEmployeeEnabledColumn"
+                    ValidationRules="@(new ValidationRules { Required = false })"
+                    EditType="EditType.NumericEdit"
+                    Format="###.##"
+                    Width="180"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+        </GridColumn>
+        <GridColumn Field=@nameof(BalanceScoreCardBehavioralDto.EmployeeComment)
+                    HeaderText="Employee Comment"
+                    TextAlign="TextAlign.Right"
+                    AllowEditing="@IsEmployeeEnabledColumn"
+                    ValidationRules="@(new ValidationRules { Required = false })"
+                    Width="180"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+        </GridColumn>
+        <GridColumn Field=@nameof(BalanceScoreCardBehavioralDto.SupervisorAssessment)
+                    HeaderText="Supervisor Assessment"
+                    AllowEditing="@IsSupervisorEnabledColumn"
+                    TextAlign="TextAlign.Right"
+                    EditType="EditType.NumericEdit"
+                    Width="180"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+        </GridColumn>
+        <GridColumn Field=@nameof(BalanceScoreCardBehavioralDto.SupervisorComment)
+                    HeaderText="Supervisor Comment"
+                    TextAlign="TextAlign.Right"
+                    AllowEditing="@IsSupervisorEnabledColumn"
+                    ValidationRules="@(new ValidationRules { Required = false })"
+                    Width="180"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+        </GridColumn>
+    </GridColumns>
+</SfGrid>
+
+@code
+{
+    [Parameter]
+    public List<BalanceScoreCardBehavioralDto>? behaviourdata { get; set; }
+    [Parameter]
+    public int BalanceScoreCardId { get; set; }
+    [Parameter]
+    public EventCallback<List<BalanceScoreCardBehavioralDto>?> onscorecardtoggle { get; set; }
+    SfGrid<BalanceScoreCardBehavioralDto>? BehavioralGrid { get; set; }
+    List<BalanceScoreCardBehavioralDto>? datasource { get; set; }
+    [Parameter]
+    public List<BehavioralCompetenciesDto>? CompetenceData { get; set; }
+    [Parameter]
+    public List<PerformanceDescriptorDto>? PerformanceDescriptorData { get; set; }    
+    [Parameter]
+    public List<ViewFinancialYearDto>? FinancialYearData { get; set; }
+    [Parameter]
+    public int? finyearid { get; set; }    
+    [Parameter]
+    public bool IsEmployeeEnabledColumn { get; set; } = true;
+    [Parameter]
+    public bool IsSupervisorEnabledColumn { get; set; } = true;
+    Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
+    int? previousBalanceScoreCardId { get; set; }
+    [Parameter]
+    public Syncfusion.Blazor.Grids.Action _previous { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (previousBalanceScoreCardId != BalanceScoreCardId)
+        {
+            int countid = -10000;
+            previousBalanceScoreCardId = BalanceScoreCardId;
+            datasource = new List<BalanceScoreCardBehavioralDto>();
+            if (behaviourdata != null && behaviourdata.Count() > 0)
+            {
+                datasource.AddRange(behaviourdata);
+            }
+            else
+            {
+                if (CompetenceData != null)
+                {
+                    foreach (var item in CompetenceData)
+                    {
+                        var m = new BalanceScoreCardBehavioralDto();
+                        m.BehavioralId = countid;
+                        m.CompetenceId = item.CompetenceId;
+
+                        datasource.Add(m);
+                        countid++;
+                    }
+
+                    datasource = datasource.OrderBy(o => o.CompetenceId).ToList();
+                }
+            }
+        }
+    }
+
+    #region BehaviourMethods
+
+    //For Behavioral Plan Grid
+    //Enable cell edit on single click
+    public async Task BehavioralCellSelectHandler(CellSelectEventArgs<BalanceScoreCardBehavioralDto> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await BehavioralGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await BehavioralGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await BehavioralGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
+    private async Task BehavioralCellSavedHandler(CellSaveArgs<BalanceScoreCardBehavioralDto> args)
+    {
+        try
+        {
+            var index = await BehavioralGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.BehavioralId);
+            if (args.ColumnName == nameof(BalanceScoreCardBehavioralDto.PerformanceDescriptorId))
+            {
+                var a = PerformanceDescriptorData.FirstOrDefault(o => o.PerformanceDescriptorId == args.Data.PerformanceDescriptorId);
+                if (a != null)
+                {
+                    if (_previous == Syncfusion.Blazor.Grids.Action.Add)
+                    {
+                        await BehavioralGrid.UpdateCellAsync(index, nameof(BalanceScoreCardBehavioralDto.EmployeeSelfAssessment), Convert.ToDouble(a.PerformanceScore.Value));                        
+                    }
+                    else
+                    {
+                        await BehavioralGrid.UpdateCellAsync(index, nameof(BalanceScoreCardBehavioralDto.SupervisorAssessment), Convert.ToDouble(a.PerformanceScore.Value));                        
+                    }
+                }
+
+            }
+
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message);
+        }
+        finally
+        {
+            await BehavioralGrid.EndEditAsync();
+            await onscorecardtoggle.InvokeAsync(datasource);
+        }
+    }
+
+    #endregion BehaviourMethods
+}
+
+

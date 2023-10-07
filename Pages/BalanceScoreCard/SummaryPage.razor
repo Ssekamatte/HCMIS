@@ -1,0 +1,127 @@
+﻿@page "/SummaryPage"
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@using HCMIS.Interface;
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using System.Collections;
+@using System.IO;
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager navigation;
+@inject SystemSettings _SystemSettings;
+@using HCMIS.SHARED.DTOs.BSC;
+@using HCMIS.SHARED.DTOs.Utilities;
+@using HCMIS.ViewModel;
+@inject IToastService toastService;
+@inject IAuthenticationService AuthService;
+
+<style>
+	table, th, td {
+	  border: 1px solid black;
+	  border-collapse: collapse;
+	}
+</style>
+
+<table style="width:100%;font-size:20px;">
+    @if (ScaleData != null)
+    {
+        <tr style="font-weight:bolder;">
+            <td>
+                <h6>
+                    Please note the Overall Assessment
+                    is derived from the "Performance Descriptors"
+                    below in relation to the Appraise Performance Achievement
+                </h6>
+            </td>
+            <td style="font-weight:bolder;">
+                OVERALL RATING ( TECHNICAL + VALUES /  BEHAVIOUR)
+            </td>
+            <td>
+                3%
+            </td>
+        </tr>
+        <tr style="font-weight:bolder;">
+            <td rowspan="2">
+                <h6>
+                    Please note the Overall Assessment
+                    is derived from the "Performance Descriptors"
+                    below in relation to the Appraise Performance Achievement
+                </h6>
+            </td>
+            @for (int i = 0; i <= (ScaleData.Count - 1); i++)
+            {
+                <td>@ScaleData[i].PerformanceDescription</td>
+            }
+        </tr>
+        <tr>            
+            @for (int i = 0; i <= (ScaleData.Count - 1); i++)
+            {                
+                <td>@ScaleData[i].MinimumMark% - @ScaleData[i].MaximumMark%</td>
+            }
+        </tr>
+    }
+    
+    @if (PerformanceDescriptorData != null)
+    {
+        <tr style="font-weight:bolder;">
+            <td rowspan="2">
+                <h6>
+                    Please note each Value / Behavior  Assessment
+                    is derived from the "Performance Descriptors"
+                    selected from the Drop Down provided
+                </h6>
+            </td>
+            @for (int i = 0; i <= (PerformanceDescriptorData.Count - 1); i++)
+            {
+                <td></td>
+                <td>@PerformanceDescriptorData[i].PerformanceDescriptor</td>
+            }
+        </tr>
+        <tr>
+            
+            @for (int i = 0; i <= (PerformanceDescriptorData.Count - 1); i++)
+            {                
+                <td>@PerformanceDescriptorData[i].PerformanceScore%</td>
+            }
+        </tr>
+    }
+
+</table>
+
+@code {
+    LoginResultModel? Credentials { get; set; }
+    List<APerformanceScaleDto>? ScaleData { get; set; }
+    public List<PerformanceDescriptorDto>? PerformanceDescriptorData { get; set; }
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        Credentials = await AuthService.GetUserCredentials();
+
+
+        List<Task> t = new List<Task>();
+        t.Add(Task.Run(async () =>
+        {
+            var responsemetric = await Http.GetAsync($"Utilities/GetPerformanceScale");
+            if (responsemetric.IsSuccessStatusCode)
+            {
+                var contentmetric = await responsemetric.Content.ReadAsStringAsync();
+                ScaleData = JsonSerializer.Deserialize<List<APerformanceScaleDto>>(contentmetric, _options);
+            }
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
+            var responseperformancedescriptor = await Http.GetAsync($"PerformanceDescriptor/GetPerformanceDescriptor");
+            if (responseperformancedescriptor.IsSuccessStatusCode)
+            {
+                var contentperformancedescriptor = await responseperformancedescriptor.Content.ReadAsStringAsync();
+                PerformanceDescriptorData = JsonSerializer.Deserialize<List<PerformanceDescriptorDto>>(contentperformancedescriptor, _options);
+            }
+        }));
+
+        Task _t = Task.WhenAll(t);
+        await _t;
+    }
+}
