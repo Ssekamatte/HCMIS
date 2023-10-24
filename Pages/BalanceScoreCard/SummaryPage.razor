@@ -60,6 +60,7 @@
         </td>
         <td>
             <h6>3%</h6>
+            
         </td>
     </tr>
 
@@ -70,16 +71,35 @@
         <td>
             
         </td>
-        <td>
-            <h6>OVERALL SCORE 100% ( TECHNICAL 70%  + VALUES /  BEHAVIOUR 30%)</h6>
+        <td style="background-color:#ffd966">
+            <h6 style="font-weight:bolder;background-color:#ffd966;">OVERALL SCORE 100% ( TECHNICAL 70%  + VALUES /  BEHAVIOUR 30%)</h6>
         </td>
-        <td>
+        <td style="background-color:#ffd966;font-weight:bolder">
             100%
         </td>
         <td>
         </td>
-        <td>
-            <h6>3%</h6>
+        <td style="background-color:#ffd966">
+            @{               
+                if (TargetSettingTotalData != null)
+                {
+                    var _targetdata = TargetSettingTotalData.FirstOrDefault(o => o.BalanceScoreCardId == BalanceScoreCardId);
+                    if (_targetdata != null)
+                    {
+                        totaltargetsetting = @_targetdata.TotalIndividualTargetObjectiveScore;
+                    }
+                }
+
+                if (BehavioralTotalData != null)
+                {
+                    var _behavioraldata = BehavioralTotalData.FirstOrDefault(o => o.BalanceScoreCardId == BalanceScoreCardId);
+                    if (_behavioraldata != null)
+                    {
+                        totalbehavioral = @_behavioraldata.TotalSupervisorAssessment;
+                    }
+                }
+            }
+            <h6 style="color:black;font-size: 20px;font-weight:bolder;background-color:#ffd966;">@(totaltargetsetting + totalbehavioral)%</h6>
         </td>
     </tr>
 </table>
@@ -162,9 +182,14 @@
 @code {
     LoginResultModel? Credentials { get; set; }
     List<APerformanceScaleDto>? ScaleData { get; set; }
-    public List<PerformanceDescriptorDto>? PerformanceDescriptorData { get; set; }
+    List<PerformanceDescriptorDto>? PerformanceDescriptorData { get; set; }
+    List<ViewTargetSettingTotalsDto>? TargetSettingTotalData { get; set; }
+    List<ViewBehavioralTotalsDto>? BehavioralTotalData { get; set; }
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-
+    [Parameter]
+    public int BalanceScoreCardId { get; set; }
+    double? totaltargetsetting = 0;
+    double? totalbehavioral = 0;
     protected override async Task OnInitializedAsync()
     {
         Credentials = await AuthService.GetUserCredentials();
@@ -191,6 +216,25 @@
             }
         }));
 
+        t.Add(Task.Run(async () =>
+        {
+            var responsetargettotal = await Http.GetAsync($"BalanceScoreCard/GetTargetTotal");
+            if (responsetargettotal.IsSuccessStatusCode)
+            {
+                var contenttargettotal = await responsetargettotal.Content.ReadAsStringAsync();
+                TargetSettingTotalData = JsonSerializer.Deserialize<List<ViewTargetSettingTotalsDto>>(contenttargettotal, _options);
+            }
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
+            var responsebehavioraltotal = await Http.GetAsync($"BalanceScoreCard/GetBehavioralTotal");
+            if (responsebehavioraltotal.IsSuccessStatusCode)
+            {
+                var contentbehavioraltotal = await responsebehavioraltotal.Content.ReadAsStringAsync();
+                BehavioralTotalData = JsonSerializer.Deserialize<List<ViewBehavioralTotalsDto>>(contentbehavioraltotal, _options);
+            }
+        }));
         Task _t = Task.WhenAll(t);
         await _t;
     }
