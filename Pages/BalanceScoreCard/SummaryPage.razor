@@ -24,42 +24,61 @@
 </style>
 
 <table style="width:100%;font-size:20px;  margin-top:10px;">
+    @{
+        if (TargetSettingTotalData != null)
+        {
+            var _targetdata = TargetSettingTotalData.FirstOrDefault(o => o.BalanceScoreCardId == BalanceScoreCardId);
+            if (_targetdata != null)
+            {
+                totaltargetsetting = @_targetdata.TotalIndividualTargetObjectiveScore;
+            }
+        }
+
+        if (BehavioralTotalData != null)
+        {
+            var _behavioraldata = BehavioralTotalData.FirstOrDefault(o => o.BalanceScoreCardId == BalanceScoreCardId);
+            if (_behavioraldata != null)
+            {
+                totalbehavioral = @_behavioraldata.TotalSupervisorAssessment;
+            }
+        }
+    }
     <tr>
         <td>
 
         </td>
-        <td colspan="2">
-            <h6>Overall 70% Maximum as a Technical Target Score</h6>
+        <td colspan="2" style="background-color:#ffd966">
+            <h6 style="color:black;font-size: 20px;font-weight:bolder;background-color:#ffd966;">Overall 70% Maximum as a Technical Target Score</h6>
         </td>
-        <td>
-            <h6>70%</h6>
+        <td style="background-color:#ffd966">
+            <h6 style="color:black;font-size: 20px;font-weight:bolder;background-color:#ffd966;">70%</h6>
         </td>
         <td>
 
         </td>
-        <td>
-            <h6>0%</h6>
+        <td style="background-color:#ffd966">
+            <h6 style="color:black;font-size: 20px;font-weight:bolder;background-color:#ffd966;">@totaltargetsetting%</h6>
         </td>
     </tr>
 
     <tr>
-        <td>
+        <td style="color:black;font-size: 20px;font-weight:bolder;">
             Values & Behavioral Competency
         </td>
         <td>
-            <h6>30%</h6>
+            <h6 style="color:black;font-size: 20px;font-weight:bolder;">30%</h6>
         </td>
         <td>
-            <h6>Overall 30% Score as NH & CC Values / Behavior Competencies</h6>
+            <h6 style="font-weight:bolder;font-size: 20px;">Overall 30% Score as NH & CC Values / Behavior Competencies</h6>
         </td>
-        <td>
+        <td style="background-color:#ffd966;font-size: 20px;font-weight:bolder;">
             30%
         </td>
         <td>
 
         </td>
-        <td>
-            <h6>3%</h6>
+        <td style="background-color:#ffd966">
+            <h6 style="color:black;font-size: 20px;font-weight:bolder;background-color:#ffd966;">@totalbehavioral%</h6>
             
         </td>
     </tr>
@@ -71,7 +90,7 @@
         <td>
             
         </td>
-        <td style="background-color:#ffd966">
+        <td style="background-color:#ffd966;font-size: 20px;font-weight:bolder;">
             <h6 style="font-weight:bolder;background-color:#ffd966;">OVERALL SCORE 100% ( TECHNICAL 70%  + VALUES /  BEHAVIOUR 30%)</h6>
         </td>
         <td style="background-color:#ffd966;font-weight:bolder">
@@ -79,26 +98,7 @@
         </td>
         <td>
         </td>
-        <td style="background-color:#ffd966">
-            @{               
-                if (TargetSettingTotalData != null)
-                {
-                    var _targetdata = TargetSettingTotalData.FirstOrDefault(o => o.BalanceScoreCardId == BalanceScoreCardId);
-                    if (_targetdata != null)
-                    {
-                        totaltargetsetting = @_targetdata.TotalIndividualTargetObjectiveScore;
-                    }
-                }
-
-                if (BehavioralTotalData != null)
-                {
-                    var _behavioraldata = BehavioralTotalData.FirstOrDefault(o => o.BalanceScoreCardId == BalanceScoreCardId);
-                    if (_behavioraldata != null)
-                    {
-                        totalbehavioral = @_behavioraldata.TotalSupervisorAssessment;
-                    }
-                }
-            }
+        <td style="background-color:#ffd966">            
             <h6 style="color:black;font-size: 20px;font-weight:bolder;background-color:#ffd966;">@(totaltargetsetting + totalbehavioral)%</h6>
         </td>
     </tr>
@@ -109,19 +109,40 @@
         <td>
 
         </td>
-        <td>
+        <td style="background-color:#ffd966;font-size: 20px;font-weight:bolder;">
             OVERALL RATING ( TECHNICAL + VALUES /  BEHAVIOUR)
         </td>
-        <td>
-            3%
+        <td style="background-color:#ffd966;">
+            <h6 style="color:black;font-size: 20px;font-weight:bolder;background-color:#ffd966;">@(totaltargetsetting + totalbehavioral)%</h6>
         </td>
     </tr>
     <tr>
         <td>
 
         </td>
-        <td colspan="6">
-            <h6>POOR PERFORMANCE</h6>
+        <td colspan="6" style="background-color:#a9d08e;color:black; text-align:center;font-size: 20px;font-weight:bolder;">
+            @{
+                double? performancevalue = 0;
+                performancevalue = @totaltargetsetting + @totalbehavioral;
+
+                if (performancevalue != 0)
+                {
+                    foreach (var n in ScaleData)
+                    {
+                        if ((performancevalue >= n.MinimumMark && performancevalue <= n.MaximumMark) && !string.IsNullOrEmpty(n.PerformanceDescription))
+                        {
+                            <h6 style="background-color:#a9d08e;color:black; text-align:center;font-size: 20px;font-weight:bolder;">@n.PerformanceDescription.ToUpper()</h6>
+                        }
+                    }
+                }
+                else
+                {
+                    <h6 style="background-color:#e67e22;color:ghostwhite; text-align:center;font-size: 20px;font-weight:bolder;">NOT YET APPRAISED</h6>
+                }
+
+                
+            }
+            
         </td>
     </tr>
 </table>
@@ -181,61 +202,17 @@
 
 @code {
     LoginResultModel? Credentials { get; set; }
-    List<APerformanceScaleDto>? ScaleData { get; set; }
-    List<PerformanceDescriptorDto>? PerformanceDescriptorData { get; set; }
-    List<ViewTargetSettingTotalsDto>? TargetSettingTotalData { get; set; }
-    List<ViewBehavioralTotalsDto>? BehavioralTotalData { get; set; }
+    [Parameter]
+    public List<APerformanceScaleDto>? ScaleData { get; set; }
+    [Parameter]
+    public List<PerformanceDescriptorDto>? PerformanceDescriptorData { get; set; }
+    [Parameter]
+    public List<ViewTargetSettingTotalsDto>? TargetSettingTotalData { get; set; }
+    [Parameter]
+    public List<ViewBehavioralTotalsDto>? BehavioralTotalData { get; set; }
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     [Parameter]
     public int BalanceScoreCardId { get; set; }
     double? totaltargetsetting = 0;
-    double? totalbehavioral = 0;
-    protected override async Task OnInitializedAsync()
-    {
-        Credentials = await AuthService.GetUserCredentials();
-
-
-        List<Task> t = new List<Task>();
-        t.Add(Task.Run(async () =>
-        {
-            var responsemetric = await Http.GetAsync($"Utilities/GetPerformanceScale");
-            if (responsemetric.IsSuccessStatusCode)
-            {
-                var contentmetric = await responsemetric.Content.ReadAsStringAsync();
-                ScaleData = JsonSerializer.Deserialize<List<APerformanceScaleDto>>(contentmetric, _options);
-            }
-        }));
-
-        t.Add(Task.Run(async () =>
-        {
-            var responseperformancedescriptor = await Http.GetAsync($"PerformanceDescriptor/GetPerformanceDescriptor");
-            if (responseperformancedescriptor.IsSuccessStatusCode)
-            {
-                var contentperformancedescriptor = await responseperformancedescriptor.Content.ReadAsStringAsync();
-                PerformanceDescriptorData = JsonSerializer.Deserialize<List<PerformanceDescriptorDto>>(contentperformancedescriptor, _options);
-            }
-        }));
-
-        t.Add(Task.Run(async () =>
-        {
-            var responsetargettotal = await Http.GetAsync($"BalanceScoreCard/GetTargetTotal");
-            if (responsetargettotal.IsSuccessStatusCode)
-            {
-                var contenttargettotal = await responsetargettotal.Content.ReadAsStringAsync();
-                TargetSettingTotalData = JsonSerializer.Deserialize<List<ViewTargetSettingTotalsDto>>(contenttargettotal, _options);
-            }
-        }));
-
-        t.Add(Task.Run(async () =>
-        {
-            var responsebehavioraltotal = await Http.GetAsync($"BalanceScoreCard/GetBehavioralTotal");
-            if (responsebehavioraltotal.IsSuccessStatusCode)
-            {
-                var contentbehavioraltotal = await responsebehavioraltotal.Content.ReadAsStringAsync();
-                BehavioralTotalData = JsonSerializer.Deserialize<List<ViewBehavioralTotalsDto>>(contentbehavioraltotal, _options);
-            }
-        }));
-        Task _t = Task.WhenAll(t);
-        await _t;
-    }
+    double? totalbehavioral = 0;    
 }

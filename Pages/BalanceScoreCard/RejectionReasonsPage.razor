@@ -1,0 +1,140 @@
+﻿@inject IToastService toastService;
+
+<style>
+    h6 {
+        color: ghostwhite;
+        background-color: darkgreen;
+        font-family: 'Roboto', 'Roboto Condensed' !important;
+        padding: 5px;
+        font-size: x-large;
+    }
+</style>
+
+
+<div class="form-group col-md-12">
+    <h6>Rejection Reason(s)</h6>
+</div>
+
+
+<SfGrid ID="Grid1" @ref="@DataGrid" TValue="BalanceScoreCardRejectionReasonsDto"
+        Toolbar="@ReasonToolbarMenu"
+        AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+        AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true" DataSource="@datasource">
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
+    <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+    <GridEvents CellSelected="CellSelectHandler"
+                CellSaved="CellSavedHandler"
+                OnBatchAdd="BatchAddHandler"
+                TValue="BalanceScoreCardRejectionReasonsDto">
+    </GridEvents>
+    <GridEditSettings AllowAdding="@AllowAddingValue"
+                      AllowEditing="true"
+                      AllowDeleting="false"
+                      Mode="Syncfusion.Blazor.Grids.EditMode.Batch"
+                      ShowConfirmDialog="false"
+                      NewRowPosition="NewRowPosition.Bottom">
+    </GridEditSettings>
+
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSize="20"></GridPageSettings>
+    <GridColumns>
+        <GridColumn Type="Syncfusion.Blazor.Grids.ColumnType.CheckBox" Width="30" Visible="false"></GridColumn>
+        <GridColumn Field=@nameof(BalanceScoreCardRejectionReasonsDto.RejectionReasonId) HeaderText="Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+        <GridColumn Field=@nameof(BalanceScoreCardRejectionReasonsDto.RejectionReason) HeaderText="Reason" Width="80"></GridColumn>
+        <GridColumn Field=@nameof(BalanceScoreCardRejectionReasonsDto.DateCaptured)
+                    HeaderText="Date Captured"
+                    EditType="EditType.DatePickerEdit"
+                    Format="dd/MM/yyyy HH:mm:ss"
+                    Type="ColumnType.Date"
+                    AllowEditing="false"
+                    Width="80">
+        </GridColumn>
+    </GridColumns>
+</SfGrid>
+
+@code {
+    SfGrid<BalanceScoreCardRejectionReasonsDto> DataGrid { get; set; }
+
+    [Parameter]
+    public int BalanceScoreCardId { get; set; }
+    [Parameter]
+    public List<BalanceScoreCardRejectionReasonsDto>? reasondata { get; set; }
+    [Parameter]
+    public EventCallback<List<BalanceScoreCardRejectionReasonsDto>?> onreasontoggledata { get; set; }
+    List<BalanceScoreCardRejectionReasonsDto>? datasource { get; set; }
+    int? previousBalanceScoreCardId { get; set; }
+    int random = -9999;
+    [Parameter]
+    public bool reasonBool { get; set; }
+
+    private List<object> ReasonToolbarMenu = new List<object>() {
+        new ItemModel() { Text = "Add Reason", PrefixIcon = "e-add", Id = "Grid1_add"}
+        // ,new ItemModel(){ Text = "Edit Reason", PrefixIcon= "e-edit", Id="Grid1_add"}
+    };
+
+    [Parameter]
+    public bool AllowAddingValue { get; set; }
+    [Parameter]
+    public bool AllowEditingValue{ get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (previousBalanceScoreCardId != BalanceScoreCardId)
+        {
+            int countid = -10000;
+            previousBalanceScoreCardId = BalanceScoreCardId;
+            datasource = new List<BalanceScoreCardRejectionReasonsDto>();
+            if (reasondata != null && reasondata.Count() > 0)
+            {
+                datasource.AddRange(reasondata);
+            }
+        }
+    }
+
+    //Enable cell edit on single click
+    public async Task CellSelectHandler(CellSelectEventArgs<BalanceScoreCardRejectionReasonsDto> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await DataGrid.GetSelectedRowCellIndexes();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await DataGrid.GetColumnFieldNames();
+            // edit the selected cell using the cell index and column name
+            await DataGrid.EditCell(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
+    private async Task CellSavedHandler(CellSaveArgs<BalanceScoreCardRejectionReasonsDto> args)
+    {
+        try
+        {
+
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message);
+        }
+        finally
+        {
+            await DataGrid.EndEdit();
+            await onreasontoggledata.InvokeAsync(datasource);
+        }
+    }
+
+    public void BatchAddHandler(BeforeBatchAddArgs<BalanceScoreCardRejectionReasonsDto> Args)
+    {
+        Args.DefaultData.RejectionReasonId = random;
+        random++;
+    }
+
+}
