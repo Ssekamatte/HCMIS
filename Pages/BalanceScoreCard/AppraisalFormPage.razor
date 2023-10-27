@@ -13,6 +13,8 @@
 @using HCMIS.SHARED.DTOs.Utilities;
 @using HCMIS.Interface;
 @inject IAuthenticationService AuthService;
+@inject NavigationManager navManager;
+
 <meta charset="UTF-8">
 
 
@@ -27,6 +29,17 @@
         font-size: large;
     } */
 
+    /*Manage Records Button*/
+    .e-grid .e-icons:not(.e-btn-icon) {
+        color: #00cc00;
+        color: floralwhite;
+        font-size: smaller;
+        font-weight: bolder;
+    }
+
+    .e-grid .e-unboundcelldiv .e-icons:not(.e-btn-icon) {
+        color: whitesmoke;
+    }
     /*Disable select all on grid checkbox*/
     .e-headercelldiv.e-headerchkcelldiv .e-checkbox-wrapper.e-css {
         pointer-events: none;
@@ -145,6 +158,7 @@
         background-color: #00cc00;
         padding: 10px;
         margin-top: 40px;
+        text-wrap: wrap;
     }
 
     .disablecolumn {
@@ -215,14 +229,14 @@
                             </center>
                         </div>
 
-                        @*@if(BscData != null && BscData.AppraisalNo != null)
-                    {
-                    <div class="col-md-4">
-                    <h5 style="color:green;">
-                    <strong>Appraisal No: @(BscData.AppraisalNo)</strong>
-                    </h5>
-                    </div>
-                    }*@
+                        @if(BscData != null && BscData.AppraisalNo != null)
+                        {
+                        <div class="col-md-4">
+                        <h5 style="color:green;">
+                        <strong>Appraisal No: @(BscData.AppraisalNo)</strong>
+                        </h5>
+                        </div>
+                        }
 
                         @if (statusdecsription != null)
                         {
@@ -493,41 +507,75 @@
                                 </ContentTemplate>
                             </AccordionItem>
 
-                            <h6 style="background-color:#636e72; color:ghostwhite;font-weight:bolder;font-size:large;">SECTION 5: OVER ALL COMMENTS</h6>
+                            @*<h6 style="background-color:#636e72; color:ghostwhite;font-weight:bolder;font-size:large;">SECTION 5: OVER ALL COMMENTS</h6>*@
+
                             <AccordionItem Expanded="false">
-                                <HeaderTemplate><strong>5.1: Appraisee Comments</strong></HeaderTemplate>
+                                <HeaderTemplate><strong>SECTION 5: COMMENTS</strong></HeaderTemplate>
                                 <ContentTemplate>
-                                    <AppraiseeCommentsPage BalanceScoreCardId="@BscData.BalanceScoreCardId" onscorecardtoggle="@ToggleBalanceScoreCardAppraiseeComments" appraiseecommentsdata="@BscData.BalanceScoreCardAppraiseeComments.ToList()"
-                                                           _previous="@_previous"></AppraiseeCommentsPage>
+                                    <SfAccordion ExpandMode="@ExpandMode.Single">
+                                        <AccordionItems>
+                                            <AccordionItem Expanded="false" CssClass="const">
+                                                <HeaderTemplate>5.1: Appraisee Comments</HeaderTemplate>
+                                                <ContentTemplate>
+                                                    <AppraiseeCommentsPage BalanceScoreCardId="@BscData.BalanceScoreCardId" onscorecardtoggle="@ToggleBalanceScoreCardAppraiseeComments" appraiseecommentsdata="@BscData.BalanceScoreCardAppraiseeComments.ToList()"
+                                                                           _previous="@_previous"></AppraiseeCommentsPage>
+                                                </ContentTemplate>
+                                            </AccordionItem>
+
+                                            <AccordionItem Expanded="false">
+                                                <HeaderTemplate><strong>5.2: Supervisor Comments</strong></HeaderTemplate>
+                                                <ContentTemplate>
+                                                    <SupervisorCommentsPage BalanceScoreCardId="@BscData.BalanceScoreCardId" onscorecardtoggle="@ToggleBalanceScoreCardSupervisorComments" supervisorcommentsdata="@BscData.BalanceScoreCardSupervisorComments.ToList()"
+                                                                            _previous="@_previous"></SupervisorCommentsPage>
+                                                </ContentTemplate>
+                                            </AccordionItem>
+
+                                            <AccordionItem Expanded="false">
+                                                <HeaderTemplate><strong>5.3: HOD Comments</strong></HeaderTemplate>
+                                                <ContentTemplate>
+                                                    <HODCommentsPage BalanceScoreCardId="@BscData.BalanceScoreCardId" onscorecardtoggle="@ToggleBalanceScoreCardHODComments" hodcommentsdata="@BscData.BalanceScoreCardHodcomments.ToList()"
+                                                                     _previous="@_previous"></HODCommentsPage>
+                                                </ContentTemplate>
+                                            </AccordionItem>
+
+                                            <AccordionItem Expanded="false">
+                                                <HeaderTemplate><strong>5.4: CEO Comments</strong></HeaderTemplate>
+                                                <ContentTemplate>
+                                                    <CEOCommentsPage BalanceScoreCardId="@BscData.BalanceScoreCardId" onscorecardtoggle="@ToggleBalanceScoreCardCEOComments" ceocommentsdata="@BscData.BalanceScoreCardCeocomments.ToList()"
+                                                                     _previous="@_previous"></CEOCommentsPage>
+                                                </ContentTemplate>
+                                            </AccordionItem>
+                                        </AccordionItems>
+                                    </SfAccordion>
                                 </ContentTemplate>
                             </AccordionItem>
 
-                            <AccordionItem Expanded="false">
-                                <HeaderTemplate><strong>5.2: Supervisor Comments</strong></HeaderTemplate>
-                                <ContentTemplate>
-                                    <SupervisorCommentsPage BalanceScoreCardId="@BscData.BalanceScoreCardId" onscorecardtoggle="@ToggleBalanceScoreCardSupervisorComments" supervisorcommentsdata="@BscData.BalanceScoreCardSupervisorComments.ToList()"
-                                                            _previous="@_previous"></SupervisorCommentsPage>
-                                </ContentTemplate>
-                            </AccordionItem>
+                            <h6 style="background-color:#6F1E51; color:ghostwhite;font-weight:bolder;font-size:large; text-align:center;">UPLOAD ATTACHMENT (Including any Evidence you have)</h6>
 
-                            <AccordionItem Expanded="false">
-                                <HeaderTemplate><strong>5.3: HOD Comments</strong></HeaderTemplate>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <BSCAttachmentPage 
+                                        BalanceScoreCardId="@BscData.BalanceScoreCardId"
+                                        OnHeaderAttachmentToggled="@ToggleBalanceScoreCardAttachment" 
+                                        HeaderAttachmentData="@BscData.BalanceScoreCardAttachment.ToList()" 
+                                        BSCAttachmentToolbarItems="@BSCAttachmentToolbarItems">
+                                    </BSCAttachmentPage>
+                                </div>
+                            </div>
+                            @*<AccordionItem Expanded="false">
+                                <HeaderTemplate><strong>UPLOAD EVIDENCE</strong></HeaderTemplate>
                                 <ContentTemplate>
-                                    <HODCommentsPage BalanceScoreCardId="@BscData.BalanceScoreCardId" onscorecardtoggle="@ToggleBalanceScoreCardHODComments" hodcommentsdata="@BscData.BalanceScoreCardHodcomments.ToList()"
-                                                     _previous="@_previous"></HODCommentsPage>
+                                    <BSCAttachmentPage 
+                                        BalanceScoreCardId="@BscData.BalanceScoreCardId"
+                                        OnHeaderAttachmentToggled="@ToggleBalanceScoreCardAttachment" 
+                                        HeaderAttachmentData="@BscData.BalanceScoreCardAttachment.ToList()" 
+                                        BSCAttachmentToolbarItems="@BSCAttachmentToolbarItems">
+                                    </BSCAttachmentPage>
                                 </ContentTemplate>
-                            </AccordionItem>
-
-                            <AccordionItem Expanded="false">
-                                <HeaderTemplate><strong>5.4: CEO Comments</strong></HeaderTemplate>
-                                <ContentTemplate>
-                                    <CEOCommentsPage BalanceScoreCardId="@BscData.BalanceScoreCardId" onscorecardtoggle="@ToggleBalanceScoreCardCEOComments" ceocommentsdata="@BscData.BalanceScoreCardCeocomments.ToList()"
-                                                     _previous="@_previous"></CEOCommentsPage>
-                                </ContentTemplate>
-                            </AccordionItem>
+                            </AccordionItem>*@
                         </AccordionItems>
                     </SfAccordion>
-
+                    // AccessToken="@AccessToken"
                 }
 
 
@@ -580,7 +628,17 @@
         </GridEvents>
         <SfDataManager AdaptorInstance="@typeof(BSCAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
         <GridColumns>
-            <GridColumn Type="ColumnType.CheckBox" Width="50" CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"></GridColumn>
+            <GridColumn Type="ColumnType.CheckBox" Width="20" CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"></GridColumn>
+            <GridColumn 
+                HeaderText="Manage Records" 
+                Width="30" 
+                CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"
+                        TextAlign="TextAlign.Left">
+                <GridCommandColumns>
+                    <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit"></GridCommandColumn>
+                </GridCommandColumns>
+            </GridColumn>
+            
             <GridColumn Field=@nameof(BalanceScoreCardDto.BalanceScoreCardId) HeaderText="BalanceScoreCardId" AllowEditing="false" Visible="false" IsPrimaryKey="true" Width="150"></GridColumn>
             <GridForeignColumn Field=@nameof(BalanceScoreCardDto.Employeeid)
                                HeaderText="Employee"
@@ -589,8 +647,7 @@
                                ForeignKeyField="@(nameof(ViewBscEmployee.Employeeid))"
                                ForeignKeyValue="@(nameof(ViewBscEmployee.EmployeeDetails))"
                                ForeignDataSource="@EmployeeData" AllowFiltering="false"
-                               CustomAttributes="@(new Dictionary<string,
-                    object>(){ { "class", "e-attr1" }})">
+                               CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})">
             </GridForeignColumn>
 
             <GridForeignColumn Field=@nameof(BalanceScoreCardDto.AppraisalReasonId)
@@ -806,6 +863,7 @@
     SfSpinner? SpinnerObj;
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     public Query MainQuery = new Query();
+    private List<object>? BSCAttachmentToolbarItems { get; set; }
 
     private void ToggleSearchQuery(Query? DetailData)
     {
@@ -922,6 +980,19 @@
             BscData.BalanceScoreCardCeocomments = CEOCommentsChange;
         }
     }
+
+    private void ToggleBalanceScoreCardAttachment(List<BalanceScoreCardAttachmentDto>? AttachmentChange)
+    {
+        if (BscData != null && AttachmentChange != null)
+        {
+            if (BscData.BalanceScoreCardAttachment == null)
+            {
+                BscData.BalanceScoreCardAttachment = new List<BalanceScoreCardAttachmentDto>();
+            }
+            BscData.BalanceScoreCardAttachment = AttachmentChange;
+        }
+    }
+
     private static ViewBscEmployeeDto employeeno { get; set; }
     private static ViewBscEmployeeDto appraiserdetails { get; set; }
     private static ALeaveApprovalStatusDto statusdecsription { get; set; }
@@ -944,7 +1015,7 @@
     SfDialog ConfirmationApproveDialogue;
     SfDialog ConfirmationSubmissionDialogue;
     SfDialog ConfirmationRejectDialogue;
-    
+
     string ConfirmationText { get; set; }
     private Dictionary<string, object> GridAttributes { get; set; } = new Dictionary<string, object>();
     SfDialog RejectLeaveDialogueCHRO;
@@ -1283,215 +1354,240 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Credentials = await AuthService.GetUserCredentials();
-        MainQuery = new Query();
-        //Set employeeno and appraiserdetails to null on initialize
-        employeeno = null;
-        appraiserdetails = null;
-
-        List<Task> t = new List<Task>();
-        t.Add(Task.Run(async () =>
+        await base.OnInitializedAsync();
+        try
         {
-            var responsemetric = await Http.GetAsync($"Utilities/GetMeasurementMetric");
-            if (responsemetric.IsSuccessStatusCode)
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
             {
-                var contentmetric = await responsemetric.Content.ReadAsStringAsync();
-                MeasurementUnitData = JsonSerializer.Deserialize<List<AMeasurementMetricDto>>(contentmetric, _options);
+                navManager.NavigateTo("/LoginPage", true);
             }
-        }));
 
-        t.Add(Task.Run(async () =>
-        {
-            var responseemployee = await Http.GetAsync($"BalanceScoreCard/GetEmployeeData");
-            if (responseemployee.IsSuccessStatusCode)
+            else
             {
-                var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-                EmployeeData = JsonSerializer.Deserialize<List<ViewBscEmployeeDto>>(contentemployee, _options);
-            }
-        }));
+                Credentials = await AuthService.GetUserCredentials();
+                MainQuery = new Query();
+                //Set employeeno and appraiserdetails to null on initialize
+                employeeno = null;
+                appraiserdetails = null;
 
-        t.Add(Task.Run(async () =>
-        {
-            var responsejobtitle = await Http.GetAsync($"HumanResource/GetJobTitle");
-            if (responsejobtitle.IsSuccessStatusCode)
-            {
-                var contentjobtitle = await responsejobtitle.Content.ReadAsStringAsync();
-                JobTitleData = JsonSerializer.Deserialize<List<JobTitleDto>>(contentjobtitle, _options);
-            }
-        }));
-
-        t.Add(Task.Run(async () =>
-        {
-            var responsefinyear = await Http.GetAsync($"FinancialYear/list");
-            if (responsefinyear.IsSuccessStatusCode)
-            {
-                var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
-                FinancialYearData = JsonSerializer.Deserialize<List<ViewFinancialYearDto>>(contentfinyear, _options);
-
-                DateTime currentdate = DateTime.Now;
-                string? financialyeardesc = null;
-                if (currentdate.Month >= 6)
+                List<Task> t = new List<Task>();
+                t.Add(Task.Run(async () =>
                 {
-                    financialyeardesc = $"{currentdate.Year}/{(currentdate.Year + 1)}";
-                }
-                else if (currentdate.Month < 6)
-                {
-                    financialyeardesc = $"{(currentdate.Year - 1)}/{currentdate.Year}";
-                }
-
-                var b = FinancialYearData.FirstOrDefault(o => o.FinancialYear.Trim() == financialyeardesc.Trim());
-                if (b != null)
-                {
-                    finyearid = b.Id;
-                    List<int?> _finyearid = new List<int?>();
-                    _finyearid.Add(finyearid);
-                    searchpanel.FinancialYearId = _finyearid.ToArray();
-                    MainQuery = new Query().AddParams("FinancialYearId", string.Join(",",searchpanel.FinancialYearId));
-
-                    var responsetargetpopulated = await Http.GetAsync($"TargetSetting/GetPopulatedData?YearId={finyearid}");
-                    if (responsetargetpopulated.IsSuccessStatusCode)
+                    var responsemetric = await Http.GetAsync($"Utilities/GetMeasurementMetric");
+                    if (responsemetric.IsSuccessStatusCode)
                     {
-                        var contenttargetpopulated = await responsetargetpopulated.Content.ReadAsStringAsync();
-                        PopulatedData = JsonSerializer.Deserialize<List<ViewBscPerspectiveperformanceIndicatorDto>>(contenttargetpopulated, _options);
+                        var contentmetric = await responsemetric.Content.ReadAsStringAsync();
+                        MeasurementUnitData = JsonSerializer.Deserialize<List<AMeasurementMetricDto>>(contentmetric, _options);
                     }
-                }
+                }));
 
+                t.Add(Task.Run(async () =>
+                {
+                    var responseemployee = await Http.GetAsync($"BalanceScoreCard/GetEmployeeData");
+                    if (responseemployee.IsSuccessStatusCode)
+                    {
+                        var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+                        EmployeeData = JsonSerializer.Deserialize<List<ViewBscEmployeeDto>>(contentemployee, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responsejobtitle = await Http.GetAsync($"HumanResource/GetJobTitle");
+                    if (responsejobtitle.IsSuccessStatusCode)
+                    {
+                        var contentjobtitle = await responsejobtitle.Content.ReadAsStringAsync();
+                        JobTitleData = JsonSerializer.Deserialize<List<JobTitleDto>>(contentjobtitle, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responsefinyear = await Http.GetAsync($"FinancialYear/list");
+                    if (responsefinyear.IsSuccessStatusCode)
+                    {
+                        var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
+                        FinancialYearData = JsonSerializer.Deserialize<List<ViewFinancialYearDto>>(contentfinyear, _options);
+
+                        DateTime currentdate = DateTime.Now;
+                        string? financialyeardesc = null;
+                        if (currentdate.Month >= 6)
+                        {
+                            financialyeardesc = $"{currentdate.Year}/{(currentdate.Year + 1)}";
+                        }
+                        else if (currentdate.Month < 6)
+                        {
+                            financialyeardesc = $"{(currentdate.Year - 1)}/{currentdate.Year}";
+                        }
+
+                        var b = FinancialYearData.FirstOrDefault(o => o.FinancialYear.Trim() == financialyeardesc.Trim());
+                        if (b != null)
+                        {
+                            finyearid = b.Id;
+                            List<int?> _finyearid = new List<int?>();
+                            _finyearid.Add(finyearid);
+                            searchpanel.FinancialYearId = _finyearid.ToArray();
+                            MainQuery = new Query().AddParams("FinancialYearId", string.Join(",", searchpanel.FinancialYearId));
+
+                            var responsetargetpopulated = await Http.GetAsync($"TargetSetting/GetPopulatedData?YearId={finyearid}");
+                            if (responsetargetpopulated.IsSuccessStatusCode)
+                            {
+                                var contenttargetpopulated = await responsetargetpopulated.Content.ReadAsStringAsync();
+                                PopulatedData = JsonSerializer.Deserialize<List<ViewBscPerspectiveperformanceIndicatorDto>>(contenttargetpopulated, _options);
+                            }
+                        }
+
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responseappraisal = await Http.GetAsync($"AppraisalReason/GetAppraisalReason");
+                    if (responseappraisal.IsSuccessStatusCode)
+                    {
+                        var contentappraisal = await responseappraisal.Content.ReadAsStringAsync();
+                        AppraisalData = JsonSerializer.Deserialize<List<AppraisalReasonDto>>(contentappraisal, _options);
+                    }
+                }));
+
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responseKpi = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicator");
+                    if (responseKpi.IsSuccessStatusCode)
+                    {
+                        var contentKpi = await responseKpi.Content.ReadAsStringAsync();
+                        KpiData = JsonSerializer.Deserialize<List<BscKpiDto>>(contentKpi, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responseKpi = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicatorDetails");
+                    if (responseKpi.IsSuccessStatusCode)
+                    {
+                        var contentKpi = await responseKpi.Content.ReadAsStringAsync();
+                        KpiDetailsData = JsonSerializer.Deserialize<List<ABscKpidetailsDto>>(contentKpi, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
+                    if (responsebscperspectivetype.IsSuccessStatusCode)
+                    {
+                        var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
+                        BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesTypeDto>>(contentbscperspectivetype, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responseevidence = await Http.GetAsync($"EmployeeEvidence/GetEmployeeEvidence");
+                    if (responseevidence.IsSuccessStatusCode)
+                    {
+                        var contentevidence = await responseevidence.Content.ReadAsStringAsync();
+                        EvidenceData = JsonSerializer.Deserialize<List<EmployeeEvidenceDto>>(contentevidence, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responseperformancedescriptor = await Http.GetAsync($"PerformanceDescriptor/GetPerformanceDescriptor");
+                    if (responseperformancedescriptor.IsSuccessStatusCode)
+                    {
+                        var contentperformancedescriptor = await responseperformancedescriptor.Content.ReadAsStringAsync();
+                        PerformanceDescriptorData = JsonSerializer.Deserialize<List<PerformanceDescriptorDto>>(contentperformancedescriptor, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responsecompetence = await Http.GetAsync($"BehavioralCompetencies/GetCompetence");
+                    if (responsecompetence.IsSuccessStatusCode)
+                    {
+                        var contentcompetence = await responsecompetence.Content.ReadAsStringAsync();
+                        CompetenceData = JsonSerializer.Deserialize<List<BehavioralCompetenciesDto>>(contentcompetence, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responsetarget = await Http.GetAsync($"TargetSetting/GetTargetMainData");
+                    if (responsetarget.IsSuccessStatusCode)
+                    {
+                        var contenttarget = await responsetarget.Content.ReadAsStringAsync();
+                        TargetData = JsonSerializer.Deserialize<List<BalanceScoreCardTargetSettingDto>>(contenttarget, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responseapprovalstatus = await Http.GetAsync($"Utilities/GetLeaveApprovalStatus");
+                    if (responseapprovalstatus.IsSuccessStatusCode)
+                    {
+                        var contentapprovalstatus = await responseapprovalstatus.Content.ReadAsStringAsync();
+                        ApprovalStatusData = JsonSerializer.Deserialize<List<ALeaveApprovalStatusDto>>(contentapprovalstatus, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responsebscperspective = await Http.GetAsync($"BscPerspectives/GetBscPerspectives");
+                    if (responsebscperspective.IsSuccessStatusCode)
+                    {
+                        var contentbscperspective = await responsebscperspective.Content.ReadAsStringAsync();
+                        BscPerspectiveData = JsonSerializer.Deserialize<List<BscPerspectivesDto>>(contentbscperspective, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responsetargettotal = await Http.GetAsync($"BalanceScoreCard/GetTargetTotal");
+                    if (responsetargettotal.IsSuccessStatusCode)
+                    {
+                        var contenttargettotal = await responsetargettotal.Content.ReadAsStringAsync();
+                        TargetSettingTotalData = JsonSerializer.Deserialize<List<ViewTargetSettingTotalsDto>>(contenttargettotal, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responsebehavioraltotal = await Http.GetAsync($"BalanceScoreCard/GetBehavioralTotal");
+                    if (responsebehavioraltotal.IsSuccessStatusCode)
+                    {
+                        var contentbehavioraltotal = await responsebehavioraltotal.Content.ReadAsStringAsync();
+                        BehavioralTotalData = JsonSerializer.Deserialize<List<ViewBehavioralTotalsDto>>(contentbehavioraltotal, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responsemetric = await Http.GetAsync($"Utilities/GetPerformanceScale");
+                    if (responsemetric.IsSuccessStatusCode)
+                    {
+                        var contentmetric = await responsemetric.Content.ReadAsStringAsync();
+                        ScaleData = JsonSerializer.Deserialize<List<APerformanceScaleDto>>(contentmetric, _options);
+                    }
+                }));
+
+                Task _t = Task.WhenAll(t);
+                await _t;
+
+                BSCAttachmentToolbarItems = new List<object>() {
+                            new ItemModel(){ Text = "Add new Attachment", PrefixIcon= "e-add", Id="BSCGrid_add"},
+                            new ItemModel(){ Text = "Edit Attachment", PrefixIcon= "e-edit", Id="BSCGrid_edit"},
+                            new ItemModel(){ Text = "Update Attachment", PrefixIcon= "e-update", Id="BSCGrid_update"},
+                            new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="BSCGrid_cancel"}
+                        };
             }
-        }));
-
-        t.Add(Task.Run(async () =>
+        }
+        catch(Exception ex)
         {
-            var responseappraisal = await Http.GetAsync($"AppraisalReason/GetAppraisalReason");
-            if (responseappraisal.IsSuccessStatusCode)
-            {
-                var contentappraisal = await responseappraisal.Content.ReadAsStringAsync();
-                AppraisalData = JsonSerializer.Deserialize<List<AppraisalReasonDto>>(contentappraisal, _options);
-            }
-        }));
 
-
-        t.Add(Task.Run(async () =>
-        {
-            var responseKpi = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicator");
-            if (responseKpi.IsSuccessStatusCode)
-            {
-                var contentKpi = await responseKpi.Content.ReadAsStringAsync();
-                KpiData = JsonSerializer.Deserialize<List<BscKpiDto>>(contentKpi, _options);
-            }
-        }));
-
-        t.Add(Task.Run(async () =>
-        {
-            var responseKpi = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicatorDetails");
-            if (responseKpi.IsSuccessStatusCode)
-            {
-                var contentKpi = await responseKpi.Content.ReadAsStringAsync();
-                KpiDetailsData = JsonSerializer.Deserialize<List<ABscKpidetailsDto>>(contentKpi, _options);
-            }
-        }));
-
-        t.Add(Task.Run(async () =>
-        {
-            var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
-            if (responsebscperspectivetype.IsSuccessStatusCode)
-            {
-                var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
-                BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesTypeDto>>(contentbscperspectivetype, _options);
-            }
-        }));
-
-        t.Add(Task.Run(async () =>
-        {
-            var responseevidence = await Http.GetAsync($"EmployeeEvidence/GetEmployeeEvidence");
-            if (responseevidence.IsSuccessStatusCode)
-            {
-                var contentevidence = await responseevidence.Content.ReadAsStringAsync();
-                EvidenceData = JsonSerializer.Deserialize<List<EmployeeEvidenceDto>>(contentevidence, _options);
-            }
-        }));
-
-        t.Add(Task.Run(async () =>
-        {
-            var responseperformancedescriptor = await Http.GetAsync($"PerformanceDescriptor/GetPerformanceDescriptor");
-            if (responseperformancedescriptor.IsSuccessStatusCode)
-            {
-                var contentperformancedescriptor = await responseperformancedescriptor.Content.ReadAsStringAsync();
-                PerformanceDescriptorData = JsonSerializer.Deserialize<List<PerformanceDescriptorDto>>(contentperformancedescriptor, _options);
-            }
-        }));
-
-        t.Add(Task.Run(async () =>
-        {
-            var responsecompetence = await Http.GetAsync($"BehavioralCompetencies/GetCompetence");
-            if (responsecompetence.IsSuccessStatusCode)
-            {
-                var contentcompetence = await responsecompetence.Content.ReadAsStringAsync();
-                CompetenceData = JsonSerializer.Deserialize<List<BehavioralCompetenciesDto>>(contentcompetence, _options);
-            }
-        }));
-
-        t.Add(Task.Run(async () =>
-        {
-            var responsetarget = await Http.GetAsync($"TargetSetting/GetTargetMainData");
-            if (responsetarget.IsSuccessStatusCode)
-            {
-                var contenttarget = await responsetarget.Content.ReadAsStringAsync();
-                TargetData = JsonSerializer.Deserialize<List<BalanceScoreCardTargetSettingDto>>(contenttarget, _options);
-            }
-        }));
-
-        t.Add(Task.Run(async () =>
-        {
-            var responseapprovalstatus = await Http.GetAsync($"Utilities/GetLeaveApprovalStatus");
-            if (responseapprovalstatus.IsSuccessStatusCode)
-            {
-                var contentapprovalstatus = await responseapprovalstatus.Content.ReadAsStringAsync();
-                ApprovalStatusData = JsonSerializer.Deserialize<List<ALeaveApprovalStatusDto>>(contentapprovalstatus, _options);
-            }
-        }));
-
-        t.Add(Task.Run(async () =>
-        {
-            var responsebscperspective = await Http.GetAsync($"BscPerspectives/GetBscPerspectives");
-            if (responsebscperspective.IsSuccessStatusCode)
-            {
-                var contentbscperspective = await responsebscperspective.Content.ReadAsStringAsync();
-                BscPerspectiveData = JsonSerializer.Deserialize<List<BscPerspectivesDto>>(contentbscperspective, _options);
-            }
-        }));
-
-        t.Add(Task.Run(async () =>
-        {
-            var responsetargettotal = await Http.GetAsync($"BalanceScoreCard/GetTargetTotal");
-            if (responsetargettotal.IsSuccessStatusCode)
-            {
-                var contenttargettotal = await responsetargettotal.Content.ReadAsStringAsync();
-                TargetSettingTotalData = JsonSerializer.Deserialize<List<ViewTargetSettingTotalsDto>>(contenttargettotal, _options);
-            }
-        }));
-
-        t.Add(Task.Run(async () =>
-        {
-            var responsebehavioraltotal = await Http.GetAsync($"BalanceScoreCard/GetBehavioralTotal");
-            if (responsebehavioraltotal.IsSuccessStatusCode)
-            {
-                var contentbehavioraltotal = await responsebehavioraltotal.Content.ReadAsStringAsync();
-                BehavioralTotalData = JsonSerializer.Deserialize<List<ViewBehavioralTotalsDto>>(contentbehavioraltotal, _options);
-            }
-        }));
-
-        t.Add(Task.Run(async () =>
-        {
-            var responsemetric = await Http.GetAsync($"Utilities/GetPerformanceScale");
-            if (responsemetric.IsSuccessStatusCode)
-            {
-                var contentmetric = await responsemetric.Content.ReadAsStringAsync();
-                ScaleData = JsonSerializer.Deserialize<List<APerformanceScaleDto>>(contentmetric, _options);
-            }
-        }));
-
-        Task _t = Task.WhenAll(t);
-        await _t;
+        }
+        
     }
 
     public void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewBscEmployeeDto> args)
@@ -2017,6 +2113,10 @@
                 {
                     Args.RowData.BalanceScoreCardRejectionReasons = new List<BalanceScoreCardRejectionReasonsDto>();
                 }
+                if (Args.RowData.BalanceScoreCardAttachment == null)
+                {
+                    Args.RowData.BalanceScoreCardAttachment = new List<BalanceScoreCardAttachmentDto>();
+                }
                 //Enabling and Disabling Grid Columns
                 //If person editing is the same as the employee, disable supervision
                 if (Args.RowData.Employeeid == Credentials.StaffId)
@@ -2074,6 +2174,13 @@
                         IsHiddenApproveDisabled = false;
                         IsHiddenRejected = false;
                         IsRejectedDisabled = false;
+
+                        //Disable Fields
+                        EmployeeDDEnabled = false;
+                        ReviewDateEnabled = false;
+                        AppraisalReasonEnabled = false;
+                        AppraiserNameEnabled = false;
+                        isFinancialYearEnabled = false;
                     }
 
                     //Hide for users who have no rights to access
@@ -2275,6 +2382,7 @@
             Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSettingDto>();
             Args.RowData.BalanceScoreCardBehavioral = new List<BalanceScoreCardBehavioralDto>();
             Args.RowData.BalanceScoreCardRejectionReasons = new List<BalanceScoreCardRejectionReasonsDto>();
+            Args.RowData.BalanceScoreCardAttachment = new List<BalanceScoreCardAttachmentDto>();
 
             employeeno = null;
             _previous = Args.RequestType;

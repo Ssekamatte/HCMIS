@@ -1,0 +1,418 @@
+﻿@* <h3>BSCAttachmentPage</h3> *@
+@using Blazored.Toast.Services;
+@using HCMIS.Data;
+@using HCMIS.Interface;
+@using HCMIS.SHARED.DTOs.BSC;
+@using HCMIS.SHARED.DTOs;
+@using HCMIS.ViewModel;
+@using Syncfusion.DocIORenderer;
+@using Syncfusion.Pdf;
+@inject IToastService toasterservice;
+@inject DocumentUploadModel _DocumentUploadModel;
+
+@if(DataSource != null)
+{
+    <SfGrid @ref="BalanceScoreCardAttachmentGrid" DataSource=@DataSource ID="BSCGrid" TValue="BalanceScoreCardAttachmentDto"
+            Toolbar="@BSCAttachmentToolbarItems" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+            AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true">
+        <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+        <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+        <GridEvents 
+            OnActionBegin="OnAttachmentActionBegin" 
+            OnActionComplete="@OnAttachmentActionComplete" TValue="BalanceScoreCardAttachmentDto"></GridEvents>
+        <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog">
+            <Template Context="AttachmentContext">
+                @{
+                    AttachmentData = (AttachmentContext as BalanceScoreCardAttachmentDto);
+                    // if (AttachmentData.BalanceScoreCardId == 0)
+                    // {
+                    //     AttachmentData.BalanceScoreCardId = BalanceScoreCardId.Value;
+                    // }
+                    <div style="padding:15px;">
+                        <div class="form-row">
+                            <div class="form-group col-md-12" hidden>
+                                <SfNumericTextBox ID="ChallengeId" @bind-Value="@(AttachmentData.BalanceScoreCardId)" Enabled="false" Placeholder="Challenge Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                            </div>
+                            <div class="form-group col-md-12" hidden>
+                                <SfNumericTextBox @bind-Value="@(AttachmentData.BalanceScoreCardId)" Enabled="false" Placeholder="Meeting Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                            </div>
+                            <div class="form-group col-md-12">
+                                <p>Attachment Name <span style="color:red;">*</span></p>
+                                <SfTextBox Multiline="true" @bind-Value="@(AttachmentData.AttachmentName)" Enabled="true" Placeholder="Attachment Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                            </div>
+                            <div class="form-group col-md-12">
+                                <p class="alert-info" style="padding:10px;">Ensure that the document does not exceed 1 Mega Byte (MB)</p>
+                                <InputFile class="form-control" OnChange="@SingleUpload" />
+                                <div>
+                                    <SfSpinner @ref="UploadAttachmentSpinner" CssClass="SpinnerClass" Visible="false" Size="30" Label="Saving document Please wait......."> </SfSpinner>
+                                </div>
+                            </div>
+                            <div class="form-group col-md-12">
+                                @if (!string.IsNullOrEmpty(ImageString))
+                                {
+                                    @if (!string.IsNullOrEmpty(AttachmentData.AttachmentUrl) && !string.IsNullOrEmpty(AttachmentData.AttachmentExt))
+                                    {
+                                        if (AttachmentData.AttachmentExt.Contains("pdf") || AttachmentData.AttachmentExt.Contains("doc") || AttachmentData.AttachmentExt.Contains("docx"))
+                                        {
+                                            <embed src="@ImageString" width="100%" height="600px" style="border: none;" frameborder="0" allowfullscreen="true" />
+                                        }
+                                        else
+                                        {
+                                            <img src="@ImageString" alt="@AttachmentData.AttachmentUrl" class="img-thumbnail Imagecenter" style="margin-bottom:10px; width:100%;" />
+                                        }
+                                    }
+                                    
+                                }
+
+                                
+                            </div>
+                        </div>
+                    </div>
+                }
+            </Template>
+            <FooterTemplate Context="AttachmentFooterContext">
+                @if(IsSaveDisabled == false)
+                {
+                    <SfButton IsPrimary="true" Disabled="@IsSaveDisabled" OnClick="@OnSaveDocumentClick">Save Document</SfButton>
+                    <SfButton IsPrimary="false" Disabled="@IsSaveDisabled" OnClick="@OnCloseDocumentClick">Close</SfButton>
+                }
+                
+            </FooterTemplate>
+        </GridEditSettings>
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+        <GridPageSettings PageSize="20"></GridPageSettings>
+        <GridColumns>
+            @*<GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>*@
+            <GridColumn Field=@nameof(BalanceScoreCardAttachmentDto.BalanceScoreCardId) HeaderText="Attachment Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+            <GridColumn Field=@nameof(BalanceScoreCardAttachmentDto.AttachmentName) HeaderText="Attachment"></GridColumn>
+            <GridColumn HeaderText="Manage Records" Width="140">
+                <GridCommandColumns>
+                    <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="View" })" Title="View"></GridCommandColumn>
+                    @*@if (!string.IsNullOrEmpty(UserRole) && (UserRole.Contains("Data Entry Officer") || UserRole.Contains("Administrator") || UserRole.Contains("Unit Head") || UserRole.Contains("Responsible Reporting Staff for Division")))
+                    {
+                        <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit"></GridCommandColumn>
+                    }
+                    else
+                    {
+                        <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="View" })" Title="View"></GridCommandColumn>
+                    }*@
+                </GridCommandColumns>
+            </GridColumn>
+        </GridColumns>
+    </SfGrid>
+}
+
+@code {
+    [Parameter]
+    public List<BalanceScoreCardAttachmentDto>? HeaderAttachmentData { get; set; }
+    [Parameter]
+    public int BalanceScoreCardId { get; set; }
+    [Parameter]
+    public EventCallback<List<BalanceScoreCardAttachmentDto>?> OnHeaderAttachmentToggled { get; set; }
+    SfGrid<BalanceScoreCardAttachmentDto>? BalanceScoreCardAttachmentGrid { get; set; }
+    List<BalanceScoreCardAttachmentDto>? DataSource { get; set; }
+    BalanceScoreCardAttachmentDto? AttachmentData { get; set; }
+    SfSpinner? UploadAttachmentSpinner;
+    bool IsSaveDisabled { get; set; }
+    [Parameter]
+    public bool allowediting { get; set; }
+    [Parameter]
+    public string? UserRole { get; set; }
+    [Parameter]
+    public List<object>? BSCAttachmentToolbarItems { get; set; }
+    [Parameter]
+    public string? AccessToken { get; set; }
+    int? PreviousBalanceScoreCardId { get; set; }
+    int? AttachmentId { get; set; }
+
+    string? ImageString { get; set; }
+    long maxFileSize = 1048576/* 1024L * 1024L * 1024L * 2L */;
+    string fileName = string.Empty;
+    int random = -9999;
+
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        try
+        {
+            if (PreviousBalanceScoreCardId != BalanceScoreCardId)
+            {
+                PreviousBalanceScoreCardId = BalanceScoreCardId;
+                DataSource = new List<BalanceScoreCardAttachmentDto>();
+                if (HeaderAttachmentData != null && HeaderAttachmentData.Count() > 0)
+                {
+                    DataSource.AddRange(HeaderAttachmentData);
+                }
+            }
+            // if (PreviousBalanceScoreCardId != BalanceScoreCardId)
+            // {
+            //     DataSource = new List<BalanceScoreCardAttachmentDto>();
+            //     BalanceScoreCardId = -1000;
+            //     if (HeaderAttachmentData != null && HeaderAttachmentData.Count > 0)
+            //     {
+            //         DataSource.AddRange(HeaderAttachmentData);
+            //     }
+
+            //     PreviousBalanceScoreCardId = BalanceScoreCardId;
+            // }
+        }
+        catch (Exception ex)
+        {
+
+        }
+    }
+
+    private async Task OnSaveDocumentClick()
+    {
+        if (BalanceScoreCardAttachmentGrid != null)
+        {
+            await BalanceScoreCardAttachmentGrid.EndEditAsync();
+        }
+    }
+    private async Task OnCloseDocumentClick()
+    {
+        if (BalanceScoreCardAttachmentGrid != null)
+        {
+            await BalanceScoreCardAttachmentGrid.CloseEditAsync();
+        }
+    }
+
+    public async Task OnAttachmentActionBegin(Syncfusion.Blazor.Grids.ActionEventArgs<BalanceScoreCardAttachmentDto> args)
+    {
+        if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+        {
+
+        }
+        if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+        {
+            args.Data.AttachmentId = random;
+            random++;
+        }
+        if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
+        {
+
+        }
+        if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+        {
+            if (string.IsNullOrEmpty(args.Data.AttachmentName))
+            {
+                toasterservice.ShowWarning("Please enter the Report/Attachment Name");
+                args.Cancel = true;
+            }
+            // else if (string.IsNullOrEmpty(args.Data.AttachmentUrl))
+            // {
+            //     toasterservice.ShowWarning("Please enter upload the Report/attachment");
+            //     args.Cancel = true;
+            // }
+            else
+            {
+                //args.Data.BalanceScoreCardId = BalanceScoreCardId.Value;
+            }
+        }
+    }
+
+
+    public async Task OnAttachmentActionComplete(Syncfusion.Blazor.Grids.ActionEventArgs<BalanceScoreCardAttachmentDto> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            BalanceScoreCardAttachmentGrid.PreventRender(false);
+            if (!string.IsNullOrEmpty(args.RowData.AttachmentUrl) && !string.IsNullOrEmpty(args.RowData.AttachmentExt))
+            {
+                ImageString = await GetImageString(args.RowData.AttachmentUrl, args.RowData.AttachmentExt, "AppraisalUpload");
+            }
+        }
+        else if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Refresh))
+        {
+            await OnHeaderAttachmentToggled.InvokeAsync(DataSource);
+        }
+    }
+
+    private async Task SingleUpload(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            IsSaveDisabled = true;
+            await UploadAttachmentSpinner.ShowAsync();
+            MemoryStream ms = new MemoryStream();
+            await e.File.OpenReadStream(maxFileSize).CopyToAsync(ms);
+
+            ms.Position = 0;
+
+            if (e.File.ContentType.ToLower().Contains("png") || e.File.ContentType.ToLower().Contains("gif") || e.File.ContentType.ToLower().Contains("jpeg") || e.File.ContentType.ToLower().Contains("jpg"))
+            {
+                var passextension = e.File.ContentType.Split("/");
+                fileName = "Appraisal_" + AttachmentData.AttachmentName + "." + passextension[1].Trim();
+                byte[] bytes = ms.ToArray();
+                //byte[] bytes = file.Stream.ToArray();
+                string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                ImageUpload m = new ImageUpload()
+                    {
+                        ImageName = fileName,
+                        ImageExt = e.File.ContentType.Trim(),
+                        Imagebyte = bytes,
+                        Rootfolder = "AppraisalUpload"
+                    };
+
+                var Requestresult = await _DocumentUploadModel.SaveDocument(m, AccessToken);
+                if (Requestresult != null && Requestresult.IsSuccess)
+                {
+                    var result = "data:application/pdf;base64," + base64;
+                    AttachmentData.AttachmentUrl = fileName;
+                    AttachmentData.AttachmentExt = e.File.ContentType.Trim();
+                    ImageString = result;
+                    bytes = null;
+                }
+                else if (Requestresult != null)
+                {
+                    toasterservice.ShowWarning(Requestresult.Message);
+                }
+
+            }
+
+            else if (e.File.ContentType.ToLower().Contains("pdf") || e.File.ContentType.ToLower().Contains("doc"))
+            {
+                string fileName = string.Empty;
+                if (e.File.ContentType.Trim().Contains("doc"))
+                {
+                    fileName = "Appraisal_" + AttachmentData.AttachmentName + ".pdf";
+
+                    //Create a new document
+                    Syncfusion.DocIO.DLS.WordDocument document;
+                    if (e.File.ContentType.Contains("doc") && !e.File.ContentType.Contains("docx"))
+                    {
+                        document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Doc);
+                    }
+                    else
+                    {
+                        document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Docx);
+                    }
+                    //Creates an instance of the DocToPDFConverter
+                    DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
+                    PdfDocument pdfDocument = render.ConvertToPDF(document);
+
+                    MemoryStream _ms = new MemoryStream();
+                    pdfDocument.Save(_ms);
+                    _ms.Position = 0;
+
+                    byte[] bytes = ms.ToArray();
+                    string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+
+                    ImageUpload m = new ImageUpload()
+                        {
+                            ImageName = fileName,
+                            ImageExt = e.File.ContentType.Trim(),
+                            Imagebyte = bytes,
+                            Rootfolder = "AppraisalUpload"
+                        };
+
+
+                    var Requestresult = await _DocumentUploadModel.SaveDocument(m, AccessToken);
+                    if (Requestresult != null && Requestresult.IsSuccess)
+                    {
+                        var result = "data:application/pdf;base64," + base64;
+                        AttachmentData.AttachmentUrl = fileName;
+                        AttachmentData.AttachmentExt = e.File.ContentType.Trim();
+                        ImageString = result;
+
+                        bytes = null;
+                        _ms.Close();
+                        _ms.Dispose();
+                        pdfDocument.Close();
+                        pdfDocument.Dispose();
+                        render.Dispose();
+                        document.Close();
+                        document.Dispose();
+                    }
+                    else if (Requestresult != null)
+                    {
+                        toasterservice.ShowError(Requestresult.Message);
+                    }
+                }
+                else
+                {
+                    fileName = "Appraisal_" + AttachmentData.AttachmentName + ".pdf";
+
+                    ms.Position = 0;
+                    byte[] bytes = ms.ToArray();
+                    string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+
+                    ImageUpload m = new ImageUpload()
+                        {
+                            ImageName = fileName,
+                            ImageExt = e.File.ContentType.Trim(),
+                            Imagebyte = bytes,
+                            Rootfolder = "AppraisalUpload"
+                        };
+
+                    var Requestresult = await _DocumentUploadModel.SaveDocument(m, AccessToken);
+                    if (Requestresult != null && Requestresult.IsSuccess)
+                    {
+                        var result = "data:application/pdf;base64," + base64;
+                        AttachmentData.AttachmentUrl = fileName;
+                        AttachmentData.AttachmentExt = e.File.ContentType.Trim();
+                        ImageString = result;
+                        bytes = null;
+                    }
+                    else if (Requestresult != null)
+                    {
+                        toasterservice.ShowError(Requestresult.Message);
+                    }
+                }
+                
+            }
+            else
+            {
+                toasterservice.ShowWarning("Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg) or pdf pr word document (doc,docx).");
+            }
+        }
+        catch (Exception ex)
+
+        {
+            throw ex;
+        }
+
+        finally
+        {
+            IsSaveDisabled = false;
+            await UploadAttachmentSpinner.HideAsync();
+            StateHasChanged();
+        }
+
+    }
+
+    private async Task<string> GetImageString(string imageUrl, string ext,string Rootfolder)
+    {
+        string result = null;
+        try
+        {
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                ImageUpload a = await _DocumentUploadModel.GetDocument(imageUrl,Rootfolder,AccessToken);
+
+                if (a != null)
+                {
+                    if (a.ImageExt.Contains("pdf"))
+                    {
+                        string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
+                        result = "data:application/pdf;base64," + base64String;
+                    }
+                    else
+                    {
+                        string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
+                        result = "data:image/" + a.ImageExt + ";base64," + base64String;
+                    }
+
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toasterservice.ShowError(ex.Message.ToString());
+        }
+        return result;
+    }
+
+    
+}

@@ -162,7 +162,7 @@ builder.Services.AddScoped<PerspectivesDetailsAdapter>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IExitInterviewService, ExitInterviewService>();
-
+builder.Services.AddScoped<IDocumentUploadService, DocumentUploadService>();
 
 //builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 builder.Services.AddBlazoredToast();
