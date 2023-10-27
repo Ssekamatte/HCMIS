@@ -29,9 +29,9 @@ namespace HCMIS.Repository
             this.sessionStorage = sessionStorage;
         }
 
-        public async Task<List<BalanceScoreCardDto>> GetAppraisal(UtilitiesSearchPanel SearchModel)
+        public async Task<List<ViewBalanceScoreCardReportDto>> GetAppraisal(UtilitiesSearchPanel SearchModel)
         {
-            List<BalanceScoreCardDto>? data = new List<BalanceScoreCardDto>();
+            List<ViewBalanceScoreCardReportDto>? data = new List<ViewBalanceScoreCardReportDto>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -41,7 +41,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<BalanceScoreCardDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<ViewBalanceScoreCardReportDto>>(content, _options);
                 }
                 else
                 {
@@ -55,9 +55,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<ViewBalanceScoreCardTargetSettingReportDto>> GetAppraisalTarget(UtilitiesSearchPanel SearchModel)
+        public async Task<List<ViewTargetSettingTotalsDto>> GetAppraisalTarget(UtilitiesSearchPanel SearchModel)
         {
-            List<ViewBalanceScoreCardTargetSettingReportDto>? data = new List<ViewBalanceScoreCardTargetSettingReportDto>();
+            List<ViewTargetSettingTotalsDto>? data = new List<ViewTargetSettingTotalsDto>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -67,7 +67,85 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<ViewBalanceScoreCardTargetSettingReportDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<ViewTargetSettingTotalsDto>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
+
+        public async Task<List<ViewBehavioralTotalsDto>> GetAppraisalBehavioral(UtilitiesSearchPanel SearchModel)
+        {
+            List<ViewBehavioralTotalsDto>? data = new List<ViewBehavioralTotalsDto>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetAppraisalBehavioral", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<ViewBehavioralTotalsDto>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
+
+        public async Task<List<BalanceScoreCardTargetSettingDto>> GetAppraisalTargetGeneral(UtilitiesSearchPanel SearchModel)
+        {
+            List<BalanceScoreCardTargetSettingDto>? data = new List<BalanceScoreCardTargetSettingDto>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetAppraisalTargetGeneral", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<BalanceScoreCardTargetSettingDto>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
+
+        public async Task<List<BalanceScoreCardBehavioralDto>> GetAppraisalBehavioralGeneral(UtilitiesSearchPanel SearchModel)
+        {
+            List<BalanceScoreCardBehavioralDto>? data = new List<BalanceScoreCardBehavioralDto>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetAppraisalBehavioralGeneral", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<BalanceScoreCardBehavioralDto>>(content, _options);
                 }
                 else
                 {
