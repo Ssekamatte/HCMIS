@@ -159,6 +159,135 @@ namespace HCMIS.Repository
             return data;
         }
 
+        public async Task<List<BalanceScoreCardTargetDevelopmentPlanDto>> GetDevelopmentPlan(UtilitiesSearchPanel SearchModel)
+        {
+            List<BalanceScoreCardTargetDevelopmentPlanDto>? data = new List<BalanceScoreCardTargetDevelopmentPlanDto>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetDevelopmentPlan", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<BalanceScoreCardTargetDevelopmentPlanDto>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
+
+        public async Task<List<BalanceScoreCardAppraiseeCommentsDto>> GetAppraiseeComments(UtilitiesSearchPanel SearchModel)
+        {
+            List<BalanceScoreCardAppraiseeCommentsDto>? data = new List<BalanceScoreCardAppraiseeCommentsDto>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetAppraiseeComments", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<BalanceScoreCardAppraiseeCommentsDto>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
+
+        public async Task<List<BalanceScoreCardSupervisorCommentsDto>> GetSupervisorComments(UtilitiesSearchPanel SearchModel)
+        {
+            List<BalanceScoreCardSupervisorCommentsDto>? data = new List<BalanceScoreCardSupervisorCommentsDto>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetSupervisorComments", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<BalanceScoreCardSupervisorCommentsDto>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
+
+        public async Task<List<BalanceScoreCardHODCommentsDto>> GetHODComments(UtilitiesSearchPanel SearchModel)
+        {
+            List<BalanceScoreCardHODCommentsDto>? data = new List<BalanceScoreCardHODCommentsDto>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetHODComments", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<BalanceScoreCardHODCommentsDto>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
+
+        public async Task<List<BalanceScoreCardCEOCommentsDto>> GetCEOComments(UtilitiesSearchPanel SearchModel)
+        {
+            List<BalanceScoreCardCEOCommentsDto>? data = new List<BalanceScoreCardCEOCommentsDto>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetCEOComments", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<BalanceScoreCardCEOCommentsDto>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
 
         public async Task<List<spViewEmployeeLeavesReportResult>> GetLeaveRequest(UtilitiesSearchPanel SearchModel)
         {

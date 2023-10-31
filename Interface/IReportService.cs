@@ -22,5 +22,10 @@ namespace HCMIS.Interface
         Task<List<ViewEmployeeLeaveRoasterDatesReportDto>> GetSelectedDates(UtilitiesSearchPanel SearchModel);
         Task<List<BalanceScoreCardTargetSettingDto>> GetAppraisalTargetGeneral(UtilitiesSearchPanel SearchModel);
         Task<List<BalanceScoreCardBehavioralDto>> GetAppraisalBehavioralGeneral(UtilitiesSearchPanel SearchModel);
+        Task<List<BalanceScoreCardTargetDevelopmentPlanDto>> GetDevelopmentPlan(UtilitiesSearchPanel SearchModel);
+        Task<List<BalanceScoreCardAppraiseeCommentsDto>> GetAppraiseeComments(UtilitiesSearchPanel SearchModel);
+        Task<List<BalanceScoreCardSupervisorCommentsDto>> GetSupervisorComments(UtilitiesSearchPanel SearchModel);
+        Task<List<BalanceScoreCardHODCommentsDto>> GetHODComments(UtilitiesSearchPanel SearchModel);
+        Task<List<BalanceScoreCardCEOCommentsDto>> GetCEOComments(UtilitiesSearchPanel SearchModel);
     }
 }
