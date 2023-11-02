@@ -1,10 +1,11 @@
 ﻿@page "/EmployeeRegistrationNewPage"
-@using HCMIS.SHARED.DTOs.Utilities;
+
 @using HCMIS.SHARED.Data
 @using HCMIS.SHARED
 @using HCMIS.Data
 @using HCMIS.Model
 @using System.Text.Json
+@using HCMIS.SHARED.Models;
 @using HCMIS.ViewModel
 @using System.Collections;
 @using System.Net.Mail;
@@ -101,7 +102,7 @@
                                 <div class="form-row">
                                     <div class="col-md-6">
                                         <p>Employee</p>   
-                                        <SfMultiSelect @bind-Value="@SearchModel.Employeeid" TValue="int?[]" TItem="EmployeeDto" 
+                                        <SfMultiSelect @bind-Value="@SearchModel.Employeeid" TValue="int?[]" TItem="Employee" 
                                             AllowFiltering="true" Placeholder="Please select" 
                                             Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" 
                                             ShowSelectAll="true" 
@@ -111,18 +112,18 @@
                                             FloatLabelType="FloatLabelType.Never" 
                                             PopupHeight="350px"
                                             FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"> 
-                                            <MultiSelectFieldSettings Text="@nameof(EmployeeDto.LastName)" Value="@nameof(EmployeeDto.Employeeid)"></MultiSelectFieldSettings> 
-                                            <MultiSelectTemplates TItem="EmployeeDto"> 
+                                            <MultiSelectFieldSettings Text="@nameof(Employee.LastName)" Value="@nameof(Employee.Employeeid)"></MultiSelectFieldSettings> 
+                                            <MultiSelectTemplates TItem="Employee"> 
                                                 <ValueTemplate Context="NameContext"> 
-                                                    <span class='name'>@((NameContext as EmployeeDto).FirstName) @((NameContext as EmployeeDto).MiddleName) @((NameContext as EmployeeDto).LastName)</span>
+                                                    <span class='name'>@((NameContext as Employee).FirstName) @((NameContext as Employee).MiddleName) @((NameContext as Employee).LastName)</span>
                                                 </ValueTemplate> 
                                                 <ItemTemplate Context="ItemContext"> 
-                                                    <span class='name'>@((ItemContext as EmployeeDto).FirstName) @((ItemContext as EmployeeDto).MiddleName) @((ItemContext as EmployeeDto).LastName)</span> 
+                                                    <span class='name'>@((ItemContext as Employee).FirstName) @((ItemContext as Employee).MiddleName) @((ItemContext as Employee).LastName)</span> 
                                                 </ItemTemplate> 
                                             </MultiSelectTemplates> 
                                         </SfMultiSelect> 
 
-                                        @*<SfMultiSelect @bind-Value="@SearchModel.Employeeid" TValue="int?[]" TItem="EmployeeDto" 
+                                        @*<SfMultiSelect @bind-Value="@SearchModel.Employeeid" TValue="int?[]" TItem="Employee" 
                                         AllowFiltering="true" Placeholder="Please select" 
                                         Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" 
                                         ShowSelectAll="true" 
@@ -132,7 +133,7 @@
                                         FloatLabelType="FloatLabelType.Never" 
                                         PopupHeight="350px"
                                         FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                            <MultiSelectFieldSettings Value="@nameof(EmployeeDto.Employeeid)" Text="@nameof(EmployeeDto.LastName)"></MultiSelectFieldSettings>                                         
+                                            <MultiSelectFieldSettings Value="@nameof(Employee.Employeeid)" Text="@nameof(Employee.LastName)"></MultiSelectFieldSettings>                                         
                                         </SfMultiSelect>*@
                                     </div>
                                     <div class="col-md-6">
@@ -159,7 +160,7 @@
         @*Render custom spinner component.*@
 </SfSpinner>
 
-<SfGrid @ref="EmployeeModelGrid" TValue="EmployeeDto"  @attributes="@GridAttributes" ID="GridMain" Query="@mainQuery"
+<SfGrid @ref="EmployeeModelGrid" TValue="Employee"  @attributes="@GridAttributes" ID="GridMain" Query="@mainQuery"
         Toolbar="@ToolbarMenu" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
         AllowPaging="true" AllowFiltering="false" GridLines="GridLine.Both" AllowSelection="true">
     <SfDataManager AdaptorInstance="@typeof(EmployeeRecordNewAdapter)" Adaptor="Adaptors.CustomAdaptor">
@@ -167,17 +168,17 @@
     <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
     <GridSearchSettings IgnoreCase="true" Fields="@( new string[] { "FirstName", "LastName" } )"></GridSearchSettings>
     <GridEvents 
-        OnActionBegin="OnEmployeeDtoActionBegin" 
-        OnActionComplete="@OnEmployeeDtoActionComplete"  
+        OnActionBegin="OnEmployeeActionBegin" 
+        OnActionComplete="@OnEmployeeActionComplete"  
         CommandClicked="OnCommandClicked"
         OnLoad="LoadHandler" 
         DataBound="DataBound"
-        TValue="EmployeeDto">
+        TValue="Employee">
     </GridEvents>
     <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" ShowDeleteConfirmDialog="false" Dialog="@DialogParams">
         <HeaderTemplate>
             @{
-                var text = GetEmployeeHeader((context as EmployeeDto));
+                var text = GetEmployeeHeader((context as Employee));
                 <div class="headerbandimg">
                     <span>@text</span>
                 </div>
@@ -185,7 +186,7 @@
         </HeaderTemplate>
         <Template Context="EmployeeContext">
             @{
-                EmployeeReviewData = (EmployeeContext as EmployeeDto);
+                EmployeeReviewData = (EmployeeContext as Employee);
                 
                 <div class="row" style="padding:15px;">
                          <div class="col-md-12">
@@ -214,8 +215,8 @@
                                   </div>
                                   <div class="col-md-4">
                                       <p>Gender <span style="color:red;">*</span></p>
-                                      <SfDropDownList @bind-Value="@(EmployeeReviewData.GenderId)" Enabled="true" TItem="AGenderDto" TValue="int?" DataSource="@GenderData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                        <DropDownListFieldSettings Value="@nameof(AGenderDto.GenderId)" Text="@nameof(AGenderDto.GenderDesc)"></DropDownListFieldSettings>
+                                      <SfDropDownList @bind-Value="@(EmployeeReviewData.GenderId)" Enabled="true" TItem="AGender" TValue="int?" DataSource="@GenderData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                        <DropDownListFieldSettings Value="@nameof(AGender.GenderId)" Text="@nameof(AGender.GenderDesc)"></DropDownListFieldSettings>
                                       </SfDropDownList>
                                   </div>
                                   <div class="col-md-4">
@@ -224,8 +225,8 @@
                                   </div>
                                   <div class="col-md-4">
                                        <p >Marital Status <span style="color:red;">*</span></p>
-                                       <SfDropDownList @bind-Value="@(EmployeeReviewData.MaritalStatusId)" Enabled="true" TItem="AMaritalStatusDto" TValue="int?" DataSource="@MaritalStatusData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                            <DropDownListFieldSettings Value="@nameof(AMaritalStatusDto.MaritalStatusId)" Text="@nameof(AMaritalStatusDto.MaritalStatusDescription)"></DropDownListFieldSettings>
+                                       <SfDropDownList @bind-Value="@(EmployeeReviewData.MaritalStatusId)" Enabled="true" TItem="AMaritalStatus" TValue="int?" DataSource="@MaritalStatusData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                            <DropDownListFieldSettings Value="@nameof(AMaritalStatus.MaritalStatusId)" Text="@nameof(AMaritalStatus.MaritalStatusDescription)"></DropDownListFieldSettings>
                                        </SfDropDownList>
                                   </div>
                                   <div class="col-md-4">
@@ -238,8 +239,8 @@
                                   </div>
                                   <div class="col-md-4">
                                        <p style="margin-bottom:29px;">Nationality <span style="color:red;">*</span></p>
-                                       <SfDropDownList @bind-Value="@(EmployeeReviewData.CoutryId)" Enabled="true" TItem="ACountryDto" TValue="int?" DataSource="@CountryData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                            <DropDownListFieldSettings Value="@nameof(ACountryDto.CoutryId)" Text="@nameof(ACountryDto.CountryDesc)"></DropDownListFieldSettings>
+                                       <SfDropDownList @bind-Value="@(EmployeeReviewData.CoutryId)" Enabled="true" TItem="ACountry" TValue="int?" DataSource="@CountryData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                            <DropDownListFieldSettings Value="@nameof(ACountry.CoutryId)" Text="@nameof(ACountry.CountryDesc)"></DropDownListFieldSettings>
                                        </SfDropDownList>
                                   </div>
                              </div>
@@ -369,7 +370,7 @@
                                              @ref="AEmployeeSpouseGrid"
                                                 DataSource="@EmployeeReviewData.EmployeeSpouse"
                                                 EnableStickyHeader=true
-                                                TValue="EmployeeSpouseDto"
+                                                TValue="EmployeeSpouse"
                                                 AllowGrouping="true" 
                                                 ShowColumnChooser="true" 
                                                 AllowTextWrap="true"
@@ -391,13 +392,13 @@
 
                                             <GridEvents 
                                                         CellSelected="SpouseCellSelectHandler"
-                                                        TValue="EmployeeSpouseDto">
+                                                        TValue="EmployeeSpouse">
                                             </GridEvents>
 
                                           <GridColumns>
                                                <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
                                                <GridColumn 
-                                                   Field=@nameof(EmployeeSpouseDto.EmployeeSpouseId) 
+                                                   Field=@nameof(EmployeeSpouse.EmployeeSpouseId) 
                                                    HeaderText="EmployeeSpouseId" 
                                                    TextAlign="TextAlign.Left" 
                                                    IsPrimaryKey="true" 
@@ -406,26 +407,26 @@
                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
                                                </GridColumn>
                                                <GridColumn 
-                                                   Field=@nameof(EmployeeSpouseDto.EmployeeId) 
+                                                   Field=@nameof(EmployeeSpouse.EmployeeId) 
                                                    HeaderText="Employee Id" 
                                                    Width="100" 
                                                    Visible="false"
                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
                                                </GridColumn>
                                                <GridColumn 
-                                                   Field=@nameof(EmployeeSpouseDto.FirstName) 
+                                                   Field=@nameof(EmployeeSpouse.FirstName) 
                                                    HeaderText="First Name" 
                                                    Width="100"
                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
                                                </GridColumn>
                                                <GridColumn 
-                                                   Field=@nameof(EmployeeSpouseDto.MiddleName) 
+                                                   Field=@nameof(EmployeeSpouse.MiddleName) 
                                                    HeaderText="Middle Name" 
                                                    Width="100"
                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
                                                </GridColumn>
                                                <GridColumn 
-                                                   Field=@nameof(EmployeeSpouseDto.LastName) 
+                                                   Field=@nameof(EmployeeSpouse.LastName) 
                                                    HeaderText="Last Name" 
                                                    Width="100"
                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
@@ -446,7 +447,7 @@
                                          @ref="AEmployeeChildrenGrid"
                                                 DataSource="@EmployeeReviewData.AEmployeeChildren"
                                                 EnableStickyHeader=true
-                                                TValue="AEmployeeChildrenDto"
+                                                TValue="AEmployeeChildren"
                                                 AllowGrouping="true" 
                                                 ShowColumnChooser="true" 
                                                 AllowTextWrap="true"
@@ -468,31 +469,31 @@
 
                                             <GridEvents 
                                                         CellSelected="ChildrenCellSelectHandler"
-                                                        TValue="AEmployeeChildrenDto">
+                                                        TValue="AEmployeeChildren">
                                             </GridEvents>
                                          
                                           <GridColumns>
                                                <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
-                                               <GridColumn Field=@nameof(AEmployeeChildrenDto.EmployeeKidsId) HeaderText="EmployeeKidsId" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+                                               <GridColumn Field=@nameof(AEmployeeChildren.EmployeeKidsId) HeaderText="EmployeeKidsId" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
                                                <GridColumn 
-                                                   Field=@nameof(AEmployeeChildrenDto.FirstName) 
+                                                   Field=@nameof(AEmployeeChildren.FirstName) 
                                                    HeaderText="First Name" 
                                                    Width="100"
                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
                                                </GridColumn>
                                                <GridColumn 
-                                                   Field=@nameof(AEmployeeChildrenDto.MiddleName) 
+                                                   Field=@nameof(AEmployeeChildren.MiddleName) 
                                                    HeaderText="Middle Name" 
                                                    Width="100"
                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
                                                </GridColumn>
                                                <GridColumn 
-                                                   Field=@nameof(AEmployeeChildrenDto.LastName) 
+                                                   Field=@nameof(AEmployeeChildren.LastName) 
                                                    HeaderText="Last Name" 
                                                    Width="100"
                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
                                                </GridColumn>
-                                               <GridColumn Field=@nameof(AEmployeeChildrenDto.DateOfBirth) 
+                                               <GridColumn Field=@nameof(AEmployeeChildren.DateOfBirth) 
                                                         HeaderText="Date of Birth" 
                                                         EditType="EditType.DatePickerEdit" 
                                                         Format="dd/MMMM/yyyy" 
@@ -523,8 +524,8 @@
                         </div>
                         <div class="col-md-3">
                             <p style="margin-bottom:29px;">Relationship<span style="color:red;">*</span></p>
-                            <SfDropDownList @bind-Value="@(EmployeeReviewData.NextofKinRelationShipId)" Enabled="true" TItem="ARelationshipDto" TValue="int?" DataSource="@ARelationshipData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                <DropDownListFieldSettings Value="@nameof(ARelationshipDto.RelationshipId)" Text="@nameof(ARelationshipDto.RelationshipName)"></DropDownListFieldSettings>
+                            <SfDropDownList @bind-Value="@(EmployeeReviewData.NextofKinRelationShipId)" Enabled="true" TItem="ARelationship" TValue="int?" DataSource="@ARelationshipData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                <DropDownListFieldSettings Value="@nameof(ARelationship.RelationshipId)" Text="@nameof(ARelationship.RelationshipName)"></DropDownListFieldSettings>
                             </SfDropDownList>                            
                         </div>
 
@@ -542,8 +543,8 @@
                         </div>
                         <div class="col-md-3">
                              <p  style="margin-bottom:29px;">Relationship<span style="color:red;">*</span></p>
-                               <SfDropDownList @bind-Value="@(EmployeeReviewData.ContactPersonRelationShipId)" Enabled="true" TItem="ARelationshipDto" TValue="int?" DataSource="@ARelationshipData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                <DropDownListFieldSettings Value="@nameof(ARelationshipDto.RelationshipId)" Text="@nameof(ARelationshipDto.RelationshipName)"></DropDownListFieldSettings>
+                               <SfDropDownList @bind-Value="@(EmployeeReviewData.ContactPersonRelationShipId)" Enabled="true" TItem="ARelationship" TValue="int?" DataSource="@ARelationshipData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                <DropDownListFieldSettings Value="@nameof(ARelationship.RelationshipId)" Text="@nameof(ARelationship.RelationshipName)"></DropDownListFieldSettings>
                                </SfDropDownList>
                         </div>
 
@@ -559,7 +560,7 @@
                                          @ref="QualificationGrid"
                                                 DataSource="@EmployeeReviewData.EmployeeQualification"
                                                 EnableStickyHeader=true
-                                                TValue="EmployeeQualificationDto"
+                                                TValue="EmployeeQualification"
                                                 AllowGrouping="true" 
                                                 ShowColumnChooser="true" 
                                                 AllowTextWrap="true"
@@ -581,47 +582,47 @@
 
                                             <GridEvents 
                                                         CellSelected="QualificationCellSelectHandler"
-                                                        TValue="EmployeeQualificationDto">
+                                                        TValue="EmployeeQualification">
                                             </GridEvents>
                                          
                                           <GridColumns>
                                                <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
-                                               <GridColumn Field=@nameof(EmployeeQualificationDto.QualificationId) HeaderText="Qualification Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+                                               <GridColumn Field=@nameof(EmployeeQualification.QualificationId) HeaderText="Qualification Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
                                                <GridColumn 
-                                                   Field=@nameof(EmployeeQualificationDto.InstitutionName) 
+                                                   Field=@nameof(EmployeeQualification.InstitutionName) 
                                                    HeaderText="Institution" 
                                                    Width="100"
                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
                                                </GridColumn>
-                                               <GridForeignColumn Field=@nameof(EmployeeQualificationDto.LevelofEducationId)
+                                               <GridForeignColumn Field=@nameof(EmployeeQualification.LevelofEducationId)
                                                        HeaderText="Education Level"
                                                        Width="80"
                                                        AllowEditing="true"
-                                                       ForeignKeyField="@(nameof(ALevelofEducationDto.LevelofEducationId))"
-                                                       ForeignKeyValue="@(nameof(ALevelofEducationDto.LevelofEducationDesc))"
+                                                       ForeignKeyField="@(nameof(ALevelofEducation.LevelofEducationId))"
+                                                       ForeignKeyValue="@(nameof(ALevelofEducation.LevelofEducationDesc))"
                                                        ForeignDataSource="@LevelofEducationData"
                                                        AllowFiltering="false"
                                                        IsFrozen="false"
                                                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
                                                 </GridForeignColumn>
-                                               <GridForeignColumn Field=@nameof(EmployeeQualificationDto.DegreeClassId)
+                                               <GridForeignColumn Field=@nameof(EmployeeQualification.DegreeClassId)
                                                        HeaderText="Degree Class"
                                                        Width="80"
                                                        AllowEditing="true"
-                                                       ForeignKeyField="@(nameof(ADegreeClassDto.DegreeClassId))"
-                                                       ForeignKeyValue="@(nameof(ADegreeClassDto.DegreeClassDesc))"
+                                                       ForeignKeyField="@(nameof(ADegreeClass.DegreeClassId))"
+                                                       ForeignKeyValue="@(nameof(ADegreeClass.DegreeClassDesc))"
                                                        ForeignDataSource="@DegreeClassData"
                                                        AllowFiltering="false"
                                                        IsFrozen="false"
                                                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
                                                 </GridForeignColumn>
                                                 <GridColumn 
-                                                   Field=@nameof(EmployeeQualificationDto.QualificationAttained) 
+                                                   Field=@nameof(EmployeeQualification.QualificationAttained) 
                                                    HeaderText="Award/Qualification Attained" 
                                                    Width="80"
                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
                                                </GridColumn>
-                                               <GridColumn Field=@nameof(EmployeeQualificationDto.StartDate) 
+                                               <GridColumn Field=@nameof(EmployeeQualification.StartDate) 
                                                         HeaderText="From" 
                                                         EditType="EditType.DatePickerEdit" 
                                                         Format="dd/MMMM/yyyy" 
@@ -630,13 +631,13 @@
                                                         AllowEditing="true"
                                                         CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">                                            
                                                </GridColumn> 
-                                               <GridColumn Field=@nameof(EmployeeQualificationDto.IsCurrent)  
+                                               <GridColumn Field=@nameof(EmployeeQualification.IsCurrent)  
                                                    HeaderText="Current" 
                                                    DisplayAsCheckBox="true" 
                                                    Width="150"
                                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
                                                </GridColumn>
-                                               <GridColumn Field=@nameof(EmployeeQualificationDto.EndDate) 
+                                               <GridColumn Field=@nameof(EmployeeQualification.EndDate) 
                                                         HeaderText="To" 
                                                         EditType="EditType.DatePickerEdit" 
                                                         Format="dd/MMMM/yyyy" 
@@ -685,8 +686,8 @@
                         </div>
                         <div class="col-md-3">
                              <p  style="margin-bottom:29px;">Identification</p>
-                              <SfDropDownList @bind-Value="@(EmployeeReviewData.IdentificationTypeId)" Enabled="true" TItem="AIdentificationTypeDto" TValue="int?" DataSource="@IdentificationTypeData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true">
-                               <DropDownListFieldSettings Value="@nameof(AIdentificationTypeDto.IdentificationTypeId)" Text="@nameof(AIdentificationTypeDto.IdentificationTypeDesc)"></DropDownListFieldSettings>
+                              <SfDropDownList @bind-Value="@(EmployeeReviewData.IdentificationTypeId)" Enabled="true" TItem="AIdentificationType" TValue="int?" DataSource="@IdentificationTypeData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true">
+                               <DropDownListFieldSettings Value="@nameof(AIdentificationType.IdentificationTypeId)" Text="@nameof(AIdentificationType.IdentificationTypeDesc)"></DropDownListFieldSettings>
                               </SfDropDownList>                                 
                         </div>
                         <div class="col-md-3">
@@ -701,14 +702,14 @@
                         </div>
                         <div class="col-md-3">
                               <p  style="margin-bottom:29px;">Designation</p>
-                              <SfDropDownList @bind-Value="@(EmployeeReviewData.JobDescriptionId)" Enabled="true" TItem="JobDescriptionDto" TValue="int?" DataSource="@JobDescriptionData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true">
-                               <DropDownListFieldSettings Value="@nameof(JobDescriptionDto.JobDescriptionId)" Text="@nameof(JobDescriptionDto.JobDescription1)"></DropDownListFieldSettings>
+                              <SfDropDownList @bind-Value="@(EmployeeReviewData.JobDescriptionId)" Enabled="true" TItem="JobDescription" TValue="int?" DataSource="@JobDescriptionData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true">
+                               <DropDownListFieldSettings Value="@nameof(JobDescription.JobDescriptionId)" Text="@nameof(JobDescription.JobDescription1)"></DropDownListFieldSettings>
                               </SfDropDownList>                                 
                         </div>
                         <div class="col-md-3">
                               <p  style="margin-bottom:29px;">Employee Level <span style="color:red;">*</span></p>
-                              <SfDropDownList @bind-Value="@(EmployeeReviewData.EmployeeLevelId)" Enabled="true" TItem="AEmployeeLevelDto" TValue="int?" DataSource="@EmployeeLevelData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true">
-                               <DropDownListFieldSettings Value="@nameof(AEmployeeLevelDto.EmployeeLevelId)" Text="@nameof(AEmployeeLevelDto.EmployeeLevelDesc)"></DropDownListFieldSettings>
+                              <SfDropDownList @bind-Value="@(EmployeeReviewData.EmployeeLevelId)" Enabled="true" TItem="AEmployeeLevel" TValue="int?" DataSource="@EmployeeLevelData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true">
+                               <DropDownListFieldSettings Value="@nameof(AEmployeeLevel.EmployeeLevelId)" Text="@nameof(AEmployeeLevel.EmployeeLevelDesc)"></DropDownListFieldSettings>
                                 </SfDropDownList>
                                  
                         </div>
@@ -719,8 +720,8 @@
                              </div>
                         <div class="col-md-3">
                                 <p  style="margin-bottom:29px;">Bank (Where salary should be deposited) <span style="color:red;">*</span></p>
-                                <SfDropDownList @bind-Value="@(EmployeeReviewData.BankId)" Enabled="true" TItem="ABankDto" TValue="int?" DataSource="@BankData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                    <DropDownListFieldSettings Value="@nameof(ABankDto.BankId)" Text="@nameof(ABankDto.BankDesc)"></DropDownListFieldSettings>
+                                <SfDropDownList @bind-Value="@(EmployeeReviewData.BankId)" Enabled="true" TItem="ABank" TValue="int?" DataSource="@BankData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                    <DropDownListFieldSettings Value="@nameof(ABank.BankId)" Text="@nameof(ABank.BankDesc)"></DropDownListFieldSettings>
                                 </SfDropDownList>
                                 
                         </div>
@@ -741,8 +742,8 @@
                         </div>
                         <div class="col-md-12">
                                 <p  style="margin-bottom:29px;">Separtion of Duty (Reason)</p>
-                                <SfDropDownList @bind-Value="@(EmployeeReviewData.DutyReasonId)" Enabled="true" TItem="ASeparationofDutyDto" TValue="int?" DataSource="@DutyReasonData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                    <DropDownListFieldSettings Value="@nameof(ASeparationofDutyDto.DutyReasonId)" Text="@nameof(ASeparationofDutyDto.DutyReason)"></DropDownListFieldSettings>
+                                <SfDropDownList @bind-Value="@(EmployeeReviewData.DutyReasonId)" Enabled="true" TItem="ASeparationofDuty" TValue="int?" DataSource="@DutyReasonData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                    <DropDownListFieldSettings Value="@nameof(ASeparationofDuty.DutyReasonId)" Text="@nameof(ASeparationofDuty.DutyReason)"></DropDownListFieldSettings>
                                 </SfDropDownList>
                                 
                         </div>
@@ -763,7 +764,7 @@
     <GridColumns>
         <GridColumn Type="ColumnType.CheckBox" Width="20"></GridColumn>
         <GridColumn 
-            Field=@nameof(EmployeeDto.Employeeid) 
+            Field=@nameof(Employee.Employeeid) 
             Visible=false 
             HeaderText="Employee Id" 
             AllowEditing="false" 
@@ -771,7 +772,7 @@
             Width="80">
         </GridColumn>
         <GridColumn 
-            Field=@nameof(EmployeeDto.EmployeeNumber) 
+            Field=@nameof(Employee.EmployeeNumber) 
             Visible=true 
             HeaderText="EMPLOYEE NUMBER" 
             AllowEditing="false"
@@ -782,7 +783,7 @@
         CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
             <Template>
                 @{
-                    var employeedata = (context as EmployeeDto);
+                    var employeedata = (context as Employee);
                     string lastname = string.Empty;
                     string lmiddlename = string.Empty;
                     string firstname = string.Empty;
@@ -810,7 +811,7 @@
         </GridColumn>
 
         @*<GridColumn 
-            Field = "@(nameof(EmployeeDto.FirstName) + "." + nameof(EmployeeDto.LastName))" 
+            Field = "@(nameof(Employee.FirstName) + "." + nameof(Employee.LastName))" 
             HeaderText = "Employee" 
             Width = "100" >
         </GridColumn>*@
@@ -933,24 +934,24 @@
 @code {
     #region Declarations
 
-    SfGrid<EmployeeDto>? EmployeeModelGrid { get; set; }
-    SfGrid<EmployeeSpouseDto>? AEmployeeSpouseGrid { get; set; }
-    SfGrid<AEmployeeChildrenDto>? AEmployeeChildrenGrid { get; set; }
-    SfGrid<EmployeeQualificationDto>? QualificationGrid { get; set; }
+    SfGrid<Employee>? EmployeeModelGrid { get; set; }
+    SfGrid<EmployeeSpouse>? AEmployeeSpouseGrid { get; set; }
+    SfGrid<AEmployeeChildren>? AEmployeeChildrenGrid { get; set; }
+    SfGrid<EmployeeQualification>? QualificationGrid { get; set; }
     Query mainQuery { get; set; } = new();
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "95%" };
-    private static EmployeeDto? EmployeeReviewData { get; set; }
-    List<AGenderDto>? GenderData { get; set; }
-    List<AMaritalStatusDto>? MaritalStatusData { get; set; }
-    List<ACountryDto>? CountryData { get; set; }
-    List<JobDescriptionDto>? JobDescriptionData { get; set; }
-    List<AEmployeeLevelDto>? EmployeeLevelData { get; set; }
-    List<ALevelofEducationDto>? LevelofEducationData { get; set; }
-    List<EmployeeDto>? EmployeeData { get; set; }
-    List<ARelationshipDto>? ARelationshipData { get; set; }
-    List<ADegreeClassDto>? DegreeClassData { get; set; }
-    List<AIdentificationTypeDto>? IdentificationTypeData { get; set; }
-    List<ABankDto>? BankData { get; set; }
+    private static Employee? EmployeeReviewData { get; set; }
+    List<AGender>? GenderData { get; set; }
+    List<AMaritalStatus>? MaritalStatusData { get; set; }
+    List<ACountry>? CountryData { get; set; }
+    List<JobDescription>? JobDescriptionData { get; set; }
+    List<AEmployeeLevel>? EmployeeLevelData { get; set; }
+    List<ALevelofEducation>? LevelofEducationData { get; set; }
+    List<Employee>? EmployeeData { get; set; }
+    List<ARelationship>? ARelationshipData { get; set; }
+    List<ADegreeClass>? DegreeClassData { get; set; }
+    List<AIdentificationType>? IdentificationTypeData { get; set; }
+    List<ABank>? BankData { get; set; }
     EmployeeRegistrationModel inputmodel { get; set; } = new EmployeeRegistrationModel();
     string? RegisterError { get; set; }
     [Parameter]
@@ -973,7 +974,7 @@
     List<ViewAparish>? ParishData { get; set; }
     List<ASubCounty>? SubCountyData { get; set; }
     List<ViewAvillage>? VillageData { get; set; }
-    List<ASeparationofDutyDto>? DutyReasonData { get; set; }
+    List<ASeparationofDuty>? DutyReasonData { get; set; }
 
     bool isSubcountyEnabled { get; set; } = false;
     bool isParishEnabled { get; set; } = false;
@@ -984,7 +985,7 @@
     SfDialog? LoadingDialogue;
     SfDialog SavingDialog { get; set; }
     public bool IsVisible { get; set; } = false;
-    private static EmployeeDto RowDetails { get; set; }
+    private static Employee RowDetails { get; set; }
     private string Xvalue = "center";
     private string Yvalue = "center";
     SfSpinner? SpinnerObj;
@@ -993,9 +994,9 @@
     bool hide = true;
     SfDialog ConfirmationDeleteDialogue;
     string ConfirmationText { get; set; }
-    EmployeeDto selectedemployee {get;set;}
+    Employee selectedemployee {get;set;}
     private UtilitiesSearchPanel SearchModel = new();
-    SfMultiSelect<int[],EmployeeDto> EmployeeObj;
+    SfMultiSelect<int[],Employee> EmployeeObj;
     bool SaveButtons { get; set; } = false;
     LoginResultModel? Credentials { get; set; }
     long maxFileSize = 1024L * 1024L * 1024L * 2L;
@@ -1043,7 +1044,7 @@
                 if (responseemployee.IsSuccessStatusCode)
                 {
                     var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-                    EmployeeData = JsonSerializer.Deserialize<List<EmployeeDto>>(contentemployee, _options);
+                    EmployeeData = JsonSerializer.Deserialize<List<Employee>>(contentemployee, _options);
                 }
             }));
 
@@ -1053,7 +1054,7 @@
                 if (responsegender.IsSuccessStatusCode)
                 {
                     var contentemployeegender = await responsegender.Content.ReadAsStringAsync();
-                    GenderData = JsonSerializer.Deserialize<List<AGenderDto>>(contentemployeegender, _options);
+                    GenderData = JsonSerializer.Deserialize<List<AGender>>(contentemployeegender, _options);
                 }
             }));
 
@@ -1063,7 +1064,7 @@
                 if (responseemployeelevel.IsSuccessStatusCode)
                 {
                     var contentemployeelevel = await responseemployeelevel.Content.ReadAsStringAsync();
-                    EmployeeLevelData = JsonSerializer.Deserialize<List<AEmployeeLevelDto>>(contentemployeelevel, _options);
+                    EmployeeLevelData = JsonSerializer.Deserialize<List<AEmployeeLevel>>(contentemployeelevel, _options);
                 }
             }));
 
@@ -1073,7 +1074,7 @@
                 if (responsemaritalstatus.IsSuccessStatusCode)
                 {
                     var contentmaritalstatus = await responsemaritalstatus.Content.ReadAsStringAsync();
-                    MaritalStatusData = JsonSerializer.Deserialize<List<AMaritalStatusDto>>(contentmaritalstatus, _options);
+                    MaritalStatusData = JsonSerializer.Deserialize<List<AMaritalStatus>>(contentmaritalstatus, _options);
                 }
             }));
 
@@ -1083,7 +1084,7 @@
                 if (responsecountry.IsSuccessStatusCode)
                 {
                     var contentcountry = await responsecountry.Content.ReadAsStringAsync();
-                    CountryData = JsonSerializer.Deserialize<List<ACountryDto>>(contentcountry, _options);
+                    CountryData = JsonSerializer.Deserialize<List<ACountry>>(contentcountry, _options);
                 }
             }));
 
@@ -1113,7 +1114,7 @@
                 if (responseseparationreason.IsSuccessStatusCode)
                 {
                     var contentseparationreason = await responseseparationreason.Content.ReadAsStringAsync();
-                    DutyReasonData = JsonSerializer.Deserialize<List<ASeparationofDutyDto>>(contentseparationreason, _options);
+                    DutyReasonData = JsonSerializer.Deserialize<List<ASeparationofDuty>>(contentseparationreason, _options);
                 }
             }));
 
@@ -1123,7 +1124,7 @@
                 if (responserelationship.IsSuccessStatusCode)
                 {
                     var contentrelationship = await responserelationship.Content.ReadAsStringAsync();
-                    ARelationshipData = JsonSerializer.Deserialize<List<ARelationshipDto>>(contentrelationship, _options);
+                    ARelationshipData = JsonSerializer.Deserialize<List<ARelationship>>(contentrelationship, _options);
                 }
             }));
 
@@ -1133,7 +1134,7 @@
                 if (responseEducationLevel.IsSuccessStatusCode)
                 {
                     var contentEducationLevel = await responseEducationLevel.Content.ReadAsStringAsync();
-                    LevelofEducationData = JsonSerializer.Deserialize<List<ALevelofEducationDto>>(contentEducationLevel, _options);
+                    LevelofEducationData = JsonSerializer.Deserialize<List<ALevelofEducation>>(contentEducationLevel, _options);
                 }
             }));
 
@@ -1143,7 +1144,7 @@
                 if (responseDegreeClass.IsSuccessStatusCode)
                 {
                     var contentDegreeClass = await responseDegreeClass.Content.ReadAsStringAsync();
-                    DegreeClassData = JsonSerializer.Deserialize<List<ADegreeClassDto>>(contentDegreeClass, _options);
+                    DegreeClassData = JsonSerializer.Deserialize<List<ADegreeClass>>(contentDegreeClass, _options);
                 }
             }));
 
@@ -1153,7 +1154,7 @@
                 if (responseIdentificationType.IsSuccessStatusCode)
                 {
                     var contentIdentificationType = await responseIdentificationType.Content.ReadAsStringAsync();
-                    IdentificationTypeData = JsonSerializer.Deserialize<List<AIdentificationTypeDto>>(contentIdentificationType, _options);
+                    IdentificationTypeData = JsonSerializer.Deserialize<List<AIdentificationType>>(contentIdentificationType, _options);
                 }
             }));
 
@@ -1163,7 +1164,7 @@
                 if (responseBank.IsSuccessStatusCode)
                 {
                     var contentBank = await responseBank.Content.ReadAsStringAsync();
-                    BankData = JsonSerializer.Deserialize<List<ABankDto>>(contentBank, _options);
+                    BankData = JsonSerializer.Deserialize<List<ABank>>(contentBank, _options);
                 }
             }));
 
@@ -1173,7 +1174,7 @@
                 if (responseJobDescription.IsSuccessStatusCode)
                 {
                     var contentJobDescription = await responseJobDescription.Content.ReadAsStringAsync();
-                    JobDescriptionData = JsonSerializer.Deserialize<List<JobDescriptionDto>>(contentJobDescription, _options);
+                    JobDescriptionData = JsonSerializer.Deserialize<List<JobDescription>>(contentJobDescription, _options);
                 }
             }));
 
@@ -1297,7 +1298,7 @@
         }
     }
 
-    public async Task OnCommandClicked(CommandClickEventArgs<EmployeeDto> args)
+    public async Task OnCommandClicked(CommandClickEventArgs<Employee> args)
     {
 
         if(args.CommandColumn.ButtonOption.Content == "Delete")
@@ -1444,7 +1445,7 @@
 
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         {
-            var data = new List<EmployeeDto>();
+            var data = new List<Employee>();
             try
             {
                 string Employeeid = null;
@@ -1468,7 +1469,7 @@
                 {
                     toastService.ShowError(response.ReasonPhrase);
                 }
-                data = JsonSerializer.Deserialize<List<EmployeeDto>>(content, _options);
+                data = JsonSerializer.Deserialize<List<Employee>>(content, _options);
 
             }
             catch (Exception ex)
@@ -1512,7 +1513,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<EmployeeDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<Employee>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -1523,7 +1524,7 @@
             try
             {
                 //
-                var val = (value as EmployeeDto);
+                var val = (value as Employee);
                 if (val != null)
                 {
                     if (val.Employeeid == 0)
@@ -1536,7 +1537,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -1569,7 +1570,7 @@
             try
             {
                 //
-                var val = (value as EmployeeDto);
+                var val = (value as Employee);
                 if (val != null)
                 {
                     if (val.Employeeid != 0)
@@ -1582,7 +1583,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -1616,7 +1617,7 @@
         //{
         //    try
         //    {
-        //        var val = (value as EmployeeDto);
+        //        var val = (value as Employee);
         //        
         //        
         //        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
@@ -1641,7 +1642,7 @@
 
     }
 
-    public async void OnEmployeeDtoActionBegin(ActionEventArgs<EmployeeDto> args)
+    public async void OnEmployeeActionBegin(ActionEventArgs<Employee> args)
     {
         try
         {
@@ -1659,15 +1660,15 @@
 
                 if (args.RowData.AEmployeeChildren == null)
                 {
-                    args.RowData.AEmployeeChildren = new List<AEmployeeChildrenDto>();
+                    args.RowData.AEmployeeChildren = new List<AEmployeeChildren>();
                 }
                 if (args.RowData.EmployeeSpouse == null)
                 {
-                    args.RowData.EmployeeSpouse = new List<EmployeeSpouseDto>();
+                    args.RowData.EmployeeSpouse = new List<EmployeeSpouse>();
                 }
                 if (args.RowData.EmployeeQualification == null)
                 {
-                    args.RowData.EmployeeQualification = new List<EmployeeQualificationDto>();
+                    args.RowData.EmployeeQualification = new List<EmployeeQualification>();
                 }
 
             }
@@ -1675,9 +1676,9 @@
             {
                 SaveButtons = false;
                 employeenumberenabled = false;
-                args.RowData.AEmployeeChildren = new List<AEmployeeChildrenDto>();
-                args.RowData.EmployeeSpouse = new List<EmployeeSpouseDto>();
-                args.RowData.EmployeeQualification = new List<EmployeeQualificationDto>();
+                args.RowData.AEmployeeChildren = new List<AEmployeeChildren>();
+                args.RowData.EmployeeSpouse = new List<EmployeeSpouse>();
+                args.RowData.EmployeeQualification = new List<EmployeeQualification>();
                 //args.RowData.EmployeeHeader = new Employee();
             }
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
@@ -1848,7 +1849,7 @@
         }
     }
 
-    public async Task OnEmployeeDtoActionComplete(ActionEventArgs<EmployeeDto> args)
+    public async Task OnEmployeeActionComplete(ActionEventArgs<Employee> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add)
         || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
@@ -1863,14 +1864,14 @@
             var contentemployee = await responseemployee.Content.ReadAsStringAsync();
             if (responseemployee.IsSuccessStatusCode)
             {
-                EmployeeData = await Http.GetFromJsonAsync<List<EmployeeDto>>
+                EmployeeData = await Http.GetFromJsonAsync<List<Employee>>
                 ($"Employeez/GetMasterList");
             }
         }
     }
 
     //Enable cell edit on single click
-    public async Task ChildrenCellSelectHandler(CellSelectEventArgs<AEmployeeChildrenDto> args)
+    public async Task ChildrenCellSelectHandler(CellSelectEventArgs<AEmployeeChildren> args)
     {
         try
         {
@@ -1892,7 +1893,7 @@
         }
     }
 
-    public async Task SpouseCellSelectHandler(CellSelectEventArgs<EmployeeSpouseDto> args)
+    public async Task SpouseCellSelectHandler(CellSelectEventArgs<EmployeeSpouse> args)
     {
         try
         {
@@ -1914,7 +1915,7 @@
         }
     }
 
-    public async Task QualificationCellSelectHandler(CellSelectEventArgs<EmployeeQualificationDto> args)
+    public async Task QualificationCellSelectHandler(CellSelectEventArgs<EmployeeQualification> args)
     {
         try
         {
@@ -1936,7 +1937,7 @@
         }
     }
 
-    public string GetEmployeeHeader(EmployeeDto Value)
+    public string GetEmployeeHeader(Employee Value)
     {
         if (Value.Employeeid == 0)
         {

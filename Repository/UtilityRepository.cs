@@ -1,14 +1,16 @@
 ﻿using Blazor.SubtleCrypto;
 using Blazored.LocalStorage;
 using Blazored.Toast.Services;
-using HCMIS.SHARED.DTOs.BSC;
+
 using HCMIS.Interface;
-using HCMIS.Model;
+
 using System.Net.Http.Headers;
 using System.Text.Json;
 using static System.Net.WebRequestMethods;
-using HCMIS.SHARED.DTOs;
+
 using HCMIS.SHARED;
+using HCMIS.SHARED.Models;
+using HCMIS.SHARED.Data;
 
 namespace HCMIS.Repository
 {
@@ -32,16 +34,16 @@ namespace HCMIS.Repository
             this.settingsRepo = settingsRepo;
         }
 
-        public async Task<List<EmployeeDto>?> GetEmployees()
+        public async Task<List<Employee>?> GetEmployees()
         {
-            List<EmployeeDto>? data = new List<EmployeeDto>();
+            List<Employee>? data = new List<Employee>();
             try
             {
                 var response = await _httpClient.GetAsync($"Employeez/GetMasterList");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    data = JsonSerializer.Deserialize<List<EmployeeDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<Employee>>(content, _options);
                 }
                 else
                 {
@@ -63,7 +65,7 @@ namespace HCMIS.Repository
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    var data = JsonSerializer.Deserialize<List<ImageDTO>>(content, _options);
+                    var data = JsonSerializer.Deserialize<List<Image>>(content, _options);
                     if (data != null)
                     {
                         await LocalStorage.SetItemAsync("Logos", data);
@@ -80,12 +82,12 @@ namespace HCMIS.Repository
             }
         }
 
-        public async Task<List<ImageDTO>> GetLocalLogos()
+        public async Task<List<Image>> GetLocalLogos()
         {
-            List<ImageDTO> data = new List<ImageDTO>();
+            List<Image> data = new List<Image>();
             try
             {
-                data = await LocalStorage.GetItemAsync<List<ImageDTO>>("Logos");
+                data = await LocalStorage.GetItemAsync<List<Image>>("Logos");
             }
             catch (Exception ex)
             {

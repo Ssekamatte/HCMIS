@@ -1,5 +1,6 @@
 ﻿using HCMIS.Data;
 using HCMIS.Model;
+using HCMIS.SHARED.Data;
 using System.Net.Http.Headers;
 using System.Text.Json;
 
@@ -16,9 +17,9 @@ namespace HCMIS.ViewModel
             this._ApiConfig = apiConfig;
             this.Http = http;
         }
-        public async Task<ResponseDto> SaveDocument(ImageUpload inputmodel, string? AccessToken)
+        public async Task<Response> SaveDocument(ImageUpload inputmodel, string? AccessToken)
         {
-            ResponseDto? _response = new();
+            Response? _response = new();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(inputmodel);
@@ -28,7 +29,7 @@ namespace HCMIS.ViewModel
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    _response = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                    _response = JsonSerializer.Deserialize<Response>(content, _options);
                 }
                 else
                 {

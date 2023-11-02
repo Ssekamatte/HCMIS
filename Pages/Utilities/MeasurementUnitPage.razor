@@ -6,11 +6,10 @@
 @using System.Text.Json
 @using System.Collections;
 @using System.IO;
+@using HCMIS.SHARED.Models;
 @using Microsoft.AspNetCore.Authorization
 @inject NavigationManager navigation;
 @inject SystemSettings _SystemSettings;
-@using HCMIS.SHARED.DTOs.BSC;
-@using HCMIS.SHARED.DTOs.Utilities;
 @using HCMIS.ViewModel;
 @inject IToastService toastService;
 
@@ -47,18 +46,18 @@
     </li>
 </ol>
 
-<SfGrid @ref="@BasicUnitGrid" ID="Grid" TValue="AMeasurementMetricDto" AllowPaging="true"
+<SfGrid @ref="@BasicUnitGrid" ID="Grid" TValue="AMeasurementMetric" AllowPaging="true"
         AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
         AllowSorting="true" Toolbar="@ToolbarMenu">
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
     <GridPageSettings PageSizes="true"></GridPageSettings>
     <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
     <SfDataManager AdaptorInstance="@typeof(BasicUnitAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-    <GridEvents OnActionComplete="@MeasurementActionComplete" OnActionBegin="@MeasurementActionBegin" TValue="AMeasurementMetricDto"></GridEvents>
+    <GridEvents OnActionComplete="@MeasurementActionComplete" OnActionBegin="@MeasurementActionBegin" TValue="AMeasurementMetric"></GridEvents>
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog" Dialog="DialogParams">
         <HeaderTemplate>
             @{
-                var text = GetMeasurementHeader((context as AMeasurementMetricDto));
+                var text = GetMeasurementHeader((context as AMeasurementMetric));
                 <div class="headerbandimg">
                     <span>@text</span>
                 </div>
@@ -66,7 +65,7 @@
         </HeaderTemplate>
         <Template Context="MeasurementContext">
             @{
-                MetricData = (MeasurementContext as AMeasurementMetricDto);
+                MetricData = (MeasurementContext as AMeasurementMetric);
                 @if (MetricData != null)
                 {
                     <div class="row">
@@ -87,13 +86,13 @@
     <GridColumns>
         <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn>
         <GridColumn 
-            Field=@nameof(AMeasurementMetricDto.MeasurementMetricId) 
+            Field=@nameof(AMeasurementMetric.MeasurementMetricId) 
             Visible=false 
             HeaderText="MeasurementMetric Id" 
             AllowEditing="false" 
             IsPrimaryKey="true">
         </GridColumn>
-        <GridColumn Field=@nameof(AMeasurementMetricDto.MeasurementMetricDesc)
+        <GridColumn Field=@nameof(AMeasurementMetric.MeasurementMetricDesc)
                     HeaderText="Measurement Metric"
                     TextAlign="TextAlign.Justify"
                     Width="80"
@@ -105,11 +104,11 @@
 </SfGrid>
 
 @code {
-    SfGrid<AMeasurementMetricDto>? BasicUnitGrid;
-    private static AMeasurementMetricDto? MetricData { get; set; }
+    SfGrid<AMeasurementMetric>? BasicUnitGrid;
+    private static AMeasurementMetric? MetricData { get; set; }
     public bool? radiovalue;
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "65%" };
-    List<AMeasurementMetricDto>? MeasurementMetricData { get; set; }
+    List<AMeasurementMetric>? MeasurementMetricData { get; set; }
 
     private List<object> ToolbarMenu = new List<object>()
     {
@@ -127,7 +126,7 @@
 
         if (responsebankcount.IsSuccessStatusCode)
         {
-            MeasurementMetricData = await Http.GetFromJsonAsync<List<AMeasurementMetricDto>>
+            MeasurementMetricData = await Http.GetFromJsonAsync<List<AMeasurementMetric>>
             ($"Utilities/GetMeasurementMetric");
         }
     }
@@ -155,7 +154,7 @@
 
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         {
-            var data = new List<AMeasurementMetricDto>();
+            var data = new List<AMeasurementMetric>();
             try
             {
                 var response = await Http.GetAsync($"Utilities/GetMeasurementMetric");
@@ -164,7 +163,7 @@
                 {
                     toastService.ShowError(response.ReasonPhrase);
                 }
-                data = JsonSerializer.Deserialize<List<AMeasurementMetricDto>>(content, _options);
+                data = JsonSerializer.Deserialize<List<AMeasurementMetric>>(content, _options);
             }
             catch (Exception ex)
             {
@@ -204,7 +203,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<AMeasurementMetricDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<AMeasurementMetric>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -214,7 +213,7 @@
         {
             try
             {
-                var val = (value as AMeasurementMetricDto);
+                var val = (value as AMeasurementMetric);
 
                 if (val.MeasurementMetricId == 0)
                 {
@@ -255,7 +254,7 @@
         {
             try
             {
-                var val = (value as AMeasurementMetricDto);
+                var val = (value as AMeasurementMetric);
 
 
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
@@ -281,7 +280,7 @@
 
     }
 
-    public async void MeasurementActionComplete(ActionEventArgs<AMeasurementMetricDto> args)
+    public async void MeasurementActionComplete(ActionEventArgs<AMeasurementMetric> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add)
         || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
@@ -296,13 +295,13 @@
 
             if (responsebankcount.IsSuccessStatusCode)
             {
-                MeasurementMetricData = await Http.GetFromJsonAsync<List<AMeasurementMetricDto>>
+                MeasurementMetricData = await Http.GetFromJsonAsync<List<AMeasurementMetric>>
                 ($"Utilities/GetMeasurementMetric");
             }
         }
     }
 
-    public async void MeasurementActionBegin(ActionEventArgs<AMeasurementMetricDto> Args)
+    public async void MeasurementActionBegin(ActionEventArgs<AMeasurementMetric> Args)
     {
         var data = Args.Data;
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
@@ -336,7 +335,7 @@
     }
 
 
-    public string GetMeasurementHeader(AMeasurementMetricDto Value)
+    public string GetMeasurementHeader(AMeasurementMetric Value)
     {
         if (Value.MeasurementMetricId == 0)
         {

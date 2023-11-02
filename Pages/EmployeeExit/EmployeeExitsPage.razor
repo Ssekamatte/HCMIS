@@ -1,7 +1,8 @@
 ﻿@page "/EmployeeExitsPage"
 @using HCMIS.Model
 @using HCMIS.SHARED;
-@using HCMIS.SHARED.DTOs.Employeez;
+@using HCMIS.SHARED.Data;
+@using HCMIS.SHARED.Models;
 @using HCMIS.ViewModel
 @using System.Text.Json
 @using System.Text.RegularExpressions
@@ -10,9 +11,8 @@
 @inject NavigationManager Navigation
 @inject SystemSettings _SystemSettings
 @using System.Collections;
-@using HCMIS.SHARED.DTOs.BSC;
 @inject IToastService toastService;
-@using HCMIS.SHARED.DTOs.Utilities;
+
 @using Syncfusion.Blazor.Notifications;
 
 <style>
@@ -43,11 +43,11 @@
     </li>
 </ol>
 
-<SfGrid @ref="@DataGrid" TValue="EmployeeExitInterviewDto" GridLines="GridLine.Both" ID="Grid" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Cancel", "Update","ExcelExport"})">
+<SfGrid @ref="@DataGrid" TValue="EmployeeExitInterview" GridLines="GridLine.Both" ID="Grid" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Cancel", "Update","ExcelExport"})">
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
         <HeaderTemplate>
             @{
-                var text = GetExitHeader((context as EmployeeExitInterviewDto));
+                var text = GetExitHeader((context as EmployeeExitInterview));
                 <div class="headerbandimg">
                     <span>@text</span>
                 </div>
@@ -60,7 +60,7 @@
                         <strong>EXIT INTERVIEW FORM</strong>
                     </h5>
                 </center>
-                ExitData = (context as EmployeeExitInterviewDto);
+                ExitData = (context as EmployeeExitInterview);
 
                 <div class="row">
                     <h4>
@@ -84,9 +84,9 @@
                                 Name:
                             </td>
                             <td>
-                                <SfDropDownList @bind-Value="@(ExitData.EmployeeId)" Enabled="EmployeeDD" TItem="ViewBscEmployeeDto" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                    <DropDownListFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></DropDownListFieldSettings>
-                                    <DropDownListEvents TValue="int?" TItem="ViewBscEmployeeDto" ValueChange="OnEmployeeChange"></DropDownListEvents>
+                                <SfDropDownList @bind-Value="@(ExitData.EmployeeId)" Enabled="EmployeeDD" TItem="ViewBscEmployee" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                    <DropDownListFieldSettings Value="@nameof(ViewBscEmployee.Employeeid)" Text="@nameof(ViewBscEmployee.EmployeeDetails)"></DropDownListFieldSettings>
+                                    <DropDownListEvents TValue="int?" TItem="ViewBscEmployee" ValueChange="OnEmployeeChange"></DropDownListEvents>
                                 </SfDropDownList>
                             </td>
                             <td style="font-weight:bold">
@@ -196,7 +196,7 @@
                         <SfGrid @ref="ExitRatingGrid"
                                 DataSource="@ExitData.EmployeeExitRating"
                                 EnableStickyHeader=true
-                                TValue="EmployeeExitRatingDto"
+                                TValue="EmployeeExitRating"
                                 AllowGrouping="true" ShowColumnChooser="true" AllowTextWrap="true"
                                 AllowPaging="true"
                                 AllowFiltering="true"
@@ -213,10 +213,10 @@
                             <GridPageSettings PageSize="20"></GridPageSettings>
 
                             <GridEvents CellSelected="CellSelectHandler"
-                                        TValue="EmployeeExitRatingDto">
+                                        TValue="EmployeeExitRating">
                             </GridEvents>
                             <GridColumns>
-                                <GridColumn Field=@nameof(EmployeeExitRatingDto.EmployeExitRatingId)
+                                <GridColumn Field=@nameof(EmployeeExitRating.EmployeExitRatingId)
                                             HeaderText="#"
                                             TextAlign="TextAlign.Left"
                                             IsPrimaryKey="true"
@@ -230,12 +230,12 @@
                                     CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"> 
                                     <Template Context="RowCounterContext">
                                         @{
-                                            var val = GetRowCounter(RowCounterContext as EmployeeExitRatingDto);
+                                            var val = GetRowCounter(RowCounterContext as EmployeeExitRating);
                                             @val.Result
                                         }
                                     </Template> 
                                 </GridColumn> 
-                                <GridForeignColumn Field=@nameof(EmployeeExitRatingDto.ExitRatingAspectId)
+                                <GridForeignColumn Field=@nameof(EmployeeExitRating.ExitRatingAspectId)
                                                    HeaderText="Exit Rating Aspect"
                                                    Width="80"
                                                    AllowEditing="true"
@@ -245,12 +245,12 @@
                                                    CustomAttributes="@(new Dictionary<string,
                                                    object>(){ { "class", "e-attr1" }})">
                                 </GridForeignColumn>
-                                <GridForeignColumn Field=@nameof(EmployeeExitRatingDto.ExitRatingId)
+                                <GridForeignColumn Field=@nameof(EmployeeExitRating.ExitRatingId)
                                                    HeaderText="Rating"
                                                    Width="80"
                                                    AllowEditing="true"
-                                                   ForeignKeyField="@(nameof(AExitRatingDto.ExitRatingId))"
-                                                   ForeignKeyValue="@(nameof(AExitRatingDto.RatingDescription))"
+                                                   ForeignKeyField="@(nameof(AExitRating.ExitRatingId))"
+                                                   ForeignKeyValue="@(nameof(AExitRating.RatingDescription))"
                                                    ForeignDataSource="@ExitRatingData" AllowFiltering="true"
                                                    CustomAttributes="@(new Dictionary<string,
                                                    object>(){ { "class", "e-attr1" }})">
@@ -258,7 +258,7 @@
                                 @*<GridColumn HeaderText="Rating" TextAlign="TextAlign.Center" Width="150">
                                     <Template Context="RadioContext"> 
                                         @{
-                                            var employee = (RadioContext as EmployeeExitRatingDto);
+                                            var employee = (RadioContext as EmployeeExitRating);
                                             
                                             <div class="col-md-12">
                                                 <SfRadioButton Name="selection" ValueChange="@((args)=>OnValueChange1(args,employee))" TChecked="bool"></SfRadioButton>
@@ -277,8 +277,8 @@
 
                     <div class="col-md-12">
                         <p>4.Were there any company policies or procedures that made your work more difficult?</p>
-                        <SfDropDownList @bind-Value="@(ExitData.CompanyPoliciesMadeWorkDifficultyYesNoId)" TItem="AYesNoDto" TValue="int?" DataSource="@YesNoData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                            <DropDownListFieldSettings Value="@nameof(AYesNoDto.YesNoId)" Text="@nameof(AYesNoDto.YesNoDesc)"></DropDownListFieldSettings>
+                        <SfDropDownList @bind-Value="@(ExitData.CompanyPoliciesMadeWorkDifficultyYesNoId)" TItem="AYesNo" TValue="int?" DataSource="@YesNoData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                            <DropDownListFieldSettings Value="@nameof(AYesNo.YesNoId)" Text="@nameof(AYesNo.YesNoDesc)"></DropDownListFieldSettings>
                         </SfDropDownList>
                     </div>
 
@@ -292,8 +292,8 @@
 
                     <div class="col-md-12">
                         <p>5.Would you recommend this company to a friend as a good place to work?</p>
-                        <SfDropDownList @bind-Value="@(ExitData.RecommendThisCompanyToAFriendYesNoId)" TItem="AYesNoDto" TValue="int?" DataSource="@YesNoData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                            <DropDownListFieldSettings Value="@nameof(AYesNoDto.YesNoId)" Text="@nameof(AYesNoDto.YesNoDesc)"></DropDownListFieldSettings>
+                        <SfDropDownList @bind-Value="@(ExitData.RecommendThisCompanyToAFriendYesNoId)" TItem="AYesNo" TValue="int?" DataSource="@YesNoData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                            <DropDownListFieldSettings Value="@nameof(AYesNo.YesNoId)" Text="@nameof(AYesNo.YesNoDesc)"></DropDownListFieldSettings>
                         </SfDropDownList>
                     </div>
 
@@ -320,22 +320,22 @@
     <GridEvents OnToolbarClick="@GridToolbarClick"
                 OnActionComplete="ActionCompleteMain"
                 OnActionBegin="ActionBeginMain"
-                TValue="EmployeeExitInterviewDto">
+                TValue="EmployeeExitInterview">
     </GridEvents>
     <SfDataManager AdaptorInstance="@typeof(EmployeeExitAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
     <GridColumns>
         <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
-        <GridColumn Field=@nameof(EmployeeExitInterviewDto.ExitInterviewId) HeaderText="Exit Interview Id" AllowEditing="false" IsPrimaryKey="true" Width="40" Visible="false"></GridColumn>
+        <GridColumn Field=@nameof(EmployeeExitInterview.ExitInterviewId) HeaderText="Exit Interview Id" AllowEditing="false" IsPrimaryKey="true" Width="40" Visible="false"></GridColumn>
         <GridColumn Type="ColumnType.Number" AllowFiltering="false" AllowEditing="false" AllowSorting="false" HeaderText="#" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Right" Width="40" AutoFit="false"
         CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"> 
              <Template Context="RowCounterContext">
              @{
-                 var val = GetRowCounter1(RowCounterContext as EmployeeExitInterviewDto);
+                 var val = GetRowCounter1(RowCounterContext as EmployeeExitInterview);
                  @val.Result
              }
              </Template> 
         </GridColumn> 
-        <GridForeignColumn Field=@nameof(EmployeeExitInterviewDto.EmployeeId)
+        <GridForeignColumn Field=@nameof(EmployeeExitInterview.EmployeeId)
                            HeaderText="Employee"
                            Width="90"
                            AllowEditing="true"
@@ -345,7 +345,7 @@
                            CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})">
         </GridForeignColumn>
         
-        <GridColumn Field=@nameof(EmployeeExitInterviewDto.DateToExit)
+        <GridColumn Field=@nameof(EmployeeExitInterview.DateToExit)
                     HeaderText="Exit Date"
                     Format="dd/MMMM/yyyy"
                     TextAlign="TextAlign.Justify"
@@ -405,15 +405,15 @@
         };
     #endregion Toasters
 
-    SfGrid<EmployeeExitInterviewDto>? DataGrid { get; set; }
-    SfGrid<EmployeeExitRatingDto>? ExitRatingGrid { get; set; }
-    private static EmployeeExitInterviewDto? ExitData { get; set; }
-    List<ViewBscEmployeeDto>? EmployeeData { get; set; }
-    List<AYesNoDto>? YesNoData { get; set; }
-    List<AExitRatingDto>? ExitRatingData { get; set; }
-    List<AExitRatingAspectsDto>? ExitRatingAspectsData { get; set; }
-    List<EmployeeExitInterviewDto>? ExitInterviewData { get; set; }
-    private static ViewBscEmployeeDto? employeeno { get; set; }
+    SfGrid<EmployeeExitInterview>? DataGrid { get; set; }
+    SfGrid<EmployeeExitRating>? ExitRatingGrid { get; set; }
+    private static EmployeeExitInterview? ExitData { get; set; }
+    List<ViewBscEmployee>? EmployeeData { get; set; }
+    List<AYesNo>? YesNoData { get; set; }
+    List<AExitRating>? ExitRatingData { get; set; }
+    List<AExitRatingAspects>? ExitRatingAspectsData { get; set; }
+    List<EmployeeExitInterview>? ExitInterviewData { get; set; }
+    private static ViewBscEmployee? employeeno { get; set; }
     string UserJobTitle { get; set; }
     string UserRole { get; set; }    
     public static int UserJobTitleId { get; set; } = 0;
@@ -447,12 +447,12 @@
 
             if (ExitData != null && ExitData.EmployeeExitRating == null)
             {
-                List<EmployeeExitRatingDto> m = new List<EmployeeExitRatingDto>();
+                List<EmployeeExitRating> m = new List<EmployeeExitRating>();
 
                 foreach (var n in ExitRatingAspectsData)
                 {
                     Random random = new Random();
-                    m.Add(new EmployeeExitRatingDto
+                    m.Add(new EmployeeExitRating
                         {
                             EmployeExitRatingId = random.Next(1000, 10000),
                             ExitRatingAspectId = n.ExitRatingAspectId
@@ -469,7 +469,7 @@
                     if (x == null)
                     {
                         Random random = new Random();
-                        ExitData.EmployeeExitRating.Add(new EmployeeExitRatingDto
+                        ExitData.EmployeeExitRating.Add(new EmployeeExitRating
                             {
                                 EmployeExitRatingId = random.Next(1000, 10000),
                                 ExitRatingAspectId = n.ExitRatingAspectId
@@ -496,13 +496,13 @@
     }
 
     //To number grid rows
-    public async Task<int> GetRowCounter1(EmployeeExitInterviewDto val)
+    public async Task<int> GetRowCounter1(EmployeeExitInterview val)
     { 
         RowCounter = (int)await DataGrid.GetRowIndexByPrimaryKey(val.ExitInterviewId);
         return RowCounter + 1 ; 
     } 
 
-    public async Task<int> GetRowCounter(EmployeeExitRatingDto val) 
+    public async Task<int> GetRowCounter(EmployeeExitRating val) 
     { 
         RowCounter = (int)await ExitRatingGrid.GetRowIndexByPrimaryKey(val.EmployeExitRatingId);
         return RowCounter + 1 ; 
@@ -555,31 +555,31 @@
 
             if (responseexitinterview.IsSuccessStatusCode)
             {
-                ExitInterviewData = await Http.GetFromJsonAsync<List<EmployeeExitInterviewDto>>
+                ExitInterviewData = await Http.GetFromJsonAsync<List<EmployeeExitInterview>>
                 ($"EmployeeExit/GetEmployeeExitData");
             }
 
             if (responseuserexitrating.IsSuccessStatusCode)
             {
-                ExitRatingData = await Http.GetFromJsonAsync<List<AExitRatingDto>>
+                ExitRatingData = await Http.GetFromJsonAsync<List<AExitRating>>
                 ($"Utilities/GetExitRating");
             }
 
             if (responseuserexitratingaspects.IsSuccessStatusCode)
             {
-                ExitRatingAspectsData = await Http.GetFromJsonAsync<List<AExitRatingAspectsDto>>
+                ExitRatingAspectsData = await Http.GetFromJsonAsync<List<AExitRatingAspects>>
                 ($"Utilities/GetExitRatingAspects");
             }
 
             if (responseemployee.IsSuccessStatusCode)
             {
-                EmployeeData = await Http.GetFromJsonAsync<List<ViewBscEmployeeDto>>
+                EmployeeData = await Http.GetFromJsonAsync<List<ViewBscEmployee>>
                 ($"BalanceScoreCard/GetEmployeeData");
             }
 
             if (responseuseryesno.IsSuccessStatusCode)
             {
-                YesNoData = await Http.GetFromJsonAsync<List<AYesNoDto>>
+                YesNoData = await Http.GetFromJsonAsync<List<AYesNo>>
                 ($"Utilities/GetYesNo");
             }
 
@@ -653,7 +653,7 @@
         radiovalue = args.Value;
     }
 
-    public async Task OnValueChange1(ChangeArgs<bool> Args, EmployeeExitRatingDto val)
+    public async Task OnValueChange1(ChangeArgs<bool> Args, EmployeeExitRating val)
     {
         //to find the row index
         var rowIndex = ExitRatingGrid.CurrentViewData.ToList().IndexOf(val);
@@ -661,13 +661,13 @@
         await ExitRatingGrid.SelectRow((int)rowIndex, false);
     }
 
-    public async void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewBscEmployeeDto> args)
+    public async void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewBscEmployee> args)
     {
         employeeno = args.ItemData;
     }
 
 
-    public async void ActionCompleteMain(ActionEventArgs<EmployeeExitInterviewDto> args)
+    public async void ActionCompleteMain(ActionEventArgs<EmployeeExitInterview> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) ||
         args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
@@ -691,7 +691,7 @@
 
             if (responseemployee.IsSuccessStatusCode)
             {
-                EmployeeData = await Http.GetFromJsonAsync<List<ViewBscEmployeeDto>>
+                EmployeeData = await Http.GetFromJsonAsync<List<ViewBscEmployee>>
                 ($"BalanceScoreCard/GetEmployeeData");
             }
 
@@ -717,7 +717,7 @@
         }
     }
 
-    public async void ActionBeginMain(ActionEventArgs<EmployeeExitInterviewDto> Args)
+    public async void ActionBeginMain(ActionEventArgs<EmployeeExitInterview> Args)
     {
         var data = Args.Data;
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
@@ -756,7 +756,7 @@
 
             if (Args.RowData.EmployeeExitRating == null)
             {
-                Args.RowData.EmployeeExitRating = new List<EmployeeExitRatingDto>();
+                Args.RowData.EmployeeExitRating = new List<EmployeeExitRating>();
             }
 
             if (ExitRatingAspectsData != null)
@@ -767,7 +767,7 @@
                     if (x == null)
                     {
                         Random random = new Random();
-                        Args.RowData.EmployeeExitRating.Add(new EmployeeExitRatingDto
+                        Args.RowData.EmployeeExitRating.Add(new EmployeeExitRating
                             {
                                 EmployeExitRatingId = random.Next(1000, 10000),
                                 ExitRatingAspectId = n.ExitRatingAspectId
@@ -779,14 +779,14 @@
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
         {
             employeeno = null;
-            Args.RowData.EmployeeExitRating = new List<EmployeeExitRatingDto>();
+            Args.RowData.EmployeeExitRating = new List<EmployeeExitRating>();
 
             if (ExitRatingAspectsData != null)
             {
                 foreach (var n in ExitRatingAspectsData)
                 {
                     Random random = new Random();
-                    Args.RowData.EmployeeExitRating.Add(new EmployeeExitRatingDto
+                    Args.RowData.EmployeeExitRating.Add(new EmployeeExitRating
                         {
                             EmployeExitRatingId = random.Next(1000, 10000),
                             ExitRatingAspectId = n.ExitRatingAspectId
@@ -797,7 +797,7 @@
     }
 
     //Enable cell edit on single click
-    public async Task CellSelectHandler(CellSelectEventArgs<EmployeeExitRatingDto> args)
+    public async Task CellSelectHandler(CellSelectEventArgs<EmployeeExitRating> args)
     {
         try
         {
@@ -819,7 +819,7 @@
         }
     }
 
-    public string GetExitHeader(EmployeeExitInterviewDto Value)
+    public string GetExitHeader(EmployeeExitInterview Value)
     {
         if (Value.ExitInterviewId == 0)
         {
@@ -858,7 +858,7 @@
         {
             
 
-            var data = new List<EmployeeExitInterviewDto>();
+            var data = new List<EmployeeExitInterview>();
 
             string? AccessToken = _SystemSettings.AccessToken;
             string? BaseUrl = _ApiConfig.BaseUrl;
@@ -870,7 +870,7 @@
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    data = JsonSerializer.Deserialize<List<EmployeeExitInterviewDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<EmployeeExitInterview>>(content, _options);
                 }
             }
             catch (Exception ex)
@@ -911,7 +911,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<EmployeeExitInterviewDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<EmployeeExitInterview>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -922,7 +922,7 @@
             try
             {
                 
-                var val = (value as EmployeeExitInterviewDto);
+                var val = (value as EmployeeExitInterview);
                 if (val != null)
                 {
                     if (val.ExitInterviewId == 0)
@@ -935,7 +935,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -964,7 +964,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -996,7 +996,7 @@
             try
             {
                 
-                var val = (value as EmployeeExitInterviewDto);
+                var val = (value as EmployeeExitInterview);
                 if (val != null)
                 {
                     if (val.ExitInterviewId == 0)
@@ -1009,7 +1009,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -1038,7 +1038,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)

@@ -1,0 +1,776 @@
+﻿@page "/EmployeeLeaveApplicationPage"
+@using HCMIS.Data;
+@using HCMIS.Model
+@using HCMIS.SHARED;
+@using HCMIS.SHARED.Models;
+@using HCMIS.ViewModel
+@using System.Text.Json
+@using System.Text.RegularExpressions
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject NavigationManager navManager;
+@using System.Collections;
+@inject IToastService toastService;
+@using System.Globalization;
+@using HCMIS.SHARED.Data;
+@inject IJSRuntime JsRuntime;
+@using HCMIS.Interface;
+@inject IAuthenticationService AuthService;
+
+<style>
+    /*Customize Scroll Bars*/
+    ::-webkit-scrollbar-thumb {
+        background-color: #888;
+        border-radius: 10px
+    }
+
+    ::-webkit-scrollbar {
+        background-color: white;
+    }
+
+    ::-webkit-scrollbar-button {
+        background-color: #bbbbbb;
+    }
+    /*Customize Scroll Bars*/
+
+    /*stick grid headers*/
+    .e-gridheader {
+        position: -webkit-sticky;
+        position: sticky;
+        top: 56px;
+        z-index: 1;
+    }
+    /*stick grid headers*/
+    
+    .e-edit-dialog {
+        max-height: 95%;
+        max-width: 100%;
+        min-width: 100%;
+        min-height: 95%;
+    }
+
+    h6 {
+        color: ghostwhite;
+        background-color: red;
+        padding: 10px;
+        width: 100%;
+        font-size: 18px;
+    }
+
+    h4 {
+        color: black;
+        background-color: deepskyblue;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+
+    h3 {
+        color: black;
+        background-color: #bdc3c7;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+
+    /*Change Cell Color */
+    .e-headercell.e-attr1 {
+        background: #ff4d00;
+        color: white;
+    }
+
+    .e-headercell.e-attr2 {
+        background: #FFFF00;
+        color: darkred;
+    }
+
+    .e-headercell.e-attr3 {
+        background: grey;
+        color: white;
+    }
+
+    /**/
+    #container {
+        position: relative;
+        height: 550px;
+    }
+
+    .e-spinner-pane.e-spin-overlay {
+        background-color: rgb(192,192,192);
+    }
+
+    /*Accordion Colors*/
+    .e-accordion {
+        border-radius: 6px 6px 6px 6px;
+        border: none !important;
+    }
+
+        /* header custom css*/
+        .e-accordion .e-acrdn-item .e-acrdn-header {
+            background-color: rgb(0, 204, 0);
+            border-radius: 6px 6px 6px 6px;
+        }
+
+            /*header on hover custom css*/
+            .e-accordion .e-acrdn-item .e-acrdn-header:hover {
+                background-color: rgb(0, 204, 0);
+            }
+
+        /*header on selected and expanded custom css*/
+        .e-accordion .e-acrdn-item.e-select.e-expand-state > .e-acrdn-header {
+            background: rgb(0, 204, 0);
+        }
+
+        .e-accordion .e-acrdn-item.e-select.e-selected.e-expand-state > .e-acrdn-header {
+            background: rgb(0, 204, 0);
+        }
+
+        .e-accordion .e-acrdn-item.e-expand-state.e-select:not(.e-selected) > .e-acrdn-header:focus {
+            background: rgb(0, 204, 0);
+        }
+
+        /*content custom css*/
+        .e-accordion .e-acrdn-item .e-acrdn-panel .e-acrdn-content {
+            background-color: whitesmoke;
+            border-radius: 6px 6px 6px 6px;
+        }
+
+        /*to remove the white line*/
+        .e-accordion .e-acrdn-item.e-select {
+            border-bottom: 1px solid white !important;
+            border-top: 1px solid white !important;
+        }
+        /*to change the accordion header color*/
+        .e-accordion .e-acrdn-item .e-acrdn-header .e-acrdn-header-content {
+            color: darkred;
+        }
+
+
+    .pp {
+        color: ghostwhite;
+        background-color: #00cc00;
+        padding: 10px;
+    }
+    /*Hide Grid Pager Numbers*/
+    .e-pager {
+        display: none;
+    }
+</style>
+
+<center>
+    <h5>
+        <strong>LEAVE APPLICATION FORM</strong>
+    </h5>    
+</center>
+
+<div class="form-row">
+    <div class="form-group col-md-12">
+        <SfAccordion ExpandMode="@ExpandMode.Single">
+            <AccordionItems>
+                <AccordionItem Expanded="false" CssClass="const">
+                    <HeaderTemplate>Search Panel</HeaderTemplate>
+                    <ContentTemplate>
+                        <SearchLeaveRequestPage 
+                            YearData="@YearData" 
+                            finyearid="@finyearid" 
+                            onsearchtoggle="@ToggleSearchQuery">
+                        </SearchLeaveRequestPage>
+                    </ContentTemplate>
+                </AccordionItem>
+            </AccordionItems>
+        </SfAccordion>
+    </div>
+</div>
+
+<div class="form-group col-md-12">
+
+    <SfGrid @ref="@DataGrid" 
+        TValue="EmployeeLeaveHeader" 
+        ID="Grid" 
+        AllowPaging="true" 
+        AllowFiltering="true" 
+        AllowReordering="true" 
+        AllowResizing="true" 
+        AllowGrouping="true" 
+        AllowExcelExport="true" 
+        AllowPdfExport="true" 
+        AllowSelection="true" 
+        AllowSorting="true" 
+        Query="@MainQuery"
+            AllowTextWrap="true" Toolbar="@ToolbarMenu">
+        <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+            <HeaderTemplate>
+                @{
+                    var text = GetLeaveRequestHeader((context as EmployeeLeaveHeader));
+                    <div class="headerbandimg">
+                        <span>@text</span>
+                    </div>
+                }
+            </HeaderTemplate>
+            <Template>
+                @{
+                    <div class="row">
+                        <div class="col-md-4">
+                            <center>
+                                <h5>
+                                    <strong>LEAVE APPLICATION FORM</strong>
+                                </h5>
+                            </center>
+                        </div>
+
+                        @*@if (employeeleave != null)
+                        {
+                            <div class="col-md-4">
+                                <h5 style="color:green;">
+                                    <strong>Leave No: @employeeleave.EmployeeLeaveNo</strong>
+                                </h5>
+                            </div>
+                            <div class="col-md-4">
+                                <h5 style="color:green;">
+                                    <strong>Application Status: @employeeleave.LeaveApprovalStatus</strong>
+                                </h5>
+                            </div>
+                        }*@
+                    </div>
+                    LeaveData = (context as EmployeeLeaveHeader);
+
+                    @if(LeaveData != null)
+                    {
+                        <SfAccordion ExpandMode="ExpandMode.Single">
+                            <AccordionItems>
+                                <AccordionItem Expanded="true">
+                                    <HeaderTemplate><strong>PART I: EMPLOYEE PROFILE:  To be Completed and returned to the HR Department</strong></HeaderTemplate>
+                                    <ContentTemplate>
+                                        @* style="width:100%;font-size:20px; border-color:black; border-width:2px; border-style:solid; "*@
+                                        <table class="table table-bordered">
+                                            <tr>
+                                                <td style="font-weight:bold">
+                                                    No.
+                                                </td>
+                                                <td style="font-weight:bold">
+                                                    Item/Narration
+                                                </td>
+                                                <td style="font-weight:bold">
+                                                    Response
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    1.
+                                                </td>
+                                                <td>
+                                                    Employee Name
+                                                </td>
+                                                <td>
+                                                    <SfDropDownList @bind-Value="@(LeaveData.Employeeid)"
+                                                                    Enabled="EmployeeDD"
+                                                                    TItem="ViewEmployeeDropDown"
+                                                                    TValue="int?"
+                                                                    DataSource="@EmployeeData"
+                                                                    Placeholder="Please select"
+                                                                    FloatLabelType="FloatLabelType.Never"
+                                                                    AllowFiltering="true"
+                                                                    FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                        <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)"
+                                                                                   Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)">
+                                                        </DropDownListFieldSettings>
+                                                        <DropDownListEvents TValue="int?"
+                                                                            TItem="ViewEmployeeDropDown"
+                                                                            ValueChange="OnEmployeeChange">
+                                                        </DropDownListEvents>
+                                                    </SfDropDownList>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    2.
+                                                </td>
+                                                <td>
+                                                    Designation
+                                                </td>
+                                                <td>
+                                                    @*@if (employeeno != null)
+                                                    {
+                                                        @employeeno.JobTitleDescription
+                                                    }*@
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    3.
+                                                </td>
+                                                <td>
+                                                    Department
+                                                </td>
+                                                <td>
+                                                    @*@if (employeeno != null)
+                                                    {
+                                                        @employeeno.DepartmentDescription
+                                                    }*@
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    4.
+                                                </td>
+                                                <td>
+                                                    Date of Last Leave within the Present Year
+                                                </td>
+                                                <td>
+                                                    @*@if (employeeno != null)
+                                                    {
+
+                                                    }*@
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    5.
+                                                </td>
+                                                <td>
+                                                    Telephone contact during Leave
+                                                </td>
+                                                <td>
+                                                    <SfTextBox Multiline="false"
+                                                    @bind-Value="@(LeaveData.Telephone)"
+                                                               Enabled="true"
+                                                               FloatLabelType="FloatLabelType.Never">
+                                                    </SfTextBox>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                @*<p><h3>Acting Officer During Period of Leave</h3></p>*@
+                                                <LeaveDetailsPage 
+                                                    ActingOfficerDD="@ActingOfficerDD"
+                                                    ondetailstoggle="@ToggleLeaveDetailsData"
+                                                    EmployeeData="@EmployeeData"
+                                                    EmployeeLeaveId="@LeaveData.EmployeeLeaveId"
+                                                    detailsdata="@LeaveData.EmployeeLeaveDetails.ToList()">
+                                                </LeaveDetailsPage>
+                                            </div>
+                                        </div>
+                                    </ContentTemplate>
+                                </AccordionItem>
+                            </AccordionItems>
+                        </SfAccordion>
+                    }
+                }
+            </Template>
+            <FooterTemplate>
+
+            </FooterTemplate>
+        </GridEditSettings>
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+        <GridPageSettings PageSizes="true"></GridPageSettings>
+        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple"></GridSelectionSettings>
+        <GridEvents 
+                    OnActionComplete="ActionCompleteMain"
+                    OnActionBegin="ActionBeginMain"
+                    QueryCellInfo="QueryCellInfoHandler"
+                    RowDataBound="RowBound"
+                    TValue="EmployeeLeaveHeader">
+        </GridEvents>
+        <SfDataManager AdaptorInstance="@typeof(LeaveApplicationAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+        <GridColumns>
+            <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+            <GridColumn Field=@nameof(ViewEmployeeLeave.EmployeeLeaveId) HeaderText="EmployeeLeaveId" AllowEditing="false" IsPrimaryKey="true" Width="80" Visible="false"></GridColumn>
+            <GridForeignColumn Field=@nameof(ViewEmployeeLeave.EmployeeId)
+                               HeaderText="Employee"
+                               Width="100"
+                               AllowEditing="true"
+                               ForeignKeyField="@(nameof(ViewBscEmployee.Employeeid))"
+                               ForeignKeyValue="@(nameof(ViewBscEmployee.EmployeeDetails))"
+                               ForeignDataSource="@EmployeeData" AllowFiltering="false"
+                               CustomAttributes="@(new Dictionary<string,
+                    object>(){ { "class", "e-attr1" }})">
+            </GridForeignColumn>
+            <GridForeignColumn Field=@nameof(ViewEmployeeLeave.LeaveTypeId)
+                               HeaderText="Leave Type"
+                               Width="80"
+                               AllowEditing="false"
+                               ForeignKeyField="@(nameof(ALeaveType.LeaveTypeId))"
+                               ForeignKeyValue="@(nameof(ALeaveType.LeaveTypeDescription))"
+                               ForeignDataSource="@LeaveTypeData"
+                               AllowFiltering="false"
+                               IsFrozen="false"
+                               CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+            </GridForeignColumn>
+            <GridColumn Field=@nameof(ViewEmployeeLeave.NoDaysAppliedFor)
+                        HeaderText="Requested Days"
+                        AllowEditing="false"
+                        Width="80"
+                        Visible="true"
+                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+            </GridColumn>
+            <GridForeignColumn Field=@nameof(ViewEmployeeLeave.LeaveApprovalStatusId)
+                               HeaderText="Approval Status"
+                               Width="80"
+                               AllowEditing="false"
+                               ForeignKeyField="@(nameof(ALeaveApprovalStatus.LeaveApprovalStatusId))"
+                               ForeignKeyValue="@(nameof(ALeaveApprovalStatus.LeaveApprovalStatus))"
+                               ForeignDataSource="@ApprovalStatusData"
+                               AllowFiltering="false"
+                               IsFrozen="false"
+                               CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+            </GridForeignColumn>
+            <GridColumn Field=@nameof(ViewEmployeeLeave.EmployeeLeaveNo)
+                        HeaderText="Employee Leave No"
+                        AllowEditing="false"
+                        Width="80"
+                        Visible="true"
+                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+            </GridColumn>
+            <GridColumn Field=@nameof(ViewEmployeeLeave.ApplicationDate)
+                        HeaderText="Application Date"
+                        Format="dd/MMMM/yyyy hh:mm:ss"
+                        TextAlign="TextAlign.Justify"
+                        Width="80"
+                        ClipMode="ClipMode.EllipsisWithTooltip"
+                        Type="ColumnType.Date"
+                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+            </GridColumn>
+            <GridColumn Field=@nameof(ViewEmployeeLeave.SubmittedToSupervisor)
+                        HeaderText="Submitted To Supervisor"
+                        AllowEditing="false"
+                        Width="80"
+                        Visible="false">
+            </GridColumn>
+            <GridColumn Field=@nameof(ViewEmployeeLeave.SubmittedToHod)
+                        HeaderText="Submitted To HOD"
+                        AllowEditing="false"
+                        Width="80"
+                        Visible="false">
+            </GridColumn>
+            <GridColumn Field=@nameof(ViewEmployeeLeave.SubmittedToChro)
+                        HeaderText="Submitted To CHRO"
+                        AllowEditing="false"
+                        Width="80"
+                        Visible="false">
+            </GridColumn>
+            <GridColumn Field=@nameof(ViewEmployeeLeave.ApprovedByChro)
+                        HeaderText="Approved By CHRO"
+                        AllowEditing="false"
+                        Width="80"
+                        Visible="false">
+            </GridColumn>
+        </GridColumns>
+    </SfGrid>
+
+
+</div>
+
+@code {
+    public int? finyearid { get; set; }    
+    public Query MainQuery = new Query();
+    LoginResultModel? Credentials { get; set; }
+    List<AYears>? YearData { get; set; }
+    List<ViewEmployeeDropDown>? EmployeeData { get; set; }
+    private static ViewEmployeeDropDown? employeeno { get; set; }
+    List<ALeaveType>? LeaveTypeData { get; set; }
+    List<ALeaveApprovalStatus>? ApprovalStatusData { get; set; }
+    private static EmployeeLeaveHeader? LeaveData { get; set; }
+    List<APublicHolidays>? PublicHolidaysData { get; set; }
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    int currentMonth = DateTime.Now.Month;
+    int currentYear = DateTime.Now.Year;
+    int currentDay = DateTime.Now.Day;
+    public AppraisalSearch searchpanel { get; set; } = new AppraisalSearch();
+    SfGrid<EmployeeLeaveHeader> DataGrid { get; set; }
+    public bool EmployeeDD { get; set; }
+    public bool ActingOfficerDD { get; set; }
+    private List<object> ToolbarMenu = new List<object>()
+    {
+        new ItemModel() { Text = "Create Request", PrefixIcon = "e-add", Id = "Grid_add"},
+        new ItemModel(){ Text = "Edit Request", PrefixIcon= "e-edit", Id="Grid_edit"},
+        //new ItemModel(){ Text = "Delete Training Plan", PrefixIcon= "e-delete", Id="Grid_delete"},
+        new ItemModel(){ Text = "Update Request", PrefixIcon= "e-update", Id="Grid_update"},
+        new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
+    };
+
+    private void ToggleSearchQuery(Query? DetailData)
+    {
+        try
+        {
+            if (DetailData != null)
+            {
+                MainQuery = DetailData;
+            }
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+
+    }
+
+    private void ToggleLeaveDetailsData(List<EmployeeLeaveDetails>? DetailsChange)
+    {
+        if (LeaveData != null && DetailsChange != null)
+        {
+            if (LeaveData.EmployeeLeaveDetails == null)
+            {
+                LeaveData.EmployeeLeaveDetails = new List<EmployeeLeaveDetails>();
+            }
+            LeaveData.EmployeeLeaveDetails = DetailsChange;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await base.OnInitializedAsync();
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
+            {
+                navManager.NavigateTo("/LoginPage", true);
+            }
+            else
+            {
+                Credentials = await AuthService.GetUserCredentials();
+                employeeno = null;
+                MainQuery = new Query();
+
+                List<Task> t = new List<Task>();
+
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetYears");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        YearData = JsonSerializer.Deserialize<List<AYears>>(content, _options);
+
+                        var b = YearData.FirstOrDefault(o => o.YearDesc == currentYear);
+                        if (b != null)
+                        {
+                            finyearid = b.YearId;
+                            List<int?> _finyearid = new List<int?>();
+                            _finyearid.Add(finyearid);
+                            searchpanel.YearId = _finyearid.ToArray();
+                            MainQuery = new Query().AddParams("YearId", string.Join(",", searchpanel.YearId));
+                        }
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetEmployeeDD");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(content, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetLeaveType");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        LeaveTypeData = JsonSerializer.Deserialize<List<ALeaveType>>(content, _options);
+                    }
+                }));
+
+                Task _t = Task.WhenAll(t);
+                await _t;
+            }
+        }
+        catch (Exception ex)
+        {
+
+        }
+        finally
+        {
+
+        }
+
+    }
+
+
+    public string GetLeaveRequestHeader(EmployeeLeaveHeader Value)
+    {
+        if (Value.EmployeeLeaveId == 0)
+        {
+            return "New Leave Request";
+        }
+        else
+        {
+            // return "Edit " + Value.EmployeeFullName;
+            return "Edit Records";
+        }
+    }
+
+    public async void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewEmployeeDropDown> args)
+    {
+        employeeno = args.ItemData;        
+    }
+
+    public async void ActionCompleteMain(ActionEventArgs<EmployeeLeaveHeader> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) ||
+        args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            DataGrid.PreventRender(false);
+        }
+    }
+
+    public async void ActionBeginMain(ActionEventArgs<EmployeeLeaveHeader> Args)
+    {
+        try
+        {
+            if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+            {
+                ActingOfficerDD = true;
+                EmployeeDD = true;
+                Args.RowData.EmployeeLeaveDetails = new List<EmployeeLeaveDetails>();
+            }
+
+            if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+                if (Args.RowData.EmployeeLeaveDetails == null)
+                {
+                    Args.RowData.EmployeeLeaveDetails = new List<EmployeeLeaveDetails>();
+                }
+            }
+            if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+            {
+                
+            }
+
+        }
+        catch(Exception ex)
+        {
+
+        }
+        finally
+        {
+            
+        }
+        
+    }
+
+    public void QueryCellInfoHandler(QueryCellInfoEventArgs<EmployeeLeaveHeader> Args)
+    {
+        if (Args.Column.Field == "LeaveApprovalStatusId")
+        {
+            if (Args.Data.LeaveApprovalStatusId == 9 || Args.Data.LeaveApprovalStatusId == 11)
+            {
+                Args.Cell.AddClass(new string[] { "Approved" });
+            }
+            else
+            {
+                Args.Cell.AddClass(new string[] { "Draft" });
+            }
+        }
+    }
+
+    public void RowBound(RowDataBoundEventArgs<EmployeeLeaveHeader> Args)
+    {
+
+    }
+
+    #region LeaveRequest
+
+    public class LeaveApplicationAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        IAuthenticationService _AuthService;
+        ApiConfig _ApiConfig;
+        public IToastService toastService;
+        private readonly NavigationManager Navigation;
+        private readonly ILogger<LeaveApplicationAdapter> _logger;
+
+        public LeaveApplicationAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+            , IAuthenticationService authservice, ApiConfig apiConfig,
+        ILogger<LeaveApplicationAdapter> logger)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            Navigation = _Navigation;
+            _ApiConfig = apiConfig;
+            _AuthService = authservice;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            string? _YearId = null;
+
+            if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
+            {
+                var val = dataManagerRequest.Params;
+
+                if (val.FirstOrDefault(o => o.Key == "YearId").Value != null)
+                {
+                    _YearId = val.FirstOrDefault(o => o.Key == "YearId").Value.ToString();
+                }
+            }
+
+            var data = new List<EmployeeLeaveHeader>();
+            try
+            {
+                var response = await Http.GetAsync($"EmployeeLeave/GetEmployeeLeaveData?finyearid={_YearId}");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    data = JsonSerializer.Deserialize<List<EmployeeLeaveHeader>>(content, _options);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<EmployeeLeaveHeader>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+    }
+
+    #endregion LeaveRequest
+}

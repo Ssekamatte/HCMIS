@@ -1,6 +1,6 @@
 ﻿@page "/TrainingEvaluationFormPage"
 @using HCMIS.Model
-@using HCMIS.SHARED.DTOs.Utilities;
+
 @using HCMIS.ViewModel
 @using System.Text.Json
 @using System.Text.RegularExpressions
@@ -10,8 +10,7 @@
 @inject NavigationManager Navigation
 @inject SystemSettings _SystemSettings
 @using System.Collections;
-@using HCMIS.SHARED.DTOs.Training;
-@using HCMIS.SHARED.DTOs.BSC;
+
 @inject IToastService toastService;
 
 <style>
@@ -76,17 +75,17 @@
 </center>
 
 <div class="row">      
-    <SfGrid ID="Grid" @ref="EvaluationGrid" TValue="TrainingEvaluationDto"
+    <SfGrid ID="Grid" @ref="EvaluationGrid" TValue="TrainingEvaluation"
             Toolbar="@ToolbarMenu" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
             AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true">
         <SfDataManager AdaptorInstance="@typeof(EvaluationAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
         <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
         <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
-        <GridEvents OnActionBegin="EvaluationActionBegin" TValue="TrainingEvaluationDto"></GridEvents>
+        <GridEvents OnActionBegin="EvaluationActionBegin" TValue="TrainingEvaluation"></GridEvents>
         <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog">
             <HeaderTemplate>
                 @{
-                    var text = GetEvaluationHeader((context as TrainingEvaluationDto));
+                    var text = GetEvaluationHeader((context as TrainingEvaluation));
                     <div class="headerbandimg" />
                     <span>@text</span>
                 }
@@ -98,7 +97,7 @@
                             <strong>NH/TRN/FORM/001</strong>
                         </h5>
                     </center>
-                    EvaluationData = (context as TrainingEvaluationDto);
+                    EvaluationData = (context as TrainingEvaluation);
                     <SfAccordion ExpandMode="@ExpandMode.Single">
                         <AccordionItems>
                             <AccordionItem Expanded="true">
@@ -111,8 +110,8 @@
                                                 </div>
                                                 <div class="col-md-6">
                                                     <p><h3>Training Topic:<span style="color:red;">*</span></h3></p>
-                                                    <SfDropDownList @bind-Value="@(EvaluationData.TrainingTopicId)" Enabled="true" TItem="TrainingTopicDTO" TValue="int?" DataSource="@TopicData" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                                        <DropDownListFieldSettings Value="@nameof(TrainingTopicDTO.TrainingTopicId)" Text="@nameof(TrainingTopicDTO.TrainingTopicDescription)"></DropDownListFieldSettings>
+                                                    <SfDropDownList @bind-Value="@(EvaluationData.TrainingTopicId)" Enabled="true" TItem="TrainingTopic" TValue="int?" DataSource="@TopicData" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                        <DropDownListFieldSettings Value="@nameof(TrainingTopic.TrainingTopicId)" Text="@nameof(TrainingTopic.TrainingTopicDescription)"></DropDownListFieldSettings>
                                                     </SfDropDownList>
                                                 </div>
                                                 <div class="col-md-6">
@@ -141,7 +140,7 @@
                                                 <SfGrid @ref="InstructionsGrid"
                                                     DataSource="@EvaluationData.TrainingEvaluationInstructions"
                                                         EnableStickyHeader=true
-                                                        TValue="TrainingEvaluationInstructionsDto" 
+                                                        TValue="TrainingEvaluationInstructions" 
                                                         AllowGrouping="true" ShowColumnChooser="true" AllowTextWrap="true"
                                                         AllowPaging="true" 
                                                         AllowFiltering="true" 
@@ -159,10 +158,10 @@
 
                                                         <GridEvents CellSelected="CellSelectHandler"
                                                             QueryCellInfo="QueryCellInfoHandler"
-                                                            TValue="TrainingEvaluationInstructionsDto">
+                                                            TValue="TrainingEvaluationInstructions">
                                                         </GridEvents>
                                                      <GridColumns>
-                                                        <GridColumn Field=@nameof(TrainingEvaluationInstructionsDto.InstructionsId) 
+                                                        <GridColumn Field=@nameof(TrainingEvaluationInstructions.InstructionsId) 
                                                             HeaderText="#" 
                                                             TextAlign="TextAlign.Left" 
                                                             IsPrimaryKey="true" 
@@ -173,19 +172,19 @@
                                                             object>(){ { "class", "e-attr1" }})">
                                                         </GridColumn>
 
-                                                        <GridForeignColumn Field="@nameof(TrainingEvaluationInstructionsDto.StatementId)"
+                                                        <GridForeignColumn Field="@nameof(TrainingEvaluationInstructions.StatementId)"
                                                             Visible="true" 
                                                             HeaderText="Instructions" 
                                                             Width="100" 
-                                                            ForeignKeyField="@nameof(ATrainingStatementsDto.StatementId)" 
-                                                            ForeignKeyValue="@nameof(ATrainingStatementsDto.StatementDescription)" 
+                                                            ForeignKeyField="@nameof(ATrainingStatements.StatementId)" 
+                                                            ForeignKeyValue="@nameof(ATrainingStatements.StatementDescription)" 
                                                             ForeignDataSource="@StatementsData" 
                                                             ValidationRules="@(new ValidationRules {Required=true})" 
                                                             AllowEditing="false" 
                                                             CustomAttributes="@(new Dictionary<string,
                                                             object>(){ { "class", "e-attr1" }})">
                                                         </GridForeignColumn>
-                                                        <GridForeignColumn Field="@nameof(TrainingEvaluationInstructionsDto.AgreementLevelId)"
+                                                        <GridForeignColumn Field="@nameof(TrainingEvaluationInstructions.AgreementLevelId)"
                                                                            Visible="true"
                                                                            HeaderText="Agreement Level"
                                                                            Width="100"
@@ -196,40 +195,40 @@
                                                                            CustomAttributes="@(new Dictionary<string,
                                                             object>(){ { "class", "e-attr1" }})">
                                                         </GridForeignColumn>
-                                                            @*<GridColumn Field=@nameof(TrainingEvaluationInstructionsDto.StronglyAgree) HeaderText="StronglyAgree" DisplayAsCheckBox="true" Width="150">
+                                                            @*<GridColumn Field=@nameof(TrainingEvaluationInstructions.StronglyAgree) HeaderText="StronglyAgree" DisplayAsCheckBox="true" Width="150">
                                                                         <EditTemplate Context = "templatecontext">
                                                                         @{
-                                                                    <SfCheckBox @bind-Checked="@((context as TrainingEvaluationInstructionsDto).StronglyAgree)" ValueChange="@((args)=>OnChange(args, context as TrainingEvaluationInstructionsDto))" TChecked="bool?"></SfCheckBox>
+                                                                    <SfCheckBox @bind-Checked="@((context as TrainingEvaluationInstructions).StronglyAgree)" ValueChange="@((args)=>OnChange(args, context as TrainingEvaluationInstructions))" TChecked="bool?"></SfCheckBox>
                                                                 }
                                                                         </EditTemplate>
                                                             </GridColumn>
 
-                                                            <GridColumn Field=@nameof(TrainingEvaluationInstructionsDto.Agree) HeaderText="Agree" DisplayAsCheckBox="true" Width="150">
+                                                            <GridColumn Field=@nameof(TrainingEvaluationInstructions.Agree) HeaderText="Agree" DisplayAsCheckBox="true" Width="150">
                                                                         <EditTemplate Context = "templatecontext">
                                                                         @{
-                                                                            <SfCheckBox @bind-Checked="@((context as TrainingEvaluationInstructionsDto).Agree)" ValueChange="@((args)=>OnChange(args, context as TrainingEvaluationInstructionsDto))" TChecked="bool?"></SfCheckBox>
+                                                                            <SfCheckBox @bind-Checked="@((context as TrainingEvaluationInstructions).Agree)" ValueChange="@((args)=>OnChange(args, context as TrainingEvaluationInstructions))" TChecked="bool?"></SfCheckBox>
                                                                 }
                                                                         </EditTemplate>
                                                             </GridColumn>
 
-                                                            <GridColumn Field=@nameof(TrainingEvaluationInstructionsDto.Neutral) HeaderText="Neutral" DisplayAsCheckBox="true" Width="150">
+                                                            <GridColumn Field=@nameof(TrainingEvaluationInstructions.Neutral) HeaderText="Neutral" DisplayAsCheckBox="true" Width="150">
                                                                         <EditTemplate Context = "templatecontext">
                                                                         @{
-                                                                    <SfCheckBox @bind-Checked="@((context as TrainingEvaluationInstructionsDto).Neutral)" ValueChange="@((args)=>OnChange(args, context as TrainingEvaluationInstructionsDto))" TChecked="bool?"></SfCheckBox>
+                                                                    <SfCheckBox @bind-Checked="@((context as TrainingEvaluationInstructions).Neutral)" ValueChange="@((args)=>OnChange(args, context as TrainingEvaluationInstructions))" TChecked="bool?"></SfCheckBox>
                                                                 }
                                                                         </EditTemplate>
                                                         </GridColumn>*@
 
-                                                        @*<GridColumn Field=@nameof(TrainingEvaluationInstructionsDto.StronglyAgree) HeaderText="Strongly Agree" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="80"
+                                                        @*<GridColumn Field=@nameof(TrainingEvaluationInstructions.StronglyAgree) HeaderText="Strongly Agree" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="80"
                                                         CustomAttributes="@(new Dictionary<string,
                                                         object>(){ { "class", "e-attr1" }})"></GridColumn>
-                                                        <GridColumn Field=@nameof(TrainingEvaluationInstructionsDto.Agree) HeaderText="Agree" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="80"
+                                                        <GridColumn Field=@nameof(TrainingEvaluationInstructions.Agree) HeaderText="Agree" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="80"
                                                         CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"></GridColumn>
-                                                        <GridColumn Field=@nameof(TrainingEvaluationInstructionsDto.Neutral) HeaderText="Neutral" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="80"
+                                                        <GridColumn Field=@nameof(TrainingEvaluationInstructions.Neutral) HeaderText="Neutral" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="80"
                                                         CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"></GridColumn>
-                                                        <GridColumn Field=@nameof(TrainingEvaluationInstructionsDto.Disagree) HeaderText="Disagree" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="80"
+                                                        <GridColumn Field=@nameof(TrainingEvaluationInstructions.Disagree) HeaderText="Disagree" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="80"
                                                         CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"></GridColumn>
-                                                        <GridColumn Field=@nameof(TrainingEvaluationInstructionsDto.StronglyDisagree) HeaderText="Strongly Disagree" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="80"
+                                                        <GridColumn Field=@nameof(TrainingEvaluationInstructions.StronglyDisagree) HeaderText="Strongly Disagree" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="80"
                                                         CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"></GridColumn>*@
                                                     </GridColumns>
                                                 </SfGrid>
@@ -336,8 +335,8 @@
                                HeaderText="Training Topic"
                                Width="100"
                                AllowEditing="true"
-                               ForeignKeyField="@(nameof(TrainingTopicDTO.TrainingTopicId))"
-                               ForeignKeyValue="@(nameof(TrainingTopicDTO.TrainingTopicDescription))"
+                               ForeignKeyField="@(nameof(TrainingTopic.TrainingTopicId))"
+                               ForeignKeyValue="@(nameof(TrainingTopic.TrainingTopicDescription))"
                                ForeignDataSource="@TopicData"
                                AllowFiltering="true"
                                IsFrozen="false"
@@ -371,13 +370,13 @@
         };
     #endregion Toasters
 
-    private SfGrid<TrainingEvaluationDto>? EvaluationGrid;
-    private SfGrid<TrainingEvaluationInstructionsDto>? InstructionsGrid;
-    private static TrainingEvaluationDto? EvaluationData { get; set; }
-    private TrainingEvaluationDto? evaluationentity { get; set; } = new();
-    List<ATrainingStatementsDto>? StatementsData { get; set; }
-    List<TrainingTopicDTO>? TopicData { get; set; }
-    List<TrainingEvaluationInstructionsDto>? InstructionsData { get; set; }
+    private SfGrid<TrainingEvaluation>? EvaluationGrid;
+    private SfGrid<TrainingEvaluationInstructions>? InstructionsGrid;
+    private static TrainingEvaluation? EvaluationData { get; set; }
+    private TrainingEvaluation? evaluationentity { get; set; } = new();
+    List<ATrainingStatements>? StatementsData { get; set; }
+    List<TrainingTopic>? TopicData { get; set; }
+    List<TrainingEvaluationInstructions>? InstructionsData { get; set; }
     List<AGender>? GenderData { get; set; }
     List<AAgreementLevelDto>? AgreementLevelData { get; set; }
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -421,12 +420,12 @@
 
             if (evaluationentity != null && evaluationentity.TrainingEvaluationInstructions == null)
             {
-                List<TrainingEvaluationInstructionsDto> m = new List<TrainingEvaluationInstructionsDto>();
+                List<TrainingEvaluationInstructions> m = new List<TrainingEvaluationInstructions>();
 
                 foreach (var n in StatementsData)
                 {
                     Random random = new Random();
-                    m.Add(new TrainingEvaluationInstructionsDto
+                    m.Add(new TrainingEvaluationInstructions
                         {
                             InstructionsId = random.Next(1000, 10000),
                             StatementId = n.StatementId
@@ -443,7 +442,7 @@
                     if (x == null)
                     {
                         Random random = new Random();
-                        evaluationentity.TrainingEvaluationInstructions.Add(new TrainingEvaluationInstructionsDto
+                        evaluationentity.TrainingEvaluationInstructions.Add(new TrainingEvaluationInstructions
                             {
                                 InstructionsId = random.Next(1000, 10000),
                                 StatementId = n.StatementId,
@@ -512,7 +511,7 @@
             if (responsetopic.IsSuccessStatusCode)
             {
                 var contenttopic = await responsetopic.Content.ReadAsStringAsync();
-                TopicData = JsonSerializer.Deserialize<List<TrainingTopicDTO>>(contenttopic, _options);
+                TopicData = JsonSerializer.Deserialize<List<TrainingTopic>>(contenttopic, _options);
             }
         }));
         
@@ -522,7 +521,7 @@
             if (responsestatement.IsSuccessStatusCode)
             {
                 var contentstatement = await responsestatement.Content.ReadAsStringAsync();
-                StatementsData = JsonSerializer.Deserialize<List<ATrainingStatementsDto>>(contentstatement, _options);
+                StatementsData = JsonSerializer.Deserialize<List<ATrainingStatements>>(contentstatement, _options);
             }
         }));
         
@@ -532,7 +531,7 @@
             if (responseInstruction.IsSuccessStatusCode)
             {
                 var contentinstruction = await responseInstruction.Content.ReadAsStringAsync();
-                InstructionsData = JsonSerializer.Deserialize<List<TrainingEvaluationInstructionsDto>>(contentinstruction, _options);
+                InstructionsData = JsonSerializer.Deserialize<List<TrainingEvaluationInstructions>>(contentinstruction, _options);
             }
         }));
 
@@ -616,7 +615,7 @@
         {
             
 
-            var data = new List<TrainingEvaluationDto>();
+            var data = new List<TrainingEvaluation>();
 
             string? AccessToken = _SystemSettings.AccessToken;
             string? BaseUrl = _ApiConfig.BaseUrl;
@@ -628,7 +627,7 @@
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    data = JsonSerializer.Deserialize<List<TrainingEvaluationDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<TrainingEvaluation>>(content, _options);
                 }
             }
             catch (Exception ex)
@@ -669,7 +668,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<TrainingEvaluationDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<TrainingEvaluation>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -680,7 +679,7 @@
             try
             {
                 
-                var val = (value as TrainingEvaluationDto);
+                var val = (value as TrainingEvaluation);
                 if (val != null)
                 {
                     if (val.EvaluationId == 0)
@@ -693,7 +692,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -722,7 +721,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -754,7 +753,7 @@
             try
             {
                 
-                var val = (value as TrainingEvaluationDto);
+                var val = (value as TrainingEvaluation);
                 if (val != null)
                 {
                     if (val.EvaluationId == 0)
@@ -767,7 +766,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -796,7 +795,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -824,7 +823,7 @@
             return value;
         }    
     }
-    public void AssessmentActionComplete(ActionEventArgs<TrainingEvaluationDto> args)
+    public void AssessmentActionComplete(ActionEventArgs<TrainingEvaluation> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
         {
@@ -832,7 +831,7 @@
         }
     }
 
-    public async void EvaluationActionBegin(ActionEventArgs<TrainingEvaluationDto> Args)
+    public async void EvaluationActionBegin(ActionEventArgs<TrainingEvaluation> Args)
     {
         var data = Args.Data;
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
@@ -856,7 +855,7 @@
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
         {
             if(Args.RowData.TrainingEvaluationInstructions== null){
-                Args.RowData.TrainingEvaluationInstructions = new List<TrainingEvaluationInstructionsDto>();
+                Args.RowData.TrainingEvaluationInstructions = new List<TrainingEvaluationInstructions>();
             }
             foreach (var n in StatementsData)
             {
@@ -864,7 +863,7 @@
                 if (x == null)
                 {
                     Random random = new Random();
-                    Args.RowData.TrainingEvaluationInstructions.Add(new TrainingEvaluationInstructionsDto
+                    Args.RowData.TrainingEvaluationInstructions.Add(new TrainingEvaluationInstructions
                         {
                             InstructionsId = random.Next(1000, 10000),
                             StatementId = n.StatementId,
@@ -875,11 +874,11 @@
         }
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
         {
-            Args.RowData.TrainingEvaluationInstructions = new List<TrainingEvaluationInstructionsDto>();
+            Args.RowData.TrainingEvaluationInstructions = new List<TrainingEvaluationInstructions>();
             foreach (var n in StatementsData)
             {
                Random random = new Random();
-                    Args.RowData.TrainingEvaluationInstructions.Add(new TrainingEvaluationInstructionsDto
+                    Args.RowData.TrainingEvaluationInstructions.Add(new TrainingEvaluationInstructions
                         {
                             InstructionsId = random.Next(1000, 10000),
                             StatementId = n.StatementId,
@@ -888,7 +887,7 @@
         }
     }
 
-    public string GetEvaluationHeader(TrainingEvaluationDto Value)
+    public string GetEvaluationHeader(TrainingEvaluation Value)
     {
         if (Value.EvaluationId == 0)
         {
@@ -901,7 +900,7 @@
     }
 
     //Enable cell edit on single click
-    public async Task CellSelectHandler(CellSelectEventArgs<TrainingEvaluationInstructionsDto> args)
+    public async Task CellSelectHandler(CellSelectEventArgs<TrainingEvaluationInstructions> args)
     {
         //get selected cell index
         var CellIndexes = await InstructionsGrid.GetSelectedRowCellIndexes();
@@ -916,7 +915,7 @@
         await InstructionsGrid.EditCell(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
     }
 
-    public void QueryCellInfoHandler(QueryCellInfoEventArgs<TrainingEvaluationInstructionsDto> Args)
+    public void QueryCellInfoHandler(QueryCellInfoEventArgs<TrainingEvaluationInstructions> Args)
     {
         //if (Args.Column.Type == ColumnType.CheckBox && (Args.Data.CustomerID == "ALFKI" || Args.Data.CustomerID == "ANTON"))
         //{
@@ -925,7 +924,7 @@
 
     }
 
-    public async Task OnChange(Syncfusion.Blazor.Buttons.ChangeEventArgs<bool?> args, TrainingEvaluationInstructionsDto orderdata)
+    public async Task OnChange(Syncfusion.Blazor.Buttons.ChangeEventArgs<bool?> args, TrainingEvaluationInstructions orderdata)
     {    
         if (args.Checked ==  true)
         {

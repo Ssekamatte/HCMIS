@@ -1,8 +1,8 @@
 ﻿@page "/AnnualLeavePlanPage"
 @using System.Text.Json;
-@using HCMIS.SHARED.DTOs;
-@using HCMIS.SHARED.DTOs.Employeez;
-@using HCMIS.SHARED.DTOs.Utilities;
+@using HCMIS.Model;
+@using HCMIS.SHARED.Data;
+@using HCMIS.SHARED.Models;
 @using Syncfusion.Blazor.Schedule
 @using static System.Net.WebRequestMethods;
 @inject ApiConfig _ApiConfig;
@@ -93,14 +93,14 @@
 
 
 <div class="form-group col-md-12">
-    <SfGrid @ref="@MainGrid" TValue="AnnualLeaveRosterDto" ID="GridMain" Query="@MainQuery" Toolbar="@ToolbarMenuMain"
+    <SfGrid @ref="@MainGrid" TValue="AnnualLeaveRoster" ID="GridMain" Query="@MainQuery" Toolbar="@ToolbarMenuMain"
                 AllowPaging="true" AllowFiltering="false" AllowTextWrap="true" AllowGrouping="true" GridLines="GridLine.Both">
                 
                 <GridEditSettings AllowAdding="true" AllowDeleting="true" AllowEditing="true" Mode="EditMode.Dialog" ShowConfirmDialog="false"
                           Dialog="@DialogParams">
                      <HeaderTemplate>
                         @{
-                            var text = GetRoasterHeader(context as AnnualLeaveRosterDto);
+                            var text = GetRoasterHeader(context as AnnualLeaveRoster);
                             <div class="headerbandimg">
                                  <span>@text</span>
                             </div>
@@ -114,14 +114,14 @@
                                 </h5>
                             </center>
                             
-                            PlannedDaysData = (context as AnnualLeaveRosterDto);
+                            PlannedDaysData = (context as AnnualLeaveRoster);
                             
                             <div style="padding:15px;">
                                 <div class="form-row">
                             <div class="form-group col-md-6">
                                 <p>Employee:<span style="color:red;">*</span></p>
                                 <SfDropDownList @bind-Value="@(PlannedDaysData.EmployeeId)"
-                                                TItem="EmployeeDto"
+                                                TItem="Employee"
                                                 TValue="int?"
                                                 DataSource="@EmployeeData"
                                                 Placeholder="Please select"
@@ -129,32 +129,32 @@
                                                 AllowFiltering="true"
                                                 Enabled="@EmployeeDD"
                                                 FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                                <DropDownListFieldSettings Text="@nameof(EmployeeDto.LastName)" Value="@nameof(EmployeeDto.Employeeid)"></DropDownListFieldSettings> 
-                                                    <DropDownListTemplates TItem="EmployeeDto"> 
+                                                <DropDownListFieldSettings Text="@nameof(Employee.LastName)" Value="@nameof(Employee.Employeeid)"></DropDownListFieldSettings> 
+                                                    <DropDownListTemplates TItem="Employee"> 
                                                         <ValueTemplate Context="NameContext"> 
-                                                            <span class='name'>@((NameContext as EmployeeDto).FirstName) @((NameContext as EmployeeDto).LastName)</span>
+                                                            <span class='name'>@((NameContext as Employee).FirstName) @((NameContext as Employee).LastName)</span>
                                                         </ValueTemplate> 
                                                         <ItemTemplate Context="ItemContext"> 
-                                                            <span class='name'>@((ItemContext as EmployeeDto).FirstName) @((ItemContext as EmployeeDto).LastName)</span> 
+                                                            <span class='name'>@((ItemContext as Employee).FirstName) @((ItemContext as Employee).LastName)</span> 
                                                         </ItemTemplate> 
                                                     </DropDownListTemplates> 
                                                     <DropDownListEvents TValue="int?"
-                                                        TItem="EmployeeDto" ValueChange="OnEmployeeChange">
+                                                        TItem="Employee" ValueChange="OnEmployeeChange">
                                                     </DropDownListEvents>
                                 </SfDropDownList>
                             </div>
                                     <div class="form-group col-md-6">
                                         <p>Year:<span style="color:red;">*</span></p>
                                         <SfDropDownList @bind-Value="@(PlannedDaysData.YearId)"
-                                                        Enabled="@YearDD" TItem="AYearsDto" TValue="int?"
+                                                        Enabled="@YearDD" TItem="AYears" TValue="int?"
                                                         DataSource="@YearData" Placeholder="Please select"
                                                         FloatLabelType="FloatLabelType.Never" AllowFiltering="true"
                                                         FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" @ref="YearEdit">
-                                            <DropDownListFieldSettings Value="@nameof(AYearsDto.YearId)"
-                                                                       Text="@nameof(AYearsDto.YearDesc)">
+                                            <DropDownListFieldSettings Value="@nameof(AYears.YearId)"
+                                                                       Text="@nameof(AYears.YearDesc)">
                                             </DropDownListFieldSettings>
                                             <DropDownListEvents TValue="int?"
-                                                    TItem="AYearsDto" ValueChange="OnYearChange">
+                                                    TItem="AYears" ValueChange="OnYearChange">
                                         </DropDownListEvents>
                                         </SfDropDownList>
                                     </div>                                    
@@ -185,7 +185,7 @@
 
                                     <div class="form-group col-md-12">
                                         <SfGrid @ref="@DataGrid"
-                                        TValue="AnnualLeaveRosterMonthsDto"
+                                        TValue="AnnualLeaveRosterMonths"
                                                 ID="Grid1"
                                             DataSource="@PlannedDaysData.AnnualLeaveRosterMonths"
                                         AllowPaging="false" AllowFiltering="false" AllowReordering="true"
@@ -202,13 +202,13 @@
                                             <GridEvents 
                                                     QueryCellInfo="QueryCellInfoHandler"
                                                     CellSelected="OnCellSelect"
-                                                    TValue="AnnualLeaveRosterMonthsDto">                                               
+                                                    TValue="AnnualLeaveRosterMonths">                                               
                                             </GridEvents>
                                             <GridColumns>
                                             <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
-                                                <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.LeaveRoasterMonthsId) HeaderText="Months Id" AllowEditing="false" IsPrimaryKey="true" Width="150" Visible="false"></GridColumn>
+                                                <GridColumn Field=@nameof(AnnualLeaveRosterMonths.LeaveRoasterMonthsId) HeaderText="Months Id" AllowEditing="false" IsPrimaryKey="true" Width="150" Visible="false"></GridColumn>
                                                 <GridColumn 
-                                                    Field=@nameof(AnnualLeaveRosterMonthsDto.DayId) 
+                                                    Field=@nameof(AnnualLeaveRosterMonths.DayId) 
                                                     HeaderText="Day" 
                                                     AllowEditing="false" 
                                                     Width="70" 
@@ -217,116 +217,116 @@
                                                 <GridColumn HeaderText="Months"
                                                             CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
                                                     <GridColumns>
-                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.January) HeaderText="Jan" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
+                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonths.January) HeaderText="Jan" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
                                                                 <Template Context="JanContext">
                                                                     @{
-                                                                        var val = (JanContext as AnnualLeaveRosterMonthsDto);
+                                                                        var val = (JanContext as AnnualLeaveRosterMonths);
                                                                         <SfCheckBox CssClass="e-outline e-success" @bind-Checked=@val.January TChecked="bool?"></SfCheckBox>
                                                                     }
                                                                 </Template>
                                                             </GridColumn>
-                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.February) HeaderText="Feb" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
+                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonths.February) HeaderText="Feb" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
                                                                 <Template Context="FebContext">
                                                                     @{
-                                                                        var val = (FebContext as AnnualLeaveRosterMonthsDto);
+                                                                        var val = (FebContext as AnnualLeaveRosterMonths);
                                                                         <SfCheckBox CssClass="e-outline e-success" @bind-Checked=@val.February TChecked="bool?"></SfCheckBox>
                                                                     }
                                                                 </Template>
                                                             </GridColumn>
-                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.March) HeaderText="Mar" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
+                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonths.March) HeaderText="Mar" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
                                                                 <Template Context="MarContext">
                                                                     @{
-                                                                        var val = (MarContext as AnnualLeaveRosterMonthsDto);
+                                                                        var val = (MarContext as AnnualLeaveRosterMonths);
                                                                         <SfCheckBox CssClass="e-outline e-success" @bind-Checked=@val.March TChecked="bool?"></SfCheckBox>
                                                                     }
                                                                 </Template>
                                                             </GridColumn>
-                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.April) HeaderText="Apr" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
+                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonths.April) HeaderText="Apr" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
                                                                 <Template Context="AprilContext">
                                                                     @{
-                                                                        var val = (AprilContext as AnnualLeaveRosterMonthsDto);
+                                                                        var val = (AprilContext as AnnualLeaveRosterMonths);
                                                                         <SfCheckBox CssClass="e-outline e-success" @bind-Checked=@val.April TChecked="bool?"></SfCheckBox>
                                                                     }
                                                                 </Template>
                                                             </GridColumn>
-                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.May) HeaderText="May" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
+                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonths.May) HeaderText="May" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
                                                                 <Template Context="MayContext">
                                                                     @{
-                                                                        var val = (MayContext as AnnualLeaveRosterMonthsDto);
+                                                                        var val = (MayContext as AnnualLeaveRosterMonths);
                                                                         <SfCheckBox CssClass="e-outline e-success" @bind-Checked=@val.May TChecked="bool?"></SfCheckBox>
                                                                     }
                                                                 </Template>
                                                             </GridColumn>
-                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.June) HeaderText="Jun" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
+                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonths.June) HeaderText="Jun" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
                                                                 <Template Context="JuneContext">
                                                                     @{
-                                                                        var val = (JuneContext as AnnualLeaveRosterMonthsDto);
+                                                                        var val = (JuneContext as AnnualLeaveRosterMonths);
                                                                         <SfCheckBox CssClass="e-outline e-success" @bind-Checked=@val.June TChecked="bool?"></SfCheckBox>
                                                                     }
                                                                 </Template>
                                                             </GridColumn>
-                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.July) HeaderText="Jul" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
+                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonths.July) HeaderText="Jul" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
                                                                 <Template Context="JulyContext">
                                                                     @{
-                                                                        var val = (JulyContext as AnnualLeaveRosterMonthsDto);
+                                                                        var val = (JulyContext as AnnualLeaveRosterMonths);
                                                                         <SfCheckBox CssClass="e-outline e-success" @bind-Checked=@val.July TChecked="bool?"></SfCheckBox>
                                                                     }
                                                                 </Template>
                                                             </GridColumn>
-                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.August) HeaderText="Aug" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
+                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonths.August) HeaderText="Aug" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
                                                                 <Template Context="AugustContext">
                                                                     @{
-                                                                        var val = (AugustContext as AnnualLeaveRosterMonthsDto);
+                                                                        var val = (AugustContext as AnnualLeaveRosterMonths);
                                                                         <SfCheckBox CssClass="e-outline e-success" @bind-Checked=@val.August TChecked="bool?"></SfCheckBox>
                                                                     }
                                                                 </Template>
                                                             </GridColumn>
-                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.September) HeaderText="Sep" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
+                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonths.September) HeaderText="Sep" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
                                                                 <Template Context="SeptemberContext">
                                                                     @{
-                                                                        var val = (SeptemberContext as AnnualLeaveRosterMonthsDto);
+                                                                        var val = (SeptemberContext as AnnualLeaveRosterMonths);
                                                                         <SfCheckBox CssClass="e-outline e-success" @bind-Checked=@val.September TChecked="bool?"></SfCheckBox>
                                                                     }
                                                                 </Template>
                                                             </GridColumn>
-                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.October) HeaderText="Oct" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
+                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonths.October) HeaderText="Oct" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
                                                                 <Template Context="OctoberContext">
                                                                     @{
-                                                                        var val = (OctoberContext as AnnualLeaveRosterMonthsDto);
+                                                                        var val = (OctoberContext as AnnualLeaveRosterMonths);
                                                                         <SfCheckBox CssClass="e-outline e-success" @bind-Checked=@val.October TChecked="bool?"></SfCheckBox>
                                                                     }
                                                                 </Template>
                                                             </GridColumn>
-                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.November) HeaderText="Nov" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
+                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonths.November) HeaderText="Nov" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
                                                                 <Template Context="NovemberContext">
                                                                     @{
-                                                                        var val = (NovemberContext as AnnualLeaveRosterMonthsDto);
+                                                                        var val = (NovemberContext as AnnualLeaveRosterMonths);
                                                                         <SfCheckBox CssClass="e-outline e-success" @bind-Checked=@val.November TChecked="bool?"></SfCheckBox>
                                                                     }
                                                                 </Template>
                                                             </GridColumn>
-                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.December) HeaderText="Dec" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
+                                                            <GridColumn Field=@nameof(AnnualLeaveRosterMonths.December) HeaderText="Dec" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120">
                                                         <Template Context="DecemberContext">
                                                                     @{
-                                                                        var val = (DecemberContext as AnnualLeaveRosterMonthsDto);
+                                                                        var val = (DecemberContext as AnnualLeaveRosterMonths);
                                                                         <SfCheckBox CssClass="e-outline e-success" @bind-Checked=@val.December TChecked="bool?"></SfCheckBox>
                                                                     }
                                                                 </Template>
                                                             </GridColumn> 
 
 
-                                                        @*<GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.January) HeaderText="Jan" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
-                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.February) HeaderText="Feb" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
-                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.March) HeaderText="Mar" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
-                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.April) HeaderText="Apr" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
-                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.May) HeaderText="May" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
-                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.June) HeaderText="Jun" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
-                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.July) HeaderText="Jul" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
-                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.August) HeaderText="Aug" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
-                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.September) HeaderText="Sep" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
-                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.October) HeaderText="Oct" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
-                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.November) HeaderText="Nov" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
-                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonthsDto.December) HeaderText="Dec" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> *@
+                                                        @*<GridColumn Field=@nameof(AnnualLeaveRosterMonths.January) HeaderText="Jan" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
+                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonths.February) HeaderText="Feb" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
+                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonths.March) HeaderText="Mar" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
+                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonths.April) HeaderText="Apr" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
+                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonths.May) HeaderText="May" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
+                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonths.June) HeaderText="Jun" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
+                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonths.July) HeaderText="Jul" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
+                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonths.August) HeaderText="Aug" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
+                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonths.September) HeaderText="Sep" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
+                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonths.October) HeaderText="Oct" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
+                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonths.November) HeaderText="Nov" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> 
+                                                        <GridColumn Field=@nameof(AnnualLeaveRosterMonths.December) HeaderText="Dec" TextAlign="TextAlign.Center" DisplayAsCheckBox="true" Width="120"></GridColumn> *@
                                                                                                         
                                                     </GridColumns>
                                                 </GridColumn>
@@ -352,16 +352,16 @@
             <SfDataManager AdaptorInstance="@typeof(LeavePlanHeaderAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
                 <GridEvents OnActionComplete="ActionCompleteMain"
                             OnActionBegin="ActionBeginMain"                            
-                        TValue="AnnualLeaveRosterDto">
+                        TValue="AnnualLeaveRoster">
                 </GridEvents>
                 <GridColumns>
                     <GridColumn Type="ColumnType.CheckBox" Width="20"></GridColumn>
-                    <GridColumn Field=@nameof(AnnualLeaveRosterDto.LeaveRoasterId) HeaderText="LeaveRoasterId" Visible=false IsPrimaryKey="true" Width="150"></GridColumn>
+                    <GridColumn Field=@nameof(AnnualLeaveRoster.LeaveRoasterId) HeaderText="LeaveRoasterId" Visible=false IsPrimaryKey="true" Width="150"></GridColumn>
                     
-                    @*<GridColumn Field=@nameof(AnnualLeaveRosterDto.EmployeeId) HeaderText="Customer Name" Width="150">
+                    @*<GridColumn Field=@nameof(AnnualLeaveRoster.EmployeeId) HeaderText="Customer Name" Width="150">
                         <Template>
                         @{
-                        var categoryview = (context as AnnualLeaveRosterDto);
+                        var categoryview = (context as AnnualLeaveRoster);
                         var Combined = categoryview.EmployeeId + " - " + categoryview.YearId;
                         <p style="margin-top:0px;margin-bottom:0px">@Combined</p>
                         
@@ -369,13 +369,13 @@
                         </Template>
                     </GridColumn>*@
                     
-                    <GridColumn Field=@nameof(AnnualLeaveRosterDto.EmployeeId) HeaderText="Employee Name" Width="150">
+                    <GridColumn Field=@nameof(AnnualLeaveRoster.EmployeeId) HeaderText="Employee Name" Width="150">
                         <Template>
                             @{
-                                var con = (context as AnnualLeaveRosterDto);
+                                var con = (context as AnnualLeaveRoster);
                                 if(EmployeeData != null)
                                 {
-                                    EmployeeDto ForeignKeyData = EmployeeData.FirstOrDefault(x => x.Employeeid == con.EmployeeId);
+                                    Employee ForeignKeyData = EmployeeData.FirstOrDefault(x => x.Employeeid == con.EmployeeId);
                                     if(ForeignKeyData != null)
                                     {
                                         <span>@ForeignKeyData.FirstName @ForeignKeyData.MiddleName @ForeignKeyData.LastName</span>
@@ -387,17 +387,17 @@
                         
                     </GridColumn>
 
-                    <GridForeignColumn Field=@nameof(AnnualLeaveRosterDto.YearId)
+                    <GridForeignColumn Field=@nameof(AnnualLeaveRoster.YearId)
                                                    HeaderText="YEAR"
                                                    Width="80"
                                                    AllowEditing="true"
-                                                   ForeignKeyField="@(nameof(AYearsDto.YearId))"
-                                                   ForeignKeyValue="@(nameof(AYearsDto.YearDesc))"
+                                                   ForeignKeyField="@(nameof(AYears.YearId))"
+                                                   ForeignKeyValue="@(nameof(AYears.YearDesc))"
                                                    ForeignDataSource="@YearData" AllowFiltering="true"
                                                    CustomAttributes="@(new Dictionary<string,
                                                    object>(){ { "class", "e-attr1" }})">
                     </GridForeignColumn>
-                    <GridColumn Field=@nameof(AnnualLeaveRosterDto.DateAdded) 
+                    <GridColumn Field=@nameof(AnnualLeaveRoster.DateAdded) 
                                                         DefaultValue="@(DateTime.Now)" 
                                                         HeaderText="DATE CAPTURED" 
                                                         EditType="EditType.DatePickerEdit" 
@@ -444,21 +444,21 @@
 </div>
 
 @code {
-    SfGrid<AnnualLeaveRosterDto>? MainGrid;
-    SfGrid<AnnualLeaveRosterMonthsDto>? DataGrid;
+    SfGrid<AnnualLeaveRoster>? MainGrid;
+    SfGrid<AnnualLeaveRosterMonths>? DataGrid;
     public Query MainQuery = new Query();
-    private static AnnualLeaveRosterDto? PlannedDaysData { get; set; }
-    List<ADaysDto>? DaysData { get; set; }
-    List<AYearsDto>? YearData { get; set; }
-    List<EmployeeDto>? EmployeeData { get; set; }
-    List<AnnualLeaveRosterMonthsDto>? RoasterMonthsData { get; set; }
-    List<AnnualLeaveRosterMonthsDto>? RoasterMonthsDataSource { get; set; }
+    private static AnnualLeaveRoster? PlannedDaysData { get; set; }
+    List<ADays>? DaysData { get; set; }
+    List<AYears>? YearData { get; set; }
+    List<Employee>? EmployeeData { get; set; }
+    List<AnnualLeaveRosterMonths>? RoasterMonthsData { get; set; }
+    List<AnnualLeaveRosterMonths>? RoasterMonthsDataSource { get; set; }
     public static int RoasterMonthsCount { get; set; } = 0;
 
     public bool YearDD = true;
     public bool EmployeeDD = true;
-    SfDropDownList<int?,AYearsDto>? YearEdit { get; set; }
-    List<AnnualLeaveRosterMonthsDto>? LeaveRosterMonthsDataSource { get; set; }
+    SfDropDownList<int?,AYears>? YearEdit { get; set; }
+    List<AnnualLeaveRosterMonths>? LeaveRosterMonthsDataSource { get; set; }
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "100%" };
     SfDialog? LoadingDialogue;
     int? YrId = null;
@@ -509,7 +509,7 @@
         var contentyears = await responseyears.Content.ReadAsStringAsync();
         if (responseyears.IsSuccessStatusCode)
         {
-            YearData = await Http.GetFromJsonAsync<List<AYearsDto>>
+            YearData = await Http.GetFromJsonAsync<List<AYears>>
             ($"Utilities/GetYears");
         }
 
@@ -517,7 +517,7 @@
         var contentemployee = await responseemployee.Content.ReadAsStringAsync();
         if (responseemployee.IsSuccessStatusCode)
         {
-            EmployeeData = await Http.GetFromJsonAsync<List<EmployeeDto>>
+            EmployeeData = await Http.GetFromJsonAsync<List<Employee>>
             ($"Employeez/GetMasterList");
         }
 
@@ -525,7 +525,7 @@
         var contentdays = await responsedays.Content.ReadAsStringAsync();
         if (responsedays.IsSuccessStatusCode)
         {
-            DaysData = await Http.GetFromJsonAsync<List<ADaysDto>>
+            DaysData = await Http.GetFromJsonAsync<List<ADays>>
             ($"Utilities/GetDays");
         }
 
@@ -533,7 +533,7 @@
         var contentroastermonths = await responseroastermonths.Content.ReadAsStringAsync();
         if (responseroastermonths.IsSuccessStatusCode)
         {
-            RoasterMonthsData = await Http.GetFromJsonAsync<List<AnnualLeaveRosterMonthsDto>>
+            RoasterMonthsData = await Http.GetFromJsonAsync<List<AnnualLeaveRosterMonths>>
             ($"Employeez/GetMonthsLeavePlan");
         }        
     }
@@ -603,7 +603,7 @@
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         {
             var credentials = await _AuthService.GetUserCredentials();
-            var data = new List<AnnualLeaveRosterDto>();
+            var data = new List<AnnualLeaveRoster>();
 
             //string? AccessToken = _SystemSettings.AccessToken;
             //string? BaseUrl = _ApiConfig.BaseUrl;
@@ -618,7 +618,7 @@
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    data = JsonSerializer.Deserialize<List<AnnualLeaveRosterDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<AnnualLeaveRoster>>(content, _options);
                 }
             }
             catch (Exception ex)
@@ -659,7 +659,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<AnnualLeaveRosterDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<AnnualLeaveRoster>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -670,7 +670,7 @@
             try
             {
 
-                var val = (value as AnnualLeaveRosterDto);
+                var val = (value as AnnualLeaveRoster);
                 if (val != null)
                 {
                     if (val.LeaveRoasterId == 0)
@@ -683,7 +683,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -712,7 +712,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -744,7 +744,7 @@
             try
             {
 
-                var val = (value as AnnualLeaveRosterDto);
+                var val = (value as AnnualLeaveRoster);
                 if (val != null)
                 {
                     if (val.LeaveRoasterId == 0)
@@ -757,7 +757,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -786,7 +786,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -815,7 +815,7 @@
         }
     }
     # endregion LeavePlanHeaderAdapter
-    public async void ActionCompleteMain(Syncfusion.Blazor.Grids.ActionEventArgs<AnnualLeaveRosterDto> args)
+    public async void ActionCompleteMain(Syncfusion.Blazor.Grids.ActionEventArgs<AnnualLeaveRoster> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) ||
         args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
@@ -831,7 +831,7 @@
             var contentyears = await responseyears.Content.ReadAsStringAsync();
             if (responseyears.IsSuccessStatusCode)
             {
-                YearData = await Http.GetFromJsonAsync<List<AYearsDto>>
+                YearData = await Http.GetFromJsonAsync<List<AYears>>
                 ($"Utilities/GetYears");
             }
 
@@ -839,7 +839,7 @@
             var contentemployee = await responseemployee.Content.ReadAsStringAsync();
             if (responseemployee.IsSuccessStatusCode)
             {
-                EmployeeData = await Http.GetFromJsonAsync<List<EmployeeDto>>
+                EmployeeData = await Http.GetFromJsonAsync<List<Employee>>
                 ($"Employeez/GetMasterList");
             }
 
@@ -847,7 +847,7 @@
             var contentroastermonths = await responseroastermonths.Content.ReadAsStringAsync();
             if (responseroastermonths.IsSuccessStatusCode)
             {
-                RoasterMonthsData = await Http.GetFromJsonAsync<List<AnnualLeaveRosterMonthsDto>>
+                RoasterMonthsData = await Http.GetFromJsonAsync<List<AnnualLeaveRosterMonths>>
                 ($"Employeez/GetMonthsLeavePlan?YearId={args.Data.YearId}&EmployeeId={args.Data.EmployeeId}");
             }  
 
@@ -855,13 +855,13 @@
             var contentdays = await responsedays.Content.ReadAsStringAsync();
             if (responsedays.IsSuccessStatusCode)
             {
-                DaysData = await Http.GetFromJsonAsync<List<ADaysDto>>
+                DaysData = await Http.GetFromJsonAsync<List<ADays>>
                 ($"Utilities/GetDays");
             }
         }
     }
 
-    public async void ActionBeginMain(Syncfusion.Blazor.Grids.ActionEventArgs<AnnualLeaveRosterDto> Args)
+    public async void ActionBeginMain(Syncfusion.Blazor.Grids.ActionEventArgs<AnnualLeaveRoster> Args)
     {
         var data = Args.Data;
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
@@ -890,7 +890,7 @@
                 var contentroastermonths = await responseroastermonths.Content.ReadAsStringAsync();
                 if (responseroastermonths.IsSuccessStatusCode)
                 {
-                    RoasterMonthsData = await Http.GetFromJsonAsync<List<AnnualLeaveRosterMonthsDto>>
+                    RoasterMonthsData = await Http.GetFromJsonAsync<List<AnnualLeaveRosterMonths>>
                     ($"Employeez/GetMonthsLeavePlan?YearId={Args.RowData.YearId}&EmployeeId={Args.RowData.EmployeeId}");
                 }  
 
@@ -905,7 +905,7 @@
                 var contentdays = await responsedays.Content.ReadAsStringAsync();
                 if (responsedays.IsSuccessStatusCode)
                 {
-                    DaysData = await Http.GetFromJsonAsync<List<ADaysDto>>
+                    DaysData = await Http.GetFromJsonAsync<List<ADays>>
                     ($"Utilities/GetDays");
                 }
 
@@ -916,7 +916,7 @@
                 }
                 if(Args.RowData.AnnualLeaveRosterMonths== null)
                 {
-                    Args.RowData.AnnualLeaveRosterMonths = new List<AnnualLeaveRosterMonthsDto>();
+                    Args.RowData.AnnualLeaveRosterMonths = new List<AnnualLeaveRosterMonths>();
                 }
 
                 foreach (var item in DaysData)
@@ -927,7 +927,7 @@
                         var exist = Args.RowData.AnnualLeaveRosterMonths.FirstOrDefault(o => o.DayId == item.DayId);
                         if (exist == null)
                         {
-                            var m = new AnnualLeaveRosterMonthsDto();
+                            var m = new AnnualLeaveRosterMonths();
                             m.LeaveRoasterId = countid;
                             m.DayId = item.DayId;
                             //m.YearId = YrId;
@@ -978,14 +978,14 @@
                 Args.Data.EmployeeId = Credentials.StaffId;
             }
 
-            Args.RowData.AnnualLeaveRosterMonths = new List<AnnualLeaveRosterMonthsDto>();
+            Args.RowData.AnnualLeaveRosterMonths = new List<AnnualLeaveRosterMonths>();
 
             StateHasChanged();
         }
     }
 
     //Enable cell edit on single click
-    public async Task LeavePlanCellSelectHandler(CellSelectEventArgs<AnnualLeaveRosterMonthsDto> args)
+    public async Task LeavePlanCellSelectHandler(CellSelectEventArgs<AnnualLeaveRosterMonths> args)
     {
         try
         {
@@ -1008,12 +1008,12 @@
     }
 
 
-    public async void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,EmployeeDto> args)
+    public async void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,Employee> args)
     {
         YearDD = true;
     }
 
-    public async void OnYearChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,AYearsDto> args)
+    public async void OnYearChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,AYears> args)
     {
         try
         {
@@ -1031,14 +1031,14 @@
             EmpId = PlannedDaysData.EmployeeId;
 
             int countid = -1000;
-            List<AnnualLeaveRosterMonthsDto> mn = new List<AnnualLeaveRosterMonthsDto>();
+            List<AnnualLeaveRosterMonths> mn = new List<AnnualLeaveRosterMonths>();
 
 
             var responseemployee = await Http.GetAsync($"Employeez/GetMasterList");
             var contentemployee = await responseemployee.Content.ReadAsStringAsync();
             if (responseemployee.IsSuccessStatusCode)
             {
-                EmployeeData = await Http.GetFromJsonAsync<List<EmployeeDto>>
+                EmployeeData = await Http.GetFromJsonAsync<List<Employee>>
                 ($"Employeez/GetMasterList");
             }
 
@@ -1046,7 +1046,7 @@
             var contentroastermonths = await responseroastermonths.Content.ReadAsStringAsync();
             if (responseroastermonths.IsSuccessStatusCode)
             {
-                RoasterMonthsData = await Http.GetFromJsonAsync<List<AnnualLeaveRosterMonthsDto>>
+                RoasterMonthsData = await Http.GetFromJsonAsync<List<AnnualLeaveRosterMonths>>
                 ($"Employeez/GetMonthsLeavePlan?YearId={YrId}&EmployeeId={EmpId}");
             }  
 
@@ -1054,7 +1054,7 @@
             var contentdays = await responsedays.Content.ReadAsStringAsync();
             if (responsedays.IsSuccessStatusCode)
             {
-                DaysData = await Http.GetFromJsonAsync<List<ADaysDto>>
+                DaysData = await Http.GetFromJsonAsync<List<ADays>>
                 ($"Utilities/GetDays");
             }
 
@@ -1079,7 +1079,7 @@
             }
             if(PlannedDaysData.AnnualLeaveRosterMonths== null)
             {
-                PlannedDaysData.AnnualLeaveRosterMonths = new List<AnnualLeaveRosterMonthsDto>();
+                PlannedDaysData.AnnualLeaveRosterMonths = new List<AnnualLeaveRosterMonths>();
             }
 
             foreach (var item in DaysData)
@@ -1087,7 +1087,7 @@
                 var exist = PlannedDaysData.AnnualLeaveRosterMonths.FirstOrDefault(o => o.DayId == item.DayId);
                 if (exist == null)
                 {
-                    var m = new AnnualLeaveRosterMonthsDto();
+                    var m = new AnnualLeaveRosterMonths();
                     m.LeaveRoasterId = countid;
                     m.DayId = item.DayId;
                     //m.YearId = YrId;
@@ -1109,9 +1109,9 @@
         }
     }
 
-    public async void QueryCellInfoHandler(QueryCellInfoEventArgs<AnnualLeaveRosterMonthsDto> Args)
+    public async void QueryCellInfoHandler(QueryCellInfoEventArgs<AnnualLeaveRosterMonths> Args)
     {
-        if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.January))
+        if(Args.Column.Field == nameof(AnnualLeaveRosterMonths.January))
         {
             if (Args.Data.January == true)
             {
@@ -1119,7 +1119,7 @@
                 SelectedCells.Add(new Tuple<double, double>(index, 3));
             }
         }
-        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.February))
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonths.February))
         {
             if (Args.Data.February == true)
             {
@@ -1133,7 +1133,7 @@
                 Args.Cell.AddClass(new string[] { "disablecell" });
             }
         }
-        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.March))
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonths.March))
         {
             if (Args.Data.March == true)
             {
@@ -1141,7 +1141,7 @@
                 SelectedCells.Add(new Tuple<double, double>(index, 5));
             }
         }
-        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.April))
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonths.April))
         {
             if (Args.Data.April == true)
             {
@@ -1154,7 +1154,7 @@
                 Args.Cell.AddClass(new string[] { "disablecell" });
             }
         }
-        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.May))
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonths.May))
         {
             if (Args.Data.May == true)
             {
@@ -1162,7 +1162,7 @@
                 SelectedCells.Add(new Tuple<double, double>(index, 7));
             }
         }
-        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.June))
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonths.June))
         {
             if (Args.Data.June == true)
             {
@@ -1175,7 +1175,7 @@
                 Args.Cell.AddClass(new string[] { "disablecell" });
             }
         }
-        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.July))
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonths.July))
         {
             if (Args.Data.July == true)
             {
@@ -1183,7 +1183,7 @@
                 SelectedCells.Add(new Tuple<double, double>(index, 9));
             }
         }
-        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.August))
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonths.August))
         {
             if (Args.Data.August == true)
             {
@@ -1196,7 +1196,7 @@
                 Args.Cell.AddClass(new string[] { "disablecell" });
             }
         }
-        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.September))
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonths.September))
         {
             if (Args.Data.September == true)
             {
@@ -1209,7 +1209,7 @@
                 Args.Cell.AddClass(new string[] { "disablecell" });
             }
         }
-        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.October))
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonths.October))
         {
             if (Args.Data.October == true)
             {
@@ -1217,7 +1217,7 @@
                 SelectedCells.Add(new Tuple<double, double>(index, 12));
             }
         }
-        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.November))
+        else if(Args.Column.Field == nameof(AnnualLeaveRosterMonths.November))
         {
             if (Args.Data.November == true)
             {
@@ -1230,7 +1230,7 @@
                 Args.Cell.AddClass(new string[] { "disablecell" });
             }
         }
-        else if (Args.Column.Field == nameof(AnnualLeaveRosterMonthsDto.December))
+        else if (Args.Column.Field == nameof(AnnualLeaveRosterMonths.December))
         {
             if (Args.Data.December == true)
             {
@@ -1277,7 +1277,7 @@
         //}
     }
 
-    public async Task OnCellSelect(CellSelectEventArgs<AnnualLeaveRosterMonthsDto> Args)
+    public async Task OnCellSelect(CellSelectEventArgs<AnnualLeaveRosterMonths> Args)
     { 
         try
         {
@@ -1298,7 +1298,7 @@
             
     } 
 
-    public void CellDeselectHandler(CellDeselectEventArgs<AnnualLeaveRosterMonthsDto> Args)
+    public void CellDeselectHandler(CellDeselectEventArgs<AnnualLeaveRosterMonths> Args)
     {
         if (SelectedCells.Contains(new Tuple<double, double>(Args.RowIndex, Args.CellIndex)))
         {
@@ -1306,7 +1306,7 @@
         }
     }
 
-    public string GetRoasterHeader(AnnualLeaveRosterDto Value)
+    public string GetRoasterHeader(AnnualLeaveRoster Value)
     { 
         if (Value.LeaveRoasterId == 0)
         {

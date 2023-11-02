@@ -1,6 +1,6 @@
 ﻿using Blazored.Toast.Services;
 using HCMIS.Interface;
-using HCMIS.SHARED.DTOs;
+using HCMIS.SHARED.Data;
 using System.Numerics;
 using System.Text.Json;
 

@@ -6,10 +6,10 @@
 @using System.Text.Json
 @using System.Collections;
 @using System.IO;
+@using HCMIS.SHARED.Data;
+@using HCMIS.SHARED.Models;
 @using Microsoft.AspNetCore.Authorization
 @inject NavigationManager navigation;
-@using HCMIS.SHARED.DTOs.BSC;
-@using HCMIS.SHARED.DTOs.Utilities;
 @using HCMIS.ViewModel;
 @inject IToastService toastService;
 @using HCMIS.Interface;
@@ -139,7 +139,7 @@
     @*Render custom spinner component.*@
 </SfSpinner>
 
-<SfGrid @ref="@BscPerspectiveGrid" ID="Grid" TValue="ABscPerspectivesDto" @attributes="@GridAttributes" AllowPaging="true"
+<SfGrid @ref="@BscPerspectiveGrid" ID="Grid" TValue="ABscPerspectives" @attributes="@GridAttributes" AllowPaging="true"
         AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
         AllowTextWrap="true" AllowSorting="true" Toolbar="@ToolbarMenu">
     
@@ -152,19 +152,19 @@
                 RowSelecting="RowSelectingHandler"
                 OnLoad="LoadHandler"
                 DataBound="DataBound"
-                TValue="ABscPerspectivesDto">
+                TValue="ABscPerspectives">
     </GridEvents>
 
     @*Child Grid*@
     <GridTemplates>
         <DetailTemplate>
             @{
-                KpiData = (context as ABscPerspectivesDto);
+                KpiData = (context as ABscPerspectives);
 
                 <div class="form-group col-md-12">
 
                     <SfGrid @ref="@DetailsDataGrid"
-                            TValue="ABscPerspectivesDetailDto"
+                            TValue="ABscPerspectivesDetail"
                             ID="DetailsGrid"
                             Query=@(new Query().Where(new WhereFilter() { Field = "BscPerspectiveId", Operator = "equal", value = KpiData.BscPerspectiveId, IgnoreCase = false, IgnoreAccent = false }))
                             AllowPaging="true"
@@ -186,29 +186,29 @@
                         <SfDataManager AdaptorInstance="@typeof(PerspectivesDetailsAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
                         <GridColumns>
                             <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
-                            <GridColumn Field=@nameof(ABscPerspectivesDetailDto.BscPerspectiveDetailId) Visible="false" HeaderText="BscPerspectiveDetailId" IsPrimaryKey="true" Width="150"></GridColumn>
-                            <GridColumn Field=@nameof(ABscPerspectivesDetailDto.BscPerspectiveId) Visible="false" HeaderText="BscPerspectiveId" TextAlign="TextAlign.Right" Width="110"> </GridColumn>
-                            <GridForeignColumn Field=@nameof(ABscPerspectivesDetailDto.BscPerspectiveTypeId)
+                            <GridColumn Field=@nameof(ABscPerspectivesDetail.BscPerspectiveDetailId) Visible="false" HeaderText="BscPerspectiveDetailId" IsPrimaryKey="true" Width="150"></GridColumn>
+                            <GridColumn Field=@nameof(ABscPerspectivesDetail.BscPerspectiveId) Visible="false" HeaderText="BscPerspectiveId" TextAlign="TextAlign.Right" Width="110"> </GridColumn>
+                            <GridForeignColumn Field=@nameof(ABscPerspectivesDetail.BscPerspectiveTypeId)
                                                HeaderText="Perspective"
                                                Width="80"
                                                AllowEditing="false"
-                                               ForeignKeyField="@(nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeId))"
-                                               ForeignKeyValue="@(nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeDescription))"
+                                               ForeignKeyField="@(nameof(ABscPerspectivesType.BscPerspectiveTypeId))"
+                                               ForeignKeyValue="@(nameof(ABscPerspectivesType.BscPerspectiveTypeDescription))"
                                                ForeignDataSource="@BscPerspectiveTypeData"
                                                AllowFiltering="false"
                                                IsFrozen="false"
                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
                             </GridForeignColumn>
-                            <GridColumn Field=@nameof(ABscPerspectivesDetailDto.PerspectiveTotalWeight) HeaderText="Perspective Total Weight" Width="60" CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})"></GridColumn>
+                            <GridColumn Field=@nameof(ABscPerspectivesDetail.PerspectiveTotalWeight) HeaderText="Perspective Total Weight" Width="60" CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})"></GridColumn>
 
-                            <GridForeignColumn Field=@nameof(ABscPerspectivesDetailDto.MeasurementMetricId)
+                            <GridForeignColumn Field=@nameof(ABscPerspectivesDetail.MeasurementMetricId)
                                                HeaderText="Basic Unit"
                                                TextAlign="TextAlign.Justify"
                                                Width="60"
                                                AllowEditing="true"
                                                ValidationRules="@(new ValidationRules { Required = true})"
-                                               ForeignKeyField="@(nameof(AMeasurementMetricDto.MeasurementMetricId))"
-                                               ForeignKeyValue="@(nameof(AMeasurementMetricDto.MeasurementMetricDesc))"
+                                               ForeignKeyField="@(nameof(AMeasurementMetric.MeasurementMetricId))"
+                                               ForeignKeyValue="@(nameof(AMeasurementMetric.MeasurementMetricDesc))"
                                                ForeignDataSource="@MeasurementUnitData"
                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
                             </GridForeignColumn>
@@ -223,7 +223,7 @@
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
         <HeaderTemplate>
             @{
-                var text = GetWeightHeader((context as ABscPerspectivesDto));
+                var text = GetWeightHeader((context as ABscPerspectives));
                 <div class="headerbandimg">
                     <span>@text</span>
                 </div>
@@ -237,7 +237,7 @@
                      </h5>
                  </center>
 
-                KpiData = (BscPerspectivesContext as ABscPerspectivesDto);
+                KpiData = (BscPerspectivesContext as ABscPerspectives);
                 @if (KpiData != null)
                 {
                     <div class="row">
@@ -248,7 +248,7 @@
                         <div class="col-md-6">
                             <p>Financial Year:<span style="color:red;">*</span></p>
                             <SfDropDownList @bind-Value="@(KpiData.FinancialYearId)"
-                                            Enabled="@isFinancialYearEnabled" TItem="ViewFinancialYearDto" TValue="int?"
+                                            Enabled="@isFinancialYearEnabled" TItem="AFinancialYear" TValue="int?"
                                             DataSource="@FinancialYearData" Placeholder="Please select"
                                             FloatLabelType="FloatLabelType.Never" AllowFiltering="true"
                                             FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
@@ -256,7 +256,7 @@
                                                            Text="@nameof(AFinancialYear.FinancialYear)">
                                 </DropDownListFieldSettings>
                                 <DropDownListEvents TValue="int?"
-                                            TItem="ViewFinancialYearDto" ValueChange="OnYearChange">
+                                            TItem="AFinancialYear" ValueChange="OnYearChange">
                                 </DropDownListEvents>
                             </SfDropDownList>
                         </div>
@@ -264,24 +264,29 @@
                         <div class="col-md-6">
                             <p>Department:<span style="color:red;">*</span></p>
                             <SfDropDownList @bind-Value="@(KpiData.DepartmentId)"
-                                            Enabled="@DepartmentDD" TItem="ADepartmentDto" TValue="int?"
+                                            Enabled="@DepartmentDD" TItem="ADepartment" TValue="int?"
                                             DataSource="@DepartmentsData" Placeholder="Please select"
                                             FloatLabelType="FloatLabelType.Never" AllowFiltering="true"
                                             FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                <DropDownListFieldSettings Value="@nameof(ADepartmentDto.DepartmentId)"
-                                                           Text="@nameof(ADepartmentDto.DepartmentDescription)">
+                                <DropDownListFieldSettings Value="@nameof(ADepartment.DepartmentId)"
+                                                           Text="@nameof(ADepartment.DepartmentDescription)">
                                 </DropDownListFieldSettings>
                             </SfDropDownList>
                         </div>
 
                         @*GridPerspectives*@
                         <div class="form-group col-md-12" style="padding-top:10px">
+                            @*@if (@aggregate != null)
+                            {
+                                <p>@weighttotalpercentage</p>
+                            }*@
+
                             <SfGrid @ref="@ChildDataGrid"
-                                    TValue="ViewABscPerspectivesDetailDto"
+                                    TValue="ABscPerspectivesDetail"
                                     ID="ChGrid"
                                     DataSource="@KpiData.ABscPerspectivesDetail"
                                     AllowPaging="false" AllowFiltering="false" AllowReordering="true"
-                                    AllowResizing="true" AllowGrouping="true" AllowExcelExport="true"
+                                    AllowResizing="true" AllowGrouping="false" AllowExcelExport="true"
                                     AllowPdfExport="true" AllowSelection="true" AllowSorting="true"
                                     AllowTextWrap="true" Height="250px" GridLines="GridLine.Both">
                                 <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false" Dialog="@DialogParams">
@@ -293,7 +298,7 @@
                                 <GridAggregates>
                                     <GridAggregate>
                                         <GridAggregateColumns>
-                                            <GridAggregateColumn Field=@nameof(ViewABscPerspectivesDetailDto.PerspectiveTotalWeight) Type="Syncfusion.Blazor.Grids.AggregateType.Sum">
+                                            <GridAggregateColumn Field=@nameof(ABscPerspectivesDetail.PerspectiveTotalWeight) Type="Syncfusion.Blazor.Grids.AggregateType.Sum">
                                                 <FooterTemplate>
                                                     @{
                                                         aggregate = (context as AggregateTemplateContext);
@@ -301,6 +306,7 @@
                                                             @if (@aggregate != null)
                                                             {
                                                                 <p style="color:purple;">Total Percentage: @aggregate.Sum %</p>
+                                                                @*weighttotalpercentage = Convert.ToInt32(@aggregate.Sum);*@
                                                             }                                                            
                                                         </div>
                                                     }
@@ -311,36 +317,41 @@
                                 </GridAggregates>
 
                                 <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell" CellSelectionMode="CellSelectionMode.Box"></GridSelectionSettings>
-
+                                @*OnDataBound="DataBoundHandler"*@
                                 <GridEvents 
                                     CellSelected="PerspectiveCellSelectHandler"
                                     RowDataBound="RowDataBoundHandler"
                                     QueryCellInfo="QueryCellInfoHandlerChild"
-                                    TValue="ViewABscPerspectivesDetailDto">
+                                    CellSaved="CellSavedHandler"
+                                    OnCellEdit="CellEditHandler"
+                                    OnActionComplete="DetailActionComplete"
+                                    
+                                    DataBound="DataBoundHandler"
+                                    TValue="ABscPerspectivesDetail">
                                   </GridEvents>
 
                                 <GridColumns>
                                     <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
-                                    <GridColumn Field=@nameof(ViewABscPerspectivesDetailDto.BscPerspectiveDetailId) 
+                                    <GridColumn Field=@nameof(ABscPerspectivesDetail.BscPerspectiveDetailId) 
                                         HeaderText="BscPerspectiveDetailId" 
                                         AllowEditing="false" 
                                         IsPrimaryKey="true" 
-                                        Width="150" 
+                                        Width="70" 
                                         Visible="false">
                                     </GridColumn>
-                                    <GridForeignColumn Field=@nameof(ViewABscPerspectivesDetailDto.BscPerspectiveTypeId)
+                                    <GridForeignColumn Field=@nameof(ABscPerspectivesDetail.BscPerspectiveTypeId)
                                                        HeaderText="Perspective"
                                                        Width="120"
                                                        AllowEditing="false"
-                                                       ForeignKeyField="@(nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeId))"
-                                                       ForeignKeyValue="@(nameof(ABscPerspectivesTypeDto.BscPerspectiveTypeDescription))"
+                                                       ForeignKeyField="@(nameof(ABscPerspectivesType.BscPerspectiveTypeId))"
+                                                       ForeignKeyValue="@(nameof(ABscPerspectivesType.BscPerspectiveTypeDescription))"
                                                        ForeignDataSource="@BscPerspectiveTypeData"
                                                        AllowFiltering="false"
                                                        IsFrozen="false"
                                                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
                                     </GridForeignColumn>
 
-                                    <GridColumn Field=@nameof(ViewABscPerspectivesDetailDto.PerspectiveTotalWeight)
+                                    <GridColumn Field=@nameof(ABscPerspectivesDetail.PerspectiveTotalWeight)
                                                 HeaderText="Perspective Total Weight"
                                                 TextAlign="TextAlign.Right"
                                                 AllowEditing="true"
@@ -352,13 +363,13 @@
                                                 CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
                                     </GridColumn>
 
-                                    <GridForeignColumn Field=@nameof(ViewABscPerspectivesDetailDto.MeasurementMetricId)
+                                    <GridForeignColumn Field=@nameof(ABscPerspectivesDetail.MeasurementMetricId)
                                                        HeaderText="Basic Unit"
                                                        Width="70"
                                                        AllowEditing="false"
                                                        ValidationRules="@(new ValidationRules { Required = true})"
-                                                       ForeignKeyField="@(nameof(AMeasurementMetricDto.MeasurementMetricId))"
-                                                       ForeignKeyValue="@(nameof(AMeasurementMetricDto.MeasurementMetricDesc))"
+                                                       ForeignKeyField="@(nameof(AMeasurementMetric.MeasurementMetricId))"
+                                                       ForeignKeyValue="@(nameof(AMeasurementMetric.MeasurementMetricDesc))"
                                                        ForeignDataSource="@MeasurementUnitData"
                                                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
                                     </GridForeignColumn>
@@ -372,10 +383,19 @@
                 }
             }
         </Template> 
-
+        
         <FooterTemplate>
             
-            @if (@aggregate != null && Convert.ToInt32(@aggregate.Sum) == 70)
+            @if(savebuttons == true)
+            {
+                <button @onclick="@onSubmitForm" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Save</button>
+                <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel</button>
+            }
+            else
+            {
+                <h6 style="background-color:red; color:ghostwhite; text-align:center;">Ensure your total percentage is equal to 70%. Please revise your scores</h6>
+            }
+            @*@if (@aggregate != null && Convert.ToInt32(@aggregate.Sum) == 70)
             {
                 <button @onclick="@onSubmitForm" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Save</button>
                 <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel</button>
@@ -383,16 +403,16 @@
             else
             {
                 <h6 style="background-color:red; color:ghostwhite; text-align:center;">Ensure yout total percentage is equal to 70%. Please revise your scores</h6>
-            }
+            }*@
         </FooterTemplate>
         
 
     </GridEditSettings>
     <GridColumns>
         <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn>
-        <GridColumn Field=@nameof(ABscPerspectivesDto.BscPerspectiveId) Visible=false HeaderText="Perspective Id" AllowEditing="false" IsPrimaryKey="true"></GridColumn>
+        <GridColumn Field=@nameof(ABscPerspectives.BscPerspectiveId) Visible=false HeaderText="Perspective Id" AllowEditing="false" IsPrimaryKey="true"></GridColumn>
         
-        <GridForeignColumn Field=@nameof(ABscPerspectivesDto.FinancialYearId)
+        <GridForeignColumn Field=@nameof(ABscPerspectives.FinancialYearId)
                            HeaderText="Financial Year"
                            Width="80"
                            AllowEditing="true"
@@ -401,7 +421,7 @@
                            ForeignDataSource="@FinancialYearData"
                            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
         </GridForeignColumn>
-        <GridForeignColumn Field=@nameof(ABscPerspectivesDto.DepartmentId)
+        <GridForeignColumn Field=@nameof(ABscPerspectives.DepartmentId)
                            HeaderText="Department"
                            Width="80"
                            AllowEditing="true"
@@ -441,22 +461,23 @@
             </FooterTemplate>
         </DialogTemplates>
     </SfDialog>
+
 </div>
 
 @code {
     #region Declarations
-    private static ABscPerspectivesDto? KpiData { get; set; }
-    SfGrid<ABscPerspectivesDto>? BscPerspectiveGrid;
-    SfGrid<ViewABscPerspectivesDetailDto>? ChildDataGrid;
-    SfGrid<ABscPerspectivesDetailDto> DetailsDataGrid { get; set; }
+    private static ABscPerspectives? KpiData { get; set; }
+    SfGrid<ABscPerspectives>? BscPerspectiveGrid;
+    public SfGrid<ABscPerspectivesDetail>? ChildDataGrid;
+    SfGrid<ABscPerspectivesDetail> DetailsDataGrid { get; set; }
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "65%" };
-    List<BscPerspectivesDto>? BscPerspectiveData { get; set; }
-    List<ViewPerspectiveTotalWeightSumDto>? BscPerspectiveSumData { get; set; }
-    List<ViewFinancialYearDto>? FinancialYearData { get; set; }
-    List<ADepartmentDto>? DepartmentsData { get; set; }
-    List<ABscPerspectivesTypeDto>? BscPerspectiveTypeData { get; set; }
-    List<AMeasurementMetricDto>? MeasurementUnitData { get; set; }
-    List<ViewABscPerspectivesDetailDto>? PerspectivesDetailData { get; set; }
+    List<ABscPerspectives>? BscPerspectiveData { get; set; }
+    List<ViewPerspectiveTotalWeightSum>? BscPerspectiveSumData { get; set; }
+    List<AFinancialYear>? FinancialYearData { get; set; }
+    List<ADepartment>? DepartmentsData { get; set; }
+    List<ABscPerspectivesType>? BscPerspectiveTypeData { get; set; }
+    List<AMeasurementMetric>? MeasurementUnitData { get; set; }
+    List<ABscPerspectivesDetail>? PerspectivesDetailData { get; set; }
     Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
     EmployeeRegistrationModel inputmodel { get; set; } = new EmployeeRegistrationModel();
     [Parameter]
@@ -465,8 +486,8 @@
     public bool WeightTextBox = true;
     public bool BasicUnitDD = true;
     public bool DepartmentDD = false;
-    private static ViewEmployeeDropDownDto? employeeno { get; set; }
-    List<ViewEmployeeDropDownDto>? EmployeeData { get; set; }
+    private static ViewEmployeeDropDown? employeeno { get; set; }
+    List<ViewEmployeeDropDown>? EmployeeData { get; set; }
     SfSpinner? SpinnerObj;
     private Dictionary<string, object> GridAttributes { get; set; } = new Dictionary<string, object>();
     bool isFinancialYearEnabled { get; set; } = false;
@@ -475,8 +496,11 @@
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     int countid = -1000;
     int? YrId = null;
-    string? weighttotalpercentage  = "70";
+    public double weighttotalpercentage;
+    public double TotalAmount;
     Syncfusion.Blazor.Grids.Action _previous { get; set; }
+    bool savebuttons { get; set; }
+    List<double?> _finyearid = new List<double?>();
 
     private List<object> ToolbarMenu = new List<object>()
     {
@@ -498,7 +522,7 @@
             if (responsebscperspective.IsSuccessStatusCode)
             {
                 var contentbscperspective = await responsebscperspective.Content.ReadAsStringAsync();
-                BscPerspectiveData = JsonSerializer.Deserialize<List<BscPerspectivesDto>>(contentbscperspective, _options);
+                BscPerspectiveData = JsonSerializer.Deserialize<List<ABscPerspectives>>(contentbscperspective, _options);
             }
         }));
 
@@ -508,7 +532,7 @@
             if (responsebscperspectivedetail.IsSuccessStatusCode)
             {
                 var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
-                PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscPerspectivesDetailDto>>(contentbscperspectivedetail, _options);
+                PerspectivesDetailData = JsonSerializer.Deserialize<List<ABscPerspectivesDetail>>(contentbscperspectivedetail, _options);
             }
         }));
 
@@ -518,7 +542,7 @@
             if (responsefinyear.IsSuccessStatusCode)
             {
                 var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
-                FinancialYearData = JsonSerializer.Deserialize<List<ViewFinancialYearDto>>(contentfinyear, _options);
+                FinancialYearData = JsonSerializer.Deserialize<List<AFinancialYear>>(contentfinyear, _options);
 
                 DateTime currentdate = DateTime.Now;
                 string? financialyeardesc = null;
@@ -545,7 +569,7 @@
             if (responsebscperspectivetype.IsSuccessStatusCode)
             {
                 var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
-                BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesTypeDto>>(contentbscperspectivetype, _options);
+                BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesType>>(contentbscperspectivetype, _options);
             }
         }));
 
@@ -555,7 +579,7 @@
             if (responsedepartment.IsSuccessStatusCode)
             {
                 var contentdepartment = await responsedepartment.Content.ReadAsStringAsync();
-                DepartmentsData = JsonSerializer.Deserialize<List<ADepartmentDto>>(contentdepartment, _options);
+                DepartmentsData = JsonSerializer.Deserialize<List<ADepartment>>(contentdepartment, _options);
             }
         }));
 
@@ -565,7 +589,7 @@
             if (responsemetric.IsSuccessStatusCode)
             {
                 var contentmetric = await responsemetric.Content.ReadAsStringAsync();
-                MeasurementUnitData = JsonSerializer.Deserialize<List<AMeasurementMetricDto>>(contentmetric, _options);
+                MeasurementUnitData = JsonSerializer.Deserialize<List<AMeasurementMetric>>(contentmetric, _options);
             }
         }));
 
@@ -575,7 +599,7 @@
             if (responseemployee.IsSuccessStatusCode)
             {
                 var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-                EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDownDto>>(contentemployee, _options);
+                EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(contentemployee, _options);
             }
         }));
 
@@ -623,7 +647,7 @@
         }
     }
 
-    public async void OnYearChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewFinancialYearDto> args)
+    public async void OnYearChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, AFinancialYear> args)
     {
         try
         {
@@ -638,7 +662,7 @@
                 if (responsebscperspectivedetail.IsSuccessStatusCode)
                 {
                     var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
-                    PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscPerspectivesDetailDto>>(contentbscperspectivedetail, _options);
+                    PerspectivesDetailData = JsonSerializer.Deserialize<List<ABscPerspectivesDetail>>(contentbscperspectivedetail, _options);
                 }
             }));
 
@@ -649,7 +673,7 @@
                 if (responsebscperspectivetype.IsSuccessStatusCode)
                 {
                     var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
-                    BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesTypeDto>>(contentbscperspectivetype, _options);
+                    BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesType>>(contentbscperspectivetype, _options);
                 }
             }));
 
@@ -662,7 +686,7 @@
             }
             if (KpiData.ABscPerspectivesDetail == null)
             {
-                KpiData.ABscPerspectivesDetail = new List<ViewABscPerspectivesDetailDto>();
+                KpiData.ABscPerspectivesDetail = new List<ABscPerspectivesDetail>();
             }
 
             foreach (var item in BscPerspectiveTypeData)
@@ -672,7 +696,7 @@
 
                 if (exist == null)
                 {
-                    var m = new ViewABscPerspectivesDetailDto();
+                    var m = new ABscPerspectivesDetail();
                     m.BscPerspectiveDetailId = countid;
                     m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
 
@@ -684,7 +708,7 @@
 
             StateHasChanged();
 
-            
+
         }
         catch(Exception ex)
         {
@@ -696,25 +720,25 @@
         }
     }
 
-    public async Task RowSelectingHandler(RowSelectingEventArgs<ABscPerspectivesDto> args)
+    public async Task RowSelectingHandler(RowSelectingEventArgs<ABscPerspectives> args)
     {
         await BscPerspectiveGrid.ClearSelectionAsync();   //clear selection
     }
 
-    public async void OnPerspectivesActionBegin(ActionEventArgs<ABscPerspectivesDto> args)
+    public async void OnPerspectivesActionBegin(ActionEventArgs<ABscPerspectives> args)
     {
         try
         {
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
             {
-                _previous = args.RequestType;                   
+                _previous = args.RequestType;     
             }
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
             {
                 _previous = args.RequestType;
                 args.RowData.FinancialYearId = finyearid;
-                args.RowData.ABscPerspectivesDetail = new List<ViewABscPerspectivesDetailDto>();
-                
+                args.RowData.ABscPerspectivesDetail = new List<ABscPerspectivesDetail>();
+
                 if (Credentials.StaffId > 0)
                 {
                     employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Credentials.StaffId);
@@ -732,7 +756,7 @@
                     if (responsebscperspectivedetail.IsSuccessStatusCode)
                     {
                         var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
-                        PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscPerspectivesDetailDto>>(contentbscperspectivedetail, _options);
+                        PerspectivesDetailData = JsonSerializer.Deserialize<List<ABscPerspectivesDetail>>(contentbscperspectivedetail, _options);
                     }
                 }));
 
@@ -743,7 +767,7 @@
                     if (responsebscperspectivetype.IsSuccessStatusCode)
                     {
                         var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
-                        BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesTypeDto>>(contentbscperspectivetype, _options);
+                        BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesType>>(contentbscperspectivetype, _options);
                     }
                 }));
 
@@ -756,7 +780,7 @@
                 }
                 if (args.RowData.ABscPerspectivesDetail == null)
                 {
-                    args.RowData.ABscPerspectivesDetail = new List<ViewABscPerspectivesDetailDto>();
+                    args.RowData.ABscPerspectivesDetail = new List<ABscPerspectivesDetail>();
                 }
 
                 foreach (var item in BscPerspectiveTypeData)
@@ -764,7 +788,7 @@
                     var exist = args.RowData.ABscPerspectivesDetail.FirstOrDefault(o => o.BscPerspectiveTypeId == item.BscPerspectiveTypeId);
                     if (exist == null)
                     {
-                        var m = new ViewABscPerspectivesDetailDto();
+                        var m = new ABscPerspectivesDetail();
                         m.BscPerspectiveDetailId = countid;
                         m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
 
@@ -814,7 +838,7 @@
         }
     }
 
-    public async Task OnPerspectiveActionComplete(ActionEventArgs<ABscPerspectivesDto> args)
+    public async Task OnPerspectiveActionComplete(ActionEventArgs<ABscPerspectives> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
         {
@@ -829,7 +853,7 @@
                 if (responsebscperspective.IsSuccessStatusCode)
                 {
                     var contentbscperspective = await responsebscperspective.Content.ReadAsStringAsync();
-                    BscPerspectiveData = JsonSerializer.Deserialize<List<BscPerspectivesDto>>(contentbscperspective, _options);
+                    BscPerspectiveData = JsonSerializer.Deserialize<List<ABscPerspectives>>(contentbscperspective, _options);
                 }
             }));
 
@@ -839,7 +863,7 @@
                 if (responsebscperspectivedetail.IsSuccessStatusCode)
                 {
                     var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
-                    PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscPerspectivesDetailDto>>(contentbscperspectivedetail, _options);
+                    PerspectivesDetailData = JsonSerializer.Deserialize<List<ABscPerspectivesDetail>>(contentbscperspectivedetail, _options);
                 }
             }));
 
@@ -849,7 +873,7 @@
                 if (responsefinyear.IsSuccessStatusCode)
                 {
                     var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
-                    FinancialYearData = JsonSerializer.Deserialize<List<ViewFinancialYearDto>>(contentfinyear, _options);
+                    FinancialYearData = JsonSerializer.Deserialize<List<AFinancialYear>>(contentfinyear, _options);
 
                     DateTime currentdate = DateTime.Now;
                     string? financialyeardesc = null;
@@ -876,7 +900,7 @@
                 if (responsebscperspectivetype.IsSuccessStatusCode)
                 {
                     var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
-                    BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesTypeDto>>(contentbscperspectivetype, _options);
+                    BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesType>>(contentbscperspectivetype, _options);
                 }
             }));
 
@@ -886,7 +910,7 @@
                 if (responsedepartment.IsSuccessStatusCode)
                 {
                     var contentdepartment = await responsedepartment.Content.ReadAsStringAsync();
-                    DepartmentsData = JsonSerializer.Deserialize<List<ADepartmentDto>>(contentdepartment, _options);
+                    DepartmentsData = JsonSerializer.Deserialize<List<ADepartment>>(contentdepartment, _options);
                 }
             }));
 
@@ -896,7 +920,7 @@
                 if (responsemetric.IsSuccessStatusCode)
                 {
                     var contentmetric = await responsemetric.Content.ReadAsStringAsync();
-                    MeasurementUnitData = JsonSerializer.Deserialize<List<AMeasurementMetricDto>>(contentmetric, _options);
+                    MeasurementUnitData = JsonSerializer.Deserialize<List<AMeasurementMetric>>(contentmetric, _options);
                 }
             }));
 
@@ -906,7 +930,7 @@
                 if (responseemployee.IsSuccessStatusCode)
                 {
                     var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-                    EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDownDto>>(contentemployee, _options);
+                    EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(contentemployee, _options);
                 }
             }));
 
@@ -917,7 +941,7 @@
 
     //For Child Grid
     //Enable cell edit on single click
-    public async Task PerspectiveCellSelectHandler(CellSelectEventArgs<ViewABscPerspectivesDetailDto> args)
+    public async Task PerspectiveCellSelectHandler(CellSelectEventArgs<ABscPerspectivesDetail> args)
     {
         try
         {
@@ -939,24 +963,24 @@
         }
     }
 
-    
-    public async Task RowDataBoundHandler(RowDataBoundEventArgs<ViewABscPerspectivesDetailDto> args)
+
+    public async Task RowDataBoundHandler(RowDataBoundEventArgs<ABscPerspectivesDetail> args)
     {
         var index = await ChildDataGrid.GetRowIndexByPrimaryKeyAsync(args.Data.BscPerspectiveDetailId);
 
         //Assign 10 as weight in Learning and Growth
         if (_previous == Syncfusion.Blazor.Grids.Action.Add && args.Data.BscPerspectiveTypeId == 4)
         {
-            await ChildDataGrid.UpdateCellAsync(index, nameof(ViewABscPerspectivesDetailDto.PerspectiveTotalWeight),Convert.ToDouble(10));
+            await ChildDataGrid.UpdateCellAsync(index, nameof(ABscPerspectivesDetail.PerspectiveTotalWeight),Convert.ToDouble(10));
         }
 
         //Assign % as basic unit
-        await ChildDataGrid.UpdateCellAsync(index, nameof(ViewABscPerspectivesDetailDto.MeasurementMetricId),1);
+        await ChildDataGrid.UpdateCellAsync(index, nameof(ABscPerspectivesDetail.MeasurementMetricId),1);
     }
 
-    public async void QueryCellInfoHandlerChild(QueryCellInfoEventArgs<ViewABscPerspectivesDetailDto> Args)
+    public async void QueryCellInfoHandlerChild(QueryCellInfoEventArgs<ABscPerspectivesDetail> Args)
     {
-        if (Args.Column.Field == nameof(ViewABscPerspectivesDetailDto.PerspectiveTotalWeight))
+        if (Args.Column.Field == nameof(ABscPerspectivesDetail.PerspectiveTotalWeight))
         {
             //Disable Learning and Growth
             if (Args.Data.BscPerspectiveTypeId == 4)
@@ -965,13 +989,73 @@
             }
         }
 
-        if (Args.Column.Field == nameof(ViewABscPerspectivesDetailDto.MeasurementMetricId))
+        if (Args.Column.Field == nameof(ABscPerspectivesDetail.MeasurementMetricId))
         {
             //Disable Basic Unit
             Args.Cell.AddClass(new string[] { "disablebasicunit" });
         }
     }
 
+    public async Task ComputeDetail()
+    {
+        // var RowsData1 = ChildDataGrid.GetCurrentViewRecordsAsync();
+        // var RowsData = ChildDataGrid.CurrentViewData;
+        if(ChildDataGrid != null)
+        {
+            var ChangedData = await ChildDataGrid.GetBatchChangesAsync();
+
+            if (ChangedData != null && ChangedData.ChangedRecords.Count > 0)
+            {
+                foreach (ABscPerspectivesDetail row in ChangedData.ChangedRecords)
+                {
+                    _finyearid.Add(row.PerspectiveTotalWeight);
+                }
+                weighttotalpercentage = ChangedData.ChangedRecords.Sum((x => Convert.ToInt32(x.PerspectiveTotalWeight)));
+            }
+            //On Edit
+            else
+            {
+                foreach (ABscPerspectivesDetail row in PerspectivesDetailData)
+                {
+                    _finyearid.Add(row.PerspectiveTotalWeight);
+                }
+                weighttotalpercentage = ChangedData.ChangedRecords.Sum((x => Convert.ToInt32(x.PerspectiveTotalWeight)));
+                
+            }
+
+            if (weighttotalpercentage == 70)
+            {
+                savebuttons = true;
+            }
+            else
+            {
+                savebuttons = false;
+            }
+        }        
+    }
+
+    public async void CellSavedHandler(CellSaveArgs<ABscPerspectivesDetail> args)
+    {
+        ComputeDetail();
+        StateHasChanged();
+    }
+
+    public void CellEditHandler(CellEditArgs<ABscPerspectivesDetail> args)
+    {
+    }
+
+    public void DataBoundHandler()
+    {
+        ComputeDetail();
+    }
+    public void DetailActionComplete(ActionEventArgs<ABscPerspectivesDetail> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) ||
+        args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            ChildDataGrid.PreventRender(false);
+        }
+    }
 
     public async void LoadHandler()
     {
@@ -1020,7 +1104,7 @@
             var credentials = await _AuthService.GetUserCredentials();
             
             int? EmployeeId = credentials.StaffId;
-            var data = new List<ABscPerspectivesDto>();
+            var data = new List<ABscPerspectives>();
 
             try
             {
@@ -1028,7 +1112,7 @@
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    data = JsonSerializer.Deserialize<List<ABscPerspectivesDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<ABscPerspectives>>(content, _options);
                 }
             }
             catch (Exception ex)
@@ -1069,7 +1153,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<ABscPerspectivesDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<ABscPerspectives>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -1080,7 +1164,7 @@
             try
             {
                 string? _baseurl = Navigation.BaseUri;
-                var val = (value as ABscPerspectivesDto);
+                var val = (value as ABscPerspectives);
                 if (val != null)
                 {
                     if (val.BscPerspectiveId == 0)
@@ -1092,7 +1176,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -1125,7 +1209,7 @@
             try
             {
                 string? _baseurl = Navigation.BaseUri;
-                var val = (value as ABscPerspectivesDto);
+                var val = (value as ABscPerspectives);
                 if (val != null)
                 {
                     if (val.BscPerspectiveId != 0)
@@ -1138,7 +1222,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -1167,7 +1251,7 @@
         }
     }
 
-    public string GetWeightHeader(ABscPerspectivesDto Value)
+    public string GetWeightHeader(ABscPerspectives Value)
     {
         if (Value.BscPerspectiveId == 0)
         {
@@ -1206,7 +1290,7 @@
             var credentials = await _AuthService.GetUserCredentials();
             
             int? EmployeeId = credentials.StaffId;
-            var data = new List<ABscPerspectivesDetailDto>();
+            var data = new List<ABscPerspectivesDetail>();
 
             try
             {
@@ -1214,7 +1298,7 @@
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    data = JsonSerializer.Deserialize<List<ABscPerspectivesDetailDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<ABscPerspectivesDetail>>(content, _options);
                 }
             }
             catch (Exception ex)
@@ -1255,7 +1339,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<ABscPerspectivesDetailDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<ABscPerspectivesDetail>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;

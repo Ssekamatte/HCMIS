@@ -1,6 +1,6 @@
 ﻿namespace HCMIS.DTOs
 {
-    public class ViewPerformanceDescriptorDto
+    public class ViewPerformanceDescriptor
     {
         public int PerformanceDescriptorId { get; set; }
         public string? PerformanceDescriptor { get; set; }

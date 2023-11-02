@@ -6,11 +6,10 @@
 @using System.Text.Json
 @using System.Collections;
 @using System.IO;
+@using HCMIS.SHARED.Models;
 @using Microsoft.AspNetCore.Authorization
 @inject NavigationManager navigation;
 @inject SystemSettings _SystemSettings;
-@using HCMIS.SHARED.DTOs.BSC;
-@using HCMIS.SHARED.DTOs.Utilities;
 @using HCMIS.ViewModel;
 @inject IToastService toastService;
 
@@ -47,7 +46,7 @@
     </li>
 </ol>
 
-<SfGrid @ref="@FinancialYearGrid" ID="Grid" TValue="ViewFinancialYearDto" AllowPaging="true"
+<SfGrid @ref="@FinancialYearGrid" ID="Grid" TValue="AFinancialYear" AllowPaging="true"
         AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
         AllowSorting="true" Toolbar="@ToolbarMenu">
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
@@ -55,11 +54,11 @@
     <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Both"
                            Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
     <SfDataManager AdaptorInstance="@typeof(FinancialYearAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-    <GridEvents OnActionComplete="@FinancialYearActionComplete" OnActionBegin="@FinancialYearActionBegin" TValue="ViewFinancialYearDto"></GridEvents>
+    <GridEvents OnActionComplete="@FinancialYearActionComplete" OnActionBegin="@FinancialYearActionBegin" TValue="AFinancialYear"></GridEvents>
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog" ShowConfirmDialog="false">
         <HeaderTemplate>
             @{
-                var text = GetYearHeader((context as ViewFinancialYearDto));
+                var text = GetYearHeader((context as AFinancialYear));
                 <div class="headerbandimg">
                     <span>@text</span>
                 </div>
@@ -67,7 +66,7 @@
         </HeaderTemplate>
         <Template Context="BankContext">
             @{
-                YYData = (BankContext as ViewFinancialYearDto);
+                YYData = (BankContext as AFinancialYear);
                 @if (YYData != null)
                 {
                     <div class="row">
@@ -86,13 +85,13 @@
     </GridEditSettings>
     <GridColumns>
         <GridColumn Type="ColumnType.CheckBox" Width="30" Visible=false></GridColumn>
-        <GridColumn Field=@nameof(ViewFinancialYearDto.Id)
+        <GridColumn Field=@nameof(AFinancialYear.Id)
                     Visible=false
                     HeaderText="Year Id"
                     AllowEditing="false"
                     IsPrimaryKey="true">
         </GridColumn>
-        <GridColumn Field=@nameof(ViewFinancialYearDto.FinancialYear)
+        <GridColumn Field=@nameof(AFinancialYear.FinancialYear)
                     HeaderText="Financial Year"
                     TextAlign="TextAlign.Justify"
                     Width="120"
@@ -104,14 +103,14 @@
 </SfGrid>
 
 @code {
-    SfGrid<ViewFinancialYearDto>? FinancialYearGrid;
-    private static ViewFinancialYearDto? YYData { get; set; }
+    SfGrid<AFinancialYear>? FinancialYearGrid;
+    private static AFinancialYear? YYData { get; set; }
     public bool? radiovalue;
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "65%" };
-    List<ViewFinancialYearDto>? FYearData { get; set; }
+    List<AFinancialYear>? FYearData { get; set; }
     SfRadioButton<bool?> RadioButtonInstance;
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-    private List<ViewFinancialYearDto> selectedrecords { get; set; }
+    private List<AFinancialYear> selectedrecords { get; set; }
 
     private List<object> ToolbarMenu = new List<object>()
     {
@@ -131,7 +130,7 @@
             if (responsefinyear.IsSuccessStatusCode)
             {
                 var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
-                FYearData = JsonSerializer.Deserialize<List<ViewFinancialYearDto>>(contentfinyear, _options);
+                FYearData = JsonSerializer.Deserialize<List<AFinancialYear>>(contentfinyear, _options);
             }
         }));
 
@@ -163,7 +162,7 @@
 
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         {
-            var data = new List<ViewFinancialYearDto>();
+            var data = new List<AFinancialYear>();
             try
             {
                 var response = await Http.GetAsync($"FinancialYear/list");
@@ -172,7 +171,7 @@
                 {
                     toastService.ShowError(response.ReasonPhrase);
                 }
-                data = JsonSerializer.Deserialize<List<ViewFinancialYearDto>>(content, _options);
+                data = JsonSerializer.Deserialize<List<AFinancialYear>>(content, _options);
             }
             catch (Exception ex)
             {
@@ -212,7 +211,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<ViewFinancialYearDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<AFinancialYear>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -222,7 +221,7 @@
         {
             try
             {
-                var val = (value as ViewFinancialYearDto);
+                var val = (value as AFinancialYear);
 
                 if (val.Id == 0)
                 {
@@ -263,7 +262,7 @@
         {
             try
             {
-                var val = (value as ViewFinancialYearDto);
+                var val = (value as AFinancialYear);
 
 
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
@@ -289,7 +288,7 @@
 
     }
 
-    public async void FinancialYearActionComplete(ActionEventArgs<ViewFinancialYearDto> args)
+    public async void FinancialYearActionComplete(ActionEventArgs<AFinancialYear> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add)
         || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
@@ -306,13 +305,13 @@
                 if (responsefinyear.IsSuccessStatusCode)
                 {
                     var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
-                    FYearData = JsonSerializer.Deserialize<List<ViewFinancialYearDto>>(contentfinyear, _options);
+                    FYearData = JsonSerializer.Deserialize<List<AFinancialYear>>(contentfinyear, _options);
                 }
             }));
         }
     }
 
-    public async void FinancialYearActionBegin(ActionEventArgs<ViewFinancialYearDto> Args)
+    public async void FinancialYearActionBegin(ActionEventArgs<AFinancialYear> Args)
     {
         var data = Args.Data;
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
@@ -345,7 +344,7 @@
         }
     }
 
-    public string GetYearHeader(ViewFinancialYearDto Value)
+    public string GetYearHeader(AFinancialYear Value)
     {
         if (Value.Id == 0)
         {

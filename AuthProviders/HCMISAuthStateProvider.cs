@@ -4,6 +4,7 @@ using Blazor.SubtleCrypto;
 using Blazored.LocalStorage;
 using HCMIS.Features;
 using HCMIS.Model;
+using HCMIS.SHARED.Data;
 using Microsoft.AspNetCore.Components.Authorization;
 
 namespace HCMIS.AuthProviders

@@ -1,6 +1,8 @@
 ﻿@page "/AppraisalFormPage"
 @using HCMIS.Data;
 @using HCMIS.Model
+@using HCMIS.SHARED.Data;
+@using HCMIS.SHARED.Models;
 @using HCMIS.ViewModel
 @using System.Text.Json
 @using System.Text.RegularExpressions
@@ -8,9 +10,7 @@
 @inject HttpClient Http
 @inject NavigationManager Navigation
 @using System.Collections;
-@using HCMIS.SHARED.DTOs.BSC;
 @inject IToastService toastService;
-@using HCMIS.SHARED.DTOs.Utilities;
 @using HCMIS.Interface;
 @inject IAuthenticationService AuthService;
 @inject NavigationManager navManager;
@@ -206,13 +206,13 @@
 </div>
 
 <div class="form-group col-md-12">
-    <SfGrid @ref="@DataGrid" TValue="BalanceScoreCardDto" GridLines="GridLine.Both" ID="Grid" @attributes="@GridAttributes"
+    <SfGrid @ref="@DataGrid" TValue="BalanceScoreCard" GridLines="GridLine.Both" ID="Grid" @attributes="@GridAttributes"
             AllowTextWrap="true" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true"
             AllowGrouping="true" AllowExcelExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@ToolbarMenu" Query="@MainQuery">
         <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
             <HeaderTemplate>
                 @{
-                    var text = GetEmployeeHeader((context as BalanceScoreCardDto));
+                    var text = GetEmployeeHeader((context as BalanceScoreCard));
                     <div class="headerbandimg">
                         <span>@text</span>
                     </div>
@@ -248,7 +248,7 @@
                         }
                     </div>
 
-                    BscData = (context as BalanceScoreCardDto);
+                    BscData = (context as BalanceScoreCard);
 
                     <SfAccordion ExpandMode="ExpandMode.Single">
                         <AccordionItems>
@@ -264,9 +264,9 @@
                                                             <p>Employee Name:<span style="color:red;">*</span></p>
                                                         </div>
                                                         <div class="col-md-7">
-                                                            <SfDropDownList @bind-Value="@(BscData.Employeeid)" Enabled="EmployeeDDEnabled" TItem="ViewBscEmployeeDto" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                                                <DropDownListFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></DropDownListFieldSettings>
-                                                                <DropDownListEvents TValue="int?" TItem="ViewBscEmployeeDto" ValueChange="OnEmployeeChange"></DropDownListEvents>
+                                                            <SfDropDownList @bind-Value="@(BscData.Employeeid)" Enabled="EmployeeDDEnabled" TItem="ViewBscEmployee" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                                <DropDownListFieldSettings Value="@nameof(ViewBscEmployee.Employeeid)" Text="@nameof(ViewBscEmployee.EmployeeDetails)"></DropDownListFieldSettings>
+                                                                <DropDownListEvents TValue="int?" TItem="ViewBscEmployee" ValueChange="OnEmployeeChange"></DropDownListEvents>
                                                             </SfDropDownList>
                                                         </div>
                                                         @if (employeeno != null)
@@ -340,7 +340,7 @@
                                                             </div>
                                                             <div class="col-md-7">
                                                                 <SfDropDownList @bind-Value="@(BscData.AppraisalReasonId)" Enabled="AppraisalReasonEnabled"
-                                                                                TItem="AppraisalReasonDto" TValue="int?" DataSource="@AppraisalData"
+                                                                                TItem="AAppraisalReason" TValue="int?" DataSource="@AppraisalData"
                                                                                 Placeholder="Please select" FloatLabelType="FloatLabelType.Never"
                                                                                 AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                                                     <DropDownListFieldSettings Value="@nameof(AAppraisalReason.AppraisalReasonId)"
@@ -360,9 +360,9 @@
                                                         <p>Appraiser Name:<span style="color:red;">*</span></p>
                                                     </div>
                                                     <div class="col-md-7">
-                                                        <SfDropDownList @bind-Value="@(BscData.AppraiserName)" Enabled="AppraiserNameEnabled" TItem="ViewBscEmployeeDto" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                                            <DropDownListFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></DropDownListFieldSettings>
-                                                            <DropDownListEvents TValue="int?" TItem="ViewBscEmployeeDto" ValueChange="OnAppraiserChange"></DropDownListEvents>
+                                                        <SfDropDownList @bind-Value="@(BscData.AppraiserName)" Enabled="AppraiserNameEnabled" TItem="ViewBscEmployee" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                            <DropDownListFieldSettings Value="@nameof(ViewBscEmployee.Employeeid)" Text="@nameof(ViewBscEmployee.EmployeeDetails)"></DropDownListFieldSettings>
+                                                            <DropDownListEvents TValue="int?" TItem="ViewBscEmployee" ValueChange="OnAppraiserChange"></DropDownListEvents>
                                                         </SfDropDownList>
 
                                                     </div>
@@ -403,7 +403,7 @@
                                                         <p>Financial Year:<span style="color:red;">*</span></p>
                                                     </div>
                                                     <div class="col-md-7">
-                                                        <SfDropDownList @bind-Value="@(BscData.FinancialYearId)" TItem="ViewFinancialYearDto" TValue="int?"
+                                                        <SfDropDownList @bind-Value="@(BscData.FinancialYearId)" TItem="AFinancialYear" TValue="int?"
                                                                         DataSource="@FinancialYearData" Placeholder="Please select"
                                                                         FloatLabelType="FloatLabelType.Never" AllowFiltering="true"
                                                                         FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
@@ -412,7 +412,7 @@
                                                                                        Text="@nameof(AFinancialYear.FinancialYear)">
                                                             </DropDownListFieldSettings>
                                                             <DropDownListEvents TValue="int?"
-                                                                                TItem="ViewFinancialYearDto" ValueChange="OnFinancialYearChange">
+                                                                                TItem="AFinancialYear" ValueChange="OnFinancialYearChange">
                                                             </DropDownListEvents>
                                                         </SfDropDownList>
                                                     </div>
@@ -624,7 +624,7 @@
                     DataBound="DataBound"
                     QueryCellInfo="QueryCellInfoHandler"
                     RowSelecting="RowSelectingHandler"
-                    TValue="BalanceScoreCardDto">
+                    TValue="BalanceScoreCard">
         </GridEvents>
         <SfDataManager AdaptorInstance="@typeof(BSCAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
         <GridColumns>
@@ -639,8 +639,8 @@
                 </GridCommandColumns>
             </GridColumn>
             
-            <GridColumn Field=@nameof(BalanceScoreCardDto.BalanceScoreCardId) HeaderText="BalanceScoreCardId" AllowEditing="false" Visible="false" IsPrimaryKey="true" Width="150"></GridColumn>
-            <GridForeignColumn Field=@nameof(BalanceScoreCardDto.Employeeid)
+            <GridColumn Field=@nameof(BalanceScoreCard.BalanceScoreCardId) HeaderText="BalanceScoreCardId" AllowEditing="false" Visible="false" IsPrimaryKey="true" Width="150"></GridColumn>
+            <GridForeignColumn Field=@nameof(BalanceScoreCard.Employeeid)
                                HeaderText="Employee"
                                Width="100"
                                AllowEditing="true"
@@ -650,33 +650,33 @@
                                CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})">
             </GridForeignColumn>
 
-            <GridForeignColumn Field=@nameof(BalanceScoreCardDto.AppraisalReasonId)
+            <GridForeignColumn Field=@nameof(BalanceScoreCard.AppraisalReasonId)
                                HeaderText="Appraisal Reason"
                                Width="100"
                                AllowEditing="true"
-                               ForeignKeyField="@(nameof(AppraisalReasonDto.AppraisalReasonId))"
-                               ForeignKeyValue="@(nameof(AppraisalReasonDto.AppraisalReason))"
+                               ForeignKeyField="@(nameof(AAppraisalReason.AppraisalReasonId))"
+                               ForeignKeyValue="@(nameof(AAppraisalReason.AppraisalReason))"
                                ForeignDataSource="@AppraisalData" AllowFiltering="false"
                                CustomAttributes="@(new Dictionary<string,
                     object>(){ { "class", "e-attr1" }})">
             </GridForeignColumn>
-            <GridForeignColumn Field=@nameof(BalanceScoreCardDto.AppraiserName)
+            <GridForeignColumn Field=@nameof(BalanceScoreCard.AppraiserName)
                                HeaderText="Appraiser Name"
                                Width="100"
                                AllowEditing="true"
-                               ForeignKeyField="@(nameof(ViewBscEmployeeDto.Employeeid))"
-                               ForeignKeyValue="@(nameof(ViewBscEmployeeDto.EmployeeDetails))"
+                               ForeignKeyField="@(nameof(ViewBscEmployee.Employeeid))"
+                               ForeignKeyValue="@(nameof(ViewBscEmployee.EmployeeDetails))"
                                ForeignDataSource="@EmployeeData" AllowFiltering="false"
                                CustomAttributes="@(new Dictionary<string,
                     object>(){ { "class", "e-attr1" }})">
             </GridForeignColumn>
 
-            <GridForeignColumn Field=@nameof(BalanceScoreCardDto.LeaveApprovalStatusId)
+            <GridForeignColumn Field=@nameof(BalanceScoreCard.LeaveApprovalStatusId)
                                HeaderText="Approval Status"
                                Width="100"
                                AllowEditing="true"
-                               ForeignKeyField="@(nameof(ALeaveApprovalStatusDto.LeaveApprovalStatusId))"
-                               ForeignKeyValue="@(nameof(ALeaveApprovalStatusDto.LeaveApprovalStatus))"
+                               ForeignKeyField="@(nameof(ALeaveApprovalStatus.LeaveApprovalStatusId))"
+                               ForeignKeyValue="@(nameof(ALeaveApprovalStatus.LeaveApprovalStatus))"
                                ForeignDataSource="@ApprovalStatusData" AllowFiltering="false"
                                CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})">
             </GridForeignColumn>
@@ -824,7 +824,7 @@
     public int? finyearid { get; set; }
     public int? approvalstatsid { get; set; } = null;
 
-    SfGrid<BalanceScoreCardDto>? DataGrid { get; set; }
+    SfGrid<BalanceScoreCard>? DataGrid { get; set; }
     DateTime currentdate = DateTime.Now;
     SfDialog? LoadingDialogue;
     Syncfusion.Blazor.Grids.Action _previous { get; set; }
@@ -837,25 +837,25 @@
             {"style", "z-index: 2000;" }
         };
 
-    List<ViewBscEmployeeDto>? EmployeeData { get; set; }
-    private static BalanceScoreCardDto? BscData { get; set; }
-    List<JobTitleDto>? JobTitleData { get; set; }
-    List<ViewFinancialYearDto>? FinancialYearData { get; set; }
-    List<AppraisalReasonDto>? AppraisalData { get; set; }
-    List<BscKpiDto>? KpiData { get; set; }
-    List<ABscKpidetailsDto>? KpiDetailsData { get; set; }
-    List<BscPerspectivesDto>? BscPerspectiveData { get; set; }
-    List<PerformanceDescriptorDto>? PerformanceDescriptorData { get; set; }
-    List<EmployeeEvidenceDto>? EvidenceData { get; set; }
-    List<BehavioralCompetenciesDto>? CompetenceData { get; set; }
-    List<BalanceScoreCardTargetSettingDto>? TargetData { get; set; }
-    List<ViewBscPerspectiveperformanceIndicatorDto>? PopulatedData { get; set; }
-    List<ABscPerspectivesTypeDto>? BscPerspectiveTypeData { get; set; }
-    List<ALeaveApprovalStatusDto>? ApprovalStatusData { get; set; }
-    List<AMeasurementMetricDto>? MeasurementUnitData { get; set; }
-    List<APerformanceScaleDto>? ScaleData { get; set; }
-    List<ViewTargetSettingTotalsDto>? TargetSettingTotalData { get; set; }
-    List<ViewBehavioralTotalsDto>? BehavioralTotalData { get; set; }
+    List<ViewBscEmployee>? EmployeeData { get; set; }
+    private static BalanceScoreCard? BscData { get; set; }
+    List<AJobTitle>? JobTitleData { get; set; }
+    List<AFinancialYear>? FinancialYearData { get; set; }
+    List<AAppraisalReason>? AppraisalData { get; set; }
+    List<ABscKpi>? KpiData { get; set; }
+    List<ABscKpidetails>? KpiDetailsData { get; set; }
+    List<ABscPerspectives>? BscPerspectiveData { get; set; }
+    List<APerformanceDescriptor>? PerformanceDescriptorData { get; set; }
+    List<AEmployeeEvidence>? EvidenceData { get; set; }
+    List<ABehavioralCompetencies>? CompetenceData { get; set; }
+    List<BalanceScoreCardTargetSetting>? TargetData { get; set; }
+    List<ViewBscPerspectiveperformanceIndicator>? PopulatedData { get; set; }
+    List<ABscPerspectivesType>? BscPerspectiveTypeData { get; set; }
+    List<ALeaveApprovalStatus>? ApprovalStatusData { get; set; }
+    List<AMeasurementMetric>? MeasurementUnitData { get; set; }
+    List<APerformanceScale>? ScaleData { get; set; }
+    List<ViewTargetSettingTotals>? TargetSettingTotalData { get; set; }
+    List<ViewBehavioralTotals>? BehavioralTotalData { get; set; }
     bool reasonBool = true;
     bool AllowAddingValue { get; set; }
     bool AllowEditingValue{ get; set; }
@@ -885,117 +885,117 @@
 
     }
 
-    private void ToggleReasonsData(List<BalanceScoreCardRejectionReasonsDto>? DetailData)
+    private void ToggleReasonsData(List<BalanceScoreCardRejectionReasons>? DetailData)
     {
         if (BscData != null && DetailData != null)
         {
             if (BscData.BalanceScoreCardRejectionReasons == null)
             {
-                BscData.BalanceScoreCardRejectionReasons = new List<BalanceScoreCardRejectionReasonsDto>();
+                BscData.BalanceScoreCardRejectionReasons = new List<BalanceScoreCardRejectionReasons>();
             }
             BscData.BalanceScoreCardRejectionReasons = DetailData;
         }
     }
 
-    private void ToggleBalanceScoreCardTarget(List<BalanceScoreCardTargetSettingDto>? TargetChange)
+    private void ToggleBalanceScoreCardTarget(List<BalanceScoreCardTargetSetting>? TargetChange)
     {
         if(BscData != null && TargetChange != null)
         {
             if(BscData.BalanceScoreCardTargetSetting == null)
             {
-                BscData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSettingDto>();
+                BscData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSetting>();
             }
             BscData.BalanceScoreCardTargetSetting = TargetChange;
         }
     }
 
-    private void ToggleBalanceScoreCardBehaviour(List<BalanceScoreCardBehavioralDto>? BehaviourChange)
+    private void ToggleBalanceScoreCardBehaviour(List<BalanceScoreCardBehavioral>? BehaviourChange)
     {
         if(BscData != null && BehaviourChange != null)
         {
             if(BscData.BalanceScoreCardBehavioral == null)
             {
-                BscData.BalanceScoreCardBehavioral = new List<BalanceScoreCardBehavioralDto>();
+                BscData.BalanceScoreCardBehavioral = new List<BalanceScoreCardBehavioral>();
             }
             BscData.BalanceScoreCardBehavioral = BehaviourChange;
         }
     }
 
-    private void ToggleBalanceScoreCardPlan(List<BalanceScoreCardTargetDevelopmentPlanDto>? PlanChange)
+    private void ToggleBalanceScoreCardPlan(List<BalanceScoreCardTargetDevelopmentPlan>? PlanChange)
     {
         if(BscData != null && PlanChange != null)
         {
             if(BscData.BalanceScoreCardTargetDevelopmentPlan == null)
             {
-                BscData.BalanceScoreCardTargetDevelopmentPlan = new List<BalanceScoreCardTargetDevelopmentPlanDto>();
+                BscData.BalanceScoreCardTargetDevelopmentPlan = new List<BalanceScoreCardTargetDevelopmentPlan>();
             }
             BscData.BalanceScoreCardTargetDevelopmentPlan = PlanChange;
         }
     }
 
-    private void ToggleBalanceScoreCardAppraiseeComments(List<BalanceScoreCardAppraiseeCommentsDto>? AppraiseeCommentsChange)
+    private void ToggleBalanceScoreCardAppraiseeComments(List<BalanceScoreCardAppraiseeComments>? AppraiseeCommentsChange)
     {
         if(BscData != null && AppraiseeCommentsChange != null)
         {
-            if(BscData.BalanceScoreCardAppraiseeComments == null)
+            if (BscData.BalanceScoreCardAppraiseeComments == null)
             {
-                BscData.BalanceScoreCardAppraiseeComments = new List<BalanceScoreCardAppraiseeCommentsDto>();
+                BscData.BalanceScoreCardAppraiseeComments = new List<BalanceScoreCardAppraiseeComments>();
             }
             BscData.BalanceScoreCardAppraiseeComments = AppraiseeCommentsChange;
         }
     }
 
-    private void ToggleBalanceScoreCardSupervisorComments(List<BalanceScoreCardSupervisorCommentsDto>? SupervisorCommentsChange)
+    private void ToggleBalanceScoreCardSupervisorComments(List<BalanceScoreCardSupervisorComments>? SupervisorCommentsChange)
     {
         if (BscData != null && SupervisorCommentsChange != null)
         {
             if (BscData.BalanceScoreCardSupervisorComments == null)
             {
-                BscData.BalanceScoreCardSupervisorComments = new List<BalanceScoreCardSupervisorCommentsDto>();
+                BscData.BalanceScoreCardSupervisorComments = new List<BalanceScoreCardSupervisorComments>();
             }
             BscData.BalanceScoreCardSupervisorComments = SupervisorCommentsChange;
         }
     }
 
-    private void ToggleBalanceScoreCardHODComments(List<BalanceScoreCardHODCommentsDto>? HODCommentsChange)
+    private void ToggleBalanceScoreCardHODComments(List<BalanceScoreCardHodcomments>? HODCommentsChange)
     {
         if (BscData != null && HODCommentsChange != null)
         {
             if (BscData.BalanceScoreCardHodcomments == null)
             {
-                BscData.BalanceScoreCardHodcomments = new List<BalanceScoreCardHODCommentsDto>();
+                BscData.BalanceScoreCardHodcomments = new List<BalanceScoreCardHodcomments>();
             }
             BscData.BalanceScoreCardHodcomments = HODCommentsChange;
         }
     }
 
-    private void ToggleBalanceScoreCardCEOComments(List<BalanceScoreCardCEOCommentsDto>? CEOCommentsChange)
+    private void ToggleBalanceScoreCardCEOComments(List<BalanceScoreCardCeocomments>? CEOCommentsChange)
     {
         if (BscData != null && CEOCommentsChange != null)
         {
             if (BscData.BalanceScoreCardCeocomments == null)
             {
-                BscData.BalanceScoreCardCeocomments = new List<BalanceScoreCardCEOCommentsDto>();
+                BscData.BalanceScoreCardCeocomments = new List<BalanceScoreCardCeocomments>();
             }
             BscData.BalanceScoreCardCeocomments = CEOCommentsChange;
         }
     }
 
-    private void ToggleBalanceScoreCardAttachment(List<BalanceScoreCardAttachmentDto>? AttachmentChange)
+    private void ToggleBalanceScoreCardAttachment(List<BalanceScoreCardAttachment>? AttachmentChange)
     {
         if (BscData != null && AttachmentChange != null)
         {
             if (BscData.BalanceScoreCardAttachment == null)
             {
-                BscData.BalanceScoreCardAttachment = new List<BalanceScoreCardAttachmentDto>();
+                BscData.BalanceScoreCardAttachment = new List<BalanceScoreCardAttachment>();
             }
             BscData.BalanceScoreCardAttachment = AttachmentChange;
         }
     }
 
-    private static ViewBscEmployeeDto employeeno { get; set; }
-    private static ViewBscEmployeeDto appraiserdetails { get; set; }
-    private static ALeaveApprovalStatusDto statusdecsription { get; set; }
+    private static ViewBscEmployee employeeno { get; set; }
+    private static ViewBscEmployee appraiserdetails { get; set; }
+    private static ALeaveApprovalStatus statusdecsription { get; set; }
 
     bool IsSubmitDisabled = false;
     bool IsDraftDisabled = false;
@@ -1378,7 +1378,7 @@
                     if (responsemetric.IsSuccessStatusCode)
                     {
                         var contentmetric = await responsemetric.Content.ReadAsStringAsync();
-                        MeasurementUnitData = JsonSerializer.Deserialize<List<AMeasurementMetricDto>>(contentmetric, _options);
+                        MeasurementUnitData = JsonSerializer.Deserialize<List<AMeasurementMetric>>(contentmetric, _options);
                     }
                 }));
 
@@ -1388,7 +1388,7 @@
                     if (responseemployee.IsSuccessStatusCode)
                     {
                         var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-                        EmployeeData = JsonSerializer.Deserialize<List<ViewBscEmployeeDto>>(contentemployee, _options);
+                        EmployeeData = JsonSerializer.Deserialize<List<ViewBscEmployee>>(contentemployee, _options);
                     }
                 }));
 
@@ -1398,7 +1398,7 @@
                     if (responsejobtitle.IsSuccessStatusCode)
                     {
                         var contentjobtitle = await responsejobtitle.Content.ReadAsStringAsync();
-                        JobTitleData = JsonSerializer.Deserialize<List<JobTitleDto>>(contentjobtitle, _options);
+                        JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(contentjobtitle, _options);
                     }
                 }));
 
@@ -1408,7 +1408,7 @@
                     if (responsefinyear.IsSuccessStatusCode)
                     {
                         var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
-                        FinancialYearData = JsonSerializer.Deserialize<List<ViewFinancialYearDto>>(contentfinyear, _options);
+                        FinancialYearData = JsonSerializer.Deserialize<List<AFinancialYear>>(contentfinyear, _options);
 
                         DateTime currentdate = DateTime.Now;
                         string? financialyeardesc = null;
@@ -1434,7 +1434,7 @@
                             if (responsetargetpopulated.IsSuccessStatusCode)
                             {
                                 var contenttargetpopulated = await responsetargetpopulated.Content.ReadAsStringAsync();
-                                PopulatedData = JsonSerializer.Deserialize<List<ViewBscPerspectiveperformanceIndicatorDto>>(contenttargetpopulated, _options);
+                                PopulatedData = JsonSerializer.Deserialize<List<ViewBscPerspectiveperformanceIndicator>>(contenttargetpopulated, _options);
                             }
                         }
 
@@ -1447,7 +1447,7 @@
                     if (responseappraisal.IsSuccessStatusCode)
                     {
                         var contentappraisal = await responseappraisal.Content.ReadAsStringAsync();
-                        AppraisalData = JsonSerializer.Deserialize<List<AppraisalReasonDto>>(contentappraisal, _options);
+                        AppraisalData = JsonSerializer.Deserialize<List<AAppraisalReason>>(contentappraisal, _options);
                     }
                 }));
 
@@ -1458,7 +1458,7 @@
                     if (responseKpi.IsSuccessStatusCode)
                     {
                         var contentKpi = await responseKpi.Content.ReadAsStringAsync();
-                        KpiData = JsonSerializer.Deserialize<List<BscKpiDto>>(contentKpi, _options);
+                        KpiData = JsonSerializer.Deserialize<List<ABscKpi>>(contentKpi, _options);
                     }
                 }));
 
@@ -1468,7 +1468,7 @@
                     if (responseKpi.IsSuccessStatusCode)
                     {
                         var contentKpi = await responseKpi.Content.ReadAsStringAsync();
-                        KpiDetailsData = JsonSerializer.Deserialize<List<ABscKpidetailsDto>>(contentKpi, _options);
+                        KpiDetailsData = JsonSerializer.Deserialize<List<ABscKpidetails>>(contentKpi, _options);
                     }
                 }));
 
@@ -1478,7 +1478,7 @@
                     if (responsebscperspectivetype.IsSuccessStatusCode)
                     {
                         var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
-                        BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesTypeDto>>(contentbscperspectivetype, _options);
+                        BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesType>>(contentbscperspectivetype, _options);
                     }
                 }));
 
@@ -1488,7 +1488,7 @@
                     if (responseevidence.IsSuccessStatusCode)
                     {
                         var contentevidence = await responseevidence.Content.ReadAsStringAsync();
-                        EvidenceData = JsonSerializer.Deserialize<List<EmployeeEvidenceDto>>(contentevidence, _options);
+                        EvidenceData = JsonSerializer.Deserialize<List<AEmployeeEvidence>>(contentevidence, _options);
                     }
                 }));
 
@@ -1498,7 +1498,7 @@
                     if (responseperformancedescriptor.IsSuccessStatusCode)
                     {
                         var contentperformancedescriptor = await responseperformancedescriptor.Content.ReadAsStringAsync();
-                        PerformanceDescriptorData = JsonSerializer.Deserialize<List<PerformanceDescriptorDto>>(contentperformancedescriptor, _options);
+                        PerformanceDescriptorData = JsonSerializer.Deserialize<List<APerformanceDescriptor>>(contentperformancedescriptor, _options);
                     }
                 }));
 
@@ -1508,7 +1508,7 @@
                     if (responsecompetence.IsSuccessStatusCode)
                     {
                         var contentcompetence = await responsecompetence.Content.ReadAsStringAsync();
-                        CompetenceData = JsonSerializer.Deserialize<List<BehavioralCompetenciesDto>>(contentcompetence, _options);
+                        CompetenceData = JsonSerializer.Deserialize<List<ABehavioralCompetencies>>(contentcompetence, _options);
                     }
                 }));
 
@@ -1518,7 +1518,7 @@
                     if (responsetarget.IsSuccessStatusCode)
                     {
                         var contenttarget = await responsetarget.Content.ReadAsStringAsync();
-                        TargetData = JsonSerializer.Deserialize<List<BalanceScoreCardTargetSettingDto>>(contenttarget, _options);
+                        TargetData = JsonSerializer.Deserialize<List<BalanceScoreCardTargetSetting>>(contenttarget, _options);
                     }
                 }));
 
@@ -1528,7 +1528,7 @@
                     if (responseapprovalstatus.IsSuccessStatusCode)
                     {
                         var contentapprovalstatus = await responseapprovalstatus.Content.ReadAsStringAsync();
-                        ApprovalStatusData = JsonSerializer.Deserialize<List<ALeaveApprovalStatusDto>>(contentapprovalstatus, _options);
+                        ApprovalStatusData = JsonSerializer.Deserialize<List<ALeaveApprovalStatus>>(contentapprovalstatus, _options);
                     }
                 }));
 
@@ -1538,7 +1538,7 @@
                     if (responsebscperspective.IsSuccessStatusCode)
                     {
                         var contentbscperspective = await responsebscperspective.Content.ReadAsStringAsync();
-                        BscPerspectiveData = JsonSerializer.Deserialize<List<BscPerspectivesDto>>(contentbscperspective, _options);
+                        BscPerspectiveData = JsonSerializer.Deserialize<List<ABscPerspectives>>(contentbscperspective, _options);
                     }
                 }));
 
@@ -1548,7 +1548,7 @@
                     if (responsetargettotal.IsSuccessStatusCode)
                     {
                         var contenttargettotal = await responsetargettotal.Content.ReadAsStringAsync();
-                        TargetSettingTotalData = JsonSerializer.Deserialize<List<ViewTargetSettingTotalsDto>>(contenttargettotal, _options);
+                        TargetSettingTotalData = JsonSerializer.Deserialize<List<ViewTargetSettingTotals>>(contenttargettotal, _options);
                     }
                 }));
 
@@ -1558,7 +1558,7 @@
                     if (responsebehavioraltotal.IsSuccessStatusCode)
                     {
                         var contentbehavioraltotal = await responsebehavioraltotal.Content.ReadAsStringAsync();
-                        BehavioralTotalData = JsonSerializer.Deserialize<List<ViewBehavioralTotalsDto>>(contentbehavioraltotal, _options);
+                        BehavioralTotalData = JsonSerializer.Deserialize<List<ViewBehavioralTotals>>(contentbehavioraltotal, _options);
                     }
                 }));
 
@@ -1568,7 +1568,7 @@
                     if (responsemetric.IsSuccessStatusCode)
                     {
                         var contentmetric = await responsemetric.Content.ReadAsStringAsync();
-                        ScaleData = JsonSerializer.Deserialize<List<APerformanceScaleDto>>(contentmetric, _options);
+                        ScaleData = JsonSerializer.Deserialize<List<APerformanceScale>>(contentmetric, _options);
                     }
                 }));
 
@@ -1590,18 +1590,18 @@
         
     }
 
-    public void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewBscEmployeeDto> args)
+    public void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewBscEmployee> args)
     {
         employeeno = args.ItemData;
         isFinancialYearEnabled = true;
     }
 
-    public void OnAppraiserChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewBscEmployeeDto> args)
+    public void OnAppraiserChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewBscEmployee> args)
     {
         appraiserdetails = args.ItemData;
     }
 
-    public async void OnFinancialYearChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewFinancialYearDto> args)
+    public async void OnFinancialYearChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, AFinancialYear> args)
     {
         try
         {
@@ -1616,7 +1616,7 @@
                 if (responsetarget.IsSuccessStatusCode)
                 {
                     var contenttarget = await responsetarget.Content.ReadAsStringAsync();
-                    TargetData = JsonSerializer.Deserialize<List<BalanceScoreCardTargetSettingDto>>(contenttarget, _options);
+                    TargetData = JsonSerializer.Deserialize<List<BalanceScoreCardTargetSetting>>(contenttarget, _options);
                 }
             }));
 
@@ -1629,7 +1629,7 @@
             }
             if (BscData.BalanceScoreCardTargetSetting == null)
             {
-                BscData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSettingDto>();
+                BscData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSetting>();
             }
 
             foreach (var item in BscPerspectiveTypeData)
@@ -1639,7 +1639,7 @@
 
                 if (exist == null)
                 {
-                    var m = new BalanceScoreCardTargetSettingDto();
+                    var m = new BalanceScoreCardTargetSetting();
                     //m.BscPerspectiveDetailId = countid;
                     //m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
 
@@ -1704,14 +1704,14 @@
                 }
             }
 
-            var data = new List<BalanceScoreCardDto>();
+            var data = new List<BalanceScoreCard>();
             try
             {
                 var response = await Http.GetAsync($"BalanceScoreCard/GetBSCData?finyearid={_FinancialYearId}");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    data = JsonSerializer.Deserialize<List<BalanceScoreCardDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<BalanceScoreCard>>(content, _options);
                 }
 
             }
@@ -1753,7 +1753,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<BalanceScoreCardDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<BalanceScoreCard>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -1762,7 +1762,7 @@
 
         // public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         // {
-        //     var data = new List<BalanceScoreCardDto>();
+        //     var data = new List<BalanceScoreCard>();
         //     bool returnvalidata = false;
         //     try
         //     {    
@@ -1781,7 +1781,7 @@
         //                 var content = await response.Content.ReadAsStringAsync();
         //                 if (response.IsSuccessStatusCode)
         //                 {
-        //                     data = JsonSerializer.Deserialize<List<BalanceScoreCardDto>>(content, _options);
+        //                     data = JsonSerializer.Deserialize<List<BalanceScoreCard>>(content, _options);
         //                 }
         //             }
         //             else
@@ -1833,7 +1833,7 @@
         //     {
         //         foreach (var group in dataManagerRequest.Group)
         //         {
-        //             GridData = DataUtil.Group<BalanceScoreCardDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+        //             GridData = DataUtil.Group<BalanceScoreCard>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
         //         }
         //     }
         //     return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -1844,7 +1844,7 @@
             try
             {
                 string? _baseurl = Navigation.BaseUri;
-                var val = (value as BalanceScoreCardDto);
+                var val = (value as BalanceScoreCard);
                 if (val != null)
                 {
                     if (val.BalanceScoreCardId == 0)
@@ -1857,7 +1857,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -1886,7 +1886,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -1918,7 +1918,7 @@
             try
             {
                 string? _baseurl = Navigation.BaseUri;
-                var val = (value as BalanceScoreCardDto);
+                var val = (value as BalanceScoreCard);
                 if (val != null)
                 {
                     if(val.BalanceScoreCardId != 0)
@@ -1931,7 +1931,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -1979,7 +1979,7 @@
         SpinnerObj.HideAsync();
     }
 
-    public void ActionCompleteMain(ActionEventArgs<BalanceScoreCardDto> args)
+    public void ActionCompleteMain(ActionEventArgs<BalanceScoreCard> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) ||
         args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
@@ -1988,7 +1988,7 @@
         }
     }
 
-    public async void ActionBeginMain(ActionEventArgs<BalanceScoreCardDto> Args)
+    public async void ActionBeginMain(ActionEventArgs<BalanceScoreCard> Args)
     {
         var data = Args.Data;
 
@@ -2048,7 +2048,7 @@
                     if (responsetargettotal.IsSuccessStatusCode)
                     {
                         var contenttargettotal = await responsetargettotal.Content.ReadAsStringAsync();
-                        TargetSettingTotalData = JsonSerializer.Deserialize<List<ViewTargetSettingTotalsDto>>(contenttargettotal, _options);
+                        TargetSettingTotalData = JsonSerializer.Deserialize<List<ViewTargetSettingTotals>>(contenttargettotal, _options);
                     }
                 }));
 
@@ -2058,7 +2058,7 @@
                     if (responsebehavioraltotal.IsSuccessStatusCode)
                     {
                         var contentbehavioraltotal = await responsebehavioraltotal.Content.ReadAsStringAsync();
-                        BehavioralTotalData = JsonSerializer.Deserialize<List<ViewBehavioralTotalsDto>>(contentbehavioraltotal, _options);
+                        BehavioralTotalData = JsonSerializer.Deserialize<List<ViewBehavioralTotals>>(contentbehavioraltotal, _options);
                     }
                 }));
 
@@ -2083,39 +2083,39 @@
 
                 if (Args.RowData.BalanceScoreCardTargetSetting == null)
                 {
-                    Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSettingDto>();
+                    Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSetting>();
                 }
                 if (Args.RowData.BalanceScoreCardAppraiseeComments == null)
                 {
-                    Args.RowData.BalanceScoreCardAppraiseeComments = new List<BalanceScoreCardAppraiseeCommentsDto>();
+                    Args.RowData.BalanceScoreCardAppraiseeComments = new List<BalanceScoreCardAppraiseeComments>();
                 }
                 if (Args.RowData.BalanceScoreCardCeocomments == null)
                 {
-                    Args.RowData.BalanceScoreCardCeocomments = new List<BalanceScoreCardCEOCommentsDto>();
+                    Args.RowData.BalanceScoreCardCeocomments = new List<BalanceScoreCardCeocomments>();
                 }
                 if (Args.RowData.BalanceScoreCardHodcomments == null)
                 {
-                    Args.RowData.BalanceScoreCardHodcomments = new List<BalanceScoreCardHODCommentsDto>();
+                    Args.RowData.BalanceScoreCardHodcomments = new List<BalanceScoreCardHodcomments>();
                 }
                 if (Args.RowData.BalanceScoreCardSupervisorComments == null)
                 {
-                    Args.RowData.BalanceScoreCardSupervisorComments = new List<BalanceScoreCardSupervisorCommentsDto>();
+                    Args.RowData.BalanceScoreCardSupervisorComments = new List<BalanceScoreCardSupervisorComments>();
                 }
                 if (Args.RowData.BalanceScoreCardTargetDevelopmentPlan == null)
                 {
-                    Args.RowData.BalanceScoreCardTargetDevelopmentPlan = new List<BalanceScoreCardTargetDevelopmentPlanDto>();
+                    Args.RowData.BalanceScoreCardTargetDevelopmentPlan = new List<BalanceScoreCardTargetDevelopmentPlan>();
                 }
                 if (Args.RowData.BalanceScoreCardBehavioral == null)
                 {
-                    Args.RowData.BalanceScoreCardBehavioral = new List<BalanceScoreCardBehavioralDto>();
+                    Args.RowData.BalanceScoreCardBehavioral = new List<BalanceScoreCardBehavioral>();
                 }
                 if (Args.RowData.BalanceScoreCardRejectionReasons == null)
                 {
-                    Args.RowData.BalanceScoreCardRejectionReasons = new List<BalanceScoreCardRejectionReasonsDto>();
+                    Args.RowData.BalanceScoreCardRejectionReasons = new List<BalanceScoreCardRejectionReasons>();
                 }
                 if (Args.RowData.BalanceScoreCardAttachment == null)
                 {
-                    Args.RowData.BalanceScoreCardAttachment = new List<BalanceScoreCardAttachmentDto>();
+                    Args.RowData.BalanceScoreCardAttachment = new List<BalanceScoreCardAttachment>();
                 }
                 //Enabling and Disabling Grid Columns
                 //If person editing is the same as the employee, disable supervision
@@ -2374,15 +2374,15 @@
             Args.RowData.FinancialYearId = finyearid;
             Args.RowData.DateofReview = DateTime.Now;
 
-            Args.RowData.BalanceScoreCardAppraiseeComments = new List<BalanceScoreCardAppraiseeCommentsDto>();
-            Args.RowData.BalanceScoreCardCeocomments = new List<BalanceScoreCardCEOCommentsDto>();
-            Args.RowData.BalanceScoreCardHodcomments = new List<BalanceScoreCardHODCommentsDto>();
-            Args.RowData.BalanceScoreCardSupervisorComments = new List<BalanceScoreCardSupervisorCommentsDto>();
-            Args.RowData.BalanceScoreCardTargetDevelopmentPlan = new List<BalanceScoreCardTargetDevelopmentPlanDto>();
-            Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSettingDto>();
-            Args.RowData.BalanceScoreCardBehavioral = new List<BalanceScoreCardBehavioralDto>();
-            Args.RowData.BalanceScoreCardRejectionReasons = new List<BalanceScoreCardRejectionReasonsDto>();
-            Args.RowData.BalanceScoreCardAttachment = new List<BalanceScoreCardAttachmentDto>();
+            Args.RowData.BalanceScoreCardAppraiseeComments = new List<BalanceScoreCardAppraiseeComments>();
+            Args.RowData.BalanceScoreCardCeocomments = new List<BalanceScoreCardCeocomments>();
+            Args.RowData.BalanceScoreCardHodcomments = new List<BalanceScoreCardHodcomments>();
+            Args.RowData.BalanceScoreCardSupervisorComments = new List<BalanceScoreCardSupervisorComments>();
+            Args.RowData.BalanceScoreCardTargetDevelopmentPlan = new List<BalanceScoreCardTargetDevelopmentPlan>();
+            Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSetting>();
+            Args.RowData.BalanceScoreCardBehavioral = new List<BalanceScoreCardBehavioral>();
+            Args.RowData.BalanceScoreCardRejectionReasons = new List<BalanceScoreCardRejectionReasons>();
+            Args.RowData.BalanceScoreCardAttachment = new List<BalanceScoreCardAttachment>();
 
             employeeno = null;
             _previous = Args.RequestType;
@@ -2413,7 +2413,7 @@
         }
     }
 
-    public void QueryCellInfoHandler(QueryCellInfoEventArgs<BalanceScoreCardDto> Args)
+    public void QueryCellInfoHandler(QueryCellInfoEventArgs<BalanceScoreCard> Args)
     {
         if (Args.Column.Field == "LeaveApprovalStatusId")
         {
@@ -2432,7 +2432,7 @@
         }
     }
  
-    public string GetEmployeeHeader(BalanceScoreCardDto Value)
+    public string GetEmployeeHeader(BalanceScoreCard Value)
     {
         if (Value.Employeeid == 0)
         {
@@ -2445,7 +2445,7 @@
     }
 
 
-    public async Task RowSelectingHandler(RowSelectingEventArgs<BalanceScoreCardDto> args)
+    public async Task RowSelectingHandler(RowSelectingEventArgs<BalanceScoreCard> args)
     {
         await DataGrid.ClearSelection();   //clear selection
     }

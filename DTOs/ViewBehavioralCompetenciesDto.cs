@@ -1,6 +1,6 @@
 ﻿namespace HCMIS.DTOs
 {
-    public class ViewBehavioralCompetenciesDto
+    public class ViewBehavioralCompetencies
     {
         public int CompetenceId { get; set; }
         public string? CompetenceDescrisption { get; set; }

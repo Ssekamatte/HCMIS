@@ -1,4 +1,4 @@
-﻿using HCMIS.Models;
+﻿using HCMIS.SHARED.Models;
 
 namespace HCMIS.DTOs
 {

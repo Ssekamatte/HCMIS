@@ -1,6 +1,5 @@
-﻿using HCMIS.Model;
-using HCMIS.Model.JobDescriptionModel;
-using HCMIS.SHARED.DTOs;
+﻿
+using HCMIS.SHARED.Models;
 using HCMISAPI.Models;
 
 namespace HCMIS.ViewModel
@@ -53,10 +52,10 @@ namespace HCMIS.ViewModel
 
     public class LeaveApplicationModel
     {
-        public EmployeeLeaveDto? EmpLeave { get; set; }
+        public EmployeeLeave? EmpLeave { get; set; }
         public List<ADepartment>? Departments { get; set; }
         public List<ViewEmployeeLeaveDetails>? EmployeeLeaveDetails { get; set; }
-        public List<SHARED.DTOs.ALeaveTypeDto>? EmployeeLeaveTypes { get; set; }
+        public List<ALeaveType>? EmployeeLeaveTypes { get; set; }
 
     }
 

@@ -3,12 +3,10 @@ using Blazored.LocalStorage;
 using Blazored.Toast.Services;
 using HCMIS.Data;
 using HCMIS.Interface;
-using HCMIS.Model;
+
 using HCMIS.SHARED;
 using HCMIS.SHARED.Data;
-using HCMIS.SHARED.DTOs.BSC;
-using HCMIS.SHARED.DTOs.Employeez;
-using HCMIS.SHARED.Models.SPModel;
+using HCMIS.SHARED.Models;
 using System.Text.Json;
 using static System.Net.WebRequestMethods;
 
@@ -29,9 +27,9 @@ namespace HCMIS.Repository
             this.sessionStorage = sessionStorage;
         }
 
-        public async Task<List<ViewBalanceScoreCardReportDto>> GetAppraisal(UtilitiesSearchPanel SearchModel)
+        public async Task<List<ViewBalanceScoreCardReport>> GetAppraisal(UtilitiesSearchPanel SearchModel)
         {
-            List<ViewBalanceScoreCardReportDto>? data = new List<ViewBalanceScoreCardReportDto>();
+            List<ViewBalanceScoreCardReport>? data = new List<ViewBalanceScoreCardReport>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -41,7 +39,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<ViewBalanceScoreCardReportDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<ViewBalanceScoreCardReport>>(content, _options);
                 }
                 else
                 {
@@ -55,9 +53,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<ViewTargetSettingTotalsDto>> GetAppraisalTarget(UtilitiesSearchPanel SearchModel)
+        public async Task<List<ViewTargetSettingTotals>> GetAppraisalTarget(UtilitiesSearchPanel SearchModel)
         {
-            List<ViewTargetSettingTotalsDto>? data = new List<ViewTargetSettingTotalsDto>();
+            List<ViewTargetSettingTotals>? data = new List<ViewTargetSettingTotals>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -67,7 +65,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<ViewTargetSettingTotalsDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<ViewTargetSettingTotals>>(content, _options);
                 }
                 else
                 {
@@ -81,9 +79,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<ViewBehavioralTotalsDto>> GetAppraisalBehavioral(UtilitiesSearchPanel SearchModel)
+        public async Task<List<ViewBehavioralTotals>> GetAppraisalBehavioral(UtilitiesSearchPanel SearchModel)
         {
-            List<ViewBehavioralTotalsDto>? data = new List<ViewBehavioralTotalsDto>();
+            List<ViewBehavioralTotals>? data = new List<ViewBehavioralTotals>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -93,7 +91,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<ViewBehavioralTotalsDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<ViewBehavioralTotals>>(content, _options);
                 }
                 else
                 {
@@ -107,9 +105,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<BalanceScoreCardTargetSettingDto>> GetAppraisalTargetGeneral(UtilitiesSearchPanel SearchModel)
+        public async Task<List<BalanceScoreCardTargetSetting>> GetAppraisalTargetGeneral(UtilitiesSearchPanel SearchModel)
         {
-            List<BalanceScoreCardTargetSettingDto>? data = new List<BalanceScoreCardTargetSettingDto>();
+            List<BalanceScoreCardTargetSetting>? data = new List<BalanceScoreCardTargetSetting>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -119,7 +117,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<BalanceScoreCardTargetSettingDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<BalanceScoreCardTargetSetting>>(content, _options);
                 }
                 else
                 {
@@ -133,9 +131,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<BalanceScoreCardBehavioralDto>> GetAppraisalBehavioralGeneral(UtilitiesSearchPanel SearchModel)
+        public async Task<List<BalanceScoreCardBehavioral>> GetAppraisalBehavioralGeneral(UtilitiesSearchPanel SearchModel)
         {
-            List<BalanceScoreCardBehavioralDto>? data = new List<BalanceScoreCardBehavioralDto>();
+            List<BalanceScoreCardBehavioral>? data = new List<BalanceScoreCardBehavioral>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -145,7 +143,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<BalanceScoreCardBehavioralDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<BalanceScoreCardBehavioral>>(content, _options);
                 }
                 else
                 {
@@ -159,9 +157,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<BalanceScoreCardTargetDevelopmentPlanDto>> GetDevelopmentPlan(UtilitiesSearchPanel SearchModel)
+        public async Task<List<BalanceScoreCardTargetDevelopmentPlan>> GetDevelopmentPlan(UtilitiesSearchPanel SearchModel)
         {
-            List<BalanceScoreCardTargetDevelopmentPlanDto>? data = new List<BalanceScoreCardTargetDevelopmentPlanDto>();
+            List<BalanceScoreCardTargetDevelopmentPlan>? data = new List<BalanceScoreCardTargetDevelopmentPlan>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -171,7 +169,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<BalanceScoreCardTargetDevelopmentPlanDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<BalanceScoreCardTargetDevelopmentPlan>>(content, _options);
                 }
                 else
                 {
@@ -185,9 +183,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<BalanceScoreCardAppraiseeCommentsDto>> GetAppraiseeComments(UtilitiesSearchPanel SearchModel)
+        public async Task<List<BalanceScoreCardAppraiseeComments>> GetAppraiseeComments(UtilitiesSearchPanel SearchModel)
         {
-            List<BalanceScoreCardAppraiseeCommentsDto>? data = new List<BalanceScoreCardAppraiseeCommentsDto>();
+            List<BalanceScoreCardAppraiseeComments>? data = new List<BalanceScoreCardAppraiseeComments>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -197,7 +195,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<BalanceScoreCardAppraiseeCommentsDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<BalanceScoreCardAppraiseeComments>>(content, _options);
                 }
                 else
                 {
@@ -211,9 +209,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<BalanceScoreCardSupervisorCommentsDto>> GetSupervisorComments(UtilitiesSearchPanel SearchModel)
+        public async Task<List<BalanceScoreCardSupervisorComments>> GetSupervisorComments(UtilitiesSearchPanel SearchModel)
         {
-            List<BalanceScoreCardSupervisorCommentsDto>? data = new List<BalanceScoreCardSupervisorCommentsDto>();
+            List<BalanceScoreCardSupervisorComments>? data = new List<BalanceScoreCardSupervisorComments>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -223,7 +221,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<BalanceScoreCardSupervisorCommentsDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<BalanceScoreCardSupervisorComments>>(content, _options);
                 }
                 else
                 {
@@ -237,9 +235,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<BalanceScoreCardHODCommentsDto>> GetHODComments(UtilitiesSearchPanel SearchModel)
+        public async Task<List<BalanceScoreCardHodcomments>> GetHODComments(UtilitiesSearchPanel SearchModel)
         {
-            List<BalanceScoreCardHODCommentsDto>? data = new List<BalanceScoreCardHODCommentsDto>();
+            List<BalanceScoreCardHodcomments>? data = new List<BalanceScoreCardHodcomments>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -249,7 +247,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<BalanceScoreCardHODCommentsDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<BalanceScoreCardHodcomments>>(content, _options);
                 }
                 else
                 {
@@ -263,9 +261,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<BalanceScoreCardCEOCommentsDto>> GetCEOComments(UtilitiesSearchPanel SearchModel)
+        public async Task<List<BalanceScoreCardCeocomments>> GetCEOComments(UtilitiesSearchPanel SearchModel)
         {
-            List<BalanceScoreCardCEOCommentsDto>? data = new List<BalanceScoreCardCEOCommentsDto>();
+            List<BalanceScoreCardCeocomments>? data = new List<BalanceScoreCardCeocomments>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -275,7 +273,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<BalanceScoreCardCEOCommentsDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<BalanceScoreCardCeocomments>>(content, _options);
                 }
                 else
                 {
@@ -289,35 +287,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<spViewEmployeeLeavesReportResult>> GetLeaveRequest(UtilitiesSearchPanel SearchModel)
+        public async Task<List<Employee>> GetEmployeeDetails(UtilitiesSearchPanel SearchModel)
         {
-            List<spViewEmployeeLeavesReportResult>? data = new List<spViewEmployeeLeavesReportResult>();
-            try
-            {
-                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
-                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-
-                var result = await _httpClient.PostAsync($"Reports/GetLeaveRequestReport", httpContent);
-                if (result.IsSuccessStatusCode)
-                {
-                    var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<spViewEmployeeLeavesReportResult>>(content, _options);
-                }
-                else
-                {
-                    toastService.ShowError(result.ReasonPhrase);
-                }
-            }
-            catch (Exception ex)
-            {
-                toastService.ShowError(ex.Message);
-            }
-            return data;
-        }
-
-        public async Task<List<EmployeeDto>> GetEmployeeDetails(UtilitiesSearchPanel SearchModel)
-        {
-            List<EmployeeDto>? data = new List<EmployeeDto>();
+            List<Employee>? data = new List<Employee>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -327,7 +299,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<EmployeeDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<Employee>>(content, _options);
                 }
                 else
                 {
@@ -341,9 +313,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<ViewEmployeeQualificationDto>> GetEmployeeQualifications(UtilitiesSearchPanel SearchModel)
+        public async Task<List<ViewEmployeeQualification>> GetEmployeeQualifications(UtilitiesSearchPanel SearchModel)
         {
-            List<ViewEmployeeQualificationDto>? data = new List<ViewEmployeeQualificationDto>();
+            List<ViewEmployeeQualification>? data = new List<ViewEmployeeQualification>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -353,7 +325,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<ViewEmployeeQualificationDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<ViewEmployeeQualification>>(content, _options);
                 }
                 else
                 {
@@ -367,9 +339,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<ViewEmployeeFamilyDto>> GetEmployeeFamily(UtilitiesSearchPanel SearchModel)
+        public async Task<List<ViewEmployeeFamily>> GetEmployeeFamily(UtilitiesSearchPanel SearchModel)
         {
-            List<ViewEmployeeFamilyDto>? data = new List<ViewEmployeeFamilyDto>();
+            List<ViewEmployeeFamily>? data = new List<ViewEmployeeFamily>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -379,7 +351,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<ViewEmployeeFamilyDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<ViewEmployeeFamily>>(content, _options);
                 }
                 else
                 {
@@ -393,9 +365,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<ViewEmployeeLeaveRoasterReportPivotedDto>> GetAnnualLeaveRoaster(UtilitiesSearchPanel SearchModel)
+        public async Task<List<ViewEmployeeLeaveRoasterReportPivoted>> GetAnnualLeaveRoaster(UtilitiesSearchPanel SearchModel)
         {
-            List<ViewEmployeeLeaveRoasterReportPivotedDto>? data = new List<ViewEmployeeLeaveRoasterReportPivotedDto>();
+            List<ViewEmployeeLeaveRoasterReportPivoted>? data = new List<ViewEmployeeLeaveRoasterReportPivoted>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -405,7 +377,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveRoasterReportPivotedDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveRoasterReportPivoted>>(content, _options);
                 }
                 else
                 {
@@ -419,9 +391,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<ViewEmployeeLeaveRoasterDatesReportDto>> GetSelectedDates(UtilitiesSearchPanel SearchModel)
+        public async Task<List<ViewEmployeeLeaveRoasterDatesReport>> GetSelectedDates(UtilitiesSearchPanel SearchModel)
         {
-            List<ViewEmployeeLeaveRoasterDatesReportDto>? data = new List<ViewEmployeeLeaveRoasterDatesReportDto>();
+            List<ViewEmployeeLeaveRoasterDatesReport>? data = new List<ViewEmployeeLeaveRoasterDatesReport>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -431,7 +403,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveRoasterDatesReportDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveRoasterDatesReport>>(content, _options);
                 }
                 else
                 {

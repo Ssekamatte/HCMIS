@@ -1,5 +1,7 @@
 ﻿@page "/AssessmentSurveyPage"
 @using HCMIS.Model
+@using HCMIS.SHARED.Data;
+@using HCMIS.SHARED.Models;
 @using HCMIS.ViewModel
 @using System.Text.Json
 @using System.Text.RegularExpressions
@@ -8,8 +10,6 @@
 @inject NavigationManager Navigation
 @inject SystemSettings _SystemSettings
 @using System.Collections;
-@using HCMIS.SHARED.DTOs.Training;
-@using HCMIS.SHARED.DTOs.BSC;
 @inject IToastService toastService;
 
 <style>
@@ -99,24 +99,24 @@
                 }
             
         </div>
-    <SfGrid ID="Grid" @ref="AssessmentSurveyGrid" TValue="TrainingAssessmentSurveyDto"
+    <SfGrid ID="Grid" @ref="AssessmentSurveyGrid" TValue="TrainingAssessmentSurvey"
             Toolbar="@ToolbarMenu" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
             AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true">
         <SfDataManager AdaptorInstance="@typeof(AssessmentAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
         <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
         <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
-        <GridEvents OnActionBegin="AssessmentActionBegin" OnActionComplete="AssessmentActionComplete" TValue="TrainingAssessmentSurveyDto"></GridEvents>
+        <GridEvents OnActionBegin="AssessmentActionBegin" OnActionComplete="AssessmentActionComplete" TValue="TrainingAssessmentSurvey"></GridEvents>
         <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog">
             <HeaderTemplate>
                 @{
-                    var text = GetAssessmentHeader((context as TrainingAssessmentSurveyDto));
+                    var text = GetAssessmentHeader((context as TrainingAssessmentSurvey));
                     <div class="headerbandimg" />
                     <span>@text</span>
                 }
             </HeaderTemplate>
             <Template>
                 @{
-                    assessmentdata = (context as TrainingAssessmentSurveyDto);
+                    assessmentdata = (context as TrainingAssessmentSurvey);
                     <div>
                         <div class="row">
                             <div class="col-md-6" hidden="hidden">
@@ -124,9 +124,9 @@
                             </div>
                             <div class="col-md-6">
                                 <p><h3>Employee<span style="color:red;">*</span></h3></p>
-                                <SfDropDownList @bind-Value="@(assessmentdata.Employeeid)" Enabled="true" TItem="ViewBscEmployeeDto" TValue="int?" DataSource="@EmployeeData" Placeholder="Choose Employee" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                    <DropDownListFieldSettings Value="@nameof(ViewBscEmployeeDto.Employeeid)" Text="@nameof(ViewBscEmployeeDto.EmployeeDetails)"></DropDownListFieldSettings>
-                                    <DropDownListEvents TValue="int?" TItem="ViewBscEmployeeDto" ValueChange="OnEmployeeChange"></DropDownListEvents>
+                                <SfDropDownList @bind-Value="@(assessmentdata.Employeeid)" Enabled="true" TItem="ViewBscEmployee" TValue="int?" DataSource="@EmployeeData" Placeholder="Choose Employee" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                    <DropDownListFieldSettings Value="@nameof(ViewBscEmployee.Employeeid)" Text="@nameof(ViewBscEmployee.EmployeeDetails)"></DropDownListFieldSettings>
+                                    <DropDownListEvents TValue="int?" TItem="ViewBscEmployee" ValueChange="OnEmployeeChange"></DropDownListEvents>
                                 </SfDropDownList>
                             </div>
                             @if (employeeno != null)
@@ -138,7 +138,7 @@
                             }
                             <div class="col-md-6">
                                 <p><h3>1.What is your current Job Role/Designation?<span style="color:red;">*</span></h3></p>
-                                <SfDropDownList @bind-Value="@(assessmentdata.JobTitleId)" Enabled="false" TItem="JobTitleDto" TValue="int?" DataSource="@JobTitleData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true"
+                                <SfDropDownList @bind-Value="@(assessmentdata.JobTitleId)" Enabled="false" TItem="AJobTitle" TValue="int?" DataSource="@JobTitleData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true"
                                  FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                     <DropDownListFieldSettings Value="@nameof(AJobTitle.JobTitleId)" Text="@nameof(AJobTitle.JobTitleDescription)"></DropDownListFieldSettings>
                                 </SfDropDownList>
@@ -168,20 +168,20 @@
         <GridPageSettings PageSize="20"></GridPageSettings>
         <GridColumns>
             <GridColumn Type="ColumnType.CheckBox" Width="20"></GridColumn>
-            <GridColumn Field=@nameof(TrainingAssessmentSurveyDto.AssessmentId) HeaderText="Assessment Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="50"></GridColumn>
-            <GridForeignColumn Field=@nameof(TrainingAssessmentSurveyDto.JobTitleId)
+            <GridColumn Field=@nameof(TrainingAssessmentSurvey.AssessmentId) HeaderText="Assessment Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="50"></GridColumn>
+            <GridForeignColumn Field=@nameof(TrainingAssessmentSurvey.JobTitleId)
                                HeaderText="Job Title"
                                Width="180"
                                AllowEditing="true"
-                               ForeignKeyField="@(nameof(JobTitleDto.JobTitleId))"
-                               ForeignKeyValue="@(nameof(JobTitleDto.JobTitleDescription))"
+                               ForeignKeyField="@(nameof(AJobTitle.JobTitleId))"
+                               ForeignKeyValue="@(nameof(AJobTitle.JobTitleDescription))"
                                ForeignDataSource="@JobTitleData"
                                AllowFiltering="true"
                                IsFrozen="false">
             </GridForeignColumn>
-            <GridColumn Field=@nameof(TrainingAssessmentSurveyDto.PerformanceDevelopmentGaps) HeaderText="Performance/Development Gaps" TextAlign="TextAlign.Left" Width="100"></GridColumn>
-            <GridColumn Field=@nameof(TrainingAssessmentSurveyDto.TrainingIntervention) HeaderText="Training Intervention" TextAlign="TextAlign.Left" Width="100"></GridColumn>
-            <GridColumn Field=@nameof(TrainingAssessmentSurveyDto.BestTrainingApproach) HeaderText="Training Intervention" TextAlign="TextAlign.Left" Width="100"></GridColumn>
+            <GridColumn Field=@nameof(TrainingAssessmentSurvey.PerformanceDevelopmentGaps) HeaderText="Performance/Development Gaps" TextAlign="TextAlign.Left" Width="100"></GridColumn>
+            <GridColumn Field=@nameof(TrainingAssessmentSurvey.TrainingIntervention) HeaderText="Training Intervention" TextAlign="TextAlign.Left" Width="100"></GridColumn>
+            <GridColumn Field=@nameof(TrainingAssessmentSurvey.BestTrainingApproach) HeaderText="Training Intervention" TextAlign="TextAlign.Left" Width="100"></GridColumn>
         </GridColumns>
     </SfGrid>
 </div>
@@ -201,19 +201,19 @@
         };
     #endregion Toasters
 
-    private SfGrid<TrainingAssessmentSurveyDto>? AssessmentSurveyGrid;
-    private static TrainingAssessmentSurveyDto? assessmentdata { get; set; }
-    List<JobTitleDto>? JobTitleData { get; set; }
-    List<TrainingAssessmentSurveyDeadlineDto>? DeadlineData { get; set; }
+    private SfGrid<TrainingAssessmentSurvey>? AssessmentSurveyGrid;
+    private static TrainingAssessmentSurvey? assessmentdata { get; set; }
+    List<AJobTitle>? JobTitleData { get; set; }
+    List<TrainingAssessmentSurveyDeadline>? DeadlineData { get; set; }
     string DeadlineDate = string.Empty;
     int DeadlineYear = 0000;
-    List<ViewBscEmployeeDto>? EmployeeData { get; set; }
+    List<ViewBscEmployee>? EmployeeData { get; set; }
 
     Query mainQuery { get; set; } = new();
     [Parameter]
     public string? AccessToken { get; set; }
     string? ErrorMessage { get; set; } = null;
-    private static ViewBscEmployeeDto employeeno { get; set; }
+    private static ViewBscEmployee employeeno { get; set; }
 
     private List<object> ToolbarMenu = new List<object>() {
         new ItemModel() { Text = "Capture Survey", PrefixIcon = "e-add", Id = "Grid_add"},//Here Grid is SfGrid ID
@@ -234,7 +234,7 @@
             if (responseJobTitle.IsSuccessStatusCode)
             {
                 var contentJobTitle = await responseJobTitle.Content.ReadAsStringAsync();
-                JobTitleData = JsonSerializer.Deserialize<List<JobTitleDto>>(contentJobTitle, _options);
+                JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(contentJobTitle, _options);
             }
         }));
 
@@ -244,7 +244,7 @@
             if (responseemployee.IsSuccessStatusCode)
             {
                 var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-                EmployeeData = JsonSerializer.Deserialize<List<ViewBscEmployeeDto>>(contentemployee, _options);
+                EmployeeData = JsonSerializer.Deserialize<List<ViewBscEmployee>>(contentemployee, _options);
             }
         }));
 
@@ -254,7 +254,7 @@
             if (responsedeadlinedate.IsSuccessStatusCode)
             {
                 var contentdeadlinedate = await responsedeadlinedate.Content.ReadAsStringAsync();
-                DeadlineData = JsonSerializer.Deserialize<List<TrainingAssessmentSurveyDeadlineDto>>(contentdeadlinedate, _options);
+                DeadlineData = JsonSerializer.Deserialize<List<TrainingAssessmentSurveyDeadline>>(contentdeadlinedate, _options);
             }
         }));
 
@@ -295,7 +295,7 @@
         {
             
 
-            var data = new List<TrainingAssessmentSurveyDto>();
+            var data = new List<TrainingAssessmentSurvey>();
 
             string? AccessToken = _SystemSettings.AccessToken;
             string? BaseUrl = _ApiConfig.BaseUrl;
@@ -308,7 +308,7 @@
 
                 if (response.IsSuccessStatusCode)
                 {
-                    data = JsonSerializer.Deserialize<List<TrainingAssessmentSurveyDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<TrainingAssessmentSurvey>>(content, _options);
                 }
             }
             catch (Exception ex)
@@ -349,7 +349,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<TrainingAssessmentSurveyDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<TrainingAssessmentSurvey>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -360,7 +360,7 @@
             try
             {
                 
-                var val = (value as TrainingAssessmentSurveyDto);
+                var val = (value as TrainingAssessmentSurvey);
                 if (val != null)
                 {
                     if (val.AssessmentId == 0)
@@ -373,7 +373,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -402,7 +402,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -458,7 +458,7 @@
             try
             {
                 
-                var val = (value as TrainingAssessmentSurveyDto);
+                var val = (value as TrainingAssessmentSurvey);
                 if (val != null)
                 {
                     if (val.AssessmentId == 0)
@@ -471,7 +471,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -500,7 +500,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -529,13 +529,13 @@
         }
     }
 
-    public void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,ViewBscEmployeeDto> args)
+    public void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,ViewBscEmployee> args)
     {
         employeeno = args.ItemData;
         assessmentdata.JobTitleId = args.ItemData.DepartmentId;
     }
     
-    public void AssessmentActionComplete(ActionEventArgs<TrainingAssessmentSurveyDto> args)
+    public void AssessmentActionComplete(ActionEventArgs<TrainingAssessmentSurvey> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
         {
@@ -543,7 +543,7 @@
         }
     }
 
-    public async void AssessmentActionBegin(ActionEventArgs<TrainingAssessmentSurveyDto> Args)
+    public async void AssessmentActionBegin(ActionEventArgs<TrainingAssessmentSurvey> Args)
     {
         var data = Args.Data;
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
@@ -586,7 +586,7 @@
         }
     }
     
-    public string GetAssessmentHeader(TrainingAssessmentSurveyDto Value)
+    public string GetAssessmentHeader(TrainingAssessmentSurvey Value)
     {
         if (Value.AssessmentId == 0 || Value.AssessmentId == null)
         {

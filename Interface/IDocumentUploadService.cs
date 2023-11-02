@@ -1,5 +1,7 @@
 ﻿
-using HCMIS.SHARED.DTOs;
+
+
+using HCMIS.SHARED.Data;
 
 namespace HCMIS.Interface
 {

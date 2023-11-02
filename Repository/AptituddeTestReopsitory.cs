@@ -1,7 +1,7 @@
 ﻿using Blazored.Toast.Services;
 using HCMIS.DTOs;
 using HCMIS.Interface;
-using HCMIS.Model;
+using HCMIS.SHARED.Data;
 using HCMIS.ViewModel;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -90,7 +90,7 @@ namespace HCMIS.Repository
             else
             {
                 var content = await result.Content.ReadAsStringAsync();
-                var _data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                var _data = JsonSerializer.Deserialize<Response>(content, _options);
                 if(_data != null)
                 {
                     toastService.ShowError(_data.Message);

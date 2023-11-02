@@ -1,0 +1,272 @@
+﻿@page "/LeaveDetailsPage"
+
+@using Blazored.Toast.Services;
+@using HCMIS.Data;
+@using HCMIS.Model
+@using HCMIS.SHARED;
+@using HCMIS.SHARED.Models;
+@using HCMIS.ViewModel
+@using System.Text.Json
+@using System.Text.RegularExpressions
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject NavigationManager navManager;
+@using System.Collections;
+@inject IToastService toastService;
+@using System.Globalization;
+@using HCMIS.SHARED.Data;
+@inject IJSRuntime JsRuntime;
+@using HCMIS.Interface;
+@using Microsoft.JSInterop;
+@inject IAuthenticationService AuthService;
+
+<div class="row">
+    <div class="col-md-4">
+        <center>
+            <h5>
+                <strong>ACTING OFFICER DURING PERIOD OF LEAVE</strong>
+            </h5>
+        </center>
+    </div>
+</div>
+                    
+
+<SfGrid @ref="@DataGrid" TValue="EmployeeLeaveDetails" DataSource="@datasource"
+        ID="Grid1"
+        AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true"
+        AllowGrouping="false"
+        AllowExcelExport="true"
+        AllowPdfExport="true"
+        AllowSelection="true"
+        AllowSorting="true"
+        Toolbar="@(new List<string>() {"Add", "Edit"})">
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog" ShowConfirmDialog="false">
+        <Template>
+            @{
+                ReactionData = (context as EmployeeLeaveDetails);
+
+                @if (ReactionData != null)
+                {
+                    <div class="col-md-12">
+                        <p><h3>Type of Leave Applied For</h3></p>
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-md-6">
+                            <p>Leave Type</p>
+                            <SfDropDownList @bind-Value="@(ReactionData.LeaveTypeId)" Enabled="LeaveTypeIdDD" TItem="ALeaveType" TValue="int?" DataSource="@LeaveTypeData" Placeholder="Choose Leave Type" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                <DropDownListFieldSettings Value="@nameof(ALeaveType.LeaveTypeId)" Text="@nameof(ALeaveType.LeaveTypeDescription)"></DropDownListFieldSettings>
+                                <DropDownListEvents TValue="int?" TItem="ALeaveType" ValueChange="OnLeaveTypeChange"></DropDownListEvents>
+                            </SfDropDownList>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12" hidden>
+                            <SfNumericTextBox @bind-Value="@(ReactionData.LeaveDetailsId)" Enabled="false" Placeholder="Leave Details Id" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                        </div>
+
+                        <div class="col-md-12">
+                            <p><h3>Acting Officer During Period of Leave</h3></p>
+                        </div>
+
+                        <div class="form-group col-md-6">
+                            <p>Officer Name</p>
+                                <SfDropDownList @bind-Value="@(ReactionData.ActingOfficerId)"
+                                                Enabled="ActingOfficerDD"
+                                                TItem="ViewEmployeeDropDown"
+                                                TValue="int?"
+                                                DataSource="@EmployeeData"
+                                                Placeholder="Please select"
+                                                FloatLabelType="FloatLabelType.Never"
+                                                AllowFiltering="true"
+                                                FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                    <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)"
+                                                               Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)">
+                                    </DropDownListFieldSettings>
+                                    <DropDownListEvents TValue="int?"
+                                                        TItem="ViewEmployeeDropDown"
+                                                        ValueChange="OnActingOfficerChange">
+                                    </DropDownListEvents>
+                                </SfDropDownList>
+                        </div>
+
+                        @if (employeeno != null)
+                        {
+                                <div class="col-md-6">
+                                    <p>Title</p>
+                                    @if(!string.IsNullOrEmpty(@employeeno.JobTitleDescription))
+                                    {
+                                        <p>@employeeno.JobTitleDescription</p>
+                                    }
+                                    else
+                                    {
+                                        <p style:"color:red;">N/A</p>
+                                    }
+                                </div>
+                        }
+                    </div>
+                }
+            }
+        </Template>
+
+    </GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.FilterBar"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
+    <GridEvents OnActionBegin="SuspectedReactionsActionBegin"
+                OnActionComplete="SuspectedReactionsActionComplete"
+                OnToolbarClick="@GridToolbarClick"
+                TValue="EmployeeLeaveDetails">
+    </GridEvents>
+
+    <GridColumns>
+    <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
+        <GridColumn Field=@nameof(EmployeeLeaveDetails.LeaveDetailsId)
+            HeaderText="Id"
+            AllowEditing="false"
+            IsPrimaryKey="true"
+            Width="80"
+            Visible="false"
+            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+        </GridColumn>
+
+        <GridForeignColumn Field=@nameof(EmployeeLeaveDetails.ActingOfficerId)
+                           HeaderText="Employee"
+                           Width="100"
+                           AllowEditing="true"
+                           ForeignKeyField="@(nameof(ViewBscEmployee.Employeeid))"
+                           ForeignKeyValue="@(nameof(ViewBscEmployee.EmployeeDetails))"
+                           ForeignDataSource="@EmployeeData" AllowFiltering="false"
+                           CustomAttributes="@(new Dictionary<string,
+                    object>(){ { "class", "e-attr1" }})">
+        </GridForeignColumn>
+
+        <GridColumn Field=@nameof(EmployeeLeaveDetails.CommencementDate)
+                    HeaderText="Commencement Date"
+                    Format="dd/MM/yyyy"
+                    TextAlign="TextAlign.Justify"
+                    Width="40"
+                    ClipMode="ClipMode.EllipsisWithTooltip"
+                    Type="ColumnType.Date"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+        </GridColumn>
+
+        <GridColumn Field=@nameof(EmployeeLeaveDetails.EndDate)
+                    HeaderText="End Date"
+                    Format="dd/MM/yyyy"
+                    TextAlign="TextAlign.Justify"
+                    Width="40"
+                    ClipMode="ClipMode.EllipsisWithTooltip"
+                    Type="ColumnType.Date"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+        </GridColumn>
+    </GridColumns>
+</SfGrid>
+
+@code {
+    SfGrid<EmployeeLeaveDetails> DataGrid { get; set; }
+
+    [Parameter]
+    public int EmployeeLeaveId { get; set; }
+    [Parameter]
+    public List<EmployeeLeaveDetails>? detailsdata { get; set; }
+    [Parameter]
+    public EventCallback<List<EmployeeLeaveDetails>?> ondetailstoggle { get; set; }
+    List<EmployeeLeaveDetails>? datasource { get; set; }
+    [Parameter]
+    public List<ViewEmployeeDropDown>? EmployeeData { get; set; }
+    int? previousEmployeeLeaveId { get; set; }
+    private static EmployeeLeaveDetails? ReactionData { get; set; }
+    [Parameter]
+    public List<ALeaveType>? LeaveTypeData { get; set; }
+    int random = -9999;
+    [Parameter]
+    public bool ActingOfficerDD{ get; set; }
+    [Parameter]
+    public bool LeaveTypeIdDD { get; set; }
+    [Parameter]
+    public static ViewEmployeeDropDown? employeeno { get; set; }
+
+    /// <summary>
+    /// Event for Toolbar click for Grid Exporting
+    /// </summary>
+    public void GridToolbarClick(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Id == "Grid1_excelexport")
+        {
+            this.DataGrid.ExportToExcelAsync();
+        }
+        if (args.Item.Id == "Grid1_pdfexport")
+        {
+            this.DataGrid.ExportToPdfAsync();
+        }
+        if (args.Item.Id == "Grid1_csvexport")
+        {
+            this.DataGrid.ExportToCsvAsync();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (previousEmployeeLeaveId != EmployeeLeaveId)
+        {
+            int countid = -10000;
+            previousEmployeeLeaveId = EmployeeLeaveId;
+            datasource = new List<EmployeeLeaveDetails>();
+            if (detailsdata != null && detailsdata.Count() > 0)
+            {
+                datasource.AddRange(detailsdata);
+            }
+        }
+    }
+
+    public async void SuspectedReactionsActionBegin(ActionEventArgs<EmployeeLeaveDetails> Args)
+    {
+        var data = Args.Data;
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+        {
+            if (Args.Data.ActingOfficerId != null)
+            {
+                toastService.ShowWarning("Please select the acting officer.");
+                Args.Cancel = true;
+            }
+
+            else if (Args.Data.LeaveTypeId == null)
+            {
+                toastService.ShowWarning("Please select the leave type.");
+                Args.Cancel = true;
+            }
+        }
+
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+        {
+            Args.Data.LeaveDetailsId = random;
+            random++;
+        }
+    }
+
+    public async void SuspectedReactionsActionComplete(ActionEventArgs<EmployeeLeaveDetails> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) ||
+        args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            DataGrid.PreventRender(false);
+        }
+
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+        {
+            await ondetailstoggle.InvokeAsync(datasource);
+        }
+    }
+
+    public async void OnActingOfficerChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewEmployeeDropDown> args)
+    {
+        employeeno = args.ItemData;
+    }
+
+    public void OnLeaveTypeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,ALeaveType> args)
+    {
+        
+        
+    }
+}

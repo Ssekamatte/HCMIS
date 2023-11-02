@@ -6,11 +6,11 @@
 @using System.Text.Json
 @using System.Collections;
 @using System.IO;
+@using HCMIS.SHARED.Models;
 @using Microsoft.AspNetCore.Authorization
 @inject NavigationManager navigation;
 @inject SystemSettings _SystemSettings;
-@using HCMIS.SHARED.DTOs.BSC;
-@using HCMIS.SHARED.DTOs.Utilities;
+
 @using HCMIS.ViewModel;
 @inject IToastService toastService;
 
@@ -47,7 +47,7 @@
     </li>
 </ol>
 
-<SfGrid @ref="@BankGrid" ID="Grid" TValue="ABankDto" AllowPaging="true"
+<SfGrid @ref="@BankGrid" ID="Grid" TValue="ABank" AllowPaging="true"
         AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
         AllowSorting="true" Toolbar="@ToolbarMenu">
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
@@ -55,11 +55,11 @@
     <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Both"
                            Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
     <SfDataManager AdaptorInstance="@typeof(BankAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-    <GridEvents OnActionComplete="@BankActionComplete" OnActionBegin="@BankActionBegin" TValue="ABankDto"></GridEvents>
+    <GridEvents OnActionComplete="@BankActionComplete" OnActionBegin="@BankActionBegin" TValue="ABank"></GridEvents>
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" Dialog="DialogParams">
         <HeaderTemplate>
             @{
-                var text = GetHolidayHeader((context as ABankDto));
+                var text = GetHolidayHeader((context as ABank));
                 <div class="headerbandimg">
                     <span>@text</span>
                 </div>
@@ -67,7 +67,7 @@
         </HeaderTemplate>
         <Template Context="BankContext">
             @{
-                BankData = (BankContext as ABankDto);
+                BankData = (BankContext as ABank);
                 @if (BankData != null)
                 {
                     <div class="row">
@@ -88,13 +88,13 @@
     <GridColumns>
         <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn>
         <GridColumn 
-            Field=@nameof(ABankDto.BankId) 
+            Field=@nameof(ABank.BankId) 
             Visible=false 
             HeaderText="Holiday Id" 
             AllowEditing="false" 
             IsPrimaryKey="true">
         </GridColumn>
-        <GridColumn Field=@nameof(ABankDto.BankDesc)
+        <GridColumn Field=@nameof(ABank.BankDesc)
                     HeaderText="Holiday Name"
                     TextAlign="TextAlign.Justify"
                     Width="80"
@@ -106,11 +106,11 @@
 </SfGrid>
 
 @code {
-    SfGrid<ABankDto>? BankGrid;
-    private static ABankDto? BankData { get; set; }
+    SfGrid<ABank>? BankGrid;
+    private static ABank? BankData { get; set; }
     public bool? radiovalue;
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "65%" };
-    List<ABankDto>? BankCountData { get; set; }
+    List<ABank>? BankCountData { get; set; }
 
     private List<object> ToolbarMenu = new List<object>()
     {
@@ -129,7 +129,7 @@
 
         if (responsebankcount.IsSuccessStatusCode)
         {
-            BankCountData = await Http.GetFromJsonAsync<List<ABankDto>>
+            BankCountData = await Http.GetFromJsonAsync<List<ABank>>
             ($"Utilities/GetBankCount");
         }
     }
@@ -157,7 +157,7 @@
 
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         {
-            var data = new List<ABankDto>();
+            var data = new List<ABank>();
             try
             {
                 var response = await Http.GetAsync($"Utilities/GetBank");
@@ -166,7 +166,7 @@
                 {
                     toastService.ShowError(response.ReasonPhrase);
                 }
-                data = JsonSerializer.Deserialize<List<ABankDto>>(content, _options);
+                data = JsonSerializer.Deserialize<List<ABank>>(content, _options);
             }
             catch (Exception ex)
             {
@@ -206,7 +206,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<ABankDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<ABank>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -216,7 +216,7 @@
         {
             try
             {
-                var val = (value as ABankDto);
+                var val = (value as ABank);
 
                 if (val.BankId == 0)
                 {
@@ -257,7 +257,7 @@
         {
             try
             {
-                var val = (value as ABankDto);
+                var val = (value as ABank);
                 
                 
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
@@ -283,7 +283,7 @@
 
     }
 
-    public async void BankActionComplete(ActionEventArgs<ABankDto> args)
+    public async void BankActionComplete(ActionEventArgs<ABank> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) 
         || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
@@ -298,13 +298,13 @@
 
             if (responsebankcount.IsSuccessStatusCode)
             {
-                BankCountData = await Http.GetFromJsonAsync<List<ABankDto>>
+                BankCountData = await Http.GetFromJsonAsync<List<ABank>>
                 ($"Utilities/GetBankCount");
             }
         }
     }
 
-    public async void BankActionBegin(ActionEventArgs<ABankDto> Args)
+    public async void BankActionBegin(ActionEventArgs<ABank> Args)
     {
         var data = Args.Data;
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
@@ -338,7 +338,7 @@
     }
 
 
-    public string GetHolidayHeader(ABankDto Value)
+    public string GetHolidayHeader(ABank Value)
     {
         if (Value.BankId == 0)
         {

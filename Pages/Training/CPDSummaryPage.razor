@@ -1,5 +1,7 @@
 ﻿@page "/CPDSummaryPage"
 @using HCMIS.Model
+@using HCMIS.SHARED.Data;
+@using HCMIS.SHARED.Models;
 @using HCMIS.ViewModel
 @using System.Text.Json
 @using System.Text.RegularExpressions
@@ -9,7 +11,7 @@
 @inject NavigationManager Navigation
 @inject SystemSettings _SystemSettings
 @using System.Collections;
-@using HCMIS.SHARED.DTOs.Training;
+
 @inject IToastService toastService;
 
 <style>
@@ -64,7 +66,7 @@
     </h5>
 </center>
 
-<SfGrid @ref="@DataGrid" TValue="TrainingCpdsummaryDto" ID="Grid" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowSelection="true" AllowSorting="true" Toolbar="@ToolbarMenu">
+<SfGrid @ref="@DataGrid" TValue="TrainingCpdsummary" ID="Grid" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowSelection="true" AllowSorting="true" Toolbar="@ToolbarMenu">
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
         <Template>
             @{
@@ -73,7 +75,7 @@
                         <strong>CONTINOUS PROFFESSIONAL DEVELOPMENTS (CPD's) PLAN</strong>
                     </h5>
                 </center>
-                CPDData = (context as TrainingCpdsummaryDto);
+                CPDData = (context as TrainingCpdsummary);
                 <div>
                     <div class="row">
                         <div class="col-md-4" hidden="hidden">
@@ -87,8 +89,8 @@
                         </div>
                         <div class="col-md-6">
                             <p><h3>Staff Category<span style="color:red;">*</span></h3></p>
-                            <SfDropDownList @bind-Value="@(CPDData.StaffCategoryId)" Enabled="true" TItem="AStaffCategoryDto" TValue="int?" DataSource="@StaffCategoryData" Placeholder="Select Category" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                <DropDownListFieldSettings Value="@nameof(AStaffCategoryDto.StaffCategoryId)" Text="@nameof(AStaffCategoryDto.StaffCategoryDescription)"></DropDownListFieldSettings>
+                            <SfDropDownList @bind-Value="@(CPDData.StaffCategoryId)" Enabled="true" TItem="AStaffCategory" TValue="int?" DataSource="@StaffCategoryData" Placeholder="Select Category" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                <DropDownListFieldSettings Value="@nameof(AStaffCategory.StaffCategoryId)" Text="@nameof(AStaffCategory.StaffCategoryDescription)"></DropDownListFieldSettings>
                             </SfDropDownList>
                         </div>                 
                         <div class="col-md-6">
@@ -112,22 +114,22 @@
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.FilterBar"></GridFilterSettings>
     <GridPageSettings PageSizes="true"></GridPageSettings>
         <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple"></GridSelectionSettings>
-    <GridEvents OnActionBegin="CPDActionBegin" TValue="TrainingCpdsummaryDto"></GridEvents>
+    <GridEvents OnActionBegin="CPDActionBegin" TValue="TrainingCpdsummary"></GridEvents>
     <SfDataManager AdaptorInstance="@typeof(CPDSummaryAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
     <GridColumns>
       <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
-    	<GridColumn Field=@nameof(TrainingCpdsummaryDto.SummaryId) HeaderText="SummaryId" AllowEditing="false" IsPrimaryKey="true" Visible="false" Width="150"></GridColumn>
-        <GridForeignColumn Field=@nameof(TrainingCpdsummaryDto.StaffCategoryId)
+    	<GridColumn Field=@nameof(TrainingCpdsummary.SummaryId) HeaderText="SummaryId" AllowEditing="false" IsPrimaryKey="true" Visible="false" Width="150"></GridColumn>
+        <GridForeignColumn Field=@nameof(TrainingCpdsummary.StaffCategoryId)
                            HeaderText="Staff Category"
                            Width="150"
                            AllowEditing="true"
-                           ForeignKeyField="@(nameof(AStaffCategoryDto.StaffCategoryId))"
-                           ForeignKeyValue="@(nameof(AStaffCategoryDto.StaffCategoryDescription))"
+                           ForeignKeyField="@(nameof(AStaffCategory.StaffCategoryId))"
+                           ForeignKeyValue="@(nameof(AStaffCategory.StaffCategoryDescription))"
                            ForeignDataSource="@StaffCategoryData" AllowFiltering="true"
                            CustomAttributes="@(new Dictionary<string,
                            object>(){ { "class", "e-attr1" }})">
         </GridForeignColumn>
-        <GridForeignColumn Field=@nameof(TrainingCpdsummaryDto.FinancialYearId)
+        <GridForeignColumn Field=@nameof(TrainingCpdsummary.FinancialYearId)
                            HeaderText="Financial Year"
                            Width="150"
                            AllowEditing="true"
@@ -137,11 +139,11 @@
                            CustomAttributes="@(new Dictionary<string,
                            object>(){ { "class", "e-attr1" }})">
         </GridForeignColumn>
-        <GridColumn Field=@nameof(TrainingCpdsummaryDto.StaffNo) HeaderText="No.Staff"  Width="150"
+        <GridColumn Field=@nameof(TrainingCpdsummary.StaffNo) HeaderText="No.Staff"  Width="150"
                     CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"></GridColumn>
-        <GridColumn Field=@nameof(TrainingCpdsummaryDto.CpdsPlannedNo) HeaderText="No.CPDs Planned"  Width="150"
+        <GridColumn Field=@nameof(TrainingCpdsummary.CpdsPlannedNo) HeaderText="No.CPDs Planned"  Width="150"
                     CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"></GridColumn>
-        <GridColumn Field=@nameof(TrainingCpdsummaryDto.EstimatedCpdrate) HeaderText="Estimated CPD Rate"  Width="150"
+        <GridColumn Field=@nameof(TrainingCpdsummary.EstimatedCpdrate) HeaderText="Estimated CPD Rate"  Width="150"
                     CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"></GridColumn>
     </GridColumns>
 </SfGrid>
@@ -149,9 +151,9 @@
 
 
 @code {  
-    SfGrid<TrainingCpdsummaryDto>? DataGrid { get; set; }
-    private static TrainingCpdsummaryDto? CPDData { get; set; }
-    List<AStaffCategoryDto>? StaffCategoryData { get; set; }
+    SfGrid<TrainingCpdsummary>? DataGrid { get; set; }
+    private static TrainingCpdsummary? CPDData { get; set; }
+    List<AStaffCategory>? StaffCategoryData { get; set; }
     List<AFinancialYear>? FinancialYearData { get; set; }
 
     #region Toasters
@@ -189,7 +191,7 @@
 
         if (response.IsSuccessStatusCode && responsefinancialyear.IsSuccessStatusCode)
         {
-            StaffCategoryData = await Http.GetFromJsonAsync<List<AStaffCategoryDto>>
+            StaffCategoryData = await Http.GetFromJsonAsync<List<AStaffCategory>>
             ($"Utilities/GetStaffCategory");
 
             FinancialYearData = await Http.GetFromJsonAsync<List<AFinancialYear>>
@@ -223,7 +225,7 @@
         {
             
 
-            var data = new List<TrainingCpdsummaryDto>();
+            var data = new List<TrainingCpdsummary>();
 
             string? AccessToken = _SystemSettings.AccessToken;
             string? BaseUrl = _ApiConfig.BaseUrl;
@@ -235,7 +237,7 @@
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    data = JsonSerializer.Deserialize<List<TrainingCpdsummaryDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<TrainingCpdsummary>>(content, _options);
                 }
             }
             catch (Exception ex)
@@ -276,7 +278,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<TrainingCpdsummaryDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<TrainingCpdsummary>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -287,7 +289,7 @@
             try
             {
                 
-                var val = (value as TrainingCpdsummaryDto);
+                var val = (value as TrainingCpdsummary);
                 if (val != null)
                 {
                     if (val.SummaryId == 0)
@@ -300,7 +302,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -329,7 +331,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -361,7 +363,7 @@
             try
             {
                 
-                var val = (value as TrainingCpdsummaryDto);
+                var val = (value as TrainingCpdsummary);
                 if (val != null)
                 {
                     if (val.SummaryId == 0)
@@ -374,7 +376,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -403,7 +405,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -432,7 +434,7 @@
         }    
     }
 
-    public async void CPDActionBegin(ActionEventArgs<TrainingCpdsummaryDto> Args)
+    public async void CPDActionBegin(ActionEventArgs<TrainingCpdsummary> Args)
     {
         var data = Args.Data;
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)

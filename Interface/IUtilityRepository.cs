@@ -1,13 +1,13 @@
-﻿using HCMIS.SHARED.DTOs.BSC;
-using HCMIS.Model;
-using HCMIS.SHARED.DTOs;
+﻿
 using HCMIS.SHARED;
+using HCMIS.SHARED.Data;
+using HCMIS.SHARED.Models;
 
 namespace HCMIS.Interface
 {
     public interface IUtilityRepository
     {
-        Task<List<EmployeeDto>?> GetEmployees();
-        Task<List<ImageDTO>> GetLocalLogos();
+        Task<List<Employee>?> GetEmployees();
+        Task<List<Image>> GetLocalLogos();
     }
 }

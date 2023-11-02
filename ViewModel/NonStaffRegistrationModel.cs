@@ -1,4 +1,5 @@
-﻿using HCMIS.Model;
+﻿
+using HCMIS.SHARED.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace HCMIS.ViewModel

@@ -4,8 +4,8 @@ using Blazored.Toast.Services;
 using HCMIS.AuthProviders;
 using HCMIS.DTOs;
 using HCMIS.Interface;
-using HCMIS.Model;
-using HCMIS.SHARED.Models.Usermanagement;
+
+using HCMIS.SHARED.Usermanagement;
 using Microsoft.AspNetCore.Components.Authorization;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -13,8 +13,10 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using HCMIS.SHARED.DTOs;
+
 using HCMIS.SHARED.Models;
+using HCMIS.SHARED.Data;
+using HCMIS.Model;
 
 namespace HCMIS.Repository
 {
@@ -185,9 +187,9 @@ namespace HCMIS.Repository
             _client.DefaultRequestHeaders.Authorization = null;
         }
 
-        public async Task<ResponseDto> RegisterUser(RegisterModel userForRegistration)
+        public async Task<Response> RegisterUser(RegisterModel userForRegistration)
         {
-            ResponseDto data = new ResponseDto();
+            Response data = new Response();
             try
             {
                 var content = JsonSerializer.Serialize(userForRegistration);
@@ -195,7 +197,7 @@ namespace HCMIS.Repository
 
                 var authResult = await _client.PostAsync("Account/register", bodyContent);
                 var authContent = await authResult.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<ResponseDto>(authContent, _options);
+                var result = JsonSerializer.Deserialize<Response>(authContent, _options);
 
                 if (!authResult.IsSuccessStatusCode)
                 {
@@ -320,7 +322,7 @@ namespace HCMIS.Repository
                 }
                 else
                 {
-                    var m = JsonSerializer.Deserialize<ResponseDto>(authContent, _options);
+                    var m = JsonSerializer.Deserialize<Response>(authContent, _options);
                     if(m!= null)
                     {
                         if (m.IsSuccess == true)
@@ -357,7 +359,7 @@ namespace HCMIS.Repository
                 }
                 else
                 {
-                    var m = JsonSerializer.Deserialize<ResponseDto>(authContent, _options);
+                    var m = JsonSerializer.Deserialize<Response>(authContent, _options);
                     if (m != null)
                     {
                         if (m.IsSuccess == true)
@@ -394,7 +396,7 @@ namespace HCMIS.Repository
                 }
                 else
                 {
-                    var m = JsonSerializer.Deserialize<ResponseDto>(authContent, _options);
+                    var m = JsonSerializer.Deserialize<Response>(authContent, _options);
                     if (m != null)
                     {
                         if (m.IsSuccess == true)
@@ -431,7 +433,7 @@ namespace HCMIS.Repository
                 }
                 else
                 {
-                    var m = JsonSerializer.Deserialize<ResponseDto>(authContent, _options);
+                    var m = JsonSerializer.Deserialize<Response>(authContent, _options);
                     if (m != null)
                     {
                         if (m.IsSuccess == true)

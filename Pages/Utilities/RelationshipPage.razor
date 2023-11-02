@@ -6,11 +6,10 @@
 @using System.Text.Json
 @using System.Collections;
 @using System.IO;
+@using HCMIS.SHARED.Models;
 @using Microsoft.AspNetCore.Authorization
 @inject NavigationManager navigation;
 @inject SystemSettings _SystemSettings;
-@using HCMIS.SHARED.DTOs.BSC;
-@using HCMIS.SHARED.DTOs.Utilities;
 @using HCMIS.ViewModel;
 @inject IToastService toastService;
 
@@ -55,18 +54,18 @@
     </li>
 </ol>
 
-<SfGrid @ref="@RelationshipGrid" ID="Grid" TValue="ARelationshipDto" AllowPaging="true"
+<SfGrid @ref="@RelationshipGrid" ID="Grid" TValue="ARelationship" AllowPaging="true"
         AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
         AllowSorting="true" Toolbar="@ToolbarMenu">
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
     <GridPageSettings PageSizes="true"></GridPageSettings>
     <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
     <SfDataManager AdaptorInstance="@typeof(RelationshipAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-    <GridEvents OnActionComplete="@RelationshipActionComplete" OnActionBegin="@RelationshipActionBegin" TValue="ARelationshipDto"></GridEvents>
+    <GridEvents OnActionComplete="@RelationshipActionComplete" OnActionBegin="@RelationshipActionBegin" TValue="ARelationship"></GridEvents>
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog" Dialog="DialogParams">
         <HeaderTemplate>
             @{
-                var text = GetHolidayHeader((context as ARelationshipDto));
+                var text = GetHolidayHeader((context as ARelationship));
                 <div class="headerbandimg">
                     <span>@text</span>
                 </div>
@@ -74,7 +73,7 @@
         </HeaderTemplate>
         <Template Context="BankContext">
             @{
-                RelationshipData = (BankContext as ARelationshipDto);
+                RelationshipData = (BankContext as ARelationship);
                 @if (RelationshipData != null)
                 {
                     <div class="row">
@@ -94,13 +93,13 @@
     </GridEditSettings>
     <GridColumns>
         <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn>
-        <GridColumn Field=@nameof(ARelationshipDto.RelationshipId)
+        <GridColumn Field=@nameof(ARelationship.RelationshipId)
                     Visible=false
                     HeaderText="Relationship Id"
                     AllowEditing="false"
                     IsPrimaryKey="true">
         </GridColumn>
-        <GridColumn Field=@nameof(ARelationshipDto.RelationshipName)
+        <GridColumn Field=@nameof(ARelationship.RelationshipName)
                     HeaderText="Relation"
                     TextAlign="TextAlign.Justify"
                     Width="80"
@@ -112,11 +111,11 @@
 </SfGrid>
 
 @code {
-    SfGrid<ARelationshipDto>? RelationshipGrid;
-    private static ARelationshipDto? RelationshipData { get; set; }
+    SfGrid<ARelationship>? RelationshipGrid;
+    private static ARelationship? RelationshipData { get; set; }
     public bool? radiovalue;
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "65%" };
-    List<ARelationshipDto>? RelationshipCountData { get; set; }
+    List<ARelationship>? RelationshipCountData { get; set; }
 
     private List<object> ToolbarMenu = new List<object>()
     {
@@ -137,7 +136,7 @@
 
         if (responsebankcount.IsSuccessStatusCode)
         {
-            RelationshipCountData = await Http.GetFromJsonAsync<List<ARelationshipDto>>
+            RelationshipCountData = await Http.GetFromJsonAsync<List<ARelationship>>
             ($"Utilities/GetRelationship");
         }
     }
@@ -165,7 +164,7 @@
 
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         {
-            var data = new List<ARelationshipDto>();
+            var data = new List<ARelationship>();
             try
             {
                 var response = await Http.GetAsync($"Utilities/GetRelationship");
@@ -174,7 +173,7 @@
                 {
                     toastService.ShowError(response.ReasonPhrase);
                 }
-                data = JsonSerializer.Deserialize<List<ARelationshipDto>>(content, _options);
+                data = JsonSerializer.Deserialize<List<ARelationship>>(content, _options);
             }
             catch (Exception ex)
             {
@@ -214,7 +213,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<ARelationshipDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<ARelationship>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -224,7 +223,7 @@
         {
             try
             {
-                var val = (value as ARelationshipDto);
+                var val = (value as ARelationship);
 
                 if (val.RelationshipId == 0)
                 {
@@ -265,7 +264,7 @@
         {
             try
             {
-                var val = (value as ARelationshipDto);
+                var val = (value as ARelationship);
                 
                 
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
@@ -291,7 +290,7 @@
 
     }
 
-    public async void RelationshipActionComplete(ActionEventArgs<ARelationshipDto> args)
+    public async void RelationshipActionComplete(ActionEventArgs<ARelationship> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add)
         || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
@@ -306,13 +305,13 @@
 
             if (responsebankcount.IsSuccessStatusCode)
             {
-                RelationshipCountData = await Http.GetFromJsonAsync<List<ARelationshipDto>>
+                RelationshipCountData = await Http.GetFromJsonAsync<List<ARelationship>>
                 ($"Utilities/GetRelationship");
             }
         }
     }
 
-    public async void RelationshipActionBegin(ActionEventArgs<ARelationshipDto> Args)
+    public async void RelationshipActionBegin(ActionEventArgs<ARelationship> Args)
     {
         var data = Args.Data;
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
@@ -346,7 +345,7 @@
     }
 
 
-    public string GetHolidayHeader(ARelationshipDto Value)
+    public string GetHolidayHeader(ARelationship Value)
     {
         if (Value.RelationshipId == 0)
         {

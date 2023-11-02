@@ -1,5 +1,7 @@
 ﻿@page "/SurveyDeadlinePage"
 @using HCMIS.Model
+@using HCMIS.SHARED.Data;
+@using HCMIS.SHARED.Models;
 @using HCMIS.ViewModel
 @using System.Text.Json
 @using System.Text.RegularExpressions
@@ -8,8 +10,6 @@
 @inject NavigationManager Navigation
 @inject SystemSettings _SystemSettings
 @using System.Collections;
-@using HCMIS.SHARED.DTOs.Training;
-@using HCMIS.SHARED.DTOs.BSC;
 @inject IToastService toastService;
 
 <style>
@@ -76,24 +76,24 @@
     </h5>
 </center>
 <div class="row">    
-    <SfGrid ID="Grid" @ref="AssessmentDeadlineGrid" TValue="TrainingAssessmentSurveyDeadlineDto"
+    <SfGrid ID="Grid" @ref="AssessmentDeadlineGrid" TValue="TrainingAssessmentSurveyDeadline"
             Toolbar="@ToolbarMenu" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
             AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true">
         <SfDataManager AdaptorInstance="@typeof(AssessmentDeadlineAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
         <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
         <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
-        <GridEvents OnActionBegin="AssessmentActionBegin" OnActionComplete="AssessmentActionComplete" TValue="TrainingAssessmentSurveyDeadlineDto"></GridEvents>
+        <GridEvents OnActionBegin="AssessmentActionBegin" OnActionComplete="AssessmentActionComplete" TValue="TrainingAssessmentSurveyDeadline"></GridEvents>
         <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog">
             <HeaderTemplate>
                 @{
-                    var text = GetAssessmentHeader((context as TrainingAssessmentSurveyDeadlineDto));
+                    var text = GetAssessmentHeader((context as TrainingAssessmentSurveyDeadline));
                     <div class="headerbandimg" />
                     <span>@text</span>
                 }
             </HeaderTemplate>
             <Template>
                 @{
-                    Deadlinedata = (context as TrainingAssessmentSurveyDeadlineDto);
+                    Deadlinedata = (context as TrainingAssessmentSurveyDeadline);
                     <div>
                         <div class="form-row">
                             <div class="form-group col-md-6" hidden="hidden">
@@ -114,8 +114,8 @@
         <GridPageSettings PageSize="20"></GridPageSettings>
         <GridColumns>
             <GridColumn Type="ColumnType.CheckBox" Width="20"></GridColumn>
-            <GridColumn Field=@nameof(TrainingAssessmentSurveyDeadlineDto.DeadlineId) HeaderText="Deadline Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="50"></GridColumn>
-            <GridColumn Field=@nameof(TrainingAssessmentSurveyDeadlineDto.DeadlineDate) HeaderText="Deadline Date" Format="dd/MMMM/yyyy" TextAlign="TextAlign.Justify" Width="60" ClipMode="ClipMode.EllipsisWithTooltip" Type="ColumnType.Date"></GridColumn>            
+            <GridColumn Field=@nameof(TrainingAssessmentSurveyDeadline.DeadlineId) HeaderText="Deadline Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="50"></GridColumn>
+            <GridColumn Field=@nameof(TrainingAssessmentSurveyDeadline.DeadlineDate) HeaderText="Deadline Date" Format="dd/MMMM/yyyy" TextAlign="TextAlign.Justify" Width="60" ClipMode="ClipMode.EllipsisWithTooltip" Type="ColumnType.Date"></GridColumn>            
         </GridColumns>
     </SfGrid>
 </div>
@@ -136,8 +136,8 @@
         };
     #endregion Toasters
 
-    private SfGrid<TrainingAssessmentSurveyDeadlineDto>? AssessmentDeadlineGrid;
-    private static TrainingAssessmentSurveyDeadlineDto? Deadlinedata { get; set; }
+    private SfGrid<TrainingAssessmentSurveyDeadline>? AssessmentDeadlineGrid;
+    private static TrainingAssessmentSurveyDeadline? Deadlinedata { get; set; }
 
     private List<object> ToolbarMenu = new List<object>() {
         new ItemModel() { Text = "Capture Date", PrefixIcon = "e-add", Id = "Grid_add"},//Here Grid is SfGrid ID
@@ -189,7 +189,7 @@
         {
             
 
-            var data = new List<TrainingAssessmentSurveyDeadlineDto>();
+            var data = new List<TrainingAssessmentSurveyDeadline>();
 
             string? AccessToken = _SystemSettings.AccessToken;
             string? BaseUrl = _ApiConfig.BaseUrl;
@@ -201,7 +201,7 @@
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    data = JsonSerializer.Deserialize<List<TrainingAssessmentSurveyDeadlineDto>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<TrainingAssessmentSurveyDeadline>>(content, _options);
                 }
             }
             catch (Exception ex)
@@ -242,7 +242,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<TrainingAssessmentSurveyDeadlineDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<TrainingAssessmentSurveyDeadline>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -253,7 +253,7 @@
             try
             {
                 
-                var val = (value as TrainingAssessmentSurveyDeadlineDto);
+                var val = (value as TrainingAssessmentSurveyDeadline);
                 if (val != null)
                 {
                     if (val.DeadlineId == 0)
@@ -266,7 +266,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -295,7 +295,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -351,7 +351,7 @@
             try
             {
                 
-                var val = (value as TrainingAssessmentSurveyDeadlineDto);
+                var val = (value as TrainingAssessmentSurveyDeadline);
                 if (val != null)
                 {
                     if (val.DeadlineId == 0)
@@ -364,7 +364,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -393,7 +393,7 @@
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();
-                            var data = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
                             if (data != null)
                             {
                                 if (data.IsSuccess)
@@ -421,7 +421,7 @@
             return value;
         }
     }
-    public void AssessmentActionComplete(ActionEventArgs<TrainingAssessmentSurveyDeadlineDto> args)
+    public void AssessmentActionComplete(ActionEventArgs<TrainingAssessmentSurveyDeadline> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
         {
@@ -429,7 +429,7 @@
         }
     }
 
-    public async void AssessmentActionBegin(ActionEventArgs<TrainingAssessmentSurveyDeadlineDto> Args)
+    public async void AssessmentActionBegin(ActionEventArgs<TrainingAssessmentSurveyDeadline> Args)
     {
         var data = Args.Data;
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
@@ -470,7 +470,7 @@
         }
     }
 
-    public string GetAssessmentHeader(TrainingAssessmentSurveyDeadlineDto Value)
+    public string GetAssessmentHeader(TrainingAssessmentSurveyDeadline Value)
     {
         if (Value.DeadlineId == 0 || Value.DeadlineId == null)
         {

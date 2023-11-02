@@ -1,5 +1,4 @@
-﻿using HCMIS.Model;
-using HCMIS.Model.JobDescriptionModel;
+﻿using HCMIS.SHARED.Models;
 
 namespace HCMIS.DTOs
 {

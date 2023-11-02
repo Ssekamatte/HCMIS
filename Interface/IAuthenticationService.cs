@@ -1,14 +1,14 @@
 ﻿using HCMIS.DTOs;
 using HCMIS.Model;
-using HCMIS.SHARED.DTOs;
+using HCMIS.SHARED.Data;
 using HCMIS.SHARED.Models;
-using HCMIS.SHARED.Models.Usermanagement;
+using HCMIS.SHARED.Usermanagement;
 
 namespace HCMIS.Interface
 {
     public interface IAuthenticationService
     {
-        Task<ResponseDto> RegisterUser(RegisterModel userForRegistration);
+        Task<Response> RegisterUser(RegisterModel userForRegistration);
         Task<LoginResultModel> Login(LoginModel userForAuthentication);
         Task Logout();
         Task<bool> CheckAuthenticationStatus();

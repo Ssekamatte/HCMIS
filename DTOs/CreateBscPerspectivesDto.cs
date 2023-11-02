@@ -1,6 +1,6 @@
 ﻿namespace HCMIS.DTO
 {
-    public class CreateBscPerspectivesDto
+    public class CreateBscPerspectives
     {
         public int BscPerspectiveId { get; set; }
         public string? BscPerspectiveDescription { get; set; }

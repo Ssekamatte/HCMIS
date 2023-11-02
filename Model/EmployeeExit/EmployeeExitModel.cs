@@ -1,4 +1,6 @@
-﻿namespace HCMIS.Model.EmployeeExit
+﻿using HCMIS.SHARED.Models;
+
+namespace HCMIS.Model.EmployeeExit
 {
     public class EmployeeExitModel
     {

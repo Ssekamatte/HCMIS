@@ -6,11 +6,10 @@
 @using System.Text.Json
 @using System.Collections;
 @using System.IO;
+@using HCMIS.SHARED.Models;
 @using Microsoft.AspNetCore.Authorization
 @inject NavigationManager navigation;
 @inject SystemSettings _SystemSettings;
-@using HCMIS.SHARED.DTOs.BSC;
-@using HCMIS.SHARED.DTOs.Utilities;
 @using HCMIS.ViewModel;
 @inject IToastService toastService;
 
@@ -55,18 +54,18 @@
     </li>
 </ol>
 
-<SfGrid @ref="@PublicHolidayGrid" ID="Grid" TValue="APublicHolidaysDto" AllowPaging="true"
+<SfGrid @ref="@PublicHolidayGrid" ID="Grid" TValue="APublicHolidays" AllowPaging="true"
         AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
         AllowSorting="true" Toolbar="@ToolbarMenu">
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
     <GridPageSettings PageSizes="true"></GridPageSettings>
     <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
     <SfDataManager AdaptorInstance="@typeof(PublicHolidayAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-    <GridEvents OnActionComplete="@HolidayActionComplete" OnActionBegin="@HolidayActionBegin" TValue="APublicHolidaysDto"></GridEvents>
+    <GridEvents OnActionComplete="@HolidayActionComplete" OnActionBegin="@HolidayActionBegin" TValue="APublicHolidays"></GridEvents>
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog" Dialog="DialogParams">
         <HeaderTemplate>
             @{
-                var text = GetHolidayHeader((context as APublicHolidaysDto));
+                var text = GetHolidayHeader((context as APublicHolidays));
                 <div class="headerbandimg">
                     <span>@text</span>
                 </div>
@@ -74,7 +73,7 @@
         </HeaderTemplate>
         <Template Context="HolidaysContext">
             @{
-                HolidayData = (HolidaysContext as APublicHolidaysDto);
+                HolidayData = (HolidaysContext as APublicHolidays);
                 @if (HolidayData != null)
                 {
                     <div class="row">
@@ -105,13 +104,13 @@
     <GridColumns>
         <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn>
         <GridColumn 
-            Field=@nameof(APublicHolidaysDto.HolidayId) 
+            Field=@nameof(APublicHolidays.HolidayId) 
             Visible=false 
             HeaderText="Holiday Id" 
             AllowEditing="false" 
             IsPrimaryKey="true">
         </GridColumn>
-        <GridColumn Field=@nameof(APublicHolidaysDto.HolidayName)
+        <GridColumn Field=@nameof(APublicHolidays.HolidayName)
                     HeaderText="Holiday Name"
                     TextAlign="TextAlign.Justify"
                     Width="80"
@@ -119,7 +118,7 @@
                     Type="ColumnType.String"
                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
         </GridColumn>
-        <GridColumn Field=@nameof(APublicHolidaysDto.HolidayDate)
+        <GridColumn Field=@nameof(APublicHolidays.HolidayDate)
                     HeaderText="Application Date"
                     Format="dd/MMMM/yyyy"
                     TextAlign="TextAlign.Justify"
@@ -132,11 +131,11 @@
 </SfGrid>
 
 @code {
-    SfGrid<APublicHolidaysDto>? PublicHolidayGrid;
-    private static APublicHolidaysDto? HolidayData { get; set; }
+    SfGrid<APublicHolidays>? PublicHolidayGrid;
+    private static APublicHolidays? HolidayData { get; set; }
     public bool? radiovalue;
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "65%" };
-    List<APublicHolidaysDto>? HolidayCountData { get; set; }
+    List<APublicHolidays>? HolidayCountData { get; set; }
     
     private List<object> ToolbarMenu = new List<object>()
     {
@@ -157,7 +156,7 @@
        
         if (responseholidaycount.IsSuccessStatusCode)
         {
-            HolidayCountData = await Http.GetFromJsonAsync<List<APublicHolidaysDto>>
+            HolidayCountData = await Http.GetFromJsonAsync<List<APublicHolidays>>
             ($"Utilities/GetPublicHolidayCount");
         }        
     }
@@ -185,7 +184,7 @@
 
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         {
-            var data = new List<APublicHolidaysDto>();
+            var data = new List<APublicHolidays>();
             try
             {
                 var response = await Http.GetAsync($"Utilities/GetPublicHoliday");
@@ -194,7 +193,7 @@
                 {
                     toastService.ShowError(response.ReasonPhrase);
                 }
-                data = JsonSerializer.Deserialize<List<APublicHolidaysDto>>(content, _options);
+                data = JsonSerializer.Deserialize<List<APublicHolidays>>(content, _options);
             }
             catch (Exception ex)
             {
@@ -234,7 +233,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<APublicHolidaysDto>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<APublicHolidays>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -244,7 +243,7 @@
         {
             try
             {
-                var val = (value as APublicHolidaysDto);
+                var val = (value as APublicHolidays);
 
                 if (val.HolidayId == 0)
                 {
@@ -285,7 +284,7 @@
         {
             try
             {
-                var val = (value as APublicHolidaysDto);
+                var val = (value as APublicHolidays);
                 
                 
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
@@ -316,7 +315,7 @@
         radiovalue = args.Value;
     }
 
-    public async void HolidayActionComplete(ActionEventArgs<APublicHolidaysDto> args)
+    public async void HolidayActionComplete(ActionEventArgs<APublicHolidays> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
         {
@@ -330,13 +329,13 @@
 
             if (responseholidaycount.IsSuccessStatusCode)
             {
-                HolidayCountData = await Http.GetFromJsonAsync<List<APublicHolidaysDto>>
+                HolidayCountData = await Http.GetFromJsonAsync<List<APublicHolidays>>
                 ($"Utilities/GetPublicHolidayCount");
             }
         }
     }
 
-    public async void HolidayActionBegin(ActionEventArgs<APublicHolidaysDto> Args)
+    public async void HolidayActionBegin(ActionEventArgs<APublicHolidays> Args)
     {
         var data = Args.Data;
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
@@ -380,7 +379,7 @@
     }
 
 
-    public string GetHolidayHeader(APublicHolidaysDto Value)
+    public string GetHolidayHeader(APublicHolidays Value)
     {
         if (Value.HolidayId == 0)
         {

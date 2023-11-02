@@ -1,4 +1,6 @@
-﻿using HCMIS.Model;
+﻿
+
+using HCMIS.SHARED.Models;
 
 namespace HCMIS.ViewModel
 {

@@ -2,30 +2,27 @@
 using HCMIS.Interface;
 using HCMIS.SHARED;
 using HCMIS.SHARED.Data;
-using HCMIS.SHARED.DTOs.BSC;
-using HCMIS.SHARED.DTOs.Employeez;
-using HCMIS.SHARED.Models.SPModel;
+using HCMIS.SHARED.Models;
 using Syncfusion.Blazor.DocumentEditor;
 
 namespace HCMIS.Interface
 {
     public interface IReportService
     {
-        Task<List<ViewBalanceScoreCardReportDto>> GetAppraisal(UtilitiesSearchPanel SearchModel);
-        Task<List<spViewEmployeeLeavesReportResult>> GetLeaveRequest(UtilitiesSearchPanel SearchModel);
-        Task<List<EmployeeDto>> GetEmployeeDetails(UtilitiesSearchPanel SearchModel);
-        Task<List<ViewEmployeeQualificationDto>> GetEmployeeQualifications(UtilitiesSearchPanel SearchModel);
-        Task<List<ViewEmployeeFamilyDto>> GetEmployeeFamily(UtilitiesSearchPanel SearchModel);
-        Task<List<ViewTargetSettingTotalsDto>> GetAppraisalTarget(UtilitiesSearchPanel SearchModel);
-        Task<List<ViewBehavioralTotalsDto>> GetAppraisalBehavioral(UtilitiesSearchPanel SearchModel);
-        Task<List<ViewEmployeeLeaveRoasterReportPivotedDto>> GetAnnualLeaveRoaster(UtilitiesSearchPanel SearchModel);
-        Task<List<ViewEmployeeLeaveRoasterDatesReportDto>> GetSelectedDates(UtilitiesSearchPanel SearchModel);
-        Task<List<BalanceScoreCardTargetSettingDto>> GetAppraisalTargetGeneral(UtilitiesSearchPanel SearchModel);
-        Task<List<BalanceScoreCardBehavioralDto>> GetAppraisalBehavioralGeneral(UtilitiesSearchPanel SearchModel);
-        Task<List<BalanceScoreCardTargetDevelopmentPlanDto>> GetDevelopmentPlan(UtilitiesSearchPanel SearchModel);
-        Task<List<BalanceScoreCardAppraiseeCommentsDto>> GetAppraiseeComments(UtilitiesSearchPanel SearchModel);
-        Task<List<BalanceScoreCardSupervisorCommentsDto>> GetSupervisorComments(UtilitiesSearchPanel SearchModel);
-        Task<List<BalanceScoreCardHODCommentsDto>> GetHODComments(UtilitiesSearchPanel SearchModel);
-        Task<List<BalanceScoreCardCEOCommentsDto>> GetCEOComments(UtilitiesSearchPanel SearchModel);
+        Task<List<ViewBalanceScoreCardReport>> GetAppraisal(UtilitiesSearchPanel SearchModel);
+        Task<List<Employee>> GetEmployeeDetails(UtilitiesSearchPanel SearchModel);
+        Task<List<ViewEmployeeQualification>> GetEmployeeQualifications(UtilitiesSearchPanel SearchModel);
+        Task<List<ViewEmployeeFamily>> GetEmployeeFamily(UtilitiesSearchPanel SearchModel);
+        Task<List<ViewTargetSettingTotals>> GetAppraisalTarget(UtilitiesSearchPanel SearchModel);
+        Task<List<ViewBehavioralTotals>> GetAppraisalBehavioral(UtilitiesSearchPanel SearchModel);
+        Task<List<ViewEmployeeLeaveRoasterReportPivoted>> GetAnnualLeaveRoaster(UtilitiesSearchPanel SearchModel);
+        Task<List<ViewEmployeeLeaveRoasterDatesReport>> GetSelectedDates(UtilitiesSearchPanel SearchModel);
+        Task<List<BalanceScoreCardTargetSetting>> GetAppraisalTargetGeneral(UtilitiesSearchPanel SearchModel);
+        Task<List<BalanceScoreCardBehavioral>> GetAppraisalBehavioralGeneral(UtilitiesSearchPanel SearchModel);
+        Task<List<BalanceScoreCardTargetDevelopmentPlan>> GetDevelopmentPlan(UtilitiesSearchPanel SearchModel);
+        Task<List<BalanceScoreCardAppraiseeComments>> GetAppraiseeComments(UtilitiesSearchPanel SearchModel);
+        Task<List<BalanceScoreCardSupervisorComments>> GetSupervisorComments(UtilitiesSearchPanel SearchModel);
+        Task<List<BalanceScoreCardHodcomments>> GetHODComments(UtilitiesSearchPanel SearchModel);
+        Task<List<BalanceScoreCardCeocomments>> GetCEOComments(UtilitiesSearchPanel SearchModel);
     }
 }
