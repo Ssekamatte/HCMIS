@@ -289,10 +289,10 @@
                                                     Designation
                                                 </td>
                                                 <td>
-                                                    @*@if (employeeno != null)
+                                                    @if (employeeno != null)
                                                     {
                                                         @employeeno.JobTitleDescription
-                                                    }*@
+                                                    }
                                                 </td>
                                             </tr>
                                             <tr>
@@ -303,10 +303,10 @@
                                                     Department
                                                 </td>
                                                 <td>
-                                                    @*@if (employeeno != null)
+                                                    @if (employeeno != null)
                                                     {
                                                         @employeeno.DepartmentDescription
-                                                    }*@
+                                                    }
                                                 </td>
                                             </tr>
                                             <tr>
@@ -317,10 +317,10 @@
                                                     Date of Last Leave within the Present Year
                                                 </td>
                                                 <td>
-                                                    @*@if (employeeno != null)
+                                                    @if (employeeno != null)
                                                     {
 
-                                                    }*@
+                                                    }
                                                 </td>
                                             </tr>
                                             <tr>
@@ -342,7 +342,28 @@
 
                                         <div class="row">
                                             <div class="col-md-12">
-                                                @*<p><h3>Acting Officer During Period of Leave</h3></p>*@
+                                                <p><h3>Acting Officer During Period of Leave</h3></p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p>Name</p>
+                                                <SfDropDownList @bind-Value="@(LeaveData.ActingOfficerId)" TItem="ViewEmployeeDropDown" TValue="int?" DataSource="@EmployeeData" Enabled="ActingOfficerDD" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                    <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
+                                                    <DropDownListEvents TValue="int?" TItem="ViewEmployeeDropDown" ValueChange="OnActingOfficerChange"></DropDownListEvents>
+                                                </SfDropDownList>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <p>Title</p>
+
+                                                @if (employeeactingofficer != null)
+                                                {
+                                                    @employeeactingofficer.JobTitleDescription
+                                                }
+                                            </div>
+                                        </div>
+                                        @*<div class="row">
+                                            <div class="col-md-12">
+                                                <p><h3>Acting Officer During Period of Leave</h3></p>
                                                 <LeaveDetailsPage 
                                                     ActingOfficerDD="@ActingOfficerDD"
                                                     ondetailstoggle="@ToggleLeaveDetailsData"
@@ -351,7 +372,132 @@
                                                     detailsdata="@LeaveData.EmployeeLeaveDetails.ToList()">
                                                 </LeaveDetailsPage>
                                             </div>
+                                        </div>*@
+
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <p><h3>Leave Information</h3></p>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <p>Leave Type:<span style="color:red;">*</span></p>
+                                                <SfDropDownList @bind-Value="@(LeaveData.LeaveTypeId)" Enabled="LeaveTypeIdDD" TItem="ALeaveType" TValue="int?" DataSource="@LeaveTypeData" Placeholder="Choose Leave Type" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                    <DropDownListFieldSettings Value="@nameof(ALeaveType.LeaveTypeId)" Text="@nameof(ALeaveType.LeaveTypeDescription)"></DropDownListFieldSettings>
+                                                    <DropDownListEvents TValue="int?" TItem="ALeaveType" ValueChange="OnLeaveTypeChange"></DropDownListEvents>
+                                                </SfDropDownList>
+                                            </div>
+
+                                            @if (employeeno != null && employeeno.GenderId == 2 && LeaveData != null
+                                            && LeaveData.LeaveTypeId == 4)
+                                            {
+                                                <h6 style="background-color:red; color:ghostwhite;margin-top: 10px;">Females donot qualify for paternal leave</h6>
+                                            }
+                                            else if (employeeno != null && employeeno.GenderId == 1 && LeaveData != null
+                                            && LeaveData.LeaveTypeId == 2)
+                                            {
+                                                <h6 style="background-color:red; color:ghostwhite;margin-top: 10px;">Males do not qualify for maternal leave</h6>
+                                            }
+
+                                            else
+                                            {
+                                                <div class="col-md-4">
+                                                    <p>Commencement Date:<span style="color:red;">*</span></p>
+                                                    <SfDatePicker @bind-Value="@(LeaveData.CommencementDate)" Enabled="StartDateEnabler" ID="ScheduledStartDate" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never" Min="MinDate">
+                                                        @if (LeaveData != null && (LeaveData.LeaveTypeId == 2 || LeaveData.LeaveTypeId == 4 || LeaveData.LeaveTypeId == 5))
+                                                        {
+                                                            EndDateEnabler = false;
+                                                            <DatePickerEvents TValue="DateTime?" ValueChange="OnMaternityDateChange"></DatePickerEvents>
+                                                        }
+                                                        else
+                                                        {
+                                                            EndDateEnabler = true;
+                                                        }
+
+                                                    </SfDatePicker>
+                                                </div>
+
+                                                <div class="col-md-4">
+                                                    <p>End Date:<span style="color:red;">*</span></p>
+                                                    <SfDatePicker @bind-Value="@(LeaveData.EndDate)" Enabled="EndDateEnabler" ID="ScheduledEndDate" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never" Min="MinDate" Max='@MaxDate'>
+                                                        <DatePickerEvents TValue="DateTime?" ValueChange="OnEndDateChange"></DatePickerEvents>
+                                                    </SfDatePicker>
+                                                </div>
+
+                                                <div class="col-md-4">
+                                                    <p style="margin-top:10px;">Days Entitled:</p>
+                                                    @if (leavetypedays != null)
+                                                    {
+                                                        @leavetypedays.LeaveDaysPerYear
+                                                    }
+                                                </div>
+
+                                                <div class="col-md-4">
+                                                    <p style="margin-top:10px;">Days Selected:</p>
+                                                    <SfNumericTextBox @bind-Value="@(LeaveData.TotalDays)" Enabled="false" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                                </div>
+
+                                                <div class="col-md-4">
+                                                    <p style="margin-top:10px;">Days Arleady Utilized:</p>
+                                                    @if (LeaveData.LeaveTypeId != 2 && LeaveData.LeaveTypeId != 4)
+                                                    {
+                                                            @TotalDaysTakenPrior
+                                                    }
+                                                    else
+                                                    {
+                                                            <p style:"color:red;">N/A</p>
+                                                    }
+                                                </div>
+                                            }
+                                            
                                         </div>
+                                    </ContentTemplate>
+                                </AccordionItem>
+
+                                <AccordionItem Expanded="true">
+                                    <HeaderTemplate><strong>PART II: LEAVE COMPUTATION: Completed by the Head-HR & Administration</strong></HeaderTemplate>
+                                    <ContentTemplate>
+                                        
+                                    </ContentTemplate>
+                                </AccordionItem>
+
+                                <AccordionItem Expanded="true">
+                                    <HeaderTemplate><strong>PART III: RECOMMENDATION</strong></HeaderTemplate>
+                                    <ContentTemplate>
+                                        <table class="table table-bordered">
+                                            <tr>
+                                                <td style="font-weight:bold">
+                                                    Recommended By
+                                                </td>
+                                                <td style="font-weight:bold">
+                                                    Name
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td>
+                                                    Immediate Supervisor <span style="color:red;">*</span>
+                                                </td>
+
+                                                <td>
+                                                    <SfDropDownList @bind-Value="@(LeaveData.ImmediateSupervisor)" TItem="ViewEmployeeDropDown" Enabled="ImmediateSupervisorDD" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                        <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
+                                                        <DropDownListEvents TValue="int?" TItem="ViewEmployeeDropDown" ValueChange="OnEmployeeSupervisorChange"></DropDownListEvents>
+                                                    </SfDropDownList>
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td>
+                                                    Head of Department <span style="color:red;">*</span>
+                                                </td>
+
+                                                <td>
+                                                    <SfDropDownList @bind-Value="@(LeaveData.Hod)" TItem="ViewEmployeeDropDown" Enabled="ImmediateSupervisorDD" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                        <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
+                                                        <DropDownListEvents TValue="int?" TItem="ViewEmployeeDropDown" ValueChange="OnEmployeeSupervisorChange"></DropDownListEvents>
+                                                    </SfDropDownList>
+                                                </td>
+                                            </tr>
+                                        </table>
                                     </ContentTemplate>
                                 </AccordionItem>
                             </AccordionItems>
@@ -360,7 +506,17 @@
                 }
             </Template>
             <FooterTemplate>
+                <button @onclick="@onSaveDraftForm" disabled=@IsDraftDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
 
+                @if (_previous == Syncfusion.Blazor.Grids.Action.Add)
+                {
+                    <button @onclick="@onSubmitForm" disabled=@IsSubmitDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Submit Request</button>
+                }
+                else if (_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
+                {
+                    <button @onclick="@onApproveForm" disabled=@IsApproveDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Approval Request</button>
+                    <button @onclick="@onRejectForm" disabled=@IsRejectDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Reject</button>
+                }
             </FooterTemplate>
         </GridEditSettings>
         <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
@@ -459,8 +615,40 @@
         </GridColumns>
     </SfGrid>
 
-
 </div>
+
+<div>
+    <SfDialog @ref="@LoadingDialogue"
+              ID="LoadingDialog"
+              Height="auto"
+              Width="20%"
+              AllowDragging="true"
+              Target=".mainbody"
+              ShowCloseIcon="false"
+              IsModal=true
+              Visible="false">
+        <DialogTemplates>
+            <Content>
+                <div style="padding:25px">
+                    <div class="loader">
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        @*<div class="loader-Loading-text"></div>*@
+                        <div class="loader-Saving-text"></div>
+                    </div>
+                </div>
+            </Content>
+            <FooterTemplate>
+
+            </FooterTemplate>
+        </DialogTemplates>
+    </SfDialog>
+</div>
+
 
 @code {
     public int? finyearid { get; set; }    
@@ -469,8 +657,10 @@
     List<AYears>? YearData { get; set; }
     List<ViewEmployeeDropDown>? EmployeeData { get; set; }
     private static ViewEmployeeDropDown? employeeno { get; set; }
+    private static ViewEmployeeDropDown? employeeactingofficer { get; set; }
     List<ALeaveType>? LeaveTypeData { get; set; }
     List<ALeaveApprovalStatus>? ApprovalStatusData { get; set; }
+    List<EmployeeLeaveHeader>? LeaveDataSource { get; set; }
     private static EmployeeLeaveHeader? LeaveData { get; set; }
     List<APublicHolidays>? PublicHolidaysData { get; set; }
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -481,6 +671,31 @@
     SfGrid<EmployeeLeaveHeader> DataGrid { get; set; }
     public bool EmployeeDD { get; set; }
     public bool ActingOfficerDD { get; set; }
+    bool LeaveTypeIdDD = true;
+    bool EndDateEnabler = true;
+    bool StartDateEnabler = true;
+    public DateTime MinDate { get; set; } = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
+    public DateTime MaxDate { get; set; } = new DateTime(DateTime.Now.Year, 12, 31); 
+    Syncfusion.Blazor.Grids.Action _previous { get; set; }
+    DateTime StartDate = DateTime.Now;
+    DateTime EndDate = DateTime.Now;
+    private static ALeaveType? leavetypedays { get; set; }
+    public static int PublicHolidays { get; set; } = 0;
+    public static int numberOfDays2 { get; set; } = 0;
+    public static DateTime[]? datesselectedd = null;
+    public static int LeaveDays { get; set; } = 0;
+    public static int TotalDaysTakenPrior { get; set; } = 0;
+    bool ImmediateSupervisorDD = true;
+    bool HeadofDepartmentDD = true;
+    private static ViewEmployeeDropDown? employeenosupervisor { get; set; }
+    private static ViewEmployeeDropDown? employeenohodchange { get; set; }
+    SfDialog? LoadingDialogue;
+    bool IsDraftDisabled = false;
+    bool IsSubmitDisabled = false;
+    bool IsApproveDisabled = false;
+    bool IsRejectDisabled = false;
+    string ConfirmationText { get; set; }
+
     private List<object> ToolbarMenu = new List<object>()
     {
         new ItemModel() { Text = "Create Request", PrefixIcon = "e-add", Id = "Grid_add"},
@@ -580,6 +795,26 @@
                     }
                 }));
 
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"EmployeeLeave/GetEmployeeLeaveData");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        LeaveDataSource = JsonSerializer.Deserialize<List<EmployeeLeaveHeader>>(content, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetPublicHoliday");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        PublicHolidaysData = JsonSerializer.Deserialize<List<APublicHolidays>>(content, _options);
+                    }
+                }));
+
                 Task _t = Task.WhenAll(t);
                 await _t;
             }
@@ -595,6 +830,177 @@
 
     }
 
+    public async Task onSaveDraftForm()
+    {
+        try
+        {
+            if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                LeaveData.LeaveApprovalStatusId = 1;
+                LeaveData.DateAdded = DateTime.Now;
+                await DataGrid.EndEditAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    public async Task onSubmitForm()
+    {
+        try
+        {    
+            if(LeaveData.Employeeid == null)
+            {
+                toastService.ShowWarning("Please select the employee (Part I)");
+            }
+
+            else if(LeaveData.LeaveTypeId == null)
+            {
+                toastService.ShowWarning("Please select the leave type");
+            }
+
+            else if(LeaveData.CommencementDate == null)
+            {
+                toastService.ShowWarning("Please select the commencement date (Part I)");
+            }
+
+            else if(LeaveData.EndDate == null)
+            {
+                toastService.ShowWarning("Please select the end date (Part I)");
+            }
+
+            else if(employeenosupervisor != null && employeenosupervisor.EmailAddress == null)
+            {
+                toastService.ShowWarning("Supervisor email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if(LeaveData.ImmediateSupervisor == null)
+            {
+                toastService.ShowWarning("Please select your supervisor (Part III).");
+            }
+
+            else if(employeenohodchange != null && employeenohodchange.EmailAddress == null)
+            {
+                toastService.ShowWarning("Head of Department email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if(LeaveData.Hod == null)
+            {
+                toastService.ShowWarning("Please select your Head of Department (Part III).");
+            }
+
+            else if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                LeaveData.LeaveApprovalStatusId = 2;
+                LeaveData.DateAdded = DateTime.Now;
+                //LeaveData.SubmittedToSupervisor = true;
+                await DataGrid.EndEditAsync();
+            }            
+        }
+        catch (Exception ex)
+        {
+            //toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    public async Task onApproveForm()
+    {
+        try
+        {
+            if (LeaveData.Employeeid == null)
+            {
+                toastService.ShowWarning("Please select the employee (Part I)");
+            }
+
+            else if (LeaveData.LeaveTypeId == null)
+            {
+                toastService.ShowWarning("Please select the leave type");
+            }
+
+            else if (LeaveData.CommencementDate == null)
+            {
+                toastService.ShowWarning("Please select the commencement date (Part I)");
+            }
+
+            else if (LeaveData.EndDate == null)
+            {
+                toastService.ShowWarning("Please select the end date (Part I)");
+            }
+
+            else if (employeenosupervisor != null && employeenosupervisor.EmailAddress == null)
+            {
+                toastService.ShowWarning("Supervisor email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if (employeenohodchange != null && employeenohodchange.EmailAddress == null)
+            {
+                toastService.ShowWarning("Head of Department email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if (LeaveData.ImmediateSupervisor == null)
+            {
+                toastService.ShowWarning("Please select your supervisor (Part III).");
+            }
+
+            else if (employeenohodchange != null && employeenohodchange.EmailAddress == null)
+            {
+                toastService.ShowWarning("Head of Department email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
+
+            else if (LeaveData.Hod == null)
+            {
+                toastService.ShowWarning("Please select your Head of Department (Part III).");
+            }
+
+            else if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                LeaveData.LeaveApprovalStatusId = 5;
+                //LeaveData.SupervisorRecommendationDate = DateTime.Now;
+                //LeaveData.SubmittedToHod = true;
+                await DataGrid.EndEditAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            //toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    public async Task onRejectForm()
+    {
+        try
+        {
+            ConfirmationText = "<p>Are you sure you want to reject this leave request! </p>";
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
 
     public string GetLeaveRequestHeader(EmployeeLeaveHeader Value)
     {
@@ -614,6 +1020,181 @@
         employeeno = args.ItemData;        
     }
 
+    public async void OnActingOfficerChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewEmployeeDropDown> args)
+    {
+        employeeactingofficer = args.ItemData;
+    }
+
+    public async void OnEmployeeSupervisorChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?,ViewEmployeeDropDown> args)
+    {
+        employeenosupervisor = args.ItemData;  
+    }
+
+    public async void OnEmployeeHODChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewEmployeeDropDown> args)
+    {
+        employeenohodchange = args.ItemData;
+    }
+
+    public void OnLeaveTypeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ALeaveType> args)
+    {
+        leavetypedays = args.ItemData;
+        int? leavetypeId = args.ItemData.LeaveTypeId;
+
+        //If the leavetype is changed in drodown, clear the other text fields
+        if (args.PreviousItemData != null)
+        {
+            LeaveData.CommencementDate = null;
+            LeaveData.EndDate = null;
+            LeaveData.TotalDays = null;
+            //LeaveData.NoChildren = null;
+        }
+        else
+        {
+            if (leavetypeId != null && (leavetypeId == 2 || leavetypeId == 4))
+            {
+                EndDateEnabler = false;
+            }
+            else
+            {
+                EndDateEnabler = true;
+            }
+        }
+        StateHasChanged();
+    }
+
+    protected async Task OnMaternityDateChange(ChangedEventArgs<DateTime?> args)
+    {
+        EndDateEnabler = false;
+        StartDate = Convert.ToDateTime(args.Value);
+        leavetypedays = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == LeaveData.LeaveTypeId);
+        DateTime EndDateWeekDays = GetWeekDaysOnly(StartDate, leavetypedays.LeaveDaysPerYear.Value).AddDays(-1); // Subtract one day inorder to get end date as the actual date the leave ends
+
+        PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDateWeekDays);
+        LeaveData.CommencementDate = EndDateWeekDays.AddDays(PublicHolidays);
+
+        numberOfDays2 = GetNumberOfDates(StartDate, EndDateWeekDays);
+        datesselectedd = GetDatesBetween(StartDate, EndDateWeekDays).ToArray();
+
+        LeaveData.TotalDays = leavetypedays.LeaveDaysPerYear.Value;
+
+        StateHasChanged();
+    }
+
+    public static DateTime GetWeekDaysOnly(DateTime date, int days)
+    {
+        if (days < 0)
+        {
+            throw new ArgumentException("days cannot be negative", "days");
+        }
+
+        if (days == 0) return date;
+
+        if (date.DayOfWeek == DayOfWeek.Saturday)
+        {
+            date = date.AddDays(2);
+            days -= 1;
+        }
+        else if (date.DayOfWeek == DayOfWeek.Sunday)
+        {
+            date = date.AddDays(1);
+            days -= 1;
+        }
+
+        date = date.AddDays(days / 5 * 7);
+        int extraDays = days % 5;
+
+        if ((int)date.DayOfWeek + extraDays > 5)
+        {
+            extraDays += 2;
+        }
+
+        return date.AddDays(extraDays);
+    }
+
+    //Get number of public holidays
+    public int GetNumberOfPublicHolidays(DateTime from, DateTime to)
+    {
+        PublicHolidays = PublicHolidaysData.Where(o => o.HolidayDate >= from && o.HolidayDate <= to).Count();
+        return PublicHolidays;
+    }
+
+    //Function to return number of days minus weekends
+    static int GetNumberOfDates(DateTime from, DateTime to)
+    {
+        if (to < from)
+            throw new ArgumentException("To cannot be smaller than from.", nameof(to));
+
+        if (to.Date == from.Date)
+            return 0;
+
+        int n = 0;
+        DateTime nextDate = from;
+        while (nextDate <= to.Date)
+        {
+            if (nextDate.DayOfWeek != DayOfWeek.Saturday && nextDate.DayOfWeek != DayOfWeek.Sunday)
+                n++;
+            nextDate = nextDate.AddDays(1);
+        }
+
+        return n;
+    }
+
+     //Function to get all dates between two dates
+    public List<DateTime> GetDatesBetween(DateTime startDate, DateTime endDate)
+    {
+        List<DateTime> allDates = new List<DateTime>();
+
+        for (DateTime date = startDate; date <= endDate; date = date.AddDays(1))
+        {
+            var countdata = PublicHolidaysData?.FirstOrDefault(o => o.HolidayDate == date);
+
+            if ((date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday) && (countdata == null))
+            {
+                allDates.Add(date.Date);
+            }            
+        }
+
+        return allDates;
+    }
+
+
+    protected async Task OnEndDateChange(ChangedEventArgs<DateTime?> value)
+    {
+        StartDate = Convert.ToDateTime(LeaveData.CommencementDate);
+        EndDate = Convert.ToDateTime(LeaveData.EndDate);
+        numberOfDays2 = GetNumberOfDates(StartDate, EndDate);
+        datesselectedd = GetDatesBetween(StartDate, EndDate).ToArray();
+        PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDate);
+        LeaveDays = numberOfDays2 - PublicHolidays;
+
+        //Calculate the current number of days between the two dates
+        if (StartDate != EndDate)
+        {
+            LeaveData.TotalDays = LeaveDays;
+        }
+        else
+        {
+            LeaveData.TotalDays = 1;
+        }
+
+        StateHasChanged();
+
+        var LD = LeaveDataSource.OrderByDescending(x => x.TotalDays)
+        .FirstOrDefault(o => o.Employeeid == LeaveData.Employeeid &&
+            o.LeaveTypeId == LeaveData.LeaveTypeId);
+        if (LD != null && LD.TotalDays != null)
+        {
+            LeaveData.TotalDays = LeaveDays + LD.TotalDays.Value;
+            TotalDaysTakenPrior = LD.TotalDays.Value;
+            StateHasChanged();
+        }
+        else
+        {
+            LeaveData.TotalDays = LeaveDays;
+            TotalDaysTakenPrior = 0;
+        }
+    }
+
     public async void ActionCompleteMain(ActionEventArgs<EmployeeLeaveHeader> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) ||
@@ -629,13 +1210,28 @@
         {
             if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
             {
+                _previous = Args.RequestType;
                 ActingOfficerDD = true;
                 EmployeeDD = true;
+
+                if(Credentials.StaffId > 0)
+                {
+                    Args.Data.Employeeid = Credentials.StaffId;
+
+                    if (EmployeeData != null)
+                    {
+                        employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
+                    }
+                }
+
                 Args.RowData.EmployeeLeaveDetails = new List<EmployeeLeaveDetails>();
             }
 
             if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
             {
+                _previous = Args.RequestType;
+                employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
+
                 if (Args.RowData.EmployeeLeaveDetails == null)
                 {
                     Args.RowData.EmployeeLeaveDetails = new List<EmployeeLeaveDetails>();

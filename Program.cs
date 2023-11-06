@@ -120,8 +120,6 @@ builder.Services.AddScoped<BscPerspectiveAdapter>();
 //builder.Services.AddScoped<CPDSummaryAdapter>();
 //builder.Services.AddScoped<SubscriptionSummaryAdapter>(); 
 builder.Services.AddScoped<BSCAdapter>();
-
-builder.Services.AddScoped<DocumentUploadModel>();
 builder.Services.AddScoped<NonStaffQualificationAdapter>();
 builder.Services.AddScoped<NonStaffWorkExperienceAdapter>();
 builder.Services.AddScoped<NonStaffSkillsAdapter>();
@@ -176,6 +174,6 @@ builder.Services.AddScoped<IUtilityRepository,UtilityRepository>();
 builder.Services.AddScoped<IAuthenticationService,AuthenticationService>();
 
 //builder.Services.AddSyncfusionBlazor(options => { options.IgnoreScriptIsolation = false; });
-Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("MjU1MjcyMEAzMjMyMmUzMDJlMzBMY0tNSlY4TkUyc2w5TFdSUWJreVkzYWhLaGMxSmpIa3gzTTlteWcvL0NVPQ==");
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Mjc5Nzc0OEAzMjMzMmUzMDJlMzBJMkFWKzlyOFIweUp1R1llTmxMb240Z3lZUDIweVNNUTBWc21vY2t3STB3PQ==");
 await builder.Build().RunAsync();
 
