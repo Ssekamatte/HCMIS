@@ -1,0 +1,486 @@
+﻿@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@using HCMIS.Data
+@using HCMIS.Interface
+@using HCMIS.Model
+@using System.Text.Json
+@using System.Collections;
+@using System.IO;
+@using HCMIS.SHARED.Models;
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager navigation;
+@inject SystemSettings _SystemSettings;
+@inject IAuthenticationService AuthService;
+@using HCMIS.ViewModel;
+@inject IToastService toastService;
+
+<style>
+
+     /*Manage Records Button*/
+    .e-grid .e-icons:not(.e-btn-icon) {
+        color: #00cc00;
+        color: floralwhite;
+        font-size: smaller;
+        font-weight: bolder;
+    }
+
+    .e-grid .e-unboundcelldiv .e-icons:not(.e-btn-icon) {
+        color: white;
+    }
+
+    /*Manage Records Button*/
+
+    .headerbandimg {
+        background-image: url(/image/comesalogo.png);
+        background-size: 20px;
+        background-repeat: no-repeat;
+        width: 20px;
+        height: 20px;
+        margin-right: 5px;
+        vertical-align: top;
+        display: inline-block;
+        color: whitesmoke;
+    }
+
+    .pp {
+        color: ghostwhite;
+        background-color: #2ecc71;
+        padding: 10px;
+    }
+
+    /*Increase font size for Multi Line Text Box Place Holder*/
+    .e-multi-line-input label.e-float-text {
+        font-size: 17px !important;
+    }
+</style>
+
+@{
+    var Div = (new string[] { "DepartmentId" });
+}
+
+<center>
+    <h5>
+        <strong>SECTIONS</strong>
+    </h5>
+</center>
+
+<SfGrid @ref="@DataGrid" TValue="ASections" ID="Grid1" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Delete","ExcelExport","PdfExport","CsvExport", "Search"})">
+    <GridGroupSettings Columns="@Div" ShowDropArea="false">
+        <CaptionTemplate>
+            @{
+                var dvn = (context as CaptionTemplateContext);
+                string text = "";
+                if (dvn.Field == "DepartmentId" && DepartmentData != null)
+                {
+                    var data = DepartmentData.FirstOrDefault(o => o.DepartmentId != null && o.DepartmentId.ToString() == dvn.Key);
+                    if (data != null)
+                    {
+                        text = data.DepartmentDescription;
+                    }
+                }
+                <div><p class="pp"><strong>@text</strong></p></div>
+            }
+        </CaptionTemplate>
+    </GridGroupSettings>
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+        <HeaderTemplate>
+            @{
+                var text = GetHeader((context as ASections));
+                <div class="headerbandimg">
+                    <span>@text</span>
+                </div>
+            }
+        </HeaderTemplate>
+        <Template Context="SubcountyContext">
+            @{
+                var KpiData = (SubcountyContext as ASections);
+                @if (KpiData != null)
+                {
+                    <div class="row"  style="padding:15px;">
+                        <div class="col-md-12" hidden>
+                            <SfNumericTextBox @bind-Value="@(KpiData.SectionId)" Enabled="false" Placeholder="Section Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                        </div>
+                        <div class="col-md-12">
+                            <p>Department<span style="color:red;">*</span></p>
+                            <SfDropDownList ID="DepartmentId" @bind-Value="@(KpiData.DepartmentId)" TItem="ADepartment" AllowFiltering="true" TValue="int?" DataSource="@DepartmentData" FloatLabelType="FloatLabelType.Never">
+                                <DropDownListFieldSettings Value="@nameof(ADepartment.DepartmentId)" Text="@nameof(ADepartment.DepartmentDescription)"></DropDownListFieldSettings>
+                            </SfDropDownList>
+                        </div>
+                        <div class="col-md-12">
+                            <p>Section<span style="color:red;">*</span></p>
+                            <SfTextBox Multiline=false @bind-Value="@(KpiData.SectionDescription)" Width="100%" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                        </div>
+                        <div class="col-md-12">
+                            <p>Head of Section<span style="color:red;">*</span></p>
+                            <SfDropDownList @bind-Value="@(KpiData.SectionHeadId)"
+                                            Enabled="true"
+                                            TItem="ViewEmployeeDropDown"
+                                            TValue="int?"
+                                            DataSource="@EmployeeData"
+                                            Placeholder="Please select"
+                                            FloatLabelType="FloatLabelType.Never"
+                                            AllowFiltering="true"
+                                            FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)"
+                                                           Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)">
+                                </DropDownListFieldSettings>
+                            </SfDropDownList>
+                        </div>
+                    </div>
+                }
+            }
+        </Template>
+
+    </GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.FilterBar"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+    <SfDataManager AdaptorInstance="@typeof(SectionAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+    <GridEvents OnToolbarClick="@GridToolbarClick"
+                OnActionBegin="@OnActionBegin"
+                OnActionComplete="@OnSubcountyActionComplete"
+                TValue="ASections">
+    </GridEvents>
+    <GridColumns>
+        <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+        <GridColumn HeaderText="Manage"
+                    Width="40"
+                    CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr3" }})"
+                    TextAlign="TextAlign.Left">
+            <GridCommandColumns>
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit/View"></GridCommandColumn>
+            </GridCommandColumns>
+        </GridColumn>
+        <GridColumn Field=@nameof(ASections.SectionId) HeaderText="Section Id" AllowEditing="false" IsPrimaryKey="true" Width="150" Visible="false"></GridColumn>
+        <GridForeignColumn Field=@nameof(ASections.DepartmentId)
+                           HeaderText="Department"
+                           Width="180"
+                           AllowEditing="false"
+                           ForeignKeyField="@(nameof(ADepartment.DepartmentId))"
+                           ForeignKeyValue="@(nameof(ADepartment.DepartmentDescription))"
+                           ForeignDataSource="@DepartmentData"
+                           AllowFiltering="false"
+                           IsFrozen="false"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridForeignColumn>
+        <GridColumn Field=@nameof(ASections.SectionDescription) HeaderText="Section" Width="150"></GridColumn>
+
+        <GridForeignColumn Field=@nameof(ASections.SectionHeadId)
+                           HeaderText="Head of Section"
+                           Width="180"
+                           AllowEditing="false"
+                           ForeignKeyField="@(nameof(ViewEmployeeDropDown.Employeeid))"
+                           ForeignKeyValue="@(nameof(ViewEmployeeDropDown.EmployeeDetails))"
+                           ForeignDataSource="@EmployeeData"
+                           AllowFiltering="false"
+                           IsFrozen="false"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridForeignColumn>
+    </GridColumns>
+</SfGrid>
+
+
+@code {
+    SfGrid<ASections>? DataGrid { get; set; }
+    List<ADepartment>? DepartmentData { get; set; }
+    List<ASections>? SectionData { get; set; }
+    List<ViewEmployeeDropDown>? EmployeeData { get; set; }
+    LoginResultModel? Credentials { get; set; }
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+    /// <summary>
+    /// Event for Toolbar click for Grid Exporting
+    /// </summary>
+    public void GridToolbarClick(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Id == "Grid1_excelexport")
+        {
+            this.DataGrid.ExportToExcelAsync();
+        }
+        if (args.Item.Id == "Grid1_pdfexport")
+        {
+            this.DataGrid.ExportToPdfAsync();
+        }
+        if (args.Item.Id == "Grid1_csvexport")
+        {
+            this.DataGrid.ExportToCsvAsync();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Credentials = await AuthService.GetUserCredentials();
+
+        List<Task> t = new List<Task>();
+
+        t.Add(Task.Run(async () =>
+            {
+                var response = await Http.GetAsync($"Utilities/GetDepartment");
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
+                }
+            }));
+
+        t.Add(Task.Run(async () =>
+            {
+                var response = await Http.GetAsync($"Utilities/GetSections");
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    SectionData = JsonSerializer.Deserialize<List<ASections>>(content, _options);
+                }
+            }));
+        t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetEmployeeDD");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(content, _options);
+                    }
+                }));
+
+        Task _t = Task.WhenAll(t);
+        await _t;
+    }
+
+    #region Sections Region
+    public class SectionAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        ApiConfig _ApiConfig;
+        SystemSettings _SystemSettings;
+        private readonly JsonSerializerOptions _options;
+        public IToastService toastService;
+        private readonly NavigationManager Navigation;
+        public SectionAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+            , SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            Navigation = _Navigation;
+            _ApiConfig = apiConfig;
+            _SystemSettings = systemSettings;
+
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<ASections>();
+
+            try
+            {
+                var response = await Http.GetAsync($"Utilities/GetSections");
+                var content = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    toastService.ShowError(response.ReasonPhrase);
+                }
+                data = JsonSerializer.Deserialize<List<ASections>>(content, _options);
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<ASections>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                var val = (value as ASections);
+
+                if (val.SectionId == 0)
+                {
+                    string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                    StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                    var result = await Http.PostAsync($"Utilities/CreateSection", httpContent);
+                    if (result.IsSuccessStatusCode)
+                    {
+                        toastService.ShowSuccess(val.SectionDescription + " was sucessfully added");
+                    }
+                    else
+                    {
+                        // toastService.ShowError(result.Content.);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                var val = (value as ASections);
+
+
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                var result = await Http.PutAsync($"Utilities/UpdateSection", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    toastService.ShowSuccess($"{val.SectionDescription}  was sucessfully updated");
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+    }
+
+    public async void OnSubcountyActionComplete(ActionEventArgs<ASections> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) ||
+        args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            DataGrid.PreventRender(false);
+        }
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+        {
+
+        }
+    }
+
+    public async void OnActionBegin(ActionEventArgs<ASections> args)
+    {
+        try
+        {
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+            {
+                if (args.Data.DepartmentId == null)
+                {
+                    toastService.ShowWarning("Please choose a Department");
+                    args.Cancel = true;
+                }
+
+                else if (string.IsNullOrEmpty(args.Data.SectionDescription))
+                {
+                    toastService.ShowWarning("Please enter the section.");
+                    args.Cancel = true;
+                }
+
+                else if (args.Data.SectionHeadId == null)
+                {
+                    toastService.ShowWarning("Please select the head of section.");
+                    args.Cancel = true;
+                }
+
+                else
+                {
+                    var countdata = SectionData?
+                    .FirstOrDefault(o => o.DepartmentId == args.Data.DepartmentId
+                        && o.SectionDescription.Trim().ToLower()
+                        == args.Data.SectionDescription.Trim().ToLower());
+
+                    var deptname = DepartmentData?
+                    .FirstOrDefault(o => o.DepartmentId == args.Data.DepartmentId);
+
+                    if (args.Action == "Add")
+                    {
+                        if (countdata != null)
+                        {
+                            toastService.ShowWarning("This section " + args.Data.SectionDescription + " already exists in the department " + deptname.DepartmentDescription + " Record will not be saved.");
+                            args.Cancel = true;
+                        }
+                    }
+                    else if (args.Action == "Edit")
+                    {
+                        if (countdata != null && countdata.SectionId != args.Data.SectionId)
+                        {
+                            toastService.ShowWarning("This section " + args.Data.SectionDescription + " already exists in the department " + deptname.DepartmentDescription + " Record will not be saved.");
+                            args.Cancel = true;
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+    }
+
+
+    public string GetHeader(ASections Value)
+    {
+        if (Value.SectionId == 0)
+        {
+            return "Add a new Section";
+        }
+        else
+        {
+            return "Edit Details for " + Value.SectionDescription;
+        }
+    }
+
+    #endregion Sections Region
+
+
+
+}
+

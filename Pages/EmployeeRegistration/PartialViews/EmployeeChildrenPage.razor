@@ -1,0 +1,154 @@
+﻿@* @page "/EmployeeChildrenPage" *@
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@using HCMIS.Interface;
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using System.Collections;
+@using System.IO;
+@using HCMIS.SHARED.Models;
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager navigation;
+@inject SystemSettings _SystemSettings;
+@using HCMIS.ViewModel;
+@inject IToastService toastService;
+@inject IAuthenticationService AuthService;
+
+<SfGrid @ref="@AEmployeeChildrenGrid" DataSource="@datasource" GridLines="GridLine.Both"
+        TValue="AEmployeeChildren" ID="Grid1" AllowTextWrap="true" AllowPaging="false" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit","Cancel"})">
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false" NewRowPosition="NewRowPosition.Bottom"></GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
+    <GridEvents CellSelected="CellSelectHandler"
+                CellSaved="CellSavedHandler"
+                OnBatchAdd="BatchAddHandler"
+                TValue="AEmployeeChildren">
+    </GridEvents>
+
+    <GridColumns>
+        <GridColumn Field=@nameof(AEmployeeChildren.EmployeeKidsId)
+                    HeaderText="Kids Id"
+                    TextAlign="TextAlign.Justify"
+                    IsPrimaryKey="true"
+                    IsIdentity="true"
+                    Visible="false"
+                    Width="180"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+        <GridColumn Field=@nameof(AEmployeeChildren.FirstName)
+                    HeaderText="First Name"
+                    TextAlign="TextAlign.Justify"
+                    AllowEditing="true"
+                    ValidationRules="@(new ValidationRules { Required = false })"
+                    Width="80"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+        <GridColumn Field=@nameof(AEmployeeChildren.MiddleName)
+                    HeaderText="First Name"
+                    TextAlign="TextAlign.Justify"
+                    AllowEditing="true"
+                    ValidationRules="@(new ValidationRules { Required = false })"
+                    Width="80"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+        <GridColumn Field=@nameof(AEmployeeChildren.LastName)
+                    HeaderText="First Name"
+                    TextAlign="TextAlign.Justify"
+                    AllowEditing="true"
+                    ValidationRules="@(new ValidationRules { Required = false })"
+                    Width="80"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+        <GridColumn Field=@nameof(AEmployeeChildren.DateOfBirth)
+                    HeaderText="Date of Birth"
+                    EditType="EditType.DatePickerEdit"
+                    Format="dd/MM/yyyy"
+                    Type="ColumnType.Date"
+                    Width="80"
+                    AllowEditing="true"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+    </GridColumns>
+</SfGrid>
+
+@code {
+    [Parameter]
+    public List<AEmployeeChildren>? appraiseecommentsdata { get; set; }
+    [Parameter]
+    public int EmployeeId { get; set; }
+    [Parameter]
+    public EventCallback<List<AEmployeeChildren>?> onscorecardtoggle { get; set; }
+    public SfGrid<AEmployeeChildren>? AEmployeeChildrenGrid { get; set; }
+    List<AEmployeeChildren>? datasource { get; set; }
+
+    Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
+    int? previousEmployeeId { get; set; }
+    [Parameter]
+    public Syncfusion.Blazor.Grids.Action _previous { get; set; }
+    int random = -9999;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (previousEmployeeId != EmployeeId)
+        {
+            int countid = -10000;
+            previousEmployeeId = EmployeeId;
+            datasource = new List<AEmployeeChildren>();
+            if (appraiseecommentsdata != null && appraiseecommentsdata.Count() > 0)
+            {
+                datasource.AddRange(appraiseecommentsdata);
+            }
+        }
+    }
+
+    //Enable cell edit on single click
+    public async Task CellSelectHandler(CellSelectEventArgs<AEmployeeChildren> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await AEmployeeChildrenGrid.GetSelectedRowCellIndexes();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await AEmployeeChildrenGrid.GetColumnFieldNames();
+            // edit the selected cell using the cell index and column name
+            await AEmployeeChildrenGrid.EditCell(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
+    private async Task CellSavedHandler(CellSaveArgs<AEmployeeChildren> args)
+    {
+        try
+        {
+
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message);
+        }
+        finally
+        {
+            await AEmployeeChildrenGrid.EndEdit();
+            await onscorecardtoggle.InvokeAsync(datasource);
+        }
+    }
+
+    public void BatchAddHandler(BeforeBatchAddArgs<AEmployeeChildren> Args)
+    {
+        Args.DefaultData.EmployeeKidsId = random;
+        random++;
+    }
+
+}
+
+

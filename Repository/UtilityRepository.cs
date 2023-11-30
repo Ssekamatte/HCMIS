@@ -34,16 +34,16 @@ namespace HCMIS.Repository
             this.settingsRepo = settingsRepo;
         }
 
-        public async Task<List<Employee>?> GetEmployees()
+        public async Task<List<ViewEmployeeDropDown>?> GetEmployees()
         {
-            List<Employee>? data = new List<Employee>();
+            List<ViewEmployeeDropDown>? data = new List<ViewEmployeeDropDown>();
             try
             {
-                var response = await _httpClient.GetAsync($"Employeez/GetMasterList");
+                var response = await _httpClient.GetAsync($"Utilities/GetEmployeeDD");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    data = JsonSerializer.Deserialize<List<Employee>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(content, _options);
                 }
                 else
                 {

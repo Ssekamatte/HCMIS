@@ -7,7 +7,7 @@ namespace HCMIS.Interface
 {
     public interface IUtilityRepository
     {
-        Task<List<Employee>?> GetEmployees();
+        Task<List<ViewEmployeeDropDown>?> GetEmployees();
         Task<List<Image>> GetLocalLogos();
     }
 }

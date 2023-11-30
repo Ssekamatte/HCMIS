@@ -1,0 +1,102 @@
+﻿@using HCMIS.SHARED.Models;
+
+<table class="table table-bordered">
+    <tr>
+        <td style="font-weight:bold">
+            No.
+        </td>
+        <td style="font-weight:bold">
+            Item/Narration
+        </td>
+        <td style="font-weight:bold">
+            Response
+        </td>
+    </tr>
+    <tr>
+        <td>
+            1.
+        </td>
+        <td>
+            Leave due for the present year (January to December)
+        </td>
+        <td>
+            @{
+                annualleavetypedays = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == 1);
+                if (annualleavetypedays != null)
+                {
+                    @annualleavetypedays.LeaveDaysPerYear
+                }
+            }
+        </td>
+    </tr>
+    <tr>
+        <td>
+            2.
+        </td>
+        <td>
+            Total leave Days taken prior to this application (So far Utilized)
+        </td>
+        <td>
+            @TotalDaysTakenPrior
+        </td>
+    </tr>
+    <tr>
+        <td>
+            3.
+        </td>
+        <td>
+            Annual Leave Days presently applied for
+        </td>
+        <td>
+            @AppliedDays
+        </td>
+    </tr>
+    <tr>
+        <td>
+            4.
+        </td>
+        <td>
+            Balance of Annual Leave Due Days in the present year.
+        </td>
+        <td>
+            @{
+                int? Balance = 0;
+            }
+            @if (annualleavetypedays != null)
+            {
+                Balance = annualleavetypedays.LeaveDaysPerYear - @TotalDaysTakenPrior;
+            }
+            @Balance
+        </td>
+    </tr>
+</table>
+
+@code {
+    [Parameter]
+    public List<ALeaveType>? LeaveTypeData { get; set; }
+    [Parameter]
+    public int TotalDaysTakenPrior { get; set; }
+    private static ALeaveType? annualleavetypedays { get; set; }
+    [Parameter]
+    public int? AppliedDays { get; set; }
+    [Parameter]
+    public int EmployeeLeaveId { get; set; }
+    int? previousEmployeeLeaveId { get; set; }
+    List<EmployeeLeaveDetails>? datasource { get; set; }
+    [Parameter]
+    public List<EmployeeLeaveDetails>? detailsdata { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (previousEmployeeLeaveId != EmployeeLeaveId)
+        {
+            int countid = -10000;
+            previousEmployeeLeaveId = EmployeeLeaveId;
+            datasource = new List<EmployeeLeaveDetails>();
+            if (detailsdata != null && detailsdata.Count() > 0)
+            {
+                datasource.AddRange(detailsdata);
+            }
+        }
+    }
+}

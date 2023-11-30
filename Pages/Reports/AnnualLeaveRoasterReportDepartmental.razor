@@ -1,0 +1,608 @@
+﻿@page "/AnnualLeaveRoasterReportDepartmental"
+@using HCMIS.Data;
+@using HCMIS.Model;
+@using HCMIS.SHARED.Data;
+@using HCMIS.Interface;
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject SystemSettings _SystemSettings
+
+@using HCMIS.SHARED.Models;
+@using Syncfusion.XlsIO;
+@using System.Text.Json;
+@inject IReportService reportservice;
+@inject IToastService toastService;
+@inject Microsoft.JSInterop.IJSRuntime JS;
+@inject IAuthenticationService AuthService;
+
+<style>
+    .e-spinner-pane .e-spinner-inner .e-spin-bootstrap4 {
+        stroke: green;
+    }
+</style>
+
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="color: brown;">
+        <strong>
+            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
+        </strong>| ANNUAL LEAVE ROASTER
+    </li>
+</ol>
+
+<EditForm Model="@InputModel" OnValidSubmit="@OnSearchSubmit">
+    <DataAnnotationsValidator />
+    <div class="row" style="margin-bottom:10px;">
+        <div class="col-md-4">
+            <p>Year<span style="color:red;"> *</span></p>
+            <SfMultiSelect @bind-Value="@InputModel.Year" TValue="int?[]" TItem="ViewEmployeeLeaveRoasterReportPivoted" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@LeaveRoasterYearData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" PopupHeight="350px">
+                <MultiSelectFieldSettings Value="@nameof(ViewEmployeeLeaveRoasterReportPivoted.YearNo)" Text="@nameof(ViewEmployeeLeaveRoasterReportPivoted.YearNo)"></MultiSelectFieldSettings>
+            </SfMultiSelect>
+        </div>
+        <div class="col col-md-4">
+            <p>Employee</p>
+            <SfMultiSelect @bind-Value="@InputModel.Employeeid" TValue="int?[]" TItem="ViewEmployeeDropDown" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" PopupHeight="350px">
+                <MultiSelectFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewBscEmployee.EmployeeDetails)"></MultiSelectFieldSettings>
+            </SfMultiSelect>
+        </div>
+        <div class="col col-md-4">
+            <p>Department</p>
+            <SfMultiSelect @bind-Value="@InputModel.DepartmentId" TValue="int?[]" TItem="ADepartment" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@DepartmentData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Department" PopupHeight="350px">
+                <MultiSelectFieldSettings Value="@nameof(ADepartment.DepartmentId)" Text="@nameof(ADepartment.DepartmentDescription)"></MultiSelectFieldSettings>
+            </SfMultiSelect>
+        </div>
+
+        <div class="form-group col-md-12">
+            <SfSpinner @ref="DownloadingSpinner" Label="Downloading Report Please Wait....." Size="50"></SfSpinner>
+        </div>
+        @if (!string.IsNullOrEmpty(InputModel.Response))
+        {
+            <div class="col col-md-12" style="margin-top:10px;">
+                <div class="alert alert-success">@InputModel.Response</div>
+            </div>
+        }
+
+    </div>
+
+    <div class="row" style="margin-bottom:10px;">
+        @if (Downloadreport == false)
+        {
+            <div class="col col-md-12">
+                <button @onclick="@OnSearchSubmit" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Download Report</button>
+                <button @onclick="@ClearSearchBtnClick" class="btn btn-danger" data-ripple="true" style="margin-right:10px;">Clear Search</button>
+            </div>
+        }
+
+    </div>
+    <ValidationSummary />
+</EditForm>
+
+@code {
+
+    private UtilitiesSearchPanel InputModel = new UtilitiesSearchPanel();
+    SfSpinner? DownloadingSpinner;
+    bool Downloadreport { get; set; } = false;
+    string? filename { get; set; } = null;
+    List<ViewUserManagement>? UsersData { get; set; }
+    List<ViewEmployeeDropDown>? EmployeeData { get; set; }
+    List<AFinancialYear>? FinancialYearData { get; set; }
+    List<AAppraisalReason>? AppraisalData { get; set; }
+    List<ABscKpi>? KpiData { get; set; }
+    List<ABscPerspectives>? BscPerspectiveData { get; set; }
+    List<APerformanceDescriptor>? PerformanceDescriptorData { get; set; }
+    List<ABscPerformanceMeasurement>? BscMeasurementData { get; set; }
+    List<ABehavioralCompetencies>? CompetenceData { get; set; }
+    List<ABscPerspectivesType>? BscPerspectiveTypeData { get; set; }
+    List<ALeaveType>? LeaveTypeData { get; set; }
+    List<ViewBalanceScoreCardTargetSettingReport>? TargetSettingReportData { get; set; }
+    List<ADepartment>? DepartmentData { get; set; }
+    List<ViewEmployeeLeaveRoasterReportPivoted>? LeaveRoasterYearData { get; set; }
+    List<AYears>? YearData { get; set; }
+
+    LoginResultModel? Credentials { get; set; }
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    string? SelectedYear = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Credentials = await AuthService.GetUserCredentials();
+
+            List<Task> t = new List<Task>();
+            t.Add(Task.Run(async () =>
+            {
+                var responseusers = await Http.GetAsync($"Utilities/GetUsers");
+                if (responseusers.IsSuccessStatusCode)
+                {
+                    var contentusers = await responseusers.Content.ReadAsStringAsync();
+                    UsersData = JsonSerializer.Deserialize<List<ViewUserManagement>>(contentusers, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responseemployee = await Http.GetAsync($"Utilities/GetEmployeeDD");
+                if (responseemployee.IsSuccessStatusCode)
+                {
+                    var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+                    EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(contentemployee, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responsedepartment = await Http.GetAsync($"Utilities/GetDepartment");
+                if (responsedepartment.IsSuccessStatusCode)
+                {
+                    var contentdepartment = await responsedepartment.Content.ReadAsStringAsync();
+                    DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(contentdepartment, _options);
+                }
+
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responseleaveroaster = await Http.GetAsync($"Employeez/GetLeaveRoasterYears");
+                if (responseleaveroaster.IsSuccessStatusCode)
+                {
+                    var contentleaveroaster = await responseleaveroaster.Content.ReadAsStringAsync();
+                    LeaveRoasterYearData = JsonSerializer.Deserialize<List<ViewEmployeeLeaveRoasterReportPivoted>>(contentleaveroaster, _options);
+                }
+
+            }));
+            t.Add(Task.Run(async () =>
+            {
+                var responseleavetype = await Http.GetAsync($"Utilities/GetLeaveType");
+                if (responseleavetype.IsSuccessStatusCode)
+                {
+                    var contentleavetype = await responseleavetype.Content.ReadAsStringAsync();
+                    LeaveTypeData = JsonSerializer.Deserialize<List<ALeaveType>>(contentleavetype, _options);
+                }
+
+            }));
+
+            t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetYears");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        YearData = JsonSerializer.Deserialize<List<AYears>>(content, _options);
+                    }
+                }));
+
+
+            Task _t = Task.WhenAll(t);
+            await _t;
+        }
+        catch (Exception ex)
+        {
+            //throw ex;
+        }
+    }
+
+
+    private async Task OnSearchSubmit()
+    {        
+        if (InputModel.Year != null && InputModel.Year.Length > 0)
+        {
+            SelectedYear = string.Join(",", InputModel.Year);
+        }               
+
+        filename = null;
+        Downloadreport = true;
+        await DownloadingSpinner.ShowAsync();
+        try
+        {
+            if (InputModel.Year == null)
+            {
+                toastService.ShowWarning("Please select atleast one year");
+            }
+
+            else
+            {
+                var data = await reportservice.GetAnnualLeaveRoaster(InputModel);
+                var selecteddates = await reportservice.GetSelectedDates(InputModel);                               
+
+                if (data.Count > 0)
+                {
+                    using (ExcelEngine excelEngine = new ExcelEngine())
+                    {
+                        IApplication application = excelEngine.Excel;
+                        application.DefaultVersion = ExcelVersion.Excel2013;
+                        IWorkbook workbook = application.Workbooks.Create(1);
+                        IWorksheet worksheet = workbook.Worksheets[0];
+                        worksheet.Name = "Annual Leave Roaster Report";
+
+                        #region Styles
+                        var headerStyle = workbook.Styles.Add("headerStyle");
+
+                        headerStyle.BeginUpdate();
+                        headerStyle.Color = Syncfusion.Drawing.Color.Black;
+                        headerStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
+                        headerStyle.Font.Bold = true;
+                        headerStyle.Font.FontName = "Arial";
+                        headerStyle.Font.Size = 8f;
+                        headerStyle.Font.Color = ExcelKnownColors.White;
+
+                        headerStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                        headerStyle.Borders.Color = ExcelKnownColors.White;
+                        headerStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+                        headerStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+                        headerStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+
+                        headerStyle.WrapText = true;
+
+                        headerStyle.EndUpdate();
+
+                        var Style = workbook.Styles.Add("bodyStyle");
+
+                        Style.BeginUpdate();
+                        Style.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+                        Style.VerticalAlignment = ExcelVAlign.VAlignTop;
+                        Style.Font.Bold = false;
+                        Style.Font.FontName = "Arial";
+                        Style.Font.Size = 8f;
+                        Style.Font.Color = ExcelKnownColors.Black;
+                        Style.WrapText = true;
+                        Style.Borders.Color = ExcelKnownColors.Black;
+                        Style.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+                        Style.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+                        Style.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+                        Style.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
+                        Style.EndUpdate();
+
+
+                        var CategoryStyle = workbook.Styles.Add("CategoryStyle");
+
+                        CategoryStyle.BeginUpdate();
+                        CategoryStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                        CategoryStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 204, 0);
+                        CategoryStyle.Font.Bold = true;
+                        CategoryStyle.Font.FontName = "Arial";
+                        CategoryStyle.Font.Size = 20f;
+                        CategoryStyle.Font.Color = ExcelKnownColors.Brown;
+                        CategoryStyle.WrapText = true;
+                        CategoryStyle.Borders.Color = ExcelKnownColors.White;
+                        CategoryStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+                        CategoryStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+                        CategoryStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+                        CategoryStyle.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
+                        CategoryStyle.EndUpdate();
+
+                        var DivisionStyle = workbook.Styles.Add("DivisionStyle");
+
+                        DivisionStyle.BeginUpdate();
+                        DivisionStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                        DivisionStyle.Color = Syncfusion.Drawing.Color.FromArgb(255, 77, 0); //ORANGE
+                        DivisionStyle.Font.Bold = true;
+                        DivisionStyle.Font.FontName = "Arial";
+                        DivisionStyle.Font.Size = 8f;
+                        DivisionStyle.Font.Color = ExcelKnownColors.White;
+                        DivisionStyle.WrapText = true;
+                        DivisionStyle.Borders.Color = ExcelKnownColors.White;
+                        DivisionStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.None;
+                        DivisionStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.None;
+                        DivisionStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.None;
+                        DivisionStyle.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.None;
+                        DivisionStyle.EndUpdate();
+
+                        #endregion
+
+                        var _data = data.Select(o => new { o.DepartmentId, o.DepartmentDescription }).ToList().Distinct().ToList();
+                        for (var i = 0; i <= (_data.Count - 1); i++)
+                        {
+
+                            string Pillarname = "Sheet 1";
+                            if (!string.IsNullOrEmpty(_data[i].DepartmentDescription) && _data[i].DepartmentDescription.Contains(":"))
+                            {
+                                var a = _data[i].DepartmentDescription.Split(":");
+                                Pillarname = a[1].Replace("/", ""); ;
+                            }
+                            else if (!string.IsNullOrEmpty(_data[i].DepartmentDescription))
+                            {
+                                Pillarname = _data[i].DepartmentDescription.Replace("/", ""); ;
+                            }
+                            if (i == 0)
+                            {
+                                worksheet = workbook.Worksheets[0];
+                            }
+                            else
+                            {
+                                if (workbook.Worksheets != null)
+                                {
+                                    //Pillarname = $"Sheet {workbook.Worksheets.Count+1}";
+                                    workbook.Worksheets.Create(Pillarname);
+                                    worksheet = workbook.Worksheets[i];
+                                }
+                                else
+                                {
+                                    Pillarname = "Error Sheet";
+                                }
+
+                            }
+                            var mdata = data.Where(o => o.DepartmentId == _data[i].DepartmentId).ToList();
+                            var mdatatarget = selecteddates.ToList();
+
+                            CreateWorkSheet(workbook, worksheet, mdata, mdatatarget, Pillarname);
+
+                        }
+
+                        MemoryStream ms = new MemoryStream();
+                        // Save and close the document.
+                        workbook.SaveAs(ms);
+                        //Reset the memory stream position.
+                        ms.Position = 0;
+                        string _filename = "Annual Leave Roaster Report.xlsx";
+                        filename = _filename;
+                        JS.InvokeAsync<object>("saveAsFile", filename, Convert.ToBase64String(ms.ToArray()));
+                        ms.Dispose();
+                        workbook.Close();
+                        Downloadreport = false;
+                        InputModel.Response = "Report Downloaded Successfully";
+                    }
+                }
+                else
+                {
+                    InputModel.Response = "There were no records found that match the given search parameters";
+                    Downloadreport = false;
+                    StateHasChanged();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.ToString());
+        }
+        finally
+        {
+            await DownloadingSpinner.HideAsync();
+            Downloadreport = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ClearSearchBtnClick()
+    {
+        InputModel = new UtilitiesSearchPanel();
+    }
+
+    private async void CreateWorkSheet(IWorkbook workbook, IWorksheet worksheet, List<ViewEmployeeLeaveRoasterReportPivotedNew> data
+        , List<EmployeeLeaveRoster> datatarget, string name)
+    {
+
+        try
+        {
+            var annualleavedays = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == 1);
+            var _individualdates = datatarget.Select(o => new { o.EmployeeId, o.YearId, o.ProposedLeaveStartDate, o.ProposedLeaveEndDate }).ToList().Distinct().ToList();
+
+            worksheet.Name = name;
+            int row = 1;
+            worksheet.Range["A" + row].Text = "Annual Leave Roaster Report";
+            worksheet.Range["A" + row + ":V" + row].CellStyleName = "CategoryStyle";
+            worksheet.Range["A" + row + ":V" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+            worksheet.Range["A" + row + ":V" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+            worksheet.Range["A" + row].RowHeight = 30;
+            worksheet.Range["A" + row + ":V" + row].Merge();
+            row++;
+
+            worksheet.Range["H" + row].Text = "ANNUAL LEAVE SCHEDULE FOR " + SelectedYear;
+            worksheet.Range["H" + row + ":S" + row].CellStyleName = "DivisionStyle";
+            worksheet.Range["H" + row + ":S" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+            worksheet.Range["H" + row + ":S" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+            worksheet.Range["H" + row].RowHeight = 30;
+            worksheet.Range["H" + row + ":S" + row].Merge();
+            //FILTERS SEARCHED BY
+
+            row++;
+
+            worksheet.Range[row, 1].Text = "#";
+            worksheet.Range[row, 1].CellStyleName = "headerStyle";
+            worksheet.Range[row, 1].ColumnWidth = 5;
+            worksheet.Range[row, 1].WrapText = true;
+
+            worksheet.Range[row, 2].Text = "Name";
+            worksheet.Range[row, 2].CellStyleName = "headerStyle";
+            worksheet.Range[row, 2].ColumnWidth = 13;
+            worksheet.Range[row, 2].WrapText = true;
+
+            worksheet.Range[row, 3].Text = "Department";
+            worksheet.Range[row, 3].CellStyleName = "headerStyle";
+            worksheet.Range[row, 3].ColumnWidth = 13;
+            worksheet.Range[row, 3].WrapText = true;
+
+            worksheet.Range[row, 4].Text = "Position";
+            worksheet.Range[row, 4].CellStyleName = "headerStyle";
+            worksheet.Range[row, 4].ColumnWidth = 15;
+            worksheet.Range[row, 4].WrapText = true;
+
+            worksheet.Range[row, 5].Text = "Year";
+            worksheet.Range[row, 5].CellStyleName = "headerStyle";
+            worksheet.Range[row, 5].ColumnWidth = 8;
+            worksheet.Range[row, 5].WrapText = true;
+
+            worksheet.Range[row, 6].Text = "Annual Leave For " + SelectedYear;
+            worksheet.Range[row, 6].CellStyleName = "headerStyle";
+            worksheet.Range[row, 6].ColumnWidth = 8;
+            worksheet.Range[row, 6].WrapText = true;
+
+            worksheet.Range[row, 7].Text = "Total Leave Days";
+            worksheet.Range[row, 7].CellStyleName = "headerStyle";
+            worksheet.Range[row, 7].ColumnWidth = 8;
+            worksheet.Range[row, 7].WrapText = true;
+
+            worksheet.Range[row, 8].Text = "Jan";
+            worksheet.Range[row, 8].CellStyleName = "headerStyle";
+            worksheet.Range[row, 8].ColumnWidth = 4;
+            worksheet.Range[row, 8].WrapText = true;
+
+            worksheet.Range[row, 9].Text = "Feb";
+            worksheet.Range[row, 9].CellStyleName = "headerStyle";
+            worksheet.Range[row, 9].ColumnWidth = 4;
+            worksheet.Range[row, 9].WrapText = true;
+
+            worksheet.Range[row, 10].Text = "Mar";
+            worksheet.Range[row, 10].CellStyleName = "headerStyle";
+            worksheet.Range[row, 10].ColumnWidth = 4;
+            worksheet.Range[row, 10].WrapText = true;
+
+            worksheet.Range[row, 11].Text = "Apr";
+            worksheet.Range[row, 11].CellStyleName = "headerStyle";
+            worksheet.Range[row, 11].ColumnWidth = 4;
+            worksheet.Range[row, 11].WrapText = true;
+
+            worksheet.Range[row, 12].Text = "May";
+            worksheet.Range[row, 12].CellStyleName = "headerStyle";
+            worksheet.Range[row, 12].ColumnWidth = 4;
+            worksheet.Range[row, 12].WrapText = true;
+
+            worksheet.Range[row, 13].Text = "Jun";
+            worksheet.Range[row, 13].CellStyleName = "headerStyle";
+            worksheet.Range[row, 13].ColumnWidth = 4;
+            worksheet.Range[row, 13].WrapText = true;
+
+            worksheet.Range[row, 14].Text = "Jul";
+            worksheet.Range[row, 14].CellStyleName = "headerStyle";
+            worksheet.Range[row, 14].ColumnWidth = 4;
+            worksheet.Range[row, 14].WrapText = true;
+
+            worksheet.Range[row, 15].Text = "Aug";
+            worksheet.Range[row, 15].CellStyleName = "headerStyle";
+            worksheet.Range[row, 15].ColumnWidth = 4;
+            worksheet.Range[row, 15].WrapText = true;
+
+            worksheet.Range[row, 16].Text = "Sep";
+            worksheet.Range[row, 16].CellStyleName = "headerStyle";
+            worksheet.Range[row, 16].ColumnWidth = 4;
+            worksheet.Range[row, 16].WrapText = true;
+
+            worksheet.Range[row, 17].Text = "Oct";
+            worksheet.Range[row, 17].CellStyleName = "headerStyle";
+            worksheet.Range[row, 17].ColumnWidth = 4;
+            worksheet.Range[row, 17].WrapText = true;
+
+            worksheet.Range[row, 18].Text = "Nov";
+            worksheet.Range[row, 18].CellStyleName = "headerStyle";
+            worksheet.Range[row, 18].ColumnWidth = 4;
+            worksheet.Range[row, 18].WrapText = true;
+
+            worksheet.Range[row, 19].Text = "Dec";
+            worksheet.Range[row, 19].CellStyleName = "headerStyle";
+            worksheet.Range[row, 19].ColumnWidth = 4;
+            worksheet.Range[row, 19].WrapText = true;
+
+            worksheet.Range[row, 20].Text = "Total Utilised Leave Days";
+            worksheet.Range[row, 20].CellStyleName = "headerStyle";
+            worksheet.Range[row, 20].ColumnWidth = 8;
+            worksheet.Range[row, 20].WrapText = true;
+
+            worksheet.Range[row, 21].Text = "Balance of Leave Days";
+            worksheet.Range[row, 21].CellStyleName = "headerStyle";
+            worksheet.Range[row, 21].ColumnWidth = 8;
+            worksheet.Range[row, 21].WrapText = true;
+
+            worksheet.Range[row, 22].Text = "Narration By Serial Number";
+            worksheet.Range[row, 22].CellStyleName = "headerStyle";
+            worksheet.Range[row, 22].ColumnWidth = 25;
+            worksheet.Range[row, 22].WrapText = true;
+
+            row++;
+            int count = 1;
+
+            int carriedforward = 12;
+            int _annualleavedays = 25;
+            int totalleavedays = 0;
+
+            foreach (var item in data)
+            {
+                worksheet.Range[row, 1].Text = count.ToString();
+                worksheet.Range[row, 1].VerticalAlignment = ExcelVAlign.VAlignTop;
+                worksheet.Range[row, 2].Text = item.EmployeeFullName;
+                worksheet.Range[row, 2].WrapText = true;
+                worksheet.Range[row, 2].VerticalAlignment = ExcelVAlign.VAlignTop;
+                worksheet.Range[row, 3].Text = item.DepartmentDescription;
+                worksheet.Range[row, 3].VerticalAlignment = ExcelVAlign.VAlignTop;
+                worksheet.Range[row, 3].WrapText = true;
+                worksheet.Range[row, 4].Text = item.JobTitleDescription;
+                worksheet.Range[row, 4].WrapText = true;
+                worksheet.Range[row, 4].VerticalAlignment = ExcelVAlign.VAlignTop;
+                //worksheet.Range[row, 5].Text = item.LeaveTypeDescription;
+                //worksheet.Range[row, 5].Number = Convert.ToDouble(item.YearNo);
+                worksheet.Range[row, 5].HorizontalAlignment = ExcelHAlign.HAlignRight;
+                worksheet.Range[row, 5].VerticalAlignment = ExcelVAlign.VAlignTop;
+                worksheet.Range[row, 6].Number = Convert.ToDouble(annualleavedays.LeaveDaysPerYear);
+                worksheet.Range[row, 6].VerticalAlignment = ExcelVAlign.VAlignTop;
+                worksheet.Range[row, 7].Number = Convert.ToDouble(annualleavedays.LeaveDaysPerYear);/* carriedforward + Convert.ToDouble(annualleavedays.LeaveDaysPerYear); */
+                worksheet.Range[row, 7].VerticalAlignment = ExcelVAlign.VAlignTop;
+                // worksheet.Range[row, 8].Number = item.Jan;
+                // worksheet.Range[row, 8].VerticalAlignment = ExcelVAlign.VAlignTop;
+                // worksheet.Range[row, 9].Number = item.Feb;
+                // worksheet.Range[row, 9].VerticalAlignment = ExcelVAlign.VAlignTop;
+                // worksheet.Range[row, 10].Number = item.Mar;
+                // worksheet.Range[row, 10].VerticalAlignment = ExcelVAlign.VAlignTop;
+                // worksheet.Range[row, 11].Number = item.Apr;
+                // worksheet.Range[row, 11].VerticalAlignment = ExcelVAlign.VAlignTop;
+                // worksheet.Range[row, 12].Number = item.May;
+                // worksheet.Range[row, 12].VerticalAlignment = ExcelVAlign.VAlignTop;
+                // worksheet.Range[row, 13].Number = item.Jun;
+                // worksheet.Range[row, 13].VerticalAlignment = ExcelVAlign.VAlignTop;
+                // worksheet.Range[row, 14].Number = item.Jul;
+                // worksheet.Range[row, 14].VerticalAlignment = ExcelVAlign.VAlignTop;
+                // worksheet.Range[row, 15].Number = item.Aug;
+                // worksheet.Range[row, 15].VerticalAlignment = ExcelVAlign.VAlignTop;
+                // worksheet.Range[row, 16].Number = item.Sep;
+                // worksheet.Range[row, 16].VerticalAlignment = ExcelVAlign.VAlignTop;
+                // worksheet.Range[row, 17].Number = item.Oct;
+                // worksheet.Range[row, 17].VerticalAlignment = ExcelVAlign.VAlignTop;
+                // worksheet.Range[row, 18].Number = item.Nov;
+                // worksheet.Range[row, 18].VerticalAlignment = ExcelVAlign.VAlignTop;
+                // worksheet.Range[row, 19].Number = item.Dec;
+                // worksheet.Range[row, 19].VerticalAlignment = ExcelVAlign.VAlignTop;
+
+                // totalleavedays = item.Jan + item.Feb + item.Mar + item.Apr +
+                // item.May + item.Jun + item.Jul + item.Aug + item.Sep + item.Oct + item.Nov +
+                // item.Dec;
+
+                worksheet.Range[row, 20].Number = totalleavedays;
+                worksheet.Range[row, 20].VerticalAlignment = ExcelVAlign.VAlignTop;
+                worksheet.Range[row, 21].Number = Convert.ToDouble(annualleavedays.LeaveDaysPerYear) - totalleavedays;
+                worksheet.Range[row, 21].VerticalAlignment = ExcelVAlign.VAlignTop;
+
+                //Pass in the selected dates here
+                if (_individualdates.Count > 0)
+                {
+                    //var b = YearData.FirstOrDefault(o => o.YearDesc == item.YearNo);
+                    var employeedates = _individualdates.Where(o => o.EmployeeId == item.EmployeeId && o.YearId == item.YearId).ToList();
+                    if (employeedates.Count > 0)
+                    {
+                        string concatenateddates = string.Empty;
+                        foreach (var n in employeedates)
+                        {
+                            if (n.ProposedLeaveStartDate.HasValue && n.ProposedLeaveEndDate.HasValue)
+                            {
+                                concatenateddates += n.ProposedLeaveStartDate.Value.ToString("dd/MM/yyyy") + " - " + n.ProposedLeaveEndDate.Value.ToString("dd/MM/yyyy") + ", ";
+                            }
+                        }
+                        worksheet.Range[row, 22].Text = concatenateddates;
+                        worksheet.Range[row, 22].WrapText = true;
+                        worksheet.Range[row, 22].VerticalAlignment = ExcelVAlign.VAlignTop;
+                    }
+
+                }
+
+                row += 1;
+                count++;
+            }
+        }
+        catch(Exception ex)
+        {
+
+        }
+        finally
+        {
+            
+        }
+    }
+}
+

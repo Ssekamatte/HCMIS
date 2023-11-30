@@ -1,5 +1,4 @@
-﻿@* <h3>BSCAttachmentPage</h3> *@
-@using Blazored.Toast.Services;
+﻿@using Blazored.Toast.Services;
 @using HCMIS.Data;
 @using HCMIS.Interface;
 @using HCMIS.SHARED.DTO
@@ -10,24 +9,19 @@
 @inject IToastService toasterservice;
 @inject DocumentUploadModel _DocumentUploadModel;
 
-@if(DataSource != null)
+@if (DataSource != null)
 {
-    <SfGrid @ref="BalanceScoreCardAttachmentGrid" DataSource=@DataSource ID="BSCGrid" TValue="BalanceScoreCardAttachment"
+    <SfGrid @ref="EmployeeAttachmentGrid" DataSource=@DataSource ID="BSCGrid" TValue="EmployeeAttachment"
             Toolbar="@BSCAttachmentToolbarItems" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
             AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true">
         <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
         <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
-        <GridEvents 
-            OnActionBegin="OnAttachmentActionBegin" 
-            OnActionComplete="@OnAttachmentActionComplete" TValue="BalanceScoreCardAttachment"></GridEvents>
-        <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog"  Dialog="@DialogParams">
+        <GridEvents OnActionBegin="OnAttachmentActionBegin"
+                    OnActionComplete="@OnAttachmentActionComplete" TValue="EmployeeAttachment"></GridEvents>
+        <GridEditSettings AllowAdding="@OnSubmitButtonsBool" AllowDeleting="false" AllowEditing="@OnSubmitButtonsBool" Mode="@EditMode.Dialog" Dialog="AttachmentDialog">
             <Template Context="AttachmentContext">
                 @{
-                    AttachmentData = (AttachmentContext as BalanceScoreCardAttachment);
-                    // if (AttachmentData.BalanceScoreCardId == 0)
-                    // {
-                    //     AttachmentData.BalanceScoreCardId = BalanceScoreCardId.Value;
-                    // }
+                    AttachmentData = (AttachmentContext as EmployeeAttachment);
                     <div style="padding:15px;">
                         <div class="form-row">
                             <div class="form-group col-md-12" hidden>
@@ -37,62 +31,67 @@
                                 <p>Attachment Name <span style="color:red;">*</span></p>
                                 <SfTextBox Multiline="true" @bind-Value="@(AttachmentData.AttachmentName)" Enabled="true" Placeholder="Attachment Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                             </div>
-                            <div class="form-group col-md-12">
-                                <p class="alert-info" style="padding:10px;">Ensure that the document does not exceed 1 Mega Byte (MB) and is of the following formats (Microsoft Word, PDF or an Image (png,gif,jpeg and jpg))</p>
-                                <InputFile class="form-control" OnChange="@SingleUpload" />
-                                <div>
-                                    <SfSpinner @ref="UploadAttachmentSpinner" CssClass="SpinnerClass" Visible="false" Size="30" Label="Saving document Please wait......."> </SfSpinner>
-                                </div>
-                            </div>
-                            <div class="form-group col-md-12">
-                                @if (!string.IsNullOrEmpty(ImageString))
-                                {
-                                    @if (!string.IsNullOrEmpty(AttachmentData.AttachmentUrl) && !string.IsNullOrEmpty(AttachmentData.AttachmentExt))
-                                    {
-                                        if (AttachmentData.AttachmentExt.Contains("pdf") || AttachmentData.AttachmentExt.Contains("doc") || AttachmentData.AttachmentExt.Contains("docx"))
-                                        {
-                                            <embed src="@ImageString" width="100%" height="600px" style="border: none;" frameborder="0" allowfullscreen="true" />
-                                        }
-                                        else
-                                        {
-                                            <img src="@ImageString" alt="@AttachmentData.AttachmentUrl" class="img-thumbnail Imagecenter" style="margin-bottom:10px; width:100%;" />
-                                        }
-                                    }
-                                    
-                                }
 
-                                
+                            @if (!string.IsNullOrEmpty(AttachmentData.AttachmentName))
+                            {
+                                <div class="form-group col-md-12">
+                                    <p class="alert-info" style="padding:10px;">Ensure that the document does not exceed 1 Mega Byte (MB)</p>
+                                    <InputFile class="form-control" OnChange="@SingleUpload" />
+                                    <div>
+                                        <SfSpinner @ref="UploadAttachmentSpinner" CssClass="SpinnerClass" Visible="false" Size="30" Label="Saving document Please wait......."> </SfSpinner>
+                                    </div>
+                                </div>
+                            }
+
+
+
+                            <div class="form-group col-md-12">
+                                if (!string.IsNullOrEmpty(ImageString))
+                                {
+                                <img src="@ImageString" class="img-thumbnail" height="190" width="150" style="margin-bottom:4px; margin-left:20%; margin-right:auto;" />
+                                }
+                                else
+                                {
+                                <img src="/Image/blank-profile-picture.png" class="img-thumbnail" height="190" width="150" style="margin-bottom:4px; margin-left:20%; margin-right:auto;" />
+                                }
+                                <div class="col-md-12">
+                                    <p class="alert-primary" style="padding:10px;">Upload  png or Jpeg image</p>
+                                    <InputFile class="form-control" OnChange="@SingleUpload" />
+                                    @*<SfSpinner @ref="@UploadImageSpinner" Visible="false" Label="Uploading Image Please Wait.."></SfSpinner>*@
+                                </div>
+
+
                             </div>
                         </div>
                     </div>
                 }
             </Template>
             <FooterTemplate Context="AttachmentFooterContext">
-                @if(IsSaveDisabled == false)
+                @if (IsSaveDisabled == false)
                 {
                     <SfButton IsPrimary="true" Disabled="@IsSaveDisabled" OnClick="@OnSaveDocumentClick">Save Document</SfButton>
                     <SfButton IsPrimary="false" Disabled="@IsSaveDisabled" OnClick="@OnCloseDocumentClick">Close</SfButton>
                 }
-                
+
             </FooterTemplate>
         </GridEditSettings>
         <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
         <GridPageSettings PageSize="20"></GridPageSettings>
         <GridColumns>
             @*<GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>*@
-            <GridColumn Field=@nameof(BalanceScoreCardAttachment.AttachmentId) HeaderText="Attachment Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
-            <GridColumn Field=@nameof(BalanceScoreCardAttachment.AttachmentName) HeaderText="Attachment"></GridColumn>
+            <GridColumn Field=@nameof(EmployeeAttachment.AttachmentId) HeaderText="Attachment Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+            <GridColumn Field=@nameof(EmployeeAttachment.AttachmentName) HeaderText="Attachment"></GridColumn>
             <GridColumn HeaderText="Manage Records" Width="140">
                 <GridCommandColumns>
                     <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="View" })" Title="View"></GridCommandColumn>
                     @*@if (!string.IsNullOrEmpty(UserRole) && (UserRole.Contains("Data Entry Officer") || UserRole.Contains("Administrator") || UserRole.Contains("Unit Head") || UserRole.Contains("Responsible Reporting Staff for Division")))
-                    {
-                        <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit"></GridCommandColumn>
-                    }
-                    else
-                    {
-                        <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="View" })" Title="View"></GridCommandColumn>
-                    }*@
+                {
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit"></GridCommandColumn>
+                }
+                else
+                {
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="View" })" Title="View"></GridCommandColumn>
+                }*@
                 </GridCommandColumns>
             </GridColumn>
         </GridColumns>
@@ -101,42 +100,42 @@
 
 @code {
     [Parameter]
-    public List<BalanceScoreCardAttachment>? HeaderAttachmentData { get; set; }
+    public List<EmployeeAttachment>? HeaderAttachmentData { get; set; }
     [Parameter]
-    public int BalanceScoreCardId { get; set; }
+    public int EmployeeId { get; set; }
     [Parameter]
-    public EventCallback<List<BalanceScoreCardAttachment>?> OnHeaderAttachmentToggled { get; set; }
-    SfGrid<BalanceScoreCardAttachment>? BalanceScoreCardAttachmentGrid { get; set; }
-    List<BalanceScoreCardAttachment>? DataSource { get; set; }
-    BalanceScoreCardAttachment? AttachmentData { get; set; }
+    public EventCallback<List<EmployeeAttachment>?> OnHeaderAttachmentToggled { get; set; }
+    SfGrid<EmployeeAttachment>? EmployeeAttachmentGrid { get; set; }
+    List<EmployeeAttachment>? DataSource { get; set; }
+    EmployeeAttachment? AttachmentData { get; set; }
     SfSpinner? UploadAttachmentSpinner;
     bool IsSaveDisabled { get; set; }
     [Parameter]
-    public bool allowediting { get; set; }
+    public bool OnSubmitButtonsBool { get; set; }
     [Parameter]
     public string? UserRole { get; set; }
     [Parameter]
     public List<object>? BSCAttachmentToolbarItems { get; set; }
     [Parameter]
     public string? AccessToken { get; set; }
-    int? PreviousBalanceScoreCardId { get; set; }
+    int? PreviousEmployeeId { get; set; }
     int? AttachmentId { get; set; }
 
     string? ImageString { get; set; }
     long maxFileSize = 1048576/* 1024L * 1024L * 1024L * 2L */;
     string fileName = string.Empty;
     int random = -9999;
-    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "80%" };
-    
+    private DialogSettings AttachmentDialog = new DialogSettings { Height = "auto", MinHeight = "5vh", Width = "80%" };
+
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
         try
         {
-            if (PreviousBalanceScoreCardId != BalanceScoreCardId)
+            if (PreviousEmployeeId != EmployeeId)
             {
-                PreviousBalanceScoreCardId = BalanceScoreCardId;
-                DataSource = new List<BalanceScoreCardAttachment>();
+                PreviousEmployeeId = EmployeeId;
+                DataSource = new List<EmployeeAttachment>();
                 if (HeaderAttachmentData != null && HeaderAttachmentData.Count() > 0)
                 {
                     DataSource.AddRange(HeaderAttachmentData);
@@ -151,20 +150,20 @@
 
     private async Task OnSaveDocumentClick()
     {
-        if (BalanceScoreCardAttachmentGrid != null)
+        if (EmployeeAttachmentGrid != null)
         {
-            await BalanceScoreCardAttachmentGrid.EndEditAsync();
+            await EmployeeAttachmentGrid.EndEditAsync();
         }
     }
     private async Task OnCloseDocumentClick()
     {
-        if (BalanceScoreCardAttachmentGrid != null)
+        if (EmployeeAttachmentGrid != null)
         {
-            await BalanceScoreCardAttachmentGrid.CloseEditAsync();
+            await EmployeeAttachmentGrid.CloseEditAsync();
         }
     }
 
-    public async Task OnAttachmentActionBegin(Syncfusion.Blazor.Grids.ActionEventArgs<BalanceScoreCardAttachment> args)
+    public async Task OnAttachmentActionBegin(Syncfusion.Blazor.Grids.ActionEventArgs<EmployeeAttachment> args)
     {
         if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
         {
@@ -193,20 +192,20 @@
             // }
             else
             {
-                //args.Data.BalanceScoreCardId = BalanceScoreCardId.Value;
+                //args.Data.EmployeeId = EmployeeId.Value;
             }
         }
     }
 
 
-    public async Task OnAttachmentActionComplete(Syncfusion.Blazor.Grids.ActionEventArgs<BalanceScoreCardAttachment> args)
+    public async Task OnAttachmentActionComplete(Syncfusion.Blazor.Grids.ActionEventArgs<EmployeeAttachment> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
         {
-            BalanceScoreCardAttachmentGrid.PreventRender(false);
+            EmployeeAttachmentGrid.PreventRender(false);
             if (!string.IsNullOrEmpty(args.RowData.AttachmentUrl) && !string.IsNullOrEmpty(args.RowData.AttachmentExt))
             {
-                ImageString = await GetImageString(args.RowData.AttachmentUrl, args.RowData.AttachmentExt, "BSC");
+                ImageString = await GetImageString(args.RowData.AttachmentUrl, args.RowData.AttachmentExt, "EmployeeLeave");
             }
         }
         else if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Refresh))
@@ -229,7 +228,7 @@
             if (e.File.ContentType.ToLower().Contains("png") || e.File.ContentType.ToLower().Contains("gif") || e.File.ContentType.ToLower().Contains("jpeg") || e.File.ContentType.ToLower().Contains("jpg"))
             {
                 var passextension = e.File.ContentType.Split("/");
-                fileName = "BSC_" + AttachmentData.AttachmentName + "." + passextension[1].Trim();
+                fileName = "EmployeeLeave_" + AttachmentData.AttachmentName + "." + passextension[1].Trim();
                 byte[] bytes = ms.ToArray();
                 //byte[] bytes = file.Stream.ToArray();
                 string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
@@ -238,7 +237,7 @@
                         DocumentName = fileName,
                         DocumentExt = e.File.ContentType.Trim(),
                         DocumentByte = bytes,
-                        DocumentFolder = "BSC"
+                        DocumentFolder = "EmployeeLeave"
                     };
 
                 await _DocumentUploadModel.UploadDocument(m);
@@ -256,7 +255,7 @@
                 if (e.File.ContentType.ToLower().Contains("doc"))
                 {
                     ms.Position = 0;
-                    fileName = "BSC_" + AttachmentData.AttachmentName + ".pdf";
+                    fileName = "EmployeeLeave_" + AttachmentData.AttachmentName + ".pdf";
                     //Create a new document
                     Syncfusion.DocIO.DLS.WordDocument document;
                     if (e.File.ContentType.Contains("doc") && !e.File.ContentType.Contains("docx"))
@@ -278,7 +277,7 @@
 
                     DocumentBytes m = new DocumentBytes();
                     m.DocumentName = fileName;
-                    m.DocumentFolder = "BSC";
+                    m.DocumentFolder = "EmployeeLeave";
                     m.DocumentByte = _ms.ToArray();
                     m.DocumentExt = "pdf";
 
@@ -295,7 +294,7 @@
 
                 else
                 {
-                    fileName = "BSC_" + AttachmentData.AttachmentName + ".pdf";
+                    fileName = "EmployeeLeave_" + AttachmentData.AttachmentName + ".pdf";
 
                     ms.Position = 0;
                     byte[] bytes = ms.ToArray();
@@ -306,7 +305,7 @@
                             DocumentName = fileName,
                             DocumentExt = e.File.ContentType.Trim(),
                             DocumentByte = bytes,
-                            DocumentFolder = "BSC"
+                            DocumentFolder = "EmployeeLeave"
                         };
 
                     await _DocumentUploadModel.UploadDocument(m);
@@ -370,5 +369,6 @@
         return result;
     }
 
-    
+
 }
+

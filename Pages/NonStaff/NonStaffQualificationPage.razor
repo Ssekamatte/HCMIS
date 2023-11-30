@@ -652,151 +652,151 @@
     {
         try
         {
-            await UploadQualificationSpinner.ShowAsync();
-            foreach (var file in args.Files)
-            {
-                if (file.FileInfo.Size <= 5242880)
-                {
-                    file.Stream.Position = 0;
-                    if (file.FileInfo.Type.ToLower().Contains("pdf") || file.FileInfo.Type.ToLower().Contains("doc"))
-                    {
+            // await UploadQualificationSpinner.ShowAsync();
+            // foreach (var file in args.Files)
+            // {
+            //     if (file.FileInfo.Size <= 5242880)
+            //     {
+            //         file.Stream.Position = 0;
+            //         if (file.FileInfo.Type.ToLower().Contains("pdf") || file.FileInfo.Type.ToLower().Contains("doc"))
+            //         {
 
-                        string fileName = string.Empty;
-                        if (file.FileInfo.Type.Trim().Contains("doc"))
-                        {
-                            //fileName = "TradingLicence_" + NonstaffId + ".pdf";
+            //             string fileName = string.Empty;
+            //             if (file.FileInfo.Type.Trim().Contains("doc"))
+            //             {
+            //                 //fileName = "TradingLicence_" + NonstaffId + ".pdf";
 
-                            var a = FieldOfStudyData.FirstOrDefault(o => o.FieldOfStudyId == QualificationReviewData.FieldOfStudyId);
+            //                 var a = FieldOfStudyData.FirstOrDefault(o => o.FieldOfStudyId == QualificationReviewData.FieldOfStudyId);
 
-                            fileName = a.FieldOfStudyDesc +"_"+QualificationReviewData.InstitutionName+ "_" + NonstaffId + ".pdf";
+            //                 fileName = a.FieldOfStudyDesc +"_"+QualificationReviewData.InstitutionName+ "_" + NonstaffId + ".pdf";
 
-                            //Create a new document
-                            Syncfusion.DocIO.DLS.WordDocument document;
-                            if (file.FileInfo.Type.Contains("doc") && !file.FileInfo.Type.Contains("docx"))
-                            {
-                                document = new Syncfusion.DocIO.DLS.WordDocument(file.Stream, Syncfusion.DocIO.FormatType.Doc);
-                            }
-                            else
-                            {
-                                document = new Syncfusion.DocIO.DLS.WordDocument(file.Stream, Syncfusion.DocIO.FormatType.Docx);
-                            }
-                            //Creates an instance of the DocToPDFConverter
-                            DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
-                            PdfDocument pdfDocument = render.ConvertToPDF(document);
+            //                 //Create a new document
+            //                 Syncfusion.DocIO.DLS.WordDocument document;
+            //                 if (file.FileInfo.Type.Contains("doc") && !file.FileInfo.Type.Contains("docx"))
+            //                 {
+            //                     document = new Syncfusion.DocIO.DLS.WordDocument(file.Stream, Syncfusion.DocIO.FormatType.Doc);
+            //                 }
+            //                 else
+            //                 {
+            //                     document = new Syncfusion.DocIO.DLS.WordDocument(file.Stream, Syncfusion.DocIO.FormatType.Docx);
+            //                 }
+            //                 //Creates an instance of the DocToPDFConverter
+            //                 DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
+            //                 PdfDocument pdfDocument = render.ConvertToPDF(document);
 
-                            MemoryStream _ms = new MemoryStream();
-                            pdfDocument.Save(_ms);
-                            _ms.Position = 0;
+            //                 MemoryStream _ms = new MemoryStream();
+            //                 pdfDocument.Save(_ms);
+            //                 _ms.Position = 0;
 
-                            byte[] bytes = file.Stream.ToArray();
-                            string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+            //                 byte[] bytes = file.Stream.ToArray();
+            //                 string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
 
-                            ImageUpload m = new ImageUpload()
-                            {
-                                ImageName = fileName,
-                                ImageExt = file.FileInfo.Type.Trim(),
-                                Imagebyte = bytes,
-                                Rootfolder="Qualifications"
-                            };
+            //                 ImageUpload m = new ImageUpload()
+            //                 {
+            //                     ImageName = fileName,
+            //                     ImageExt = file.FileInfo.Type.Trim(),
+            //                     Imagebyte = bytes,
+            //                     Rootfolder="Qualifications"
+            //                 };
 
 
-                            var Requestresult = await _DocumentUploadModel.SaveDocument(m,AccessToken);
-                            if (Requestresult != null && Requestresult.IsSuccess)
-                            {
-                                var result = "data:application/pdf;base64," + base64;
-                                QualificationReviewData.QualificationDocumentName = fileName;
-                                QualificationReviewData.QualificationDocumentExt = "pdf";
-                                QualificationDocumentString = result;
+            //                 var Requestresult = await _DocumentUploadModel.SaveDocument(m,AccessToken);
+            //                 if (Requestresult != null && Requestresult.IsSuccess)
+            //                 {
+            //                     var result = "data:application/pdf;base64," + base64;
+            //                     QualificationReviewData.QualificationDocumentName = fileName;
+            //                     QualificationReviewData.QualificationDocumentExt = "pdf";
+            //                     QualificationDocumentString = result;
 
-                                bytes = null;
-                                _ms.Close();
-                                _ms.Dispose();
-                                pdfDocument.Close();
-                                pdfDocument.Dispose();
-                                render.Dispose();
-                                document.Close();
-                                document.Dispose();
-                            }
-                            else if(Requestresult != null)
-                            {
-                                await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-                            }
-                        }
-                        else
-                        {
-                            //fileName = "TradingLicence_" + NonstaffId + ".pdf";
-                            var a =FieldOfStudyData.FirstOrDefault(o => o.FieldOfStudyId ==  QualificationReviewData.FieldOfStudyId);
+            //                     bytes = null;
+            //                     _ms.Close();
+            //                     _ms.Dispose();
+            //                     pdfDocument.Close();
+            //                     pdfDocument.Dispose();
+            //                     render.Dispose();
+            //                     document.Close();
+            //                     document.Dispose();
+            //                 }
+            //                 else if(Requestresult != null)
+            //                 {
+            //                     await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+            //                 }
+            //             }
+            //             else
+            //             {
+            //                 //fileName = "TradingLicence_" + NonstaffId + ".pdf";
+            //                 var a =FieldOfStudyData.FirstOrDefault(o => o.FieldOfStudyId ==  QualificationReviewData.FieldOfStudyId);
 
-                            fileName = a.FieldOfStudyDesc +"_"+QualificationReviewData.InstitutionName + "_" + NonstaffId + ".pdf";
-                            MemoryStream ms = new MemoryStream();
-                            file.Stream.WriteTo(ms);
-                            ms.Position = 0;
-                            byte[] bytes = file.Stream.ToArray();
-                            string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+            //                 fileName = a.FieldOfStudyDesc +"_"+QualificationReviewData.InstitutionName + "_" + NonstaffId + ".pdf";
+            //                 MemoryStream ms = new MemoryStream();
+            //                 file.Stream.WriteTo(ms);
+            //                 ms.Position = 0;
+            //                 byte[] bytes = file.Stream.ToArray();
+            //                 string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
 
-                            ImageUpload m = new ImageUpload()
-                            {
-                                ImageName = fileName,
-                                ImageExt = file.FileInfo.Type.Trim(),
-                                Imagebyte = bytes,
-                                Rootfolder="Qualifications"
-                            };
+            //                 ImageUpload m = new ImageUpload()
+            //                 {
+            //                     ImageName = fileName,
+            //                     ImageExt = file.FileInfo.Type.Trim(),
+            //                     Imagebyte = bytes,
+            //                     Rootfolder="Qualifications"
+            //                 };
 
-                            var Requestresult = await _DocumentUploadModel.SaveDocument(m,AccessToken);
-                            if (Requestresult != null && Requestresult.IsSuccess)
-                            {
-                                var result = "data:application/pdf;base64," + base64;
-                                QualificationReviewData.QualificationDocumentName = fileName;
-                                QualificationReviewData.QualificationDocumentExt = file.FileInfo.Type.Trim();
-                                QualificationDocumentString = result;
-                                bytes = null;
-                            }
-                            else if(Requestresult != null)
-                            {
-                                await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-                            }
-                        }
-                    }
-                    else if (file.FileInfo.Type.ToLower().Contains("png") || file.FileInfo.Type.ToLower().Contains("gif") || file.FileInfo.Type.ToLower().Contains("jpeg"))
-                    {
-                        //string fileName = "TradingLicence_" + NonstaffId + "." + file.FileInfo.Type.Trim();
-                        var a =FieldOfStudyData.FirstOrDefault(o => o.FieldOfStudyId == QualificationReviewData.FieldOfStudyId);
+            //                 var Requestresult = await _DocumentUploadModel.SaveDocument(m,AccessToken);
+            //                 if (Requestresult != null && Requestresult.IsSuccess)
+            //                 {
+            //                     var result = "data:application/pdf;base64," + base64;
+            //                     QualificationReviewData.QualificationDocumentName = fileName;
+            //                     QualificationReviewData.QualificationDocumentExt = file.FileInfo.Type.Trim();
+            //                     QualificationDocumentString = result;
+            //                     bytes = null;
+            //                 }
+            //                 else if(Requestresult != null)
+            //                 {
+            //                     await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+            //                 }
+            //             }
+            //         }
+            //         else if (file.FileInfo.Type.ToLower().Contains("png") || file.FileInfo.Type.ToLower().Contains("gif") || file.FileInfo.Type.ToLower().Contains("jpeg"))
+            //         {
+            //             //string fileName = "TradingLicence_" + NonstaffId + "." + file.FileInfo.Type.Trim();
+            //             var a =FieldOfStudyData.FirstOrDefault(o => o.FieldOfStudyId == QualificationReviewData.FieldOfStudyId);
 
-                        string fileName = a.FieldOfStudyDesc +"_"+QualificationReviewData.InstitutionName + "_" + NonstaffId + "." + file.FileInfo.Type.Trim();
+            //             string fileName = a.FieldOfStudyDesc +"_"+QualificationReviewData.InstitutionName + "_" + NonstaffId + "." + file.FileInfo.Type.Trim();
 
-                        byte[] bytes = file.Stream.ToArray();
-                        string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+            //             byte[] bytes = file.Stream.ToArray();
+            //             string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
 
-                        ImageUpload m = new ImageUpload()
-                        {
-                            ImageName = fileName,
-                            ImageExt = file.FileInfo.Type.Trim(),
-                            Imagebyte = bytes,
-                            Rootfolder="Qualifications"
-                        };
+            //             ImageUpload m = new ImageUpload()
+            //             {
+            //                 ImageName = fileName,
+            //                 ImageExt = file.FileInfo.Type.Trim(),
+            //                 Imagebyte = bytes,
+            //                 Rootfolder="Qualifications"
+            //             };
 
-                        var Requestresult = await _DocumentUploadModel.SaveDocument(m,AccessToken);
-                        if (Requestresult != null && Requestresult.IsSuccess)
-                        {
-                            var result = "data:image/" + file.FileInfo.Type.Trim() + ";base64," + base64;
-                            QualificationReviewData.QualificationDocumentName = fileName;
-                            QualificationReviewData.QualificationDocumentExt = file.FileInfo.Type.Trim();
-                            QualificationDocumentString = result;
-                            bytes = null;
-                        }
-                        else if(Requestresult != null)
-                            {
-                                await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-                            }
-                    }
-                    else
-                    {
-                        await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = "Please ensure that the uploaded document is either a pdf or doc or docx or image(png/Jpeg/gif).", CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-                    }
+            //             var Requestresult = await _DocumentUploadModel.SaveDocument(m,AccessToken);
+            //             if (Requestresult != null && Requestresult.IsSuccess)
+            //             {
+            //                 var result = "data:image/" + file.FileInfo.Type.Trim() + ";base64," + base64;
+            //                 QualificationReviewData.QualificationDocumentName = fileName;
+            //                 QualificationReviewData.QualificationDocumentExt = file.FileInfo.Type.Trim();
+            //                 QualificationDocumentString = result;
+            //                 bytes = null;
+            //             }
+            //             else if(Requestresult != null)
+            //                 {
+            //                     await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+            //                 }
+            //         }
+            //         else
+            //         {
+            //             await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = "Please ensure that the uploaded document is either a pdf or doc or docx or image(png/Jpeg/gif).", CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+            //         }
 
-                    //Save infor into the DB
-                }
-            }
+            //         //Save infor into the DB
+            //     }
+            // }
         }
         catch (Exception ex)
         {
@@ -813,32 +813,32 @@
     private async Task<string> GetImageString(string imageUrl, string ext,string Rootfolder)
     {
         string result = null;
-        try
-        {
-            if (!string.IsNullOrEmpty(imageUrl))
-            {
-                ImageUpload a = await _DocumentUploadModel.GetDocument(imageUrl,Rootfolder,AccessToken);
+        // try
+        // {
+        //     if (!string.IsNullOrEmpty(imageUrl))
+        //     {
+        //         ImageUpload a = await _DocumentUploadModel.GetDocument(imageUrl,Rootfolder,AccessToken);
 
-                if (a != null)
-                {
-                    if (a.ImageExt.Contains("pdf"))
-                    {
-                        string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
-                        result = "data:application/pdf;base64," + base64String;
-                    }
-                    else
-                    {
-                        string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
-                        result = "data:image/" + a.ImageExt + ";base64," + base64String;
-                    }
+        //         if (a != null)
+        //         {
+        //             if (a.ImageExt.Contains("pdf"))
+        //             {
+        //                 string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
+        //                 result = "data:application/pdf;base64," + base64String;
+        //             }
+        //             else
+        //             {
+        //                 string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
+        //                 result = "data:image/" + a.ImageExt + ";base64," + base64String;
+        //             }
 
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-        }
+        //         }
+        //     }
+        // }
+        // catch (Exception ex)
+        // {
+        //     await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        // }
         return result;
     }
 }

@@ -16,8 +16,34 @@
 @inject IJSRuntime JsRuntime;
 @using HCMIS.Interface;
 @inject IAuthenticationService AuthService;
+@using Microsoft.AspNetCore.Components;
 
 <style>
+    /*Manage Records Button*/
+    .e-grid .e-icons:not(.e-btn-icon) {
+        color: #00cc00;
+        color: floralwhite;
+        font-size: smaller;
+        font-weight: bolder;
+    }
+
+    .e-grid .e-unboundcelldiv .e-icons:not(.e-btn-icon) {
+        color: white;
+    }
+
+    /*Manage Records Button*/
+
+    /*hide the Default Grid spinner */
+    .e-grid .e-spinner-pane {
+        display: none;
+    }
+
+    /*Disable select all on grid checkbox*/
+    .e-headercelldiv.e-headerchkcelldiv .e-checkbox-wrapper.e-css {
+        pointer-events: none;
+        opacity: 0.5;
+    }
+
     /*Customize Scroll Bars*/
     ::-webkit-scrollbar-thumb {
         background-color: #888;
@@ -42,13 +68,6 @@
     }
     /*stick grid headers*/
     
-    .e-edit-dialog {
-        max-height: 95%;
-        max-width: 100%;
-        min-width: 100%;
-        min-height: 95%;
-    }
-
     h6 {
         color: ghostwhite;
         background-color: red;
@@ -183,6 +202,13 @@
 </div>
 
 <div class="form-group col-md-12">
+    <SfSpinner @ref="SpinnerObj" Label="Loading Please Wait....." Size="50">
+        @*Render custom spinner component.*@
+    </SfSpinner>
+</div>
+
+
+<div class="form-group col-md-12">
 
     <SfGrid @ref="@DataGrid" 
         TValue="EmployeeLeaveHeader" 
@@ -191,14 +217,15 @@
         AllowFiltering="true" 
         AllowReordering="true" 
         AllowResizing="true" 
-        AllowGrouping="true" 
+        AllowGrouping="false" 
         AllowExcelExport="true" 
         AllowPdfExport="true" 
         AllowSelection="true" 
         AllowSorting="true" 
+        @attributes="@GridAttributes"
         Query="@MainQuery"
             AllowTextWrap="true" Toolbar="@ToolbarMenu">
-        <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+        <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog"  Dialog="AttachmentDialog">
             <HeaderTemplate>
                 @{
                     var text = GetLeaveRequestHeader((context as EmployeeLeaveHeader));
@@ -211,26 +238,28 @@
                 @{
                     <div class="row">
                         <div class="col-md-4">
-                            <center>
-                                <h5>
-                                    <strong>LEAVE APPLICATION FORM</strong>
-                                </h5>
-                            </center>
+                            <h5 style="text-align:left;">
+                                <strong>LEAVE APPLICATION FORM</strong>
+                            </h5>
                         </div>
 
-                        @*@if (employeeleave != null)
+                        @if(LeaveData != null && ApprovalStatusData != null && _previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
                         {
+                            var _datastatus = ApprovalStatusData.FirstOrDefault(o=>o.LeaveApprovalStatusId == LeaveData.LeaveApprovalStatusId);
                             <div class="col-md-4">
                                 <h5 style="color:green;">
-                                    <strong>Leave No: @employeeleave.EmployeeLeaveNo</strong>
+                                    <strong>Leave No: @LeaveData.EmployeeLeaveNo</strong>
                                 </h5>
                             </div>
                             <div class="col-md-4">
-                                <h5 style="color:green;">
-                                    <strong>Application Status: @employeeleave.LeaveApprovalStatus</strong>
-                                </h5>
+                                @if(_datastatus != null)
+                                {
+                                    <h5 style="color:green;">
+                                        <strong>Application Status: @_datastatus.LeaveApprovalStatus</strong>
+                                    </h5>
+                                }                                
                             </div>
-                        }*@
+                        }
                     </div>
                     LeaveData = (context as EmployeeLeaveHeader);
 
@@ -259,11 +288,11 @@
                                                     1.
                                                 </td>
                                                 <td>
-                                                    Employee Name
+                                                    Employee Name<span style="color:red;">*</span>
                                                 </td>
                                                 <td>
                                                     <SfDropDownList @bind-Value="@(LeaveData.Employeeid)"
-                                                                    Enabled="EmployeeDD"
+                                                                    Enabled="false"
                                                                     TItem="ViewEmployeeDropDown"
                                                                     TValue="int?"
                                                                     DataSource="@EmployeeData"
@@ -317,9 +346,13 @@
                                                     Date of Last Leave within the Present Year
                                                 </td>
                                                 <td>
-                                                    @if (employeeno != null)
+                                                    @if (employeeleave != null && employeeleave.EndDate != null)
                                                     {
-
+                                                        @employeeleave.EndDate.Value.ToString("dd/MM/yyyy")
+                                                    }
+                                                    else
+                                                    {
+                                                        <p>No Application Made</p>
                                                     }
                                                 </td>
                                             </tr>
@@ -328,14 +361,40 @@
                                                     5.
                                                 </td>
                                                 <td>
-                                                    Telephone contact during Leave
+                                                    Telephone contact during Leave<span style="color:red;">*</span>
                                                 </td>
                                                 <td>
                                                     <SfTextBox Multiline="false"
                                                     @bind-Value="@(LeaveData.Telephone)"
-                                                               Enabled="true"
+                                                               Enabled="@OnSubmitButtonsBool"
                                                                FloatLabelType="FloatLabelType.Never">
                                                     </SfTextBox>
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td>
+                                                    6.
+                                                </td>
+                                                <td>
+                                                    Financial Year
+                                                </td>
+                                                <td>
+                                                    <SfDropDownList @bind-Value="@(LeaveData.FinancialYearId)" TItem="AYears" TValue="int?"
+                                                                    DataSource="@YearData" Placeholder="Please select"
+                                                                    FloatLabelType="FloatLabelType.Never" AllowFiltering="true"
+                                                                    FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                                                                    Enabled="false">
+                                                        <DropDownListFieldSettings Value="@nameof(AYears.YearId)"
+                                                                                   Text="@nameof(AYears.YearDesc)">
+                                                        </DropDownListFieldSettings>
+                                                    </SfDropDownList>
+                                                </td>
+                                                <td hidden>
+                                                    Employee Leave Id
+                                                </td>
+                                                <td hidden>
+                                                    <SfNumericTextBox @bind-Value="@(LeaveData.EmployeeLeaveId)" Enabled="false" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
                                                 </td>
                                             </tr>
                                         </table>
@@ -345,21 +404,34 @@
                                                 <p><h3>Acting Officer During Period of Leave</h3></p>
                                             </div>
                                             <div class="col-md-6">
-                                                <p>Name</p>
-                                                <SfDropDownList @bind-Value="@(LeaveData.ActingOfficerId)" TItem="ViewEmployeeDropDown" TValue="int?" DataSource="@EmployeeData" Enabled="ActingOfficerDD" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                <p>Name<span style="color:red;">*</span></p>
+                                                <SfDropDownList @bind-Value="@(LeaveData.ActingOfficerId)" TItem="ViewEmployeeDropDown" TValue="int?" DataSource="@EmployeeData" Enabled="OnSubmitButtonsBool" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                                     <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
                                                     <DropDownListEvents TValue="int?" TItem="ViewEmployeeDropDown" ValueChange="OnActingOfficerChange"></DropDownListEvents>
                                                 </SfDropDownList>
                                             </div>
 
-                                            <div class="col-md-6">
-                                                <p>Title</p>
-
+                                            @*Check if acting officer is not owner of application*@
+                                            @if (LeaveData != null && LeaveData.Employeeid != LeaveData.ActingOfficerId)
+                                            {
+                                                ActingOfficerBool = true;
                                                 @if (employeeactingofficer != null)
                                                 {
-                                                    @employeeactingofficer.JobTitleDescription
+                                                    <div class="col-md-6">
+                                                        <p>Title</p>
+                                                        @if (employeeactingofficer != null)
+                                                        {
+                                                            @employeeactingofficer.JobTitleDescription
+                                                        }
+                                                    </div>
                                                 }
-                                            </div>
+                                            }
+                                            else
+                                            {
+                                                ActingOfficerBool = false;
+                                                <h6 style="background-color:red; color:ghostwhite;margin-top: 10px;">You cannot act on your behalf. Revise your selection please</h6>
+                                            }
+                                                                                        
                                         </div>
                                         @*<div class="row">
                                             <div class="col-md-12">
@@ -380,11 +452,12 @@
                                             </div>
                                             <div class="col-md-4">
                                                 <p>Leave Type:<span style="color:red;">*</span></p>
-                                                <SfDropDownList @bind-Value="@(LeaveData.LeaveTypeId)" Enabled="LeaveTypeIdDD" TItem="ALeaveType" TValue="int?" DataSource="@LeaveTypeData" Placeholder="Choose Leave Type" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                <SfDropDownList @bind-Value="@(LeaveData.LeaveTypeId)" Enabled="OnSubmitButtonsBool" TItem="ALeaveType" TValue="int?" DataSource="@LeaveTypeData" Placeholder="Choose Leave Type" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                                     <DropDownListFieldSettings Value="@nameof(ALeaveType.LeaveTypeId)" Text="@nameof(ALeaveType.LeaveTypeDescription)"></DropDownListFieldSettings>
                                                     <DropDownListEvents TValue="int?" TItem="ALeaveType" ValueChange="OnLeaveTypeChange"></DropDownListEvents>
                                                 </SfDropDownList>
                                             </div>
+
 
                                             @if (employeeno != null && employeeno.GenderId == 2 && LeaveData != null
                                             && LeaveData.LeaveTypeId == 4)
@@ -399,65 +472,121 @@
 
                                             else
                                             {
+                                                @if (LeaveData != null && LeaveData.LeaveTypeId == 4)
+                                                {                                                    
+                                                    <div class="col-md-4">
+                                                        <p>No. of Children:<span style="color:red;">*</span></p>
+                                                        <SfNumericTextBox TValue="int?" @bind-Value="@(LeaveData.NoChildren)" Enabled="OnSubmitButtonsBool" Format="N0" Min="1">
+                                                            @*<NumericTextBoxEvents TValue="int?" ValueChange="ChildrenChange"></NumericTextBoxEvents>*@
+                                                        </SfNumericTextBox>
+                                                    </div>
+
+                                                }
+                                                
                                                 <div class="col-md-4">
                                                     <p>Commencement Date:<span style="color:red;">*</span></p>
-                                                    <SfDatePicker @bind-Value="@(LeaveData.CommencementDate)" Enabled="StartDateEnabler" ID="ScheduledStartDate" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never" Min="MinDate">
-                                                        @if (LeaveData != null && (LeaveData.LeaveTypeId == 2 || LeaveData.LeaveTypeId == 4 || LeaveData.LeaveTypeId == 5))
-                                                        {
-                                                            EndDateEnabler = false;
-                                                            <DatePickerEvents TValue="DateTime?" ValueChange="OnMaternityDateChange"></DatePickerEvents>
-                                                        }
-                                                        else
-                                                        {
-                                                            EndDateEnabler = true;
-                                                        }
-
+                                                    <SfDatePicker @bind-Value="@(LeaveData.CommencementDate)" Enabled="OnSubmitButtonsBool" ID="ScheduledStartDate" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never" Min="MinDate">
+                                                        <DatePickerEvents TValue="DateTime?" ValueChange="OnMaternityDateChange"></DatePickerEvents>                                                       
                                                     </SfDatePicker>
                                                 </div>
 
                                                 <div class="col-md-4">
                                                     <p>End Date:<span style="color:red;">*</span></p>
-                                                    <SfDatePicker @bind-Value="@(LeaveData.EndDate)" Enabled="EndDateEnabler" ID="ScheduledEndDate" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never" Min="MinDate" Max='@MaxDate'>
+                                                    <SfDatePicker @bind-Value="@(LeaveData.EndDate)" Enabled="EndDateEnablerBool" ID="ScheduledEndDate" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never" Min="MinDate" Max='@MaxDate'>
                                                         <DatePickerEvents TValue="DateTime?" ValueChange="OnEndDateChange"></DatePickerEvents>
                                                     </SfDatePicker>
                                                 </div>
 
-                                                <div class="col-md-4">
-                                                    <p style="margin-top:10px;">Days Entitled:</p>
-                                                    @if (leavetypedays != null)
-                                                    {
-                                                        @leavetypedays.LeaveDaysPerYear
-                                                    }
-                                                </div>
+                                                @if (LeaveData.EndDate < LeaveData.CommencementDate)
+                                                {
+                                                    <div class="col-md-12;margin-top:10px;">
+                                                        <p style="background-color:red;color:whitesmoke;margin-top: 10px;">The End Date should not be before the Start Date</p>
+                                                    </div>
+                                                }
 
-                                                <div class="col-md-4">
-                                                    <p style="margin-top:10px;">Days Selected:</p>
-                                                    <SfNumericTextBox @bind-Value="@(LeaveData.TotalDays)" Enabled="false" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
-                                                </div>
+                                                else if (leavetypedays != null && (LeaveData.LeaveTypeId != 2 && LeaveData.LeaveTypeId != 4) &&
+                                                    (LeaveData.TotalDays > @leavetypedays.LeaveDaysPerYear))
+                                                {
+                                                    <h6>
+                                                        You have exceeded the @leavetypedays.LeaveDaysPerYear working days allocated.
+                                                        Kindly reduce on the number of days.
+                                                    </h6>
+                                                }
+                                                else
+                                                {
+                                                    <div class="col-md-3">
+                                                        <p style="margin-top:10px;">Days Entitled:</p>
+                                                        @if (leavetypedays != null && leavetypedays.LeaveTypeId != 4)
+                                                        {
+                                                            @leavetypedays.LeaveDaysPerYear
+                                                        }
+                                                        else if (leavetypedays != null && leavetypedays.LeaveTypeId == 4)
+                                                        {
+                                                            <p>@leavetypedays.LeaveDaysPerYear Days Per Child</p>
+                                                        }
+                                                    </div>
 
-                                                <div class="col-md-4">
-                                                    <p style="margin-top:10px;">Days Arleady Utilized:</p>
-                                                    @if (LeaveData.LeaveTypeId != 2 && LeaveData.LeaveTypeId != 4)
-                                                    {
+                                                    <div class="col-md-3">
+                                                        <p style="margin-top:10px;">Days Arleady Utilized:</p>
+                                                        @if (LeaveData.LeaveTypeId != 2 && LeaveData.LeaveTypeId != 4)
+                                                        {
                                                             @TotalDaysTakenPrior
-                                                    }
-                                                    else
-                                                    {
+                                                        }
+                                                        else
+                                                        {
                                                             <p style:"color:red;">N/A</p>
-                                                    }
-                                                </div>
+                                                        }
+                                                    </div>
+
+                                                    <div class="col-md-3">
+                                                        <p style="margin-top:10px;">Days Selected:</p>
+                                                        <SfNumericTextBox @bind-Value="@(LeaveData.NoDaysAppliedFor)" Enabled="false" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                                    </div>
+
+                                                    <div class="col-md-3">
+                                                        <p style="margin-top:10px;">Total Annual Days:</p>
+                                                        <SfNumericTextBox @bind-Value="@(LeaveData.TotalDays)" Enabled="false" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                                    </div>
+
+                                                    
+
+                                                    @*<div class="col-md-3">
+                                                        <p style="margin-top:10px;">Annual Total</p>
+                                                        @{
+                                                            if(LeaveData != null && LeaveData.TotalDays !=null)
+                                                            {
+                                                                OverrallTotal = (LeaveData.TotalDays + TotalDaysTakenPrior);
+                                                                @OverrallTotal;
+                                                            }
+                                                        }
+                                                    </div>*@
+                                                }                                                
                                             }
                                             
+                                            <div  class="col-md-12">
+                                                @if (LeaveData != null && LeaveData.LeaveTypeId == 3)
+                                                {
+                                                    <h6 style="background-color:#2c3e50; color:ghostwhite;margin-top: 10px;">NB: YOU ARE REQUIRED TO UPLOAD EVIDENCE FOR SICK LEAVE APPLICATION.OTHERWISE IT MIGHT NOT BE GRANTED</h6>
+                                                }
+                                            </div>
                                         </div>
                                     </ContentTemplate>
                                 </AccordionItem>
 
-                                <AccordionItem Expanded="true">
-                                    <HeaderTemplate><strong>PART II: LEAVE COMPUTATION: Completed by the Head-HR & Administration</strong></HeaderTemplate>
-                                    <ContentTemplate>
-                                        
-                                    </ContentTemplate>
-                                </AccordionItem>
+                                @if(LeaveComputation == true)
+                                {
+                                    <AccordionItem Expanded="true">
+                                        <HeaderTemplate><strong>PART II: LEAVE COMPUTATION: Completed by the Head-HR & Administration</strong></HeaderTemplate>
+                                        <ContentTemplate>
+                                            <LeaveComputationPage 
+                                                AppliedDays="@LeaveData.NoDaysAppliedFor" 
+                                                LeaveTypeData="@LeaveTypeData" 
+                                                TotalDaysTakenPrior="@TotalDaysTakenPrior"
+                                                EmployeeLeaveId="@LeaveData.EmployeeLeaveId">
+                                            </LeaveComputationPage>
+                                        </ContentTemplate>
+                                    </AccordionItem>
+                                }
 
                                 <AccordionItem Expanded="true">
                                     <HeaderTemplate><strong>PART III: RECOMMENDATION</strong></HeaderTemplate>
@@ -478,11 +607,25 @@
                                                 </td>
 
                                                 <td>
-                                                    <SfDropDownList @bind-Value="@(LeaveData.ImmediateSupervisor)" TItem="ViewEmployeeDropDown" Enabled="ImmediateSupervisorDD" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                    <SfDropDownList @bind-Value="@(LeaveData.ImmediateSupervisor)" TItem="ViewEmployeeDropDown" Enabled="OnSubmitButtonsBool" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                                         <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
                                                         <DropDownListEvents TValue="int?" TItem="ViewEmployeeDropDown" ValueChange="OnEmployeeSupervisorChange"></DropDownListEvents>
                                                     </SfDropDownList>
-                                                </td>
+
+                                                    @if (employeenosupervisor != null && !string.IsNullOrEmpty(employeenosupervisor.EmailAddress) && LeaveData.ImmediateSupervisor != null)
+                                                    {
+                                                        <p style="color:forestgreen; font-weight:bold">Email: @employeenosupervisor.EmailAddress</p>
+                                                    }
+                                                    else if ((LeaveData != null && LeaveData.ImmediateSupervisor != null)
+                                                    && (employeenosupervisor != null && string.IsNullOrEmpty(employeenosupervisor.EmailAddress)))
+                                                    {
+                                                        <p style="color:red; font-weight:bold">Email Not Provided</p>
+                                                    }
+                                                    else
+                                                    {
+
+                                                    }
+                                                </td>                                                
                                             </tr>
 
                                             <tr>
@@ -491,32 +634,116 @@
                                                 </td>
 
                                                 <td>
-                                                    <SfDropDownList @bind-Value="@(LeaveData.Hod)" TItem="ViewEmployeeDropDown" Enabled="ImmediateSupervisorDD" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                    <SfDropDownList @bind-Value="@(LeaveData.Hod)" TItem="ViewEmployeeDropDown" Enabled="OnSubmitButtonsBool" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                                         <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
-                                                        <DropDownListEvents TValue="int?" TItem="ViewEmployeeDropDown" ValueChange="OnEmployeeSupervisorChange"></DropDownListEvents>
+                                                        <DropDownListEvents TValue="int?" TItem="ViewEmployeeDropDown" ValueChange="OnEmployeeHODChange"></DropDownListEvents>
                                                     </SfDropDownList>
+
+                                                    @if (employeenohodchange != null && !string.IsNullOrEmpty(employeenohodchange.EmailAddress) && LeaveData.Hod != null)
+                                                    {
+                                                        <p style="color:forestgreen; font-weight:bold">Email: @employeenohodchange.EmailAddress</p>
+                                                    }
+                                                    else if (employeenohodchange != null && (LeaveData != null && LeaveData.Hod != null)
+                                                    && (employeenohodchange != null && string.IsNullOrEmpty(employeenohodchange.EmailAddress)))
+                                                    {
+                                                        <p style="color:red; font-weight:bold">Email Not Provided</p>
+                                                    }
+                                                    else
+                                                    {
+
+                                                    }
                                                 </td>
                                             </tr>
                                         </table>
                                     </ContentTemplate>
                                 </AccordionItem>
+
+                                <AccordionItem Expanded="true">
+                                    <HeaderTemplate><strong>PART IV: APPROVAL</strong></HeaderTemplate>
+                                    <ContentTemplate>
+                                        <div class="col-md-12">
+                                            <h6 style="background-color: white;color: black;"> Leave Approved By : Chief Human Resource Officer</h6>
+                                        </div>
+
+                                        <div class="col-md-12">
+                                            @*<SfDropDownList @bind-Value="@(LeaveData.Chro)" TItem="ViewEmployeeDropDown" Enabled="OnSubmitButtonsBool" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
+                                            </SfDropDownList>*@
+
+                                            <SfDropDownList @bind-Value="@(LeaveData.Chro)" TItem="ViewEmployeeDropDown" Enabled="OnSubmitButtonsBool" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
+                                                <DropDownListEvents TValue="int?" TItem="ViewEmployeeDropDown" ValueChange="OnEmployeeCHROChange"></DropDownListEvents>
+                                            </SfDropDownList>
+
+                                            @if (employeenochrochange != null && !string.IsNullOrEmpty(employeenochrochange.EmailAddress) && LeaveData.Chro != null)
+                                            {
+                                                <p style="color:forestgreen; font-weight:bold">Email: @employeenochrochange.EmailAddress</p>
+                                            }
+                                            else if (employeenochrochange != null && (LeaveData != null && LeaveData.Chro != null)
+                                            && (employeenochrochange != null && string.IsNullOrEmpty(employeenochrochange.EmailAddress)))
+                                            {
+                                                <p style="color:red; font-weight:bold">Email Not Provided</p>
+                                            }
+                                            else
+                                            {
+
+                                            }
+                                        </div>
+
+                                        <div class="col-md-12">
+                                        </div>
+                                    </ContentTemplate>
+                                </AccordionItem>
+
+                                <div class="col-md-12" style="margin-top:10px">
+                                <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+                                        <MudTabPanel Text="Attachment">
+                                            <h6 style="background-color:#6F1E51; color:ghostwhite;font-weight:bolder;font-size:large; text-align:center;">UPLOAD ATTACHMENT (Including any Evidence you have)</h6>
+
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <EmployeeLeaveAttachment EmployeeLeaveId="@LeaveData.EmployeeLeaveId"
+                                                                             OnHeaderAttachmentToggled="@ToggleBalanceScoreCardAttachment"
+                                                                             HeaderAttachmentData="@LeaveData.EmployeeLeaveHeaderAttachment.ToList()"
+                                                                             BSCAttachmentToolbarItems="@BSCAttachmentToolbarItems"
+                                                                             OnSubmitButtonsBool="@OnSubmitButtonsBool">
+                                                    </EmployeeLeaveAttachment>
+                                                </div>
+                                            </div>
+                                        </MudTabPanel>
+
+                                        <MudTabPanel Text="Rejection Comments">
+                                            <h6 style="background-color:#6F1E51; color:ghostwhite;font-weight:bolder;font-size:large; text-align:center;">REJECTION COMMENTS</h6>
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <LeaveRejectionCommentsPage EmployeeLeaveId="@LeaveData.EmployeeLeaveId"
+                                                                                onscorecardtoggle="@ToggleRejectionComments"
+                                                                                hodcommentsdata="@LeaveData.EmployeeLeaveRejectionComments.ToList()"
+                                                                                _previous="@_previous">
+                                                    </LeaveRejectionCommentsPage>
+                                                </div>
+                                            </div>
+                                        </MudTabPanel>
+                                </MudTabs>
+                                </div>
+
+                                
                             </AccordionItems>
                         </SfAccordion>
                     }
                 }
             </Template>
             <FooterTemplate>
-                <button @onclick="@onSaveDraftForm" disabled=@IsDraftDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
+                @if (LeaveData != null && (LeaveData.CommencementDate <= LeaveData.EndDate))
+                {
+                    <button @onclick="@onSaveDraftForm" disabled=@IsDraftDisabled hidden=@IsHiddenDraft class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
+                    <button @onclick="@onSubmitForm" disabled=@IsSubmitDisabled hidden=@IsHiddenPersonSubmit class="btn btn-success" data-ripple="true" style="margin-right:10px;">Submit Request</button>
+                    <button @onclick="@onApproveForm" disabled=@IsApproveDisabled hidden=@IsHiddenApprove class="btn btn-secondary" data-ripple="true" style="margin-right:10px;">Approve</button>
+                    <button @onclick="@onRejectForm" disabled=@IsRejectDisabled hidden=@IsHiddenRejected class="btn btn-warning" data-ripple="true" style="margin-right:10px;">Reject</button>
+                }
 
-                @if (_previous == Syncfusion.Blazor.Grids.Action.Add)
-                {
-                    <button @onclick="@onSubmitForm" disabled=@IsSubmitDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Submit Request</button>
-                }
-                else if (_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
-                {
-                    <button @onclick="@onApproveForm" disabled=@IsApproveDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Approval Request</button>
-                    <button @onclick="@onRejectForm" disabled=@IsRejectDisabled class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Reject</button>
-                }
+                <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel Plan</button>
+
             </FooterTemplate>
         </GridEditSettings>
         <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
@@ -527,13 +754,24 @@
                     OnActionBegin="ActionBeginMain"
                     QueryCellInfo="QueryCellInfoHandler"
                     RowDataBound="RowBound"
+                    OnLoad="LoadHandler"
+                    DataBound="DataBound"
                     TValue="EmployeeLeaveHeader">
         </GridEvents>
         <SfDataManager AdaptorInstance="@typeof(LeaveApplicationAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-        <GridColumns>
-            <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
-            <GridColumn Field=@nameof(ViewEmployeeLeave.EmployeeLeaveId) HeaderText="EmployeeLeaveId" AllowEditing="false" IsPrimaryKey="true" Width="80" Visible="false"></GridColumn>
-            <GridForeignColumn Field=@nameof(ViewEmployeeLeave.EmployeeId)
+        <GridColumns>            
+            <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn>
+            <GridColumn 
+                HeaderText="Manage" 
+                Width="40" 
+                CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"
+                        TextAlign="TextAlign.Left">
+                <GridCommandColumns>
+                    <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit/View"></GridCommandColumn>
+                </GridCommandColumns>
+            </GridColumn>
+            <GridColumn Field=@nameof(EmployeeLeaveHeader.EmployeeLeaveId) HeaderText="EmployeeLeaveId" AllowEditing="false" IsPrimaryKey="true" Width="80" Visible="false"></GridColumn>
+            <GridForeignColumn Field=@nameof(EmployeeLeaveHeader.Employeeid)
                                HeaderText="Employee"
                                Width="100"
                                AllowEditing="true"
@@ -543,7 +781,16 @@
                                CustomAttributes="@(new Dictionary<string,
                     object>(){ { "class", "e-attr1" }})">
             </GridForeignColumn>
-            <GridForeignColumn Field=@nameof(ViewEmployeeLeave.LeaveTypeId)
+            
+            <GridColumn Field=@nameof(EmployeeLeaveHeader.EmployeeLeaveNo)
+                        HeaderText="Employee Leave No"
+                        AllowEditing="false"
+                        Width="80"
+                        Visible="true"
+                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+            </GridColumn>
+
+            <GridForeignColumn Field=@nameof(EmployeeLeaveHeader.LeaveTypeId)
                                HeaderText="Leave Type"
                                Width="80"
                                AllowEditing="false"
@@ -554,14 +801,14 @@
                                IsFrozen="false"
                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
             </GridForeignColumn>
-            <GridColumn Field=@nameof(ViewEmployeeLeave.NoDaysAppliedFor)
+            <GridColumn Field=@nameof(EmployeeLeaveHeader.NoDaysAppliedFor)
                         HeaderText="Requested Days"
                         AllowEditing="false"
                         Width="80"
                         Visible="true"
                         CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
             </GridColumn>
-            <GridForeignColumn Field=@nameof(ViewEmployeeLeave.LeaveApprovalStatusId)
+            <GridForeignColumn Field=@nameof(EmployeeLeaveHeader.LeaveApprovalStatusId)
                                HeaderText="Approval Status"
                                Width="80"
                                AllowEditing="false"
@@ -571,57 +818,96 @@
                                AllowFiltering="false"
                                IsFrozen="false"
                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
-            </GridForeignColumn>
-            <GridColumn Field=@nameof(ViewEmployeeLeave.EmployeeLeaveNo)
-                        HeaderText="Employee Leave No"
-                        AllowEditing="false"
-                        Width="80"
-                        Visible="true"
-                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
-            </GridColumn>
-            <GridColumn Field=@nameof(ViewEmployeeLeave.ApplicationDate)
+            </GridForeignColumn>                   
+            
+            <GridColumn Field=@nameof(EmployeeLeaveHeader.DateAdded)
                         HeaderText="Application Date"
-                        Format="dd/MMMM/yyyy hh:mm:ss"
+                        Format="dd/MMMM/yyyy HH:mm:ss"
                         TextAlign="TextAlign.Justify"
                         Width="80"
                         ClipMode="ClipMode.EllipsisWithTooltip"
                         Type="ColumnType.Date"
                         CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
             </GridColumn>
-            <GridColumn Field=@nameof(ViewEmployeeLeave.SubmittedToSupervisor)
-                        HeaderText="Submitted To Supervisor"
-                        AllowEditing="false"
-                        Width="80"
-                        Visible="false">
-            </GridColumn>
-            <GridColumn Field=@nameof(ViewEmployeeLeave.SubmittedToHod)
-                        HeaderText="Submitted To HOD"
-                        AllowEditing="false"
-                        Width="80"
-                        Visible="false">
-            </GridColumn>
-            <GridColumn Field=@nameof(ViewEmployeeLeave.SubmittedToChro)
-                        HeaderText="Submitted To CHRO"
-                        AllowEditing="false"
-                        Width="80"
-                        Visible="false">
-            </GridColumn>
-            <GridColumn Field=@nameof(ViewEmployeeLeave.ApprovedByChro)
-                        HeaderText="Approved By CHRO"
-                        AllowEditing="false"
-                        Width="80"
-                        Visible="false">
-            </GridColumn>
         </GridColumns>
     </SfGrid>
 
+</div>
+
+<div class="form-group col-md-12">
+    <SfDialog @ref="@ConfirmationSubmitDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @((MarkupString)@ConfirmationText)
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationSubmitYes" />
+            <DialogButton Content="No" OnClick="@ComfirmationSubmitNo" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+
+<div class="form-group col-md-12">
+    <SfDialog @ref="@ConfirmationDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @((MarkupString)@ConfirmationText)
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationYes" />
+            <DialogButton Content="No" OnClick="@ComfirmationNo" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+
+@*Reason for rejection - Supervisor*@
+<div class="form-group col-md-12">
+    <SfDialog @ref="@RejectLeaveDialogue" Width="80%" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @if(RejectionCommentsModel != null)
+                {
+                    <div class="form-row">
+                        <div class="col-md-3">
+                            <p>Provide Rejection Reason <span style="color:red;">*</span></p>
+                        </div>
+                        <div class="form-group col-md-12">
+                            <SfTextBox Multiline="true" @bind-Value="@(RejectionCommentsModel.RejectionComments)" Enabled="true" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                        </div>
+                    </div>
+                }
+                
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton OnClick="@RejectReasonYes" Content="Confirm Rejection" IsPrimary="true" />
+            <DialogButton OnClick="@RejectReasonNo" Content="Cancel" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+
+@*Approval Confirmation*@
+<div class="form-group col-md-12">
+    <SfDialog @ref="@ConfirmationApprovalDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @((MarkupString)@ConfirmationText)
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationApprovalYes" />
+            <DialogButton Content="No" OnClick="@ComfirmationApprovalNo" />
+        </DialogButtons>
+    </SfDialog>
 </div>
 
 <div>
     <SfDialog @ref="@LoadingDialogue"
               ID="LoadingDialog"
               Height="auto"
-              Width="20%"
+              Width="40%"
               AllowDragging="true"
               Target=".mainbody"
               ShowCloseIcon="false"
@@ -658,6 +944,7 @@
     List<ViewEmployeeDropDown>? EmployeeData { get; set; }
     private static ViewEmployeeDropDown? employeeno { get; set; }
     private static ViewEmployeeDropDown? employeeactingofficer { get; set; }
+    private static EmployeeLeaveHeader? employeeleave { get; set; }
     List<ALeaveType>? LeaveTypeData { get; set; }
     List<ALeaveApprovalStatus>? ApprovalStatusData { get; set; }
     List<EmployeeLeaveHeader>? LeaveDataSource { get; set; }
@@ -669,11 +956,7 @@
     int currentDay = DateTime.Now.Day;
     public AppraisalSearch searchpanel { get; set; } = new AppraisalSearch();
     SfGrid<EmployeeLeaveHeader> DataGrid { get; set; }
-    public bool EmployeeDD { get; set; }
-    public bool ActingOfficerDD { get; set; }
-    bool LeaveTypeIdDD = true;
-    bool EndDateEnabler = true;
-    bool StartDateEnabler = true;
+
     public DateTime MinDate { get; set; } = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
     public DateTime MaxDate { get; set; } = new DateTime(DateTime.Now.Year, 12, 31); 
     Syncfusion.Blazor.Grids.Action _previous { get; set; }
@@ -685,25 +968,70 @@
     public static DateTime[]? datesselectedd = null;
     public static int LeaveDays { get; set; } = 0;
     public static int TotalDaysTakenPrior { get; set; } = 0;
-    bool ImmediateSupervisorDD = true;
-    bool HeadofDepartmentDD = true;
+    public static int? AppliedDays { get; set; }
+    public static int? OverrallTotal { get; set; }
+    public static int TotalPaternalDays { get; set; } = 0;    
+    bool CHRODD = false;
     private static ViewEmployeeDropDown? employeenosupervisor { get; set; }
     private static ViewEmployeeDropDown? employeenohodchange { get; set; }
+    private static ViewEmployeeDropDown? employeenochrochange { get; set; }
     SfDialog? LoadingDialogue;
-    bool IsDraftDisabled = false;
-    bool IsSubmitDisabled = false;
-    bool IsApproveDisabled = false;
-    bool IsRejectDisabled = false;
+    bool IsDraftDisabled;
+    bool IsSubmitDisabled;
+    bool IsApproveDisabled;
+    bool IsRejectDisabled;
     string ConfirmationText { get; set; }
-
+    public bool OnSubmitButtonsBool { get; set; }
+    public bool EndDateEnablerBool { get; set; }
+    bool ActingOfficerBool = false;
+    bool IsHiddenPersonSubmit;
+    bool IsHiddenDraft;
+    bool IsHiddenApprove;
+    bool IsHiddenRejected;
+    SfDialog ConfirmationDialogue;
+    SfDialog ConfirmationApprovalDialogue;
+    SfDialog ConfirmationSubmitDialogue;
+    SfDialog RejectLeaveDialogue;
+    EmployeeLeaveRejectionComments? RejectionCommentsModel { get; set; }
+    private List<object>? BSCAttachmentToolbarItems { get; set; }
+    private Dictionary<string, object> GridAttributes { get; set; } = new Dictionary<string, object>();
+    SfSpinner? SpinnerObj;
+    bool LeaveComputation = false;
+    bool RejectionCommentsSection = false;
+    private DialogSettings AttachmentDialog = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "95%" };
+    
     private List<object> ToolbarMenu = new List<object>()
     {
         new ItemModel() { Text = "Create Request", PrefixIcon = "e-add", Id = "Grid_add"},
-        new ItemModel(){ Text = "Edit Request", PrefixIcon= "e-edit", Id="Grid_edit"},
+        new ItemModel(){ Text = "Edit Request", PrefixIcon= "e-edit", Id="Grid_edit"}
         //new ItemModel(){ Text = "Delete Training Plan", PrefixIcon= "e-delete", Id="Grid_delete"},
-        new ItemModel(){ Text = "Update Request", PrefixIcon= "e-update", Id="Grid_update"},
-        new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
+        // new ItemModel(){ Text = "Update Request", PrefixIcon= "e-update", Id="Grid_update"},
+        // new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
     };
+
+    private void ToggleRejectionComments(List<EmployeeLeaveRejectionComments>? HODCommentsChange)
+    {
+        if (LeaveData != null && HODCommentsChange != null)
+        {
+            if (LeaveData.EmployeeLeaveRejectionComments == null)
+            {
+                LeaveData.EmployeeLeaveRejectionComments = new List<EmployeeLeaveRejectionComments>();
+            }
+            LeaveData.EmployeeLeaveRejectionComments = HODCommentsChange;
+        }
+    }
+
+    private void ToggleBalanceScoreCardAttachment(List<EmployeeLeaveHeaderAttachment>? AttachmentChange)
+    {
+        if (LeaveData != null && AttachmentChange != null)
+        {
+            if (LeaveData.EmployeeLeaveHeaderAttachment == null)
+            {
+                LeaveData.EmployeeLeaveHeaderAttachment = new List<EmployeeLeaveHeaderAttachment>();
+            }
+            LeaveData.EmployeeLeaveHeaderAttachment = AttachmentChange;
+        }
+    }
 
     private void ToggleSearchQuery(Query? DetailData)
     {
@@ -815,8 +1143,25 @@
                     }
                 }));
 
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetLeaveApprovalStatus");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        ApprovalStatusData = JsonSerializer.Deserialize<List<ALeaveApprovalStatus>>(content, _options);
+                    }
+                }));
+
                 Task _t = Task.WhenAll(t);
                 await _t;
+
+                BSCAttachmentToolbarItems = new List<object>() {
+                            new ItemModel(){ Text = "Add new Attachment", PrefixIcon= "e-add", Id="BSCGrid_add"}
+                            // new ItemModel(){ Text = "Edit Attachment", PrefixIcon= "e-edit", Id="BSCGrid_edit"},
+                            // new ItemModel(){ Text = "Update Attachment", PrefixIcon= "e-update", Id="BSCGrid_update"},
+                            // new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="BSCGrid_cancel"}
+                };
             }
         }
         catch (Exception ex)
@@ -856,15 +1201,45 @@
     public async Task onSubmitForm()
     {
         try
-        {    
+        {
+            var existingdates = LeaveDataSource.Where(o => (o.LeaveApprovalStatusId == 9) && 
+            ((LeaveData.CommencementDate >= o.CommencementDate && LeaveData.CommencementDate <= o.EndDate)
+            || (LeaveData.EndDate <= o.EndDate && LeaveData.EndDate >= o.CommencementDate)
+            && (o.LeaveTypeId == LeaveData.LeaveTypeId && o.Employeeid == LeaveData.Employeeid))).ToList();
+
             if(LeaveData.Employeeid == null)
             {
                 toastService.ShowWarning("Please select the employee (Part I)");
             }
 
+            else if(LeaveData.Telephone == null)
+            {
+                toastService.ShowWarning("Please enter your telephone contact (Part I)");
+            }
+
+            else if(LeaveData.ActingOfficerId == null)
+            {
+                toastService.ShowWarning("Please select the acting officer during the period of leave");
+            }
+
             else if(LeaveData.LeaveTypeId == null)
             {
                 toastService.ShowWarning("Please select the leave type");
+            }
+
+            else if (LeaveData.LeaveTypeId == 4 && LeaveData.NoChildren == null)
+            {
+                toastService.ShowWarning("Please enter the number of children");
+            }
+
+            else if (LeaveData.LeaveTypeId == 4 && LeaveData.NoChildren == null)
+            {
+                toastService.ShowWarning("Please enter the number of children");
+            }
+
+            else if (LeaveData.LeaveTypeId == 3 && LeaveData.EmployeeLeaveHeaderAttachment.Count <= 0)
+            {
+                toastService.ShowWarning("Please provide evidence for sick leave in the attachment section");
             }
 
             else if(LeaveData.CommencementDate == null)
@@ -891,33 +1266,83 @@
             {
                 toastService.ShowWarning("Head of Department email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
             }
-
+            else if (employeenochrochange != null && employeenochrochange.EmailAddress == null)
+            {
+                toastService.ShowWarning("CHRO email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+            }
             else if(LeaveData.Hod == null)
             {
                 toastService.ShowWarning("Please select your Head of Department (Part III).");
             }
 
-            else if (DataGrid != null)
+            else if(existingdates.Count > 0 )
+            {
+                toastService.ShowWarning("Selected period arleady taken. Refer to the date of last leave");
+            }
+
+            else
+            {
+                ConfirmationText = "<p>Are you sure you want to submit this leave request! </p>";
+                await this.ConfirmationSubmitDialogue.ShowAsync();
+            }
+
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+    public async Task ComfirmationSubmitYes()
+    {
+        try
+        {  
+            if (DataGrid != null)
             {
                 await LoadingDialogue.ShowAsync();
                 LeaveData.LeaveApprovalStatusId = 2;
                 LeaveData.DateAdded = DateTime.Now;
-                //LeaveData.SubmittedToSupervisor = true;
                 await DataGrid.EndEditAsync();
             }            
         }
         catch (Exception ex)
         {
-            //toastService.ShowError(ex.Message.ToString());
+            toastService.ShowError(ex.Message.ToString());
         }
         finally
         {
             await LoadingDialogue.HideAsync();
+            await this.ConfirmationSubmitDialogue.HideAsync();
             StateHasChanged();
         }
     }
 
+    private void ComfirmationSubmitNo()
+    {
+        this.ConfirmationSubmitDialogue.HideAsync();
+    }
+
     public async Task onApproveForm()
+    {
+        try
+        {
+            ConfirmationText = "<p>Are you sure you want to approve this leave request! </p>";
+            await this.ConfirmationApprovalDialogue.ShowAsync();
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async void ComfirmationApprovalYes()
     {
         try
         {
@@ -946,11 +1371,6 @@
                 toastService.ShowWarning("Supervisor email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
             }
 
-            else if (employeenohodchange != null && employeenohodchange.EmailAddress == null)
-            {
-                toastService.ShowWarning("Head of Department email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
-            }
-
             else if (LeaveData.ImmediateSupervisor == null)
             {
                 toastService.ShowWarning("Please select your supervisor (Part III).");
@@ -958,7 +1378,7 @@
 
             else if (employeenohodchange != null && employeenohodchange.EmailAddress == null)
             {
-                toastService.ShowWarning("Head of Department email not registered in the system (Part III), kindly ask the system administrator to update the email and then continue.");
+                toastService.ShowWarning("Head of Department email not registered in the system (Part IV), kindly ask the system administrator to update the email and then continue.");
             }
 
             else if (LeaveData.Hod == null)
@@ -966,31 +1386,63 @@
                 toastService.ShowWarning("Please select your Head of Department (Part III).");
             }
 
+            else if (employeenochrochange != null && employeenochrochange.EmailAddress == null)
+            {
+                toastService.ShowWarning("CHRO email not registered in the system (Part IV), kindly ask the system administrator to update the email and then continue.");
+            }
+
             else if (DataGrid != null)
             {
                 await LoadingDialogue.ShowAsync();
-                LeaveData.LeaveApprovalStatusId = 5;
-                //LeaveData.SupervisorRecommendationDate = DateTime.Now;
-                //LeaveData.SubmittedToHod = true;
+
+                //Supervisor Review
+                if (LeaveData.LeaveApprovalStatusId == 2)
+                {
+                    LeaveData.LeaveApprovalStatusId = 5;
+                    LeaveData.SupervisorApprovalDate = DateTime.Now;
+                }
+
+                //HOD Review
+                else if (LeaveData.LeaveApprovalStatusId == 5)
+                {
+                    LeaveData.LeaveApprovalStatusId = 8;
+                    LeaveData.HodapprovalDate = DateTime.Now;
+                }
+
+                //CHRO Review and Approval
+                else if (LeaveData.LeaveApprovalStatusId ==8)
+                {
+                    LeaveData.LeaveApprovalStatusId = 9;
+                    LeaveData.ChroapprovalDate = DateTime.Now;
+                }
+
                 await DataGrid.EndEditAsync();
             }
         }
         catch (Exception ex)
         {
-            //toastService.ShowError(ex.Message.ToString());
+            toastService.ShowError(ex.Message.ToString());
         }
         finally
         {
             await LoadingDialogue.HideAsync();
+            await this.ConfirmationApprovalDialogue.HideAsync();
             StateHasChanged();
         }
     }
+
+    private void ComfirmationApprovalNo()
+    {
+        this.ConfirmationApprovalDialogue.HideAsync();
+    }
+
 
     public async Task onRejectForm()
     {
         try
         {
             ConfirmationText = "<p>Are you sure you want to reject this leave request! </p>";
+            await this.ConfirmationDialogue.ShowAsync();  
         }
         catch (Exception ex)
         {
@@ -1000,6 +1452,124 @@
         {
             StateHasChanged();
         }
+    }
+
+    private async void ComfirmationYes()
+    {
+        try
+        {
+            RejectionCommentsModel = new EmployeeLeaveRejectionComments();
+            if (LeaveData != null)
+            {
+                RejectionCommentsModel.EmployeeLeaveId = LeaveData.EmployeeLeaveId;
+            }
+
+            if (Credentials != null)
+            {
+                RejectionCommentsModel.AddedBy = Credentials.AccountHolderName;
+            }
+            RejectionCommentsModel.AddedDate = DateTime.Now;
+
+            if (ConfirmationDialogue != null)
+            {
+                await ConfirmationDialogue.HideAsync();
+            }
+
+            if (RejectLeaveDialogue != null)
+            {
+                await RejectLeaveDialogue.ShowAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private void ComfirmationNo()
+    {
+        this.ConfirmationDialogue.HideAsync();
+    }
+
+    //Rejection Reason
+    private async Task RejectReasonYes()
+    {
+        try
+        {
+            if(string.IsNullOrEmpty(RejectionCommentsModel.RejectionComments))
+            {
+                toastService.ShowWarning("Please enter a reason");               
+            }
+            else
+            {
+                await LoadingDialogue.ShowAsync();
+                if(LeaveData.EmployeeLeaveRejectionComments == null)
+                {
+                    LeaveData.EmployeeLeaveRejectionComments =new List<EmployeeLeaveRejectionComments>();
+                }
+                LeaveData.EmployeeLeaveRejectionComments.Add(RejectionCommentsModel);
+
+                //Supervisor Review
+                if (LeaveData.LeaveApprovalStatusId == 2)
+                {
+                    LeaveData.LeaveApprovalStatusId = 4;
+                    LeaveData.SupervisorRejectionDate = DateTime.Now;
+                    LeaveData.DateAdded = DateTime.Now;
+                }
+
+                //HOD Review
+                else if (LeaveData.LeaveApprovalStatusId == 5)
+                {
+                    LeaveData.LeaveApprovalStatusId = 7;
+                    LeaveData.HodrejectionDate = DateTime.Now;
+                    LeaveData.DateAdded = DateTime.Now;
+                }
+
+                //CHRO Review and Approval
+                else if (LeaveData.LeaveApprovalStatusId == 8)
+                {
+                    LeaveData.LeaveApprovalStatusId = 10;
+                    LeaveData.ChrorejectionDate = DateTime.Now;
+                    LeaveData.DateAdded = DateTime.Now;
+                }
+
+                if (RejectLeaveDialogue != null)
+                {
+                    await RejectLeaveDialogue.HideAsync();
+                }
+
+                await DataGrid.EndEditAsync();
+            }
+
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            DataGrid.Refresh();
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void RejectReasonNo()
+    {
+        DataGrid.Refresh();
+        this.RejectLeaveDialogue.HideAsync();
+    }
+
+    public async void DialogCancelBtnclicked()
+    {
+        if (DataGrid != null)
+        {
+            await DataGrid.CloseEdit();
+        }        
     }
 
     public string GetLeaveRequestHeader(EmployeeLeaveHeader Value)
@@ -1035,47 +1605,94 @@
         employeenohodchange = args.ItemData;
     }
 
+    public async void OnEmployeeCHROChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewEmployeeDropDown> args)
+    {
+        employeenochrochange = args.ItemData;
+    }
+
     public void OnLeaveTypeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ALeaveType> args)
     {
         leavetypedays = args.ItemData;
         int? leavetypeId = args.ItemData.LeaveTypeId;
+        EndDateEnablerBool = true;
 
-        //If the leavetype is changed in drodown, clear the other text fields
-        if (args.PreviousItemData != null)
-        {
-            LeaveData.CommencementDate = null;
-            LeaveData.EndDate = null;
-            LeaveData.TotalDays = null;
-            //LeaveData.NoChildren = null;
-        }
-        else
-        {
-            if (leavetypeId != null && (leavetypeId == 2 || leavetypeId == 4))
-            {
-                EndDateEnabler = false;
-            }
-            else
-            {
-                EndDateEnabler = true;
-            }
-        }
+        LeaveData.CommencementDate = null;
+        LeaveData.EndDate = null;
+        LeaveData.TotalDays = null;
+        LeaveData.NoChildren = null;
+        LeaveData.NoDaysAppliedFor = null;
+
         StateHasChanged();
+    }
+
+    private async Task ChildrenChange(Syncfusion.Blazor.Inputs.ChangeEventArgs<int?> args)
+    {
+
     }
 
     protected async Task OnMaternityDateChange(ChangedEventArgs<DateTime?> args)
     {
-        EndDateEnabler = false;
-        StartDate = Convert.ToDateTime(args.Value);
         leavetypedays = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == LeaveData.LeaveTypeId);
-        DateTime EndDateWeekDays = GetWeekDaysOnly(StartDate, leavetypedays.LeaveDaysPerYear.Value).AddDays(-1); // Subtract one day inorder to get end date as the actual date the leave ends
 
-        PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDateWeekDays);
-        LeaveData.CommencementDate = EndDateWeekDays.AddDays(PublicHolidays);
+        //Annual
+        if(LeaveData.LeaveTypeId == 1 )
+        {
+            EndDateEnablerBool = true;
+            LeaveData.EndDate = null;
+            TotalDaysTakenPrior = 0;
+            LeaveData.NoDaysAppliedFor = 0;
+            LeaveData.TotalDays = 0;
+        }
+        //Compassionate and Maternity and Sick Leave
+        else if(LeaveData.LeaveTypeId == 2 || LeaveData.LeaveTypeId == 3 || LeaveData.LeaveTypeId == 5 )
+        {            
+            StartDate = Convert.ToDateTime(args.Value);
 
-        numberOfDays2 = GetNumberOfDates(StartDate, EndDateWeekDays);
-        datesselectedd = GetDatesBetween(StartDate, EndDateWeekDays).ToArray();
+            DateTime EndDateWeekDays = GetWeekDaysOnly(StartDate, leavetypedays.LeaveDaysPerYear.Value).AddDays(0); // Subtract one day inorder to get end date as the actual date the leave ends
 
-        LeaveData.TotalDays = leavetypedays.LeaveDaysPerYear.Value;
+            PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDateWeekDays);
+            LeaveData.EndDate = EndDateWeekDays.AddDays(PublicHolidays);
+
+            numberOfDays2 = GetNumberOfDates(StartDate, EndDateWeekDays);
+            datesselectedd = GetDatesBetween(StartDate, EndDateWeekDays).ToArray();
+
+            LeaveData.TotalDays = leavetypedays.LeaveDaysPerYear.Value;
+
+            //Below is to assign the total days applied for
+            //Maternity leave
+            if(LeaveData.LeaveTypeId == 2)
+            {
+                EndDateEnablerBool = false;
+                LeaveData.NoDaysAppliedFor = leavetypedays.LeaveDaysPerYear.Value;
+            }
+            //Sick leave
+            else if(LeaveData.LeaveTypeId == 3)
+            {
+                EndDateEnablerBool = true;
+                LeaveData.NoDaysAppliedFor = leavetypedays.LeaveDaysPerYear.Value;
+            }   
+
+            //Compassionate leave
+            else if(LeaveData.LeaveTypeId == 5)
+            {
+                EndDateEnablerBool = false;
+                LeaveData.NoDaysAppliedFor = leavetypedays.LeaveDaysPerYear.Value;
+            }             
+        }
+
+        //Parternity
+        else if(LeaveData.LeaveTypeId == 4 )
+        {
+            EndDateEnablerBool = false;
+            TotalPaternalDays = (leavetypedays.LeaveDaysPerYear.Value * Convert.ToInt32(LeaveData.NoChildren));
+
+            DateTime EndDateWeekDays = GetWeekDaysOnly(StartDate, TotalPaternalDays).AddDays(0);
+
+            LeaveData.TotalDays = TotalPaternalDays;
+            PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDateWeekDays);
+            LeaveData.EndDate = EndDateWeekDays.AddDays(PublicHolidays);
+        }
+
 
         StateHasChanged();
     }
@@ -1124,12 +1741,20 @@
         if (to < from)
             throw new ArgumentException("To cannot be smaller than from.", nameof(to));
 
-        if (to.Date == from.Date)
+
+        if ((to.Date == from.Date) && (from.DayOfWeek != DayOfWeek.Saturday && from.DayOfWeek != DayOfWeek.Sunday))
+        {
+            return 1;
+        }
+
+        else if ((to.Date == from.Date) && (from.DayOfWeek == DayOfWeek.Saturday && from.DayOfWeek == DayOfWeek.Sunday))
+        {
             return 0;
+        }
 
         int n = 0;
         DateTime nextDate = from;
-        while (nextDate <= to.Date)
+        while(nextDate <= to.Date)
         {
             if (nextDate.DayOfWeek != DayOfWeek.Saturday && nextDate.DayOfWeek != DayOfWeek.Sunday)
                 n++;
@@ -1139,7 +1764,7 @@
         return n;
     }
 
-     //Function to get all dates between two dates
+    //Function to get all dates between two dates
     public List<DateTime> GetDatesBetween(DateTime startDate, DateTime endDate)
     {
         List<DateTime> allDates = new List<DateTime>();
@@ -1167,32 +1792,34 @@
         PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDate);
         LeaveDays = numberOfDays2 - PublicHolidays;
 
-        //Calculate the current number of days between the two dates
-        if (StartDate != EndDate)
-        {
-            LeaveData.TotalDays = LeaveDays;
-        }
-        else
-        {
-            LeaveData.TotalDays = 1;
-        }
-
-        StateHasChanged();
-
-        var LD = LeaveDataSource.OrderByDescending(x => x.TotalDays)
+        var getutilizeddays = LeaveDataSource.OrderByDescending(x => x.TotalDays)
         .FirstOrDefault(o => o.Employeeid == LeaveData.Employeeid &&
-            o.LeaveTypeId == LeaveData.LeaveTypeId);
-        if (LD != null && LD.TotalDays != null)
+            o.LeaveTypeId == LeaveData.LeaveTypeId && o.LeaveApprovalStatusId == 9);
+
+        LeaveData.NoDaysAppliedFor = LeaveDays;
+
+        // //Calculate the current number of days between the two dates
+        // if (StartDate.ToString("dd/MM/yyyy") != EndDate.ToString("dd/MM/yyyy"))
+        // { 
+        //     LeaveData.NoDaysAppliedFor = LeaveDays;
+        // }
+        // else
+        // {
+        //     LeaveData.NoDaysAppliedFor = 1;
+        // }
+        
+        AppliedDays = LeaveData.TotalDays;
+        if(getutilizeddays != null)
         {
-            LeaveData.TotalDays = LeaveDays + LD.TotalDays.Value;
-            TotalDaysTakenPrior = LD.TotalDays.Value;
-            StateHasChanged();
-        }
+            LeaveData.TotalDays = LeaveData.NoDaysAppliedFor + getutilizeddays.TotalDays.Value;
+            TotalDaysTakenPrior = getutilizeddays.TotalDays.Value;
+        }        
         else
         {
-            LeaveData.TotalDays = LeaveDays;
+            LeaveData.TotalDays = LeaveData.NoDaysAppliedFor + 0;
             TotalDaysTakenPrior = 0;
         }
+        StateHasChanged();
     }
 
     public async void ActionCompleteMain(ActionEventArgs<EmployeeLeaveHeader> args)
@@ -1211,31 +1838,430 @@
             if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
             {
                 _previous = Args.RequestType;
-                ActingOfficerDD = true;
-                EmployeeDD = true;
+                LeaveData = null;
+                OnSubmitButtonsBool = true;
+                EndDateEnablerBool = true;
 
+                //Show buttons on add 
+                IsHiddenDraft = false;
+                IsHiddenPersonSubmit = false;
+                IsHiddenApprove = true;
+                IsHiddenRejected = true;
+
+                Args.RowData.DateAdded = DateTime.Now;
+                Args.RowData.FinancialYearId = finyearid;
+                Args.RowData.RecordStatusId = 1;
+                Args.RowData.LeaveApprovalStatusId = 2;
+
+                //Assign Logged in Employee
                 if(Credentials.StaffId > 0)
                 {
-                    Args.Data.Employeeid = Credentials.StaffId;
+                    Args.RowData.Employeeid = Credentials.StaffId;
+                    Args.RowData.AddedBy = Credentials.AccountHolderName;
 
                     if (EmployeeData != null)
                     {
                         employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
                     }
+
+                    //Get last leave application date
+                    if (LeaveDataSource != null)
+                    {
+                        employeeleave = LeaveDataSource.OrderByDescending(x => x.TotalDays)
+                        .FirstOrDefault(o => o.Employeeid == Credentials.StaffId &&
+                            o.LeaveApprovalStatusId == 9 && o.FinancialYearId == finyearid);
+                    }
                 }
 
+                if(EmployeeData != null)
+                {
+                    employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
+                    employeenosupervisor = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.ImmediateSupervisor);
+                    employeenohodchange = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Hod);
+                    employeeactingofficer = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.ActingOfficerId);
+                    
+                    //Assign the CHRO
+                    var _data = EmployeeData.FirstOrDefault(o => o.JibTitleId == 44);
+
+                    if (_data != null)
+                    {
+                        Args.RowData.Chro = _data.Employeeid;
+                        employeenochrochange = EmployeeData.FirstOrDefault(o => o.Employeeid == _data.Employeeid);
+                    }
+
+
+                    //Assign HOD on Add
+                    if(employeenohodchange != null && employeenohodchange.HoDemployeeId != null)
+                    {
+                        Args.RowData.Hod = employeenohodchange.HoDemployeeId;
+                    }
+
+
+                }
+                                
                 Args.RowData.EmployeeLeaveDetails = new List<EmployeeLeaveDetails>();
+                Args.RowData.EmployeeLeaveHeaderAttachment = new List<EmployeeLeaveHeaderAttachment>();
             }
 
             if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
             {
                 _previous = Args.RequestType;
-                employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
+
+                //Load the current data here
+
+                List<Task> t = new List<Task>();
+
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetEmployeeDD");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(content, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"EmployeeLeave/GetEmployeeLeaveData");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        LeaveDataSource = JsonSerializer.Deserialize<List<EmployeeLeaveHeader>>(content, _options);
+                    }
+                }));
+
+                Task _t = Task.WhenAll(t);
+                await _t;
+
+                if(EmployeeData != null)
+                {
+                    employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
+                    employeenosupervisor = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.ImmediateSupervisor);
+                    employeenohodchange = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Hod);
+                    employeeactingofficer = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.ActingOfficerId);
+                    employeenochrochange = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Chro);
+                }
+
+                Args.RowData.DateAdded = DateTime.Now;
+
+                if(Credentials.StaffId > 0)
+                {
+                    Args.RowData.AddedBy = Credentials.AccountHolderName;
+
+                    //Get last leave application date
+                    if (LeaveDataSource != null)
+                    {
+                        employeeleave = LeaveDataSource.OrderByDescending(x => x.TotalDays)
+                        .FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid &&
+                            o.LeaveApprovalStatusId == 9 && o.FinancialYearId == Args.RowData.FinancialYearId);
+                    }
+                }
+
+                leavetypedays = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == Args.RowData.LeaveTypeId);
+
+                //Leave Information
+                StartDate = Convert.ToDateTime(Args.RowData.CommencementDate);
+                EndDate = Convert.ToDateTime(Args.RowData.EndDate);
+                numberOfDays2 = GetNumberOfDates(StartDate, EndDate);
+                datesselectedd = GetDatesBetween(StartDate, EndDate).ToArray();
+                PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDate);
+                LeaveDays = numberOfDays2 - PublicHolidays;
+
+                var getutilizeddays = LeaveDataSource.OrderByDescending(x => x.TotalDays)
+                .FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid &&
+                    o.LeaveTypeId == Args.RowData.LeaveTypeId && o.LeaveApprovalStatusId == 9);
+
+                Args.RowData.NoDaysAppliedFor = LeaveDays;
+
+                // //Calculate the current number of days between the two dates
+                // if (StartDate.ToString("dd/MM/yyyy") != EndDate.ToString("dd/MM/yyyy"))
+                // {
+                //     Args.RowData.NoDaysAppliedFor = LeaveDays;
+                // }
+                // else
+                // {
+                //     Args.RowData.NoDaysAppliedFor = 1;
+                // }
+
+                if(getutilizeddays != null)
+                {
+                    Args.RowData.TotalDays = Args.RowData.NoDaysAppliedFor + getutilizeddays.TotalDays.Value;
+                    TotalDaysTakenPrior = getutilizeddays.TotalDays.Value;
+
+                }    
 
                 if (Args.RowData.EmployeeLeaveDetails == null)
                 {
                     Args.RowData.EmployeeLeaveDetails = new List<EmployeeLeaveDetails>();
                 }
+
+                if (Args.RowData.EmployeeLeaveHeaderAttachment == null)
+                {
+                    Args.RowData.EmployeeLeaveHeaderAttachment = new List<EmployeeLeaveHeaderAttachment>();
+                }
+
+                //New
+                //Draft
+                if(Args.RowData.LeaveApprovalStatusId == 1)
+                {
+                    //If person editing is the same as the employee, hide buttons and not draft
+                    if (Args.RowData.Employeeid == Credentials.StaffId)
+                    {
+                        //Buttons
+                        IsHiddenDraft = false;
+                        IsHiddenPersonSubmit = false;
+                        IsHiddenApprove = true;
+                        IsHiddenRejected = true;
+                        LeaveComputation = false;
+
+                        OnSubmitButtonsBool = true;
+                        EndDateEnablerBool = true;
+                    }
+                    else
+                    {
+                        LeaveComputation = false;
+                        OnSubmitButtonsBool = false;
+                        EndDateEnablerBool = false;
+                    }
+                }
+
+                //Under Review By Supervisor
+                else if(Args.RowData.LeaveApprovalStatusId == 2)
+                {
+                    OnSubmitButtonsBool = false;
+                    EndDateEnablerBool = false;
+
+                    if ((Args.RowData.Employeeid != Credentials.StaffId) && (Args.RowData.ImmediateSupervisor == Credentials.StaffId))
+                    {
+                        //Buttons
+                        IsHiddenDraft = true;
+                        IsHiddenPersonSubmit = true;
+                        IsHiddenApprove = false;
+                        IsHiddenRejected = false;
+
+                        LeaveComputation = false;
+                    }
+                    else
+                    {
+                        //Buttons
+                        IsHiddenDraft = true;
+                        IsHiddenPersonSubmit = true;
+                        IsHiddenApprove = true;
+                        IsHiddenRejected = true;
+
+                        LeaveComputation = false;
+                    }
+                }
+
+                //Approved By Supervisor
+                else if(Args.RowData.LeaveApprovalStatusId == 3)
+                {
+                    OnSubmitButtonsBool = false;
+                    EndDateEnablerBool = false;
+
+                    //Buttons
+                    IsHiddenDraft = true;
+                    IsHiddenPersonSubmit = true;
+                    IsHiddenApprove = true;
+                    IsHiddenRejected = true;
+
+                    LeaveComputation = false;
+                }
+
+                //Rejected By Supervisor
+                else if(Args.RowData.LeaveApprovalStatusId == 4)
+                {
+                    //Owner of rejected application
+                    if ((Args.RowData.Employeeid == Credentials.StaffId))
+                    {
+                        //Buttons
+                        IsHiddenDraft = false;
+                        IsHiddenPersonSubmit = false;
+                        IsHiddenApprove = true;
+                        IsHiddenRejected = true;
+
+                        LeaveComputation = false;
+                        RejectionCommentsSection = true;
+
+                        OnSubmitButtonsBool = true;
+                        EndDateEnablerBool = true;
+                    }
+                    else
+                    {
+                        //Buttons
+                        IsHiddenDraft = true;
+                        IsHiddenPersonSubmit = true;
+                        IsHiddenApprove = true;
+                        IsHiddenRejected = true;
+
+                        LeaveComputation = false;
+                        RejectionCommentsSection = true;
+
+                        OnSubmitButtonsBool = false;
+                        EndDateEnablerBool = false;
+                    }
+                }
+
+                //Under Review By HOD
+                else if(Args.RowData.LeaveApprovalStatusId == 5)
+                {
+                    OnSubmitButtonsBool = false;
+                    EndDateEnablerBool = false;
+
+                    //If person editing is not the same as the employee and is selected as the hod and status is 5-Under Review By HOD
+                    if ((Args.RowData.Employeeid != Credentials.StaffId)
+                    && (Args.RowData.Hod == Credentials.StaffId))
+                    {
+                        //Buttons
+                        IsHiddenDraft = true;
+                        IsHiddenPersonSubmit = true;
+                        IsHiddenApprove = false;
+                        IsHiddenRejected = false;
+
+                        LeaveComputation = false;
+                    }
+                    else
+                    {
+                        //Buttons
+                        IsHiddenDraft = true;
+                        IsHiddenPersonSubmit = true;
+                        IsHiddenApprove = true;
+                        IsHiddenRejected = true;
+
+                        LeaveComputation = false;
+                    }
+                }
+
+                //Approved By HOD
+                else if(Args.RowData.LeaveApprovalStatusId == 6)
+                {
+                    OnSubmitButtonsBool = false;
+                    EndDateEnablerBool = false;
+
+                    //Buttons
+                    IsHiddenDraft = true;
+                    IsHiddenPersonSubmit = true;
+                    IsHiddenApprove = true;
+                    IsHiddenRejected = true;
+
+                    LeaveComputation = false;
+                }
+
+                //Rejected By HOD
+                else if(Args.RowData.LeaveApprovalStatusId == 7)
+                {
+                    //Owner of rejected application
+                    if ((Args.RowData.Employeeid == Credentials.StaffId))
+                    {
+                        //Buttons
+                        IsHiddenDraft = false;
+                        IsHiddenPersonSubmit = false;
+                        IsHiddenApprove = true;
+                        IsHiddenRejected = true;
+
+                        LeaveComputation = false;
+                        RejectionCommentsSection = true;
+
+                        OnSubmitButtonsBool = true;
+                        EndDateEnablerBool = true;
+                    }
+                    else
+                    {
+                        //Buttons
+                        IsHiddenDraft = true;
+                        IsHiddenPersonSubmit = true;
+                        IsHiddenApprove = true;
+                        IsHiddenRejected = true;
+
+                        LeaveComputation = false;
+                        RejectionCommentsSection = true;
+
+                        OnSubmitButtonsBool = false;
+                        EndDateEnablerBool = false;
+                    }
+                }
+
+                //Under Review By CHRO
+                else if(Args.RowData.LeaveApprovalStatusId == 8)
+                {
+                    OnSubmitButtonsBool = false;
+                    EndDateEnablerBool = false;
+
+                    if ((Args.RowData.Employeeid != Credentials.StaffId)
+                    && (Args.RowData.Chro == Credentials.StaffId))
+                    {
+                        //Buttons
+                        IsHiddenDraft = true;
+                        IsHiddenPersonSubmit = true;
+                        IsHiddenApprove = false;
+                        IsHiddenRejected = false;
+
+                        LeaveComputation = true;
+                    }
+
+                    else
+                    {
+                        //Buttons
+                        IsHiddenDraft = true;
+                        IsHiddenPersonSubmit = true;
+                        IsHiddenApprove = true;
+                        IsHiddenRejected = true;
+
+                        LeaveComputation = false;
+                    }
+                }
+
+                //Approved By CHRO
+                else if(Args.RowData.LeaveApprovalStatusId == 9)
+                {
+                    OnSubmitButtonsBool = false;
+                    EndDateEnablerBool = false;
+
+                    //Buttons
+                    IsHiddenDraft = true;
+                    IsHiddenPersonSubmit = true;
+                    IsHiddenApprove = true;
+                    IsHiddenRejected = true;
+
+                }
+
+                //Rejected By CHRO
+                else if(Args.RowData.LeaveApprovalStatusId == 10)
+                {
+                    //Owner of rejected application
+                    if ((Args.RowData.Employeeid == Credentials.StaffId))
+                    {
+                        //Buttons
+                        IsHiddenDraft = false;
+                        IsHiddenPersonSubmit = false;
+                        IsHiddenApprove = true;
+                        IsHiddenRejected = true;
+
+                        OnSubmitButtonsBool = true;
+                        EndDateEnablerBool = true;
+                    }
+                    else
+                    {
+                        //Buttons
+                        IsHiddenDraft = true;
+                        IsHiddenPersonSubmit = true;
+                        IsHiddenApprove = true;
+                        IsHiddenRejected = true;
+
+                        OnSubmitButtonsBool = false;
+                        EndDateEnablerBool = false;
+
+                    }
+                }
+
+                //Recall
+                else if(Args.RowData.LeaveApprovalStatusId == 13)
+                {
+
+                }
+
+                StateHasChanged();
             }
             if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
             {
@@ -1258,20 +2284,33 @@
     {
         if (Args.Column.Field == "LeaveApprovalStatusId")
         {
-            if (Args.Data.LeaveApprovalStatusId == 9 || Args.Data.LeaveApprovalStatusId == 11)
+            if(ApprovalStatusData != null)
             {
-                Args.Cell.AddClass(new string[] { "Approved" });
+                var impcolor = ApprovalStatusData.FirstOrDefault(o => o.LeaveApprovalStatusId == Args.Data.LeaveApprovalStatusId);
+                if (impcolor != null)
+                {
+                    Args.Cell.AddStyle(new string[] { $"background-color:{impcolor.LeaveApprovalStatusColor}", $"color:{impcolor.LeaveApprovalTextColor}" });
+                }
             }
-            else
-            {
-                Args.Cell.AddClass(new string[] { "Draft" });
-            }
+            
         }
     }
 
     public void RowBound(RowDataBoundEventArgs<EmployeeLeaveHeader> Args)
     {
 
+    }
+
+    public async void LoadHandler()
+    {
+        SpinnerObj.ShowAsync();
+        GridAttributes.Add("disable", "yes");
+    }
+
+    public async void DataBound()
+    {
+        GridAttributes["disable"] = "no";
+        await SpinnerObj.HideAsync();
     }
 
     #region LeaveRequest
@@ -1366,6 +2405,100 @@
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
         }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                string? _baseurl = Navigation.BaseUri;
+
+                var val = (value as EmployeeLeaveHeader);
+                if (val != null)
+                {
+                    if (val.EmployeeLeaveId == 0)
+                    {
+
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"EmployeeLeave/CreateEmployeeLeave?_baseurl={_baseurl}", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                string? _baseurl = Navigation.BaseUri;
+                var val = (value as EmployeeLeaveHeader);
+                if (val != null)
+                {
+                    if (val.EmployeeLeaveId != 0)
+                    {
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"EmployeeLeave/UpdateEmployeeLeave?_baseurl={_baseurl}", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+
     }
 
     #endregion LeaveRequest

@@ -52,7 +52,6 @@ using static HCMIS.Pages.Account.ChangeUserPasswordPage;
 using static HCMIS.Pages.Utilities.SubcountyPage;
 using static HCMIS.Pages.Utilities.ParishPage;
 using static HCMIS.Pages.Utilities.VillagePage;
-using static HCMIS.Pages.EmployeeLeave.EmployeeLeaveRequestPage;
 using static HCMIS.Pages.PartialViews.SupervisorPartialApprovalPage;
 using static HCMIS.Pages.Utilities.PublicHolidaysPage;
 using Syncfusion.Blazor.Schedule;
@@ -69,6 +68,8 @@ using static HCMIS.Pages.Utilities.FinancialYearPage;
 using static HCMIS.Pages.Utilities.BSCKPIFormPage;
 using static HCMIS.Pages.EmployeeLeave.EmployeeLeaveApplicationPage;
 using HCMIS.Model;
+using static HCMIS.Pages.Utilities.MaximumYearPage;
+using static HCMIS.Pages.Utilities.SectionsPage;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.Services.AddSyncfusionBlazor();
@@ -144,7 +145,6 @@ builder.Services.AddScoped<EmployeeDisplinaryDataAdapter>();
 builder.Services.AddScoped<UserManagementAdapter>(); 
 builder.Services.AddScoped<ChangeUserPasswordAdapter>();
 builder.Services.AddScoped<LeaveApplicationAdapter>();
-builder.Services.AddScoped<LeaveRequestAdapter>();
 builder.Services.AddScoped<SupervisorApprovalAdapter>(); 
 builder.Services.AddScoped<PublicHolidayAdapter>();
 builder.Services.AddScoped<BankAdapter>();
@@ -158,6 +158,8 @@ builder.Services.AddScoped<FinancialYearAdapter>();
 builder.Services.AddScoped<ObjectivesAdapter>();
 builder.Services.AddScoped<ObjectivesDetailsAdapter>();
 builder.Services.AddScoped<PerspectivesDetailsAdapter>();
+builder.Services.AddScoped<SectionAdapter>();
+builder.Services.AddScoped<MaximumYearAdapter>();
 
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IReportService, ReportService>();
@@ -174,6 +176,6 @@ builder.Services.AddScoped<IUtilityRepository,UtilityRepository>();
 builder.Services.AddScoped<IAuthenticationService,AuthenticationService>();
 
 //builder.Services.AddSyncfusionBlazor(options => { options.IgnoreScriptIsolation = false; });
-Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Mjc5Nzc0OEAzMjMzMmUzMDJlMzBJMkFWKzlyOFIweUp1R1llTmxMb240Z3lZUDIweVNNUTBWc21vY2t3STB3PQ==");
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("MjgxODg0MEAzMjMzMmUzMDJlMzBrVFl6QXUrYnBORlpHbmtMOEZwTm50enVkR2E5YjRKc0lIUU1ROXlsLzFZPQ==");
 await builder.Build().RunAsync();
 

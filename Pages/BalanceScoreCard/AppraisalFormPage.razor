@@ -19,6 +19,19 @@
 
 
 <style>
+    /*Manage Records Button*/
+    .e-grid .e-icons:not(.e-btn-icon) {
+        color: #00cc00;
+        color: floralwhite;
+        font-size: smaller;
+        font-weight: bolder;
+    }
+
+    .e-grid .e-unboundcelldiv .e-icons:not(.e-btn-icon) {
+        color: white;
+    }
+
+    /*Manage Records Button*/
 
     /*Grid Aggregate Column Color*/
     /* .e-grid .e-summaryrow .e-summarycell, .e-grid .e-summaryrow .e-templatecell, .e-grid .e-summarycontent .e-indentcell, .e-grid .e-indentcell.e-detailindentcelltop, .e-grid .e-groupfooterrow.e-summaryrow .e-indentcell.e-indentcelltop {
@@ -28,14 +41,6 @@
         border-bottom-color: black;
         font-size: large;
     } */
-
-    /*Manage Records Button*/
-    .e-grid .e-icons:not(.e-btn-icon) {
-        color: #00cc00;
-        color: floralwhite;
-        font-size: smaller;
-        font-weight: bolder;
-    }
 
     .e-grid .e-unboundcelldiv .e-icons:not(.e-btn-icon) {
         color: whitesmoke;
@@ -81,13 +86,6 @@
         z-index: 1;
     }
     /*stick grid headers*/
-
-    .e-edit-dialog {
-        max-height: 98%;
-        max-width: 98%;
-        min-width: 98%;
-        min-height: 98%;
-    }
 
     /*Disable Grid on Load and Enable it on DataBound*/
     .e-grid[disable="yes"] {
@@ -209,7 +207,7 @@
     <SfGrid @ref="@DataGrid" TValue="BalanceScoreCard" GridLines="GridLine.Both" ID="Grid" @attributes="@GridAttributes"
             AllowTextWrap="true" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true"
             AllowGrouping="true" AllowExcelExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@ToolbarMenu" Query="@MainQuery">
-        <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+        <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog"   Dialog="AttachmentDialog">
             <HeaderTemplate>
                 @{
                     var text = GetEmployeeHeader((context as BalanceScoreCard));
@@ -517,7 +515,7 @@
                                             <AccordionItem Expanded="false" CssClass="const">
                                                 <HeaderTemplate>5.1: Appraisee Comments</HeaderTemplate>
                                                 <ContentTemplate>
-                                                    <AppraiseeCommentsPage BalanceScoreCardId="@BscData.BalanceScoreCardId" onscorecardtoggle="@ToggleBalanceScoreCardAppraiseeComments" appraiseecommentsdata="@BscData.BalanceScoreCardAppraiseeComments.ToList()"
+                                                    <AppraiseeCommentsPage @ref="AppraiseeCommentsref" BalanceScoreCardId="@BscData.BalanceScoreCardId" onscorecardtoggle="@ToggleBalanceScoreCardAppraiseeComments" appraiseecommentsdata="@BscData.BalanceScoreCardAppraiseeComments.ToList()"
                                                                            _previous="@_previous"></AppraiseeCommentsPage>
                                                 </ContentTemplate>
                                             </AccordionItem>
@@ -562,17 +560,7 @@
                                     </BSCAttachmentPage>
                                 </div>
                             </div>
-                            @*<AccordionItem Expanded="false">
-                                <HeaderTemplate><strong>UPLOAD EVIDENCE</strong></HeaderTemplate>
-                                <ContentTemplate>
-                                    <BSCAttachmentPage 
-                                        BalanceScoreCardId="@BscData.BalanceScoreCardId"
-                                        OnHeaderAttachmentToggled="@ToggleBalanceScoreCardAttachment" 
-                                        HeaderAttachmentData="@BscData.BalanceScoreCardAttachment.ToList()" 
-                                        BSCAttachmentToolbarItems="@BSCAttachmentToolbarItems">
-                                    </BSCAttachmentPage>
-                                </ContentTemplate>
-                            </AccordionItem>*@
+
                         </AccordionItems>
                     </SfAccordion>
                     // AccessToken="@AccessToken"
@@ -864,6 +852,8 @@
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     public Query MainQuery = new Query();
     private List<object>? BSCAttachmentToolbarItems { get; set; }
+    private DialogSettings AttachmentDialog = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "95%" };
+    AppraiseeCommentsPage AppraiseeCommentsref;
 
     private void ToggleSearchQuery(Query? DetailData)
     {
@@ -1129,7 +1119,12 @@
             {
                 BscData.LeaveApprovalStatusId = 2;
                 BscData.AddedDate = DateTime.Now;
+                if (AppraiseeCommentsref.AppraiseeCommentsGrid != null)
+                {
+                    await AppraiseeCommentsref.AppraiseeCommentsGrid.EndEditAsync();
+                }
                 await DataGrid.EndEditAsync();
+
             }
         }
         catch (Exception ex)
