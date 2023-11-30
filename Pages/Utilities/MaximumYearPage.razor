@@ -1,0 +1,476 @@
+﻿@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@using HCMIS.Data
+@using HCMIS.Interface
+@using HCMIS.Model
+@using System.Text.Json
+@using System.Collections;
+@using System.IO;
+@using HCMIS.SHARED.Models;
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager navigation;
+@inject SystemSettings _SystemSettings;
+@inject IAuthenticationService AuthService;
+@using HCMIS.ViewModel;
+@inject IToastService toastService;
+
+<style>
+
+    .headerbandimg {
+        background-image: url(/image/comesalogo.png);
+        background-size: 20px;
+        background-repeat: no-repeat;
+        width: 20px;
+        height: 20px;
+        margin-right: 5px;
+        vertical-align: top;
+        display: inline-block;
+        color: whitesmoke;
+    }
+
+    .pp {
+        color: ghostwhite;
+        background-color: #2ecc71;
+        padding: 10px;
+    }
+
+    /*Increase font size for Multi Line Text Box Place Holder*/
+    .e-multi-line-input label.e-float-text {
+        font-size: 17px !important;
+    }
+</style>
+
+<center>
+    <h5>
+        <strong>MAXIMUM YEAR</strong>
+    </h5>
+</center>
+
+<SfGrid @ref="DataGrid" ID="Grid" TValue="AMaximumYear"
+                            Toolbar="@ToolbarMenu" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+                            AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true">
+                        
+                        <SfDataManager AdaptorInstance="@typeof(MaximumYearAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+                        <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+                        <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+                        <GridEvents 
+                            OnActionBegin="OnActionBegin" 
+                            OnActionComplete="OnSubcountyActionComplete"
+                            CellSelected="CellSelectHandler"
+                            CellSaved="CellSavedHandler"
+                            DataBound="DataBound"
+                            TValue="AMaximumYear">
+                        </GridEvents>
+                        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                        <GridPageSettings PageSize="20"></GridPageSettings>
+                        <GridEditSettings AllowAdding="false" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Batch" ShowConfirmDialog=false>
+                                <HeaderTemplate>
+                                    @{
+                                        var text = GetHeader((context as AMaximumYear));
+                                        <div class="headerbandimg">
+                                            <span>@text</span>
+                                        </div>
+                                    }
+                                </HeaderTemplate>
+                                <Template Context="SubcountyContext">
+                                @{
+                                        var KpiData = (SubcountyContext as AMaximumYear);
+                                        @if (KpiData != null)
+                                        {
+                                            <div class="row" style="padding:15px;">
+                                                <div class="col-md-12" hidden>
+                                                    <SfNumericTextBox @bind-Value="@(KpiData.MaximumYearId)" Enabled="false" Placeholder="Maximum Year Id" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                                </div>
+                                                <div class="col-md-12">
+                                                    <p>Maximum Year<span style="color:red;">*</span></p>
+                                                    <SfNumericTextBox @bind-Value="@(KpiData.MaximumYearId)" Enabled="true" Placeholder="Maximum Year" Format="N0" FloatLabelType="FloatLabelType.Never" HtmlAttributes="@htmlattribute" Min="0" Decimals="0" ShowSpinButton=false></SfNumericTextBox>
+                                                </div>
+                                            </div>
+                                        }                                    
+                                    }
+                                </Template>
+                                
+                            </GridEditSettings>
+                        <GridColumns>
+
+                            @* <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn> *@
+                            <GridColumn Field=@nameof(AMaximumYear.MaximumYearId) HeaderText="Maximum Year Id" AllowEditing="false" IsPrimaryKey="true" Width="150" Visible="false"></GridColumn>
+
+                            <GridColumn Field=@nameof(AMaximumYear.MaximumYearDesc) HeaderText="Year" Width="150"></GridColumn>
+                        </GridColumns>
+                    </SfGrid>
+
+@code {
+    SfGrid<AMaximumYear>? DataGrid { get; set; }
+    List<AMaximumYear>? MaximumYearData { get; set; }
+    LoginResultModel? Credentials { get; set; }
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    Dictionary<string, object> htmlattribute = new Dictionary<string, object>() 
+    { 
+           { "maxlength", "5" }, 
+    }; 
+
+    private List<object> ToolbarMenu = new List<object>()
+    {
+            new ItemModel() { Text = "Add Year", PrefixIcon = "e-add", Id = "Grid_add"},
+            new ItemModel(){ Text = "Edit Year", PrefixIcon= "e-edit", Id="Grid_edit"},
+    };
+
+    /// <summary>
+    /// Event for Toolbar click for Grid Exporting
+    /// </summary>
+    public void GridToolbarClick(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Id == "Grid1_excelexport")
+        {
+            this.DataGrid.ExportToExcelAsync();
+        }
+        if (args.Item.Id == "Grid1_pdfexport")
+        {
+            this.DataGrid.ExportToPdfAsync();
+        }
+        if (args.Item.Id == "Grid1_csvexport")
+        {
+            this.DataGrid.ExportToCsvAsync();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Credentials = await AuthService.GetUserCredentials();
+
+        List<Task> t = new List<Task>();
+
+        t.Add(Task.Run(async () =>
+            {
+                var response = await Http.GetAsync($"Utilities/GetMaximumYear");
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    MaximumYearData = JsonSerializer.Deserialize<List<AMaximumYear>>(content, _options);
+                }
+            }));
+
+        Task _t = Task.WhenAll(t);
+        await _t;
+    }
+
+    #region Sections Region
+    public class MaximumYearAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        ApiConfig _ApiConfig;
+        SystemSettings _SystemSettings;
+        private readonly JsonSerializerOptions _options;
+        public IToastService toastService;
+        private readonly NavigationManager Navigation;
+        public MaximumYearAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
+            , SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            Navigation = _Navigation;
+            _ApiConfig = apiConfig;
+            _SystemSettings = systemSettings;
+
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<AMaximumYear>();
+
+            try
+            {
+                var response = await Http.GetAsync($"Utilities/GetMaximumYear");
+                var content = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    toastService.ShowError(response.ReasonPhrase);
+                }
+                data = JsonSerializer.Deserialize<List<AMaximumYear>>(content, _options);
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<AMaximumYear>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                var val = (value as AMaximumYear);
+
+                if (val.MaximumYearId == 0)
+                {
+                    string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                    StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                    var result = await Http.PostAsync($"Utilities/CreateMaximumYear", httpContent);
+                    if (result.IsSuccessStatusCode)
+                    {
+                        toastService.ShowSuccess(val.MaximumYearDesc + " was sucessfully added");
+                    }
+                    else
+                    {
+                        toastService.ShowError("Ooops. Something went wrong");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+                var val = (value as AMaximumYear);
+
+
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                var result = await Http.PutAsync($"Utilities/UpdateMaximumYear", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    toastService.ShowSuccess($"{val.MaximumYearDesc}  was sucessfully updated");
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+    
+    
+        public override async Task<object> BatchUpdateAsync(DataManager dataManager, object changedRecords, object addedRecords, object deletedRecords, string primaryColumnName, string key, int? dropIndex)
+        {
+            object ReturnValue = changedRecords;
+            if (changedRecords != null)
+            {
+                ReturnValue = changedRecords;
+
+                var val = (changedRecords as List<AMaximumYear>);
+                if (val != null && val.Count > 0)
+                {
+                    foreach (var item in val)
+                    {
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(item);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                        var result = await Http.PutAsync($"Utilities/UpdateMaximumYear", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            toastService.ShowSuccess(item.MaximumYearDesc + " was sucessfully added");
+                        }
+                        else
+                        {
+                            toastService.ShowError("Ooops. Something went wrong");
+                        }
+                    }
+                }
+            }
+
+            // if (changedRecords != null)
+            // {
+            //     ReturnValue = changedRecords;
+
+            //     var val = (changedRecords as List<Mtspframework>);
+            //     if (val != null && val.Count > 0)
+            //     {
+            //         foreach (var item in val)
+            //         {
+            //             await repo.SaveSearchedFramework(item);
+            //         }
+            //     }
+            // }
+
+            return ReturnValue;
+        }
+
+    }
+
+    public async void OnSubcountyActionComplete(ActionEventArgs<AMaximumYear> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) ||
+        args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            DataGrid.PreventRender(false);
+        }
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+        {
+
+        }
+    }
+
+    private async Task CellSavedHandler(CellSaveArgs<AMaximumYear> args)
+    {
+        try
+        {
+            await DataGrid.EndEditAsync();
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message);
+        }
+        finally
+        {
+            
+        }
+    }
+
+     //Enable cell edit on single click
+    public async Task CellSelectHandler(CellSelectEventArgs<AMaximumYear> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await DataGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await DataGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await DataGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
+    public async void DataBound()
+    {
+        //Check if there are records arleady and only allow editing
+        if (DataGrid != null && DataGrid.CurrentViewData.Count() > 0)
+        {
+            ToolbarMenu = new List<object>()
+            {
+                new ItemModel(){ Text = "Edit Year", PrefixIcon= "e-edit", Id="Grid_edit"}
+            };
+        }
+    }
+
+
+    public async void OnActionBegin(ActionEventArgs<AMaximumYear> args)
+    {
+        try
+        {
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+            {
+                if (args.Data.MaximumYearDesc == null)
+                {
+                    toastService.ShowWarning("Please enter the year");
+                    args.Cancel = true;
+                }
+
+                else
+                {
+                    var countdata = MaximumYearData?
+                    .FirstOrDefault(o => o.MaximumYearDesc == args.Data.MaximumYearDesc);
+
+                    if (args.Action == "Add")
+                    {
+                        if (countdata != null)
+                        {
+                            toastService.ShowWarning("This year " + args.Data.MaximumYearDesc + " already exists in the database. Record will not be saved.");
+                            args.Cancel = true;
+                        }
+                    }
+                    else if (args.Action == "Edit")
+                    {
+                        if (countdata != null && countdata.MaximumYearId != args.Data.MaximumYearId)
+                        {
+                            toastService.ShowWarning("This year " + args.Data.MaximumYearDesc + " already exists in the database. Record will not be saved.");
+                            args.Cancel = true;
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+    }
+
+
+    public string GetHeader(AMaximumYear Value)
+    {
+        if (Value.MaximumYearId == 0)
+        {
+            return "Add a new Year";
+        }
+        else
+        {
+            return "Edit Details for " + Value.MaximumYearDesc;
+        }
+    }
+
+    #endregion Sections Region
+
+
+
+}
+

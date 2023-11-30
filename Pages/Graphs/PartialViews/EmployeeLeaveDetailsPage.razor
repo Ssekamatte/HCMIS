@@ -1,0 +1,113 @@
+﻿@* @page "/EmployeeLeaveDetailsPage" *@
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@using HCMIS.Interface;
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using System.Collections;
+@using System.IO;
+@using HCMIS.SHARED.Models;
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager navigation;
+@inject SystemSettings _SystemSettings;
+@using HCMIS.ViewModel;
+@inject IToastService toastService;
+@inject IAuthenticationService AuthService;
+
+<SfGrid @ref="@LeaveHeaderGrid" DataSource="@datasource" GridLines="GridLine.Both"
+        TValue="EmployeeLeaveHeader" ID="Grid1"
+        AllowTextWrap="true"
+        AllowPaging="true"
+        AllowFiltering="false"
+        AllowReordering="true"
+        AllowResizing="true"
+        AllowGrouping="false"
+        AllowExcelExport="true"
+        AllowPdfExport="true"
+        AllowSelection="true"
+        AllowSorting="true">
+    <GridEditSettings AllowAdding="false" AllowEditing="false" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog" ShowConfirmDialog="false"></GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
+    
+    <GridColumns>
+        <GridColumn Field=@nameof(EmployeeLeaveHeader.EmployeeLeaveId)
+                    HeaderText="Id"
+                    TextAlign="TextAlign.Justify"
+                    IsPrimaryKey="true"
+                    IsIdentity="true"
+                    Visible="false"
+                    Width="180"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+        <GridForeignColumn Field=@nameof(EmployeeLeaveHeader.LeaveTypeId)
+                           HeaderText="Leave Type"
+                           Width="80"
+                           AllowEditing="false"
+                           ForeignKeyField="@(nameof(ALeaveType.LeaveTypeId))"
+                           ForeignKeyValue="@(nameof(ALeaveType.LeaveTypeDescription))"
+                           ForeignDataSource="@LeaveTypeData"
+                           AllowFiltering="false"
+                           IsFrozen="false">
+        </GridForeignColumn>
+        <GridColumn Field=@nameof(EmployeeLeaveHeader.CommencementDate)
+                    DefaultValue="@(DateTime.Now)"
+                    HeaderText="Comment Date"
+                    EditType="EditType.DatePickerEdit"
+                    Format="dd/MMMM/yyyy"
+                    Type="ColumnType.Date"
+                    Width="80">
+        </GridColumn>
+        <GridColumn Field=@nameof(EmployeeLeaveHeader.EndDate)
+                    DefaultValue="@(DateTime.Now)"
+                    HeaderText="Comment Date"
+                    EditType="EditType.DatePickerEdit"
+                    Format="dd/MMMM/yyyy"
+                    Type="ColumnType.Date"
+                    Width="80">
+        </GridColumn>
+        <GridColumn Field=@nameof(EmployeeLeaveHeader.NoDaysAppliedFor)
+                    HeaderText="No. of Days"
+                    TextAlign="TextAlign.Right"
+                    IsIdentity="true"
+                    Visible="false"
+                    Width="80">
+        </GridColumn>
+    </GridColumns>
+
+</SfGrid>
+
+@code {
+    [Parameter]
+    public List<EmployeeLeaveHeader>? hodcommentsdata { get; set; }
+    [Parameter]
+    public int EmployeeLeaveId { get; set; }
+    [Parameter]
+    public EventCallback<List<EmployeeLeaveHeader>?> onscorecardtoggle { get; set; }
+    SfGrid<EmployeeLeaveHeader>? LeaveHeaderGrid { get; set; }
+    List<EmployeeLeaveHeader>? datasource { get; set; }
+
+    Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
+    int? previousEmployeeLeaveId { get; set; }
+    [Parameter]
+    public Syncfusion.Blazor.Grids.Action _previous { get; set; }
+    List<ALeaveType>? LeaveTypeData { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (previousEmployeeLeaveId != EmployeeLeaveId)
+        {
+            int countid = -10000;
+            previousEmployeeLeaveId = EmployeeLeaveId;
+            datasource = new List<EmployeeLeaveHeader>();
+            if (hodcommentsdata != null && hodcommentsdata.Count() > 0)
+            {
+                datasource.AddRange(hodcommentsdata);
+            }
+        }
+    }
+
+}
+

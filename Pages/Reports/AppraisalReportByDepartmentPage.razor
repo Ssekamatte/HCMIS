@@ -36,14 +36,18 @@
         
         <div class="col col-md-3">
             <p>Employee</p>
-            <SfMultiSelect @bind-Value="@InputModel.Employeeid" TValue="int?[]" TItem="ViewBscEmployee" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
-                <MultiSelectFieldSettings Value="@nameof(ViewBscEmployee.Employeeid)" Text="@nameof(ViewBscEmployee.EmployeeDetails)"></MultiSelectFieldSettings>
+            <SfMultiSelect @bind-Value="@InputModel.Employeeid" TValue="int?[]" TItem="ViewEmployeeDropDown" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" FloatLabelType="FloatLabelType.Never" PopupHeight="350px"  Enabled="EmployeeDD">
+                <MultiSelectFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></MultiSelectFieldSettings>
             </SfMultiSelect>
         </div>
 
         <div class="col col-md-3">
             <p>Department</p>
-            <SfMultiSelect @bind-Value="@InputModel.DepartmentId" TValue="int?[]" TItem="ADepartment" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@DepartmentsData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+            <SfMultiSelect @bind-Value="@InputModel.DepartmentId" TValue="int?[]" 
+            TItem="ADepartment" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+            Mode="@VisualMode.CheckBox" DataSource="@DepartmentsData" ShowSelectAll="true" EnableSelectionOrder="true" 
+            ShowDropDownIcon="true" FilterBarPlaceholder="Employee" 
+            FloatLabelType="FloatLabelType.Never" PopupHeight="350px" Enabled="DepartmentDD">
                 <MultiSelectFieldSettings Value="@nameof(ADepartment.DepartmentId)" Text="@nameof(ADepartment.DepartmentDescription)"></MultiSelectFieldSettings>
             </SfMultiSelect>
         </div>
@@ -91,7 +95,7 @@
 
     </div>
 
-    <div class="row" style="margin-bottom:10px;">
+    <div class="row" style="margin-bottom:10px;margin-top:10px;">
         @if (Downloadreport == false)
         {
             <div class="col col-md-12">
@@ -111,7 +115,7 @@
     SfSpinner? DownloadingSpinner;
     bool Downloadreport { get; set; } = false;
     string? filename { get; set; } = null;
-    List<ViewBscEmployee>? EmployeeData { get; set; }
+    List<ViewEmployeeDropDown>? EmployeeData { get; set; }
     List<AFinancialYear>? FinancialYearData { get; set; }
     List<AAppraisalReason>? AppraisalData { get; set; }
     List<ABscKpi>? KpiData { get; set; }
@@ -126,6 +130,8 @@
     List<APerformanceScale>? ScaleData { get; set; }
     LoginResultModel? Credentials { get; set; }
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    public bool EmployeeDD { get; set; }
+    public bool DepartmentDD { get; set; }
 
     protected override async Task OnInitializedAsync()
     {        
@@ -139,7 +145,7 @@
             if (responseemployee.IsSuccessStatusCode)
             {
                 var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-                EmployeeData = JsonSerializer.Deserialize<List<ViewBscEmployee>>(contentemployee, _options);
+                EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(contentemployee, _options);
             }
         }));
 
@@ -235,6 +241,24 @@
 
         Task _t = Task.WhenAll(t);
         await _t;
+
+        if (Credentials != null && (!string.IsNullOrEmpty(Credentials.UserRole) &&
+            Credentials.UserRole.Contains("Administrator") || Credentials.JobTitleId == 44))
+        {
+            EmployeeDD = true;
+        }
+        else
+        {
+            EmployeeDD = false;
+            DepartmentDD = false;
+
+            if (Credentials != null)
+            {
+                List<int?> _employeeid = new List<int?>();
+                _employeeid.Add(Credentials.StaffId);
+                InputModel.Employeeid = _employeeid.ToArray();
+            }
+        }
 
     }
 
@@ -482,6 +506,8 @@
             worksheet.Range["B" + row + ":C" + row].CellStyleName = "headerStyle";
 
             row++;
+            row++;
+
             int startrow = row;
             int Endrow = row;
 

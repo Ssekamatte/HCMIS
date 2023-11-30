@@ -27,6 +27,7 @@ namespace HCMIS.Repository
             this.sessionStorage = sessionStorage;
         }
 
+        #region Appraisal
         public async Task<List<ViewBalanceScoreCardReport>> GetAppraisal(UtilitiesSearchPanel SearchModel)
         {
             List<ViewBalanceScoreCardReport>? data = new List<ViewBalanceScoreCardReport>();
@@ -287,6 +288,39 @@ namespace HCMIS.Repository
             return data;
         }
 
+
+        #endregion Appraisal
+
+        #region Leave
+        public async Task<List<ViewEmployeeLeaveReport>> GetLeaveRequest(UtilitiesSearchPanel SearchModel)
+        {
+            List<ViewEmployeeLeaveReport>? data = new List<ViewEmployeeLeaveReport>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetLeaveRequestReport", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveReport>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
+
+        #endregion Leave
+
+
         public async Task<List<Employee>> GetEmployeeDetails(UtilitiesSearchPanel SearchModel)
         {
             List<Employee>? data = new List<Employee>();
@@ -365,9 +399,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<ViewEmployeeLeaveRoasterReportPivoted>> GetAnnualLeaveRoaster(UtilitiesSearchPanel SearchModel)
+        public async Task<List<ViewEmployeeLeaveRoasterReportPivotedNew>> GetAnnualLeaveRoaster(UtilitiesSearchPanel SearchModel)
         {
-            List<ViewEmployeeLeaveRoasterReportPivoted>? data = new List<ViewEmployeeLeaveRoasterReportPivoted>();
+            List<ViewEmployeeLeaveRoasterReportPivotedNew>? data = new List<ViewEmployeeLeaveRoasterReportPivotedNew>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -377,7 +411,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveRoasterReportPivoted>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveRoasterReportPivotedNew>>(content, _options);
                 }
                 else
                 {
@@ -391,9 +425,36 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<ViewEmployeeLeaveRoasterDatesReport>> GetSelectedDates(UtilitiesSearchPanel SearchModel)
+        public async Task<List<ViewEmployeeLeaveRoasterReportNew>> GetAnnualLeaveRoasterMonthDays(UtilitiesSearchPanel SearchModel)
         {
-            List<ViewEmployeeLeaveRoasterDatesReport>? data = new List<ViewEmployeeLeaveRoasterDatesReport>();
+            List<ViewEmployeeLeaveRoasterReportNew>? data = new List<ViewEmployeeLeaveRoasterReportNew>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetAnnualLeaveRoasterMonthDays", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveRoasterReportNew>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
+
+
+        public async Task<List<EmployeeLeaveRoster>> GetSelectedDates(UtilitiesSearchPanel SearchModel)
+        {
+            List<EmployeeLeaveRoster>? data = new List<EmployeeLeaveRoster>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -403,7 +464,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveRoasterDatesReport>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<EmployeeLeaveRoster>>(content, _options);
                 }
                 else
                 {

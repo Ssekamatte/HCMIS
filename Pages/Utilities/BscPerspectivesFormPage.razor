@@ -161,7 +161,7 @@
             @{
                 KpiData = (context as ABscPerspectives);
 
-                <div class="form-group col-md-12">
+                <div class="col-md-12">
 
                     <SfGrid @ref="@DetailsDataGrid"
                             TValue="ABscPerspectivesDetail"
@@ -233,7 +233,7 @@
              @{
                  <center>
                      <h5>
-                        <strong>CAPTURE DEPARTMENT PERSPECTIVE TOTAL WEIGHTS</strong>
+                        <strong>CAPTURE DEPARTMENT/SECTION PERSPECTIVE TOTAL WEIGHTS</strong>
                      </h5>
                  </center>
 
@@ -245,7 +245,7 @@
                             <SfNumericTextBox @bind-Value="@(KpiData.BscPerspectiveId)" Enabled="false" Placeholder="Perspective Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <p>Financial Year:<span style="color:red;">*</span></p>
                             <SfDropDownList @bind-Value="@(KpiData.FinancialYearId)"
                                             Enabled="@isFinancialYearEnabled" TItem="AFinancialYear" TValue="int?"
@@ -261,7 +261,7 @@
                             </SfDropDownList>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <p>Department:<span style="color:red;">*</span></p>
                             <SfDropDownList @bind-Value="@(KpiData.DepartmentId)"
                                             Enabled="@DepartmentDD" TItem="ADepartment" TValue="int?"
@@ -274,8 +274,15 @@
                             </SfDropDownList>
                         </div>
 
+                        <div class="col-md-4">
+                            <p>Section<span style="color:red;">*</span></p>
+                            <SfDropDownList ID="SectionId" @bind-Value="@(KpiData.SectionId)" TItem="ASections" AllowFiltering="true" TValue="int?" DataSource="@SectionData" FloatLabelType="FloatLabelType.Never" Enabled="false">
+                                <DropDownListFieldSettings Value="@nameof(ASections.SectionId)" Text="@nameof(ASections.SectionDescription)"></DropDownListFieldSettings>
+                            </SfDropDownList>
+                        </div>
+
                         @*GridPerspectives*@
-                        <div class="form-group col-md-12" style="padding-top:10px">
+                        <div class="col-md-12" style="padding-top:10px">
                             @*@if (@aggregate != null)
                             {
                                 <p>@weighttotalpercentage</p>
@@ -430,6 +437,16 @@
                            ForeignDataSource="@DepartmentsData"
                            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
         </GridForeignColumn>
+
+        <GridForeignColumn Field=@nameof(ASections.SectionId)
+                           HeaderText="Section"
+                           Width="80"
+                           AllowEditing="true"
+                           ForeignKeyField="@(nameof(ASections.SectionId))"
+                           ForeignKeyValue="@(nameof(ASections.SectionDescription))"
+                           ForeignDataSource="@SectionData"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridForeignColumn>
     </GridColumns>
 </SfGrid>
 
@@ -478,6 +495,7 @@
     List<ABscPerspectivesType>? BscPerspectiveTypeData { get; set; }
     List<AMeasurementMetric>? MeasurementUnitData { get; set; }
     List<ABscPerspectivesDetail>? PerspectivesDetailData { get; set; }
+    List<ASections>? SectionData { get; set; }
     Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
     EmployeeRegistrationModel inputmodel { get; set; } = new EmployeeRegistrationModel();
     [Parameter]
@@ -602,6 +620,16 @@
                 EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(contentemployee, _options);
             }
         }));
+
+        t.Add(Task.Run(async () =>
+            {
+                var response = await Http.GetAsync($"Utilities/GetSections");
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    SectionData = JsonSerializer.Deserialize<List<ASections>>(content, _options);
+                }
+            }));
 
         Task _t = Task.WhenAll(t);
         await _t;
@@ -745,6 +773,15 @@
                     if (employeeno != null)
                     {
                         args.Data.DepartmentId = employeeno.DepartmentId;
+                        if (employeeno.SectionId != null)
+                        {
+                            args.Data.SectionId = employeeno.SectionId;
+                        }
+                        else
+                        {
+                            args.Data.SectionId = 5;
+                        }
+                        
                     }
                 }
 
@@ -1255,11 +1292,11 @@
     {
         if (Value.BscPerspectiveId == 0)
         {
-            return "Add a Departmental Weights";
+            return "Add Department/Section Weights";
         }
         else
         {
-            return "Edit Departmental Details";
+            return "Edit Department/Section Details";
         }
     }
     #endregion BscPerspectiveAdapter
