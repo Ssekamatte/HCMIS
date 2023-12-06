@@ -313,7 +313,7 @@
                             <SfNumericTextBox @bind-Value="@(KpiData.Bsckpiid)" Enabled="false" Placeholder="KPI Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <p>Financial Year:<span style="color:red;">*</span></p>
                             <SfDropDownList @bind-Value="@(KpiData.FinancialYearId)"
                                             Enabled="@isFinancialYearEnabled" TItem="AFinancialYear" TValue="int?"
@@ -329,7 +329,7 @@
                             </SfDropDownList>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <p>Employee:<span style="color:red;">*</span></p>
                             <SfDropDownList @bind-Value="@(KpiData.EmployeeId)"
                                             Enabled="@EmployeeDD" TItem="ViewEmployeeDropDown" TValue="int?"
@@ -337,9 +337,29 @@
                                             FloatLabelType="FloatLabelType.Never" AllowFiltering="true"
                                             FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                             <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)"
-                                            Text="@nameof(ViewBscEmployee.EmployeeDetails)">
+                                            Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)">
                                 </DropDownListFieldSettings>
+                                <DropDownListEvents TValue="int?"
+                                                    TItem="ViewEmployeeDropDown"
+                                                    ValueChange="OnEmployeeChange">
+                                </DropDownListEvents>
                             </SfDropDownList>
+                        </div>
+
+                        <div class="col-md-4">
+                            <p>Section:</p>
+                            @if (employeeno != null)
+                            {
+                                if(!string.IsNullOrEmpty(employeeno.SectionDescription))
+                                {
+                                    @employeeno.SectionDescription;
+                                }
+                                else
+                                {
+                                    <p>N/A</p>
+                                }
+                                
+                            }
                         </div>
 
                         <div class="col-md-12" style="margin-top:5px;">
@@ -849,6 +869,10 @@
         .ToString();
     }
 
+    public async void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewEmployeeDropDown> args)
+    {
+        employeeno = args.ItemData;        
+    }
 
     public async Task onSubmitForm()
     {
@@ -978,7 +1002,14 @@
                 perspweightsinternal = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 2);
                 perspweightscustomer = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 3);
                 perspweightslearning = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 4);
+            
+                if (EmployeeData != null)
+                {
+                    employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == args.RowData.EmployeeId);
+                }
+            
             }
+
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
             {
                 _previous = args.RequestType;
@@ -1051,6 +1082,11 @@
                 }
 
                 args.RowData.ABscKpidetails = args.RowData.ABscKpidetails.OrderBy(o => o.BscPerspectiveTypeId).ToList();
+
+                if (EmployeeData != null)
+                {
+                    employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == args.RowData.EmployeeId);
+                }
 
                 StateHasChanged();
             }

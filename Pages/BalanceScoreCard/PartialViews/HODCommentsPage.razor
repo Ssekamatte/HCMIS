@@ -1,4 +1,4 @@
-﻿@* @page "/SupervisorCommentsPage" *@
+﻿@* @page "/HODCommentsPage" *@
 @inject ApiConfig _ApiConfig;
 @inject HttpClient Http
 @using HCMIS.Interface;
@@ -11,25 +11,24 @@
 @using Microsoft.AspNetCore.Authorization
 @inject NavigationManager navigation;
 @inject SystemSettings _SystemSettings;
-
 @using HCMIS.ViewModel;
 @inject IToastService toastService;
 @inject IAuthenticationService AuthService;
 
-<SfGrid @ref="@SupervisorCommentsGrid" DataSource="@datasource" GridLines="GridLine.Both"
-        TValue="BalanceScoreCardSupervisorComments" ID="Grid1" AllowTextWrap="true" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit","Cancel"})">
+<SfGrid @ref="@HODCommentsGrid" DataSource="@datasource" GridLines="GridLine.Both"
+        TValue="BalanceScoreCardHodcomments" ID="Grid1" AllowTextWrap="true" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
     <GridPageSettings PageSizes="true"></GridPageSettings>
     <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
-    <GridEvents CellSelected="CellSelectHandlerSupervisorComments"
-                CellSaved="SupervisorCommentsCellSavedHandler"
-                TValue="BalanceScoreCardSupervisorComments">
+    <GridEvents CellSelected="CellSelectHandlerHODComments"
+                CellSaved="HODCommentsCellSavedHandler"
+                TValue="BalanceScoreCardHodcomments">
     </GridEvents>
 
     <GridColumns>
-        <GridColumn Field=@nameof(BalanceScoreCardSupervisorComments.SupervisorCommentId)
-                    HeaderText="Supervisor Comment Id"
+        <GridColumn Field=@nameof(BalanceScoreCardHodcomments.HodcommentId)
+                    HeaderText="HOD Comment Id"
                     TextAlign="TextAlign.Justify"
                     IsPrimaryKey="true"
                     IsIdentity="true"
@@ -37,17 +36,17 @@
                     Width="180"
                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
         </GridColumn>
-        <GridColumn Field=@nameof(BalanceScoreCardSupervisorComments.SupervisorComments)
-                    HeaderText="Supervisor Comments"
+        <GridColumn Field=@nameof(BalanceScoreCardHodcomments.Hodcomments)
+                    HeaderText="HOD Comments"
                     TextAlign="TextAlign.Justify"
                     AllowEditing="true"
                     ValidationRules="@(new ValidationRules { Required = false })"
                     Width="180"
                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
         </GridColumn>
-        <GridColumn Field=@nameof(BalanceScoreCardSupervisorComments.SupervisorDate)
+        <GridColumn Field=@nameof(BalanceScoreCardHodcomments.Hoddate)
                     DefaultValue="@(DateTime.Now)"
-                    HeaderText="Supervisor Date"
+                    HeaderText="HOD Date"
                     EditType="EditType.DatePickerEdit"
                     Format="dd/MM/yyyy"
                     Type="ColumnType.Date"
@@ -55,17 +54,18 @@
                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
         </GridColumn>
     </GridColumns>
+
 </SfGrid>
 
-@code {
+@code {    
     [Parameter]
-    public List<BalanceScoreCardSupervisorComments>? supervisorcommentsdata { get; set; }
+    public List<BalanceScoreCardHodcomments>? hodcommentsdata { get; set; }
     [Parameter]
     public int BalanceScoreCardId { get; set; }
     [Parameter]
-    public EventCallback<List<BalanceScoreCardSupervisorComments>?> onscorecardtoggle { get; set; }
-    SfGrid<BalanceScoreCardSupervisorComments>? SupervisorCommentsGrid { get; set; }
-    List<BalanceScoreCardSupervisorComments>? datasource { get; set; }
+    public EventCallback<List<BalanceScoreCardHodcomments>?> onscorecardtoggle { get; set; }
+    public SfGrid<BalanceScoreCardHodcomments>? HODCommentsGrid { get; set; }
+    List<BalanceScoreCardHodcomments>? datasource { get; set; }
 
     Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
     int? previousBalanceScoreCardId { get; set; }
@@ -79,31 +79,31 @@
         {
             int countid = -10000;
             previousBalanceScoreCardId = BalanceScoreCardId;
-            datasource = new List<BalanceScoreCardSupervisorComments>();
-            if (supervisorcommentsdata != null && supervisorcommentsdata.Count() > 0)
+            datasource = new List<BalanceScoreCardHodcomments>();
+            if (hodcommentsdata != null && hodcommentsdata.Count() > 0)
             {
-                datasource.AddRange(supervisorcommentsdata);
+                datasource.AddRange(hodcommentsdata);
             }
         }
     }
 
-    //For Supervisor Comments Grid
+    //For HOD Comments Grid
     //Enable cell edit on single click
-    public async Task CellSelectHandlerSupervisorComments(CellSelectEventArgs<BalanceScoreCardSupervisorComments> args)
+    public async Task CellSelectHandlerHODComments(CellSelectEventArgs<BalanceScoreCardHodcomments> args)
     {
         try
         {
             //get selected cell index
-            var CellIndexes = await SupervisorCommentsGrid.GetSelectedRowCellIndexesAsync();
+            var CellIndexes = await HODCommentsGrid.GetSelectedRowCellIndexesAsync();
 
             //get the row and cell index
             var CurrentEditRowIndex = CellIndexes[0].Item1;
             var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
 
             //get the available fields
-            var fields = await SupervisorCommentsGrid.GetColumnFieldNamesAsync();
+            var fields = await HODCommentsGrid.GetColumnFieldNamesAsync();
             // edit the selected cell using the cell index and column name
-            await SupervisorCommentsGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+            await HODCommentsGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
         }
         catch (Exception ex)
         {
@@ -111,16 +111,15 @@
         }
     }
 
-    private async Task SupervisorCommentsCellSavedHandler(CellSaveArgs<BalanceScoreCardSupervisorComments> args)
+    private async Task HODCommentsCellSavedHandler(CellSaveArgs<BalanceScoreCardHodcomments> args)
     {
         try
         {
-            var index = await SupervisorCommentsGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.SupervisorCommentId);
-            if (args.ColumnName == nameof(BalanceScoreCardSupervisorComments.SupervisorComments))
+            var index = await HODCommentsGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.HodcommentId);
+            if (args.ColumnName == nameof(BalanceScoreCardHodcomments.Hodcomments))
             {
-                await SupervisorCommentsGrid.UpdateCellAsync(index, nameof(BalanceScoreCardSupervisorComments.SupervisorDate), DateTime.Now);
+                await HODCommentsGrid.UpdateCellAsync(index, nameof(BalanceScoreCardHodcomments.Hoddate), DateTime.Now);
             }
-
         }
         catch (Exception ex)
         {
@@ -128,7 +127,7 @@
         }
         finally
         {
-            await SupervisorCommentsGrid.EndEditAsync();
+            await HODCommentsGrid.EndEditAsync();
             await onscorecardtoggle.InvokeAsync(datasource);
         }
     }

@@ -212,9 +212,23 @@ color: ghostwhite;
 </ol>
 
 
-@*@if (Credentials != null && (!string.IsNullOrEmpty(Credentials.UserRole) &&
-     Credentials.UserRole.Contains("Administrator")) || Credentials.JobTitleId == 44)
-{*@
+<div class="form-group col-md-12">
+    @{
+        if(DaedlineData != null)
+        {
+            //Pass Id = 1 because it will always be one record in the table
+            var _ddata = DaedlineData.FirstOrDefault(o=>o.LeaveRoasterDeadlineId == 1);
+            if (_ddata != null)
+            {
+                var outputdate = _ddata.LeaveRoasterDeadlineDate.Value.ToString("dd/MMMM/yyyy");
+                var outputtime = _ddata.LeaveRoasterDeadlineDate.Value.ToString("HH:mm:ss");
+
+                <p style="color:brown;font-size:xx-large;">Deadline Date : @outputdate at @outputtime</p>
+            }
+        }
+    }    
+    
+</div>
 
 @if(Credentials != null && (!string.IsNullOrEmpty(Credentials.UserRole) &&
     Credentials.UserRole.Contains("Administrator") || Credentials.JobTitleId == 44))
@@ -252,7 +266,9 @@ color: ghostwhite;
         EventRendered="OnEventRendered"
         DataBound="OnDataBound"
         OnCellClick="OnCellClick"
-        OnEventClick="OnEventClick">
+        OnEventClick="OnEventClick"
+        OnCellDoubleClick="OnCellDoubleClick"
+        OnEventDoubleClick="OnEventDoubleClick">
     </ScheduleEvents>
     @*GridEditSettings Dialog="@DialogParams">   
     
@@ -401,6 +417,7 @@ color: ghostwhite;
     List<ADepartment>? DepartmentData { get; set; }
     List<APublicHolidays>? PublicHolidaysData { get; set; }
     List<AMaximumYear>? MaximumYearData { get; set; }
+    List<AAnnualLeaveRoasterDeadlineDate>? DaedlineData { get; set; }
     List<AYears>? YearData { get; set; }
     SfSchedule<ViewEmployeeLeaveRoster>? ScheduleRef;
     bool IsEnabled { get; set; } = true;
@@ -534,6 +551,16 @@ color: ghostwhite;
                         MaxDate = new DateTime(maximumsetyear, 12, 31);
                     }
 
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var response = await Http.GetAsync($"Utilities/GetLeaveRoasterDeadline");
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    DaedlineData = JsonSerializer.Deserialize<List<AAnnualLeaveRoasterDeadlineDate>>(content, _options);
                 }
             }));
 
@@ -691,34 +718,51 @@ color: ghostwhite;
         {
             if (data.ProposedLeaveStartDate != null && data.ProposedLeaveEndDate != null)
             {
-                var existingdates = EmployeeLeaveRoasterData.FirstOrDefault(o => (data.ProposedLeaveStartDate >= o.ProposedLeaveStartDate
-                && data.ProposedLeaveStartDate <= o.ProposedLeaveEndDate) || (data.ProposedLeaveEndDate <= o.ProposedLeaveEndDate &&
-                    data.ProposedLeaveEndDate >= o.ProposedLeaveStartDate) && o.EmployeeId == data.EmployeeId);
+                var Datedifference = (data.ProposedLeaveEndDate.Value - data.ProposedLeaveStartDate.Value).TotalDays;
+                bool Hasday =false;
+                int? LeaveRosterId = 0;
+                for (int i = 0; i <= Datedifference; i++)
+                {
+                    DateTime NewDay = data.ProposedLeaveStartDate.Value.AddDays(i);
+                    var existingdates = EmployeeLeaveRoasterData.FirstOrDefault(o => (NewDay >= o.ProposedLeaveStartDate
+                    && NewDay <= o.ProposedLeaveEndDate) && o.EmployeeId == data.EmployeeId);
+                    if(existingdates != null)
+                    {
+                        Hasday =true;
+                        LeaveRosterId = existingdates.LeaveRosterId;
+                        break;
+                    }
+                }
 
                 var _publicholidays = PublicHolidaysData.FirstOrDefault(o => data.ProposedLeaveStartDate.Value == o.HolidayDate);
 
                 if (data.EmployeeId == null)
                 {
+                    toastService.ClearAll();
                     toastService.ShowWarning("Please select the employee");
                 }
 
                 else if (data.ProposedLeaveEndDate < data.ProposedLeaveStartDate)
                 {
+                    toastService.ClearAll();
                     toastService.ShowWarning("Your start date cannot be later than the end date.");
                 }
 
-                else if (FormEditType == 1 && existingdates != null && _publicholidays == null)
+                else if (FormEditType == 1 && Hasday==true && _publicholidays == null)
                 {
+                    toastService.ClearAll();
                     toastService.ShowWarning("You have arleady planned for this selected period. Refer to the calender for confirmation");
                 }
 
-                else if (FormEditType == 2 && existingdates != null && existingdates.LeaveRosterId != data.LeaveRosterId && _publicholidays == null)
+                else if (FormEditType == 2 && Hasday == true && LeaveRosterId != data.LeaveRosterId && _publicholidays == null)
                 {
+                    toastService.ClearAll();
                     toastService.ShowWarning("You have arleady planned for this selected period. Refer to the calender for confirmation");
                 }
 
                 else if (_publicholidays != null)
                 {
+                    toastService.ClearAll();
                     toastService.ShowWarning("You cannot schedule your leave starting on a public holiday.");
                 }
 
@@ -732,6 +776,7 @@ color: ghostwhite;
 
             else
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please enter the proposed start date and proposed end date");
             }
         }
@@ -873,39 +918,108 @@ color: ghostwhite;
     public async Task OnCellClick(CellClickEventArgs args)
     {
         args.Cancel = true;
-        await ScheduleRef.OpenEditorAsync(args, CurrentAction.Add); //to open the editor window on single cell click
+
+        if (DaedlineData != null)
+        {
+            //Pass Id = 1 because it will always be one record in the table
+            var _ddata = DaedlineData.FirstOrDefault(o => o.LeaveRoasterDeadlineId == 1);
+            //Activate the form
+            if (_ddata != null && (_ddata.LeaveRoasterDeadlineDate.Value >= DateTime.Now))
+            {
+                await ScheduleRef.OpenEditorAsync(args, CurrentAction.Add); //to open the editor window on single cell click
+            }
+            else
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Deadline has arleady passed. You cannot proceed");
+            }
+
+        }
     }
+
+    public async Task OnCellDoubleClick(CellClickEventArgs args)
+    {
+        args.Cancel = true;
+
+        if (DaedlineData != null)
+        {
+            //Pass Id = 1 because it will always be one record in the table
+            var _ddata = DaedlineData.FirstOrDefault(o => o.LeaveRoasterDeadlineId == 1);
+            //Activate the form
+            if (_ddata != null && (_ddata.LeaveRoasterDeadlineDate.Value >= DateTime.Now))
+            {
+                await ScheduleRef.OpenEditorAsync(args, CurrentAction.Add); //to open the editor window on single cell click
+            }
+            else
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Deadline has arleady passed. You cannot proceed");
+            }
+
+        }
+    }
+    
+    public async Task OnEventDoubleClick(EventClickArgs<ViewEmployeeLeaveRoster> args)
+    {
+        args.Cancel = true;
+        CurrentAction action = CurrentAction.Save;
+
+        if (DaedlineData != null)
+        {
+            //Pass Id = 1 because it will always be one record in the table
+            var _ddata = DaedlineData.FirstOrDefault(o => o.LeaveRoasterDeadlineId == 1);
+            //Activate the form
+            if (_ddata != null && (_ddata.LeaveRoasterDeadlineDate.Value >= DateTime.Now))
+            {
+                if (args.Event.IsReadonly == true)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("You cannot update a public holiday");
+                }
+                else
+                {
+                    await ScheduleRef.OpenEditorAsync(args.Event, action); //to open the editor window on event click
+                }
+            }
+            else
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Deadline has arleady passed. You cannot proceed");
+            }
+
+        }
+    }
+
     public async Task OnEventClick(EventClickArgs<ViewEmployeeLeaveRoster> args)
     {
         args.Cancel = true;
         CurrentAction action = CurrentAction.Save;
-        //if (args.Event.RecurrenceRule != null)
-        //{
-        //    action = CurrentAction.EditOccurrence;
-        //}
-        await ScheduleRef.OpenEditorAsync(args.Event, action); //to open the editor window on event click
 
-        // var _publicholidays = PublicHolidaysData.FirstOrDefault(o => o.HolidayDate == args.Event.ProposedLeaveStartDate);
+        if(DaedlineData != null)
+        {
+            //Pass Id = 1 because it will always be one record in the table
+            var _ddata = DaedlineData.FirstOrDefault(o=>o.LeaveRoasterDeadlineId == 1);
+            //Activate the form
+            if(_ddata != null && (_ddata.LeaveRoasterDeadlineDate.Value >= DateTime.Now))
+            {
+                if (args.Event.IsReadonly == true)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("You cannot update a public holiday");
+                }
+                else
+                {
+                    await ScheduleRef.OpenEditorAsync(args.Event, action); //to open the editor window on event click
+                }
+            }
+            else
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Deadline has arleady passed. You cannot proceed");
+            }
 
-        // if (_publicholidays != null )
-        // {
-        //     args.Cancel = true;
-        //     CurrentAction action = CurrentAction.Save;
-        //     await ScheduleRef.OpenEditorAsync(args.Event, action); //to open the editor window on event click
-        // }
-        // else
-        // {
-        //     args.Cancel = true;
-        //     CurrentAction action = CurrentAction.Save;
-        //     await ScheduleRef.OpenEditorAsync(args.Event, action); //to open the editor window on event click
-        // }
-        // args.Cancel = true;
-        // CurrentAction action = CurrentAction.Save;
-        // //if (args.Event.RecurrenceRule != null)
-        // //{
-        // //    action = CurrentAction.EditOccurrence;
-        // //}
-        // await ScheduleRef.OpenEditorAsync(args.Event, action); //to open the editor window on event click
+        }
+
     }
 
     public class AnnualLeaveRosterAdapter : DataAdaptor
