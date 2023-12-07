@@ -204,6 +204,7 @@
     </GridEvents>
 
     @*Child Grid*@
+    
     <GridTemplates>
         <DetailTemplate>
             @{
@@ -288,6 +289,7 @@
             }
         </DetailTemplate>
     </GridTemplates>
+
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog"  Dialog="@DialogParams">
         <HeaderTemplate>
             @{
@@ -497,18 +499,20 @@
 
                                     <GridEvents CellSelected="PerspectiveCellSelectHandler"
                                                 QueryCellInfo="QueryCellInfoHandlerChild"
-                                                OnCellSave="CellSaveHandler"
+                                                OnActionComplete="DetailActionComplete"
                                                 TValue="ABscKpidetails">
                                     </GridEvents>
 
                                     <GridColumns>
                                         <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
+                                        
                                         <GridColumn Field=@nameof(ABscKpidetails.BsckpidetailsId)
                                                     HeaderText="BsckpidetailsId"
                                                     AllowEditing="false"
                                                     IsPrimaryKey="true"
                                                     Width="80"
-                                                    Visible="false">
+                                                    Visible="true"
+                                                    CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr3" }})">
                                         </GridColumn>
                                         <GridForeignColumn Field=@nameof(ABscKpidetails.BscPerspectiveTypeId)
                                                            HeaderText="Perspective"
@@ -575,6 +579,16 @@
     </GridEditSettings>
     <GridColumns>
         <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn>
+
+        <GridColumn HeaderText="Manage Record"
+                    Width="30"
+                    CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr3" }})"
+                    TextAlign="TextAlign.Left">
+            <GridCommandColumns>
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit"></GridCommandColumn>
+            </GridCommandColumns>
+        </GridColumn>
+
         <GridColumn Field=@nameof(ABscKpi.Bsckpiid) Visible=false HeaderText="Bsckpi Id" AllowEditing="false" IsPrimaryKey="true"></GridColumn>
 
         <GridForeignColumn Field=@nameof(ABscKpi.FinancialYearId)
@@ -587,11 +601,11 @@
                            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
         </GridForeignColumn>
         <GridForeignColumn Field=@nameof(ABscKpi.EmployeeId)
-                           HeaderText="EmployeeData"
+                           HeaderText="Employee"
                            Width="80"
                            AllowEditing="true"
                            ForeignKeyField="@(nameof(ViewEmployeeDropDown.Employeeid))"
-                           ForeignKeyValue="@(nameof(ViewBscEmployee.EmployeeDetails))"
+                           ForeignKeyValue="@(nameof(ViewEmployeeDropDown.EmployeeDetails))"
                            ForeignDataSource="@EmployeeData"
                            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
         </GridForeignColumn>
@@ -630,7 +644,7 @@
 
 
 @code {
-    SfGrid<ABscKpidetails> DetailsDataGrid { get; set; }
+    SfGrid<ABscKpidetails>? DetailsDataGrid { get; set; }
     /// <summary>
     /// Event for Toolbar click for Grid Exporting
     /// </summary>
@@ -701,7 +715,7 @@
             new ItemModel() { Text = "Add Weight", PrefixIcon = "e-add", Id = "Grid_add"},
             new ItemModel(){ Text = "Edit Weight", PrefixIcon= "e-edit", Id="Grid_edit"},
     };
-    
+
 
     #endregion Declarations
 
@@ -878,7 +892,16 @@
     {
         try
         {
-            //await LoadingDialogue.ShowAsync();
+            await LoadingDialogue.ShowAsync();
+            // if (ObjectivesGrid != null)
+            // {
+            //     if (ChildDataGrid != null)
+            //     {
+            //         await ChildDataGrid.EndEditAsync();
+            //     }
+            //     await ObjectivesGrid.EndEditAsync();
+            // }
+
             if (ChildDataGrid != null)
             {
                 await ChildDataGrid.EndEditAsync();
@@ -1002,12 +1025,16 @@
                 perspweightsinternal = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 2);
                 perspweightscustomer = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 3);
                 perspweightslearning = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 4);
-            
+
                 if (EmployeeData != null)
                 {
                     employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == args.RowData.EmployeeId);
                 }
-            
+
+                if (args.RowData.ABscKpidetails == null)
+                {
+                    args.RowData.ABscKpidetails = new List<ABscKpidetails>();
+                }
             }
 
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
@@ -1026,50 +1053,51 @@
                     args.Data.EmployeeId = Credentials.StaffId;
                 }
 
-                List<Task> t = new List<Task>();
+                // List<Task> t = new List<Task>();
 
-                t.Add(Task.Run(async () =>
-                {
-                    var responsebscperspectivedetail = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicatorDetail?YearId={finyearid}");
-                    if (responsebscperspectivedetail.IsSuccessStatusCode)
-                    {
-                        var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
-                        BscKpiDetailData = JsonSerializer.Deserialize<List<ABscKpidetails>>(contentbscperspectivedetail, _options);
-                    }
-                }));
+                // t.Add(Task.Run(async () =>
+                // {
+                //     var responsebscperspectivedetail = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicatorDetail?YearId={finyearid}");
+                //     if (responsebscperspectivedetail.IsSuccessStatusCode)
+                //     {
+                //         var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
+                //         BscKpiDetailData = JsonSerializer.Deserialize<List<ABscKpidetails>>(contentbscperspectivedetail, _options);
+                //     }
+                // }));
 
 
-                t.Add(Task.Run(async () =>
-                {
-                    var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
-                    if (responsebscperspectivetype.IsSuccessStatusCode)
-                    {
-                        var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
-                        BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesType>>(contentbscperspectivetype, _options);
-                    }
-                }));
+                // t.Add(Task.Run(async () =>
+                // {
+                //     var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
+                //     if (responsebscperspectivetype.IsSuccessStatusCode)
+                //     {
+                //         var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
+                //         BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesType>>(contentbscperspectivetype, _options);
+                //     }
+                // }));
 
-                t.Add(Task.Run(async () =>
-                {
-                    var responsebscperspectivetyperepeated = await Http.GetAsync($"Utilities/BSCPerspectiveTypeRepeat");
-                    if (responsebscperspectivetyperepeated.IsSuccessStatusCode)
-                    {
-                        var contentbscperspectivetyperepeated = await responsebscperspectivetyperepeated.Content.ReadAsStringAsync();
-                        BscPerspectiveTypeDataRepeated = JsonSerializer.Deserialize<List<ABscPerspectivesType>>(contentbscperspectivetyperepeated, _options);
-                    }
-                }));
+                // t.Add(Task.Run(async () =>
+                // {
+                //     var responsebscperspectivetyperepeated = await Http.GetAsync($"Utilities/BSCPerspectiveTypeRepeat");
+                //     if (responsebscperspectivetyperepeated.IsSuccessStatusCode)
+                //     {
+                //         var contentbscperspectivetyperepeated = await responsebscperspectivetyperepeated.Content.ReadAsStringAsync();
+                //         BscPerspectiveTypeDataRepeated = JsonSerializer.Deserialize<List<ABscPerspectivesType>>(contentbscperspectivetyperepeated, _options);
+                //     }
+                // }));
 
-                Task _t = Task.WhenAll(t);
-                await _t;
+                // Task _t = Task.WhenAll(t);
+                // await _t;
 
-                if (BscKpiDetailData != null)
-                {
-                    args.RowData.ABscKpidetails = BscKpiDetailData;
-                }
-                if (args.RowData.ABscKpidetails == null)
-                {
-                    args.RowData.ABscKpidetails = new List<ABscKpidetails>();
-                }
+                // if (BscKpiDetailData != null)
+                // {
+                //     args.RowData.ABscKpidetails = BscKpiDetailData;
+                // }
+
+                // if (args.RowData.ABscKpidetails == null)
+                // {
+                //     args.RowData.ABscKpidetails = new List<ABscKpidetails>();
+                // }
 
                 foreach (var item in BscPerspectiveTypeDataRepeated)
                 {
@@ -1081,7 +1109,7 @@
                     countid++;
                 }
 
-                args.RowData.ABscKpidetails = args.RowData.ABscKpidetails.OrderBy(o => o.BscPerspectiveTypeId).ToList();
+                //args.RowData.ABscKpidetails = args.RowData.ABscKpidetails.OrderBy(o => o.BscPerspectiveTypeId).ToList();
 
                 if (EmployeeData != null)
                 {
@@ -1105,7 +1133,7 @@
                     perspweightscustomer = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 3);
                     perspweightslearning = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 4);
                 }
-                
+
                 if (args.Data.FinancialYearId == null)
                 {
                     toastService.ShowWarning("Please select a financial year.");
@@ -1193,7 +1221,7 @@
                         args.Cancel = true;
                     }
 
-                    
+
                     //Learning
                     else if (perspweightslearning != null && (learningtotalscore > perspweightslearning.PerspectiveTotalWeight))
                     {
@@ -1206,11 +1234,11 @@
                         toastService.ShowWarning("You cannot set less than the department learning and growth perspective weight.( " + perspweightslearning.PerspectiveTotalWeight + "%) Please revise your scores");
                         args.Cancel = true;
                     }
-                    
-                    else
-                    {
-                        await LoadingDialogue.ShowAsync();
-                    }
+
+                    // else
+                    // {
+                    //     await LoadingDialogue.ShowAsync();
+                    // }
                 }
             }
         }
@@ -1249,75 +1277,17 @@
                 }
             }));
 
-            t.Add(Task.Run(async () =>
-            {
-                var responsefinyear = await Http.GetAsync($"FinancialYear/list");
-                if (responsefinyear.IsSuccessStatusCode)
-                {
-                    var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
-                    FinancialYearData = JsonSerializer.Deserialize<List<AFinancialYear>>(contentfinyear, _options);
-
-                    DateTime currentdate = DateTime.Now;
-                    string? financialyeardesc = null;
-                    if (currentdate.Month >= 6)
-                    {
-                        financialyeardesc = $"{currentdate.Year}/{(currentdate.Year + 1)}";
-                    }
-                    else if (currentdate.Month < 6)
-                    {
-                        financialyeardesc = $"{(currentdate.Year - 1)}/{currentdate.Year}";
-                    }
-
-                    var b = FinancialYearData.FirstOrDefault(o => o.FinancialYear.Trim() == financialyeardesc.Trim());
-                    if (b != null)
-                    {
-                        finyearid = b.Id;
-                    }
-                }
-            }));
-
-            t.Add(Task.Run(async () =>
-            {
-                var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
-                if (responsebscperspectivetype.IsSuccessStatusCode)
-                {
-                    var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
-                    BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesType>>(contentbscperspectivetype, _options);
-                }
-            }));
-
-            t.Add(Task.Run(async () =>
-            {
-                var responsedepartment = await Http.GetAsync($"Utilities/GetDepartment");
-                if (responsedepartment.IsSuccessStatusCode)
-                {
-                    var contentdepartment = await responsedepartment.Content.ReadAsStringAsync();
-                    DepartmentsData = JsonSerializer.Deserialize<List<ADepartment>>(contentdepartment, _options);
-                }
-            }));
-
-            t.Add(Task.Run(async () =>
-            {
-                var responsemetric = await Http.GetAsync($"Utilities/GetMeasurementMetric");
-                if (responsemetric.IsSuccessStatusCode)
-                {
-                    var contentmetric = await responsemetric.Content.ReadAsStringAsync();
-                    MeasurementUnitData = JsonSerializer.Deserialize<List<AMeasurementMetric>>(contentmetric, _options);
-                }
-            }));
-
-            t.Add(Task.Run(async () =>
-            {
-                var responseemployee = await Http.GetAsync($"Utilities/GetEmployeeDD");
-                if (responseemployee.IsSuccessStatusCode)
-                {
-                    var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-                    EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(contentemployee, _options);
-                }
-            }));
-
             Task _t = Task.WhenAll(t);
             await _t;
+        }
+    }
+
+    public void DetailActionComplete(ActionEventArgs<ABscKpidetails> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) ||
+        args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            ChildDataGrid.PreventRender(false);
         }
     }
 
@@ -1344,10 +1314,11 @@
             // throw ex;
         }
     }
-       
-    
+
+
     public void CellSaveHandler(CellSaveArgs<ABscKpidetails> args)
     {
+        ChildDataGrid.EndEditAsync();
         //var datainfo = ChildDataGrid.CurrentViewData;
         
     }
