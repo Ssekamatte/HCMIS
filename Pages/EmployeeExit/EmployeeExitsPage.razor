@@ -1,4 +1,5 @@
 ﻿@page "/EmployeeExitsPage"
+@using HCMIS.Interface
 @using HCMIS.Model
 @using HCMIS.SHARED;
 @using HCMIS.SHARED.Data;
@@ -12,27 +13,20 @@
 @inject SystemSettings _SystemSettings
 @using System.Collections;
 @inject IToastService toastService;
+@inject IAuthenticationService AuthService;
+@inject NavigationManager navManager;
 
 @using Syncfusion.Blazor.Notifications;
 
 <style>
-    * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    border-width: 0;
-    border-style: solid;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    font-size: x-large;
+    /*Manage Records Buttons*/
+    /*.e-btn.e-flat, .e-css.e-btn.e-flat {
+        background: #00cc00;
+    border-color: black;
+    box-shadow: none;
+    color: white;
+    font-weight: 600;*/
 }
-
-    .e-edit-dialog {
-        max-height: 98%;
-        max-width: 98%;
-        min-width: 98%;
-        min-height: 98%;
-    }
 </style>
 
 <ol class="breadcrumb" style="margin-top:5px;">
@@ -43,8 +37,8 @@
     </li>
 </ol>
 
-<SfGrid @ref="@DataGrid" TValue="EmployeeExitInterview" GridLines="GridLine.Both" ID="Grid" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Cancel", "Update","ExcelExport"})">
-    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+<SfGrid @ref="@DataGrid" TValue="EmployeeExitInterview" GridLines="GridLine.Both" ID="Grid" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Cancel", "Update","ExcelExport"})">
+    <GridEditSettings AllowAdding="false" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog"  Dialog="AttachmentDialog">
         <HeaderTemplate>
             @{
                 var text = GetExitHeader((context as EmployeeExitInterview));
@@ -63,7 +57,7 @@
                 ExitData = (context as EmployeeExitInterview);
 
                 <div class="row">
-                    <h4>
+                    <h4 style="color:blueviolet;">
                         <strong>Introduction:</strong> <br/>
                         In line with the provisions of the 
                         Human Resource Management Manual and 
@@ -84,9 +78,9 @@
                                 Name:
                             </td>
                             <td>
-                                <SfDropDownList @bind-Value="@(ExitData.EmployeeId)" Enabled="EmployeeDD" TItem="ViewBscEmployee" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                    <DropDownListFieldSettings Value="@nameof(ViewBscEmployee.Employeeid)" Text="@nameof(ViewBscEmployee.EmployeeDetails)"></DropDownListFieldSettings>
-                                    <DropDownListEvents TValue="int?" TItem="ViewBscEmployee" ValueChange="OnEmployeeChange"></DropDownListEvents>
+                                <SfDropDownList @bind-Value="@(ExitData.EmployeeId)" Enabled="false" TItem="ViewEmployeeDropDown" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                    <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
+                                    <DropDownListEvents TValue="int?" TItem="ViewEmployeeDropDown" ValueChange="OnEmployeeChange"></DropDownListEvents>
                                 </SfDropDownList>
                             </td>
                             <td style="font-weight:bold">
@@ -101,25 +95,20 @@
                         </tr>
                         <tr>
                             <td style="font-weight:bold">
-                                Period of Service:
-                            </td>
-                            <td>
-                                @if (employeeno != null && employeeno.DurationatWork != 0)
-                                {
-                                    <p>@employeeno.DurationatWork  Years</p>
-                                }
-                                else if (employeeno != null && employeeno.DurationatWorkinMonths != null)
-                                {
-                                    <p>@employeeno.DurationatWorkinMonths Months</p>
-                                }
-                            </td>
-                            <td style="font-weight:bold">
                                 Last Day Worked:
                             </td>
                             <td>
-                                <SfDatePicker @bind-Value="@(ExitData.DateToExit)" ID="DateToExit" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Always">
+                                <SfDatePicker @bind-Value="@(ExitData.DateToExit)" ID="DateToExit" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Always" Enabled="OnSubmitButtonsBool">
+                                    <DatePickerEvents TValue="DateTime?" ValueChange="OnEndDateChange"></DatePickerEvents>
                                 </SfDatePicker>
                             </td>
+
+                            <td style="font-weight:bold">
+                                Period of Service:
+                            </td>
+                            <td>
+                                <p><strong>Years</strong> : @_PeriodofServiceYears || <strong>Months</strong>: @_PeriodofServiceMonths || <strong>Days</strong>: @_PeriodofServiceDays</p>
+                            </td>                            
                         </tr>
                     </table>
 
@@ -129,12 +118,12 @@
 
                     <div class="col-md-12">
                         <p>1.Briefly explain the primary reasons for leaving the Company</p>
-                        <SfTextBox Multiline="true" @bind-Value="@(ExitData.ReasonsForLeavingTheCompany)" Enabled="true" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                        <SfTextBox Multiline="true" @bind-Value="@(ExitData.ReasonsForLeavingTheCompany)" Enabled="OnSubmitButtonsBool" FloatLabelType="FloatLabelType.Always"></SfTextBox>
                     </div>
 
                     <div class="col-md-12">
                         <p>2.What did you find most satisfying about your job?</p>
-                        <SfTextBox Multiline="true" @bind-Value="@(ExitData.SatisfyingAboutYourJob)" Enabled="true" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                        <SfTextBox Multiline="true" @bind-Value="@(ExitData.SatisfyingAboutYourJob)" Enabled="OnSubmitButtonsBool" FloatLabelType="FloatLabelType.Always"></SfTextBox>
                     </div>
 
                     <div class="col-md-12">
@@ -197,16 +186,16 @@
                                 DataSource="@ExitData.EmployeeExitRating"
                                 EnableStickyHeader=true
                                 TValue="EmployeeExitRating"
-                                AllowGrouping="true" ShowColumnChooser="true" AllowTextWrap="true"
+                                AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
                                 AllowPaging="true"
-                                AllowFiltering="true"
+                                AllowFiltering="false"
                                 GridLines="GridLine.Both"
                                 AllowSelection="true"
                                 Height="400px">
                             <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Both"
                                                    Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
                             <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
-                            <GridEditSettings AllowAdding="false" AllowDeleting="false" AllowEditing="true"
+                            <GridEditSettings AllowAdding="false" AllowDeleting="false" AllowEditing="OnSubmitButtonsBool"
                                               ShowConfirmDialog="false" Mode="@EditMode.Batch">
                             </GridEditSettings>
                             <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
@@ -226,7 +215,7 @@
                                             CustomAttributes="@(new Dictionary<string,
                                             object>(){ { "class", "e-attr1" }})">
                                 </GridColumn>
-                                <GridColumn Type="ColumnType.Number" AllowFiltering="false" AllowEditing="false" AllowSorting="false" HeaderText="#" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Right" Width="40" AutoFit="false"
+                                <GridColumn Type="ColumnType.Number" AllowFiltering="false" AllowEditing="false" AllowSorting="false" HeaderText="#" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Right" Width="40" AutoFit="false" Visible="false"
                                     CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"> 
                                     <Template Context="RowCounterContext">
                                         @{
@@ -277,7 +266,7 @@
 
                     <div class="col-md-12">
                         <p>4.Were there any company policies or procedures that made your work more difficult?</p>
-                        <SfDropDownList @bind-Value="@(ExitData.CompanyPoliciesMadeWorkDifficultyYesNoId)" TItem="AYesNo" TValue="int?" DataSource="@YesNoData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                        <SfDropDownList @bind-Value="@(ExitData.CompanyPoliciesMadeWorkDifficultyYesNoId)" TItem="AYesNo" TValue="int?" DataSource="@YesNoData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Enabled="OnSubmitButtonsBool">
                             <DropDownListFieldSettings Value="@nameof(AYesNo.YesNoId)" Text="@nameof(AYesNo.YesNoDesc)"></DropDownListFieldSettings>
                         </SfDropDownList>
                     </div>
@@ -286,34 +275,58 @@
                     {
                         <div class="col-md-12">
                          <p>If any please elaborate</p>
-                        <SfTextBox Multiline="true" @bind-Value="@(ExitData.CompanyPoliciesMadeWorkDifficult)" Enabled="true" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                            <SfTextBox Multiline="true" @bind-Value="@(ExitData.CompanyPoliciesMadeWorkDifficult)" Enabled="OnSubmitButtonsBool" FloatLabelType="FloatLabelType.Always"></SfTextBox>
                         </div>
                     }                    
 
                     <div class="col-md-12">
                         <p>5.Would you recommend this company to a friend as a good place to work?</p>
-                        <SfDropDownList @bind-Value="@(ExitData.RecommendThisCompanyToAFriendYesNoId)" TItem="AYesNo" TValue="int?" DataSource="@YesNoData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                        <SfDropDownList @bind-Value="@(ExitData.RecommendThisCompanyToAFriendYesNoId)" TItem="AYesNo" TValue="int?" DataSource="@YesNoData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Enabled="OnSubmitButtonsBool">
                             <DropDownListFieldSettings Value="@nameof(AYesNo.YesNoId)" Text="@nameof(AYesNo.YesNoDesc)"></DropDownListFieldSettings>
                         </SfDropDownList>
                     </div>
 
                     <div class="col-md-12">
                         <p>5.What would you like to see changed that in your view would make the company a better place to be.</p>
-                        <SfTextBox Multiline="true" @bind-Value="@(ExitData.ChangesToMakeCompanyABetterPlaceToBe)" Enabled="true" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                        <SfTextBox Multiline="true" @bind-Value="@(ExitData.ChangesToMakeCompanyABetterPlaceToBe)" Enabled="OnSubmitButtonsBool" FloatLabelType="FloatLabelType.Always"></SfTextBox>
                     </div>
 
-                    @*<div class="col-md-6">
-                        Test1
+                    <div class="col-md-12">
+                        <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+                            <MudTabPanel Text="Reason for Fill">
+                                <h6 style="background-color:#6F1E51; color:ghostwhite;font-weight:bolder;font-size:large; text-align:center;">REASON FOR FILLING FORM</h6>
+
+                                    <div class="row">
+                                        <div class="col-md-12">                                                                
+                                            <SfDropDownList @bind-Value="@(ExitData.DutyReasonId)" Enabled="false" TItem="ASeparationofDuty" TValue="int?" DataSource="@DutyReasonData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                <DropDownListFieldSettings Value="@nameof(ASeparationofDuty.DutyReasonId)" Text="@nameof(ASeparationofDuty.DutyReason)"></DropDownListFieldSettings>
+                                            </SfDropDownList>
+                                        </div>
+                                    </div>
+                            </MudTabPanel>
+                            <MudTabPanel Text="Rejection Comments">
+                                <h6 style="background-color:#6F1E51; color:ghostwhite;font-weight:bolder;font-size:large; text-align:center;">REJECTION COMMENTS</h6>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                        <HCMIS.Pages.EmployeeExit.PartialView.ExitRejectionCommentsPage 
+                                            ExitInterviewId="@ExitData.ExitInterviewId"
+                                            onscorecardtoggle="@ToggleRejectionComments" 
+                                            hodcommentsdata="@ExitData.EmployeeExitInterviewRejectionComments.ToList()">                                        
+                                        </HCMIS.Pages.EmployeeExit.PartialView.ExitRejectionCommentsPage>
+                                        </div>
+                                    </div>
+                            </MudTabPanel>
+                        </MudTabs>
                     </div>
-                    <div class="col-md-6">
-                        Test2
-                    </div>*@
                 </div>
 
             }
         </Template>
-        <FooterTemplate>    
-            <button @onclick="@onSubmitForm" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Save Form</button>
+        <FooterTemplate>  
+            <button @onclick="@onSaveDraftForm" disabled=@IsDraftDisabled hidden=@IsHiddenDraft class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
+            <button @onclick="@onSubmitForm" disabled=@IsSubmitDisabled hidden=@IsHiddenPersonSubmit class="btn btn-success" data-ripple="true" style="margin-right:10px;">Submit Request</button>
+            <button @onclick="@onApproveForm" disabled=@IsApproveDisabled hidden=@IsHiddenApprove class="btn btn-success" data-ripple="true" style="margin-right:10px;">Approve</button>
+            <button @onclick="@onRejectForm" disabled=@IsRejectDisabled hidden=@IsHiddenRejected class="btn btn-warning" data-ripple="true" style="margin-right:10px;">Reject</button>
             <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true" style="margin-right:10px;">Cancel</button>
         </FooterTemplate>
     </GridEditSettings>
@@ -324,9 +337,17 @@
     </GridEvents>
     <SfDataManager AdaptorInstance="@typeof(EmployeeExitAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
     <GridColumns>
-        <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+        <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn>
+        <GridColumn HeaderText="Edit"
+                    TextAlign="TextAlign.Center"
+                    Width="50"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+            <GridCommandColumns>
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { Content="Edit" , IconCss = "e-icons e-edit", CssClass = "e-flat" })" Title="Edit"></GridCommandColumn>
+            </GridCommandColumns>
+        </GridColumn>
         <GridColumn Field=@nameof(EmployeeExitInterview.ExitInterviewId) HeaderText="Exit Interview Id" AllowEditing="false" IsPrimaryKey="true" Width="40" Visible="false"></GridColumn>
-        <GridColumn Type="ColumnType.Number" AllowFiltering="false" AllowEditing="false" AllowSorting="false" HeaderText="#" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Right" Width="40" AutoFit="false"
+        <GridColumn Type="ColumnType.Number" AllowFiltering="false" AllowEditing="false" AllowSorting="false" HeaderText="#" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Right" Width="40" AutoFit="false" Visible="false"
         CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"> 
              <Template Context="RowCounterContext">
              @{
@@ -337,10 +358,10 @@
         </GridColumn> 
         <GridForeignColumn Field=@nameof(EmployeeExitInterview.EmployeeId)
                            HeaderText="Employee"
-                           Width="90"
+                           Width="80"
                            AllowEditing="true"
-                           ForeignKeyField="@(nameof(ViewBscEmployee.Employeeid))"
-                           ForeignKeyValue="@(nameof(ViewBscEmployee.EmployeeDetails))"
+                           ForeignKeyField="@(nameof(ViewEmployeeDropDown.Employeeid))"
+                           ForeignKeyValue="@(nameof(ViewEmployeeDropDown.EmployeeDetails))"
                            ForeignDataSource="@EmployeeData" AllowFiltering="false"
                            CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})">
         </GridForeignColumn>
@@ -349,11 +370,31 @@
                     HeaderText="Exit Date"
                     Format="dd/MMMM/yyyy"
                     TextAlign="TextAlign.Justify"
-                    Width="90"
+                    Width="50"
                     ClipMode="ClipMode.EllipsisWithTooltip"
                     Type="ColumnType.Date"
                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
         </GridColumn>
+
+        <GridForeignColumn Field=@nameof(EmployeeExitInterview.DutyReasonId)
+                           HeaderText="Reason"
+                           Width="50"
+                           AllowEditing="true"
+                           ForeignKeyField="@(nameof(ASeparationofDuty.DutyReasonId))"
+                           ForeignKeyValue="@(nameof(ASeparationofDuty.DutyReason))"
+                           ForeignDataSource="@DutyReasonData" AllowFiltering="false"
+                           CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})">
+        </GridForeignColumn>
+
+        <GridForeignColumn Field=@nameof(EmployeeExitInterview.EmployeeExitStatusId)
+                           HeaderText="Reason"
+                           Width="60"
+                           AllowEditing="true"
+                           ForeignKeyField="@(nameof(AEmployeeExitStatus.EmployeeExitStatusId))"
+                           ForeignKeyValue="@(nameof(AEmployeeExitStatus.EmployeeExitStatusDescription))"
+                           ForeignDataSource="@EmployeeExitStatusData" AllowFiltering="false"
+                           CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})">
+        </GridForeignColumn>
     </GridColumns>
 </SfGrid>
 
@@ -389,6 +430,79 @@
     </SfDialog>
 </div>
 
+@*Submission*@
+
+<div class="form-group col-md-12">
+    <SfDialog @ref="@ConfirmationSubmitDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @((MarkupString)@ConfirmationText)
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationSubmitYes" />
+            <DialogButton Content="No" OnClick="@ComfirmationSubmitNo" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+
+@*Rejection*@
+<div class="form-group col-md-12">
+    <SfDialog @ref="@ConfirmationDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @((MarkupString)@ConfirmationText)
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationYes" />
+            <DialogButton Content="No" OnClick="@ComfirmationNo" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+
+@*Reason for rejection - Supervisor*@
+<div class="form-group col-md-12">
+    <SfDialog @ref="@RejectLeaveDialogue" Width="80%" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @if (RejectionCommentsModel != null)
+                {
+                    <div class="form-row">
+                        <div class="col-md-3">
+                            <p>Provide Rejection Reason <span style="color:red;">*</span></p>
+                        </div>
+                        <div class="form-group col-md-12">
+                            <SfTextBox Multiline="true" @bind-Value="@(RejectionCommentsModel.RejectionComments)" Enabled="true" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                        </div>
+                    </div>
+                }
+
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton OnClick="@RejectReasonYes" Content="Confirm Rejection" IsPrimary="true" />
+            <DialogButton OnClick="@RejectReasonNo" Content="Cancel" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+
+@*Approval Confirmation*@
+<div class="form-group col-md-12">
+    <SfDialog @ref="@ConfirmationApprovalDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @((MarkupString)@ConfirmationText)
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationApprovalYes" />
+            <DialogButton Content="No" OnClick="@ComfirmationApprovalNo" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+
+
 @code {
     #region Toasters
     public static string ToastContent { get; set; }
@@ -408,12 +522,14 @@
     SfGrid<EmployeeExitInterview>? DataGrid { get; set; }
     SfGrid<EmployeeExitRating>? ExitRatingGrid { get; set; }
     private static EmployeeExitInterview? ExitData { get; set; }
-    List<ViewBscEmployee>? EmployeeData { get; set; }
+    List<ViewEmployeeDropDown>? EmployeeData { get; set; }
     List<AYesNo>? YesNoData { get; set; }
     List<AExitRating>? ExitRatingData { get; set; }
     List<AExitRatingAspects>? ExitRatingAspectsData { get; set; }
     List<EmployeeExitInterview>? ExitInterviewData { get; set; }
-    private static ViewBscEmployee? employeeno { get; set; }
+    List<AEmployeeExitStatus>? EmployeeExitStatusData { get; set; }
+    List<ASeparationofDuty>? DutyReasonData { get; set; }
+    private static ViewEmployeeDropDown? employeeno { get; set; }
     string UserJobTitle { get; set; }
     string UserRole { get; set; }    
     public static int UserJobTitleId { get; set; } = 0;
@@ -422,6 +538,29 @@
     public int? radiovalue;
     SfDialog? LoadingDialogue;
     public int RowCounter = 0;
+    private DialogSettings AttachmentDialog = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "95%" };
+    LoginResultModel? Credentials { get; set; }
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    public int _PeriodofServiceYears { get; set; } = 0;
+    public double _PeriodofServiceDays { get; set; } = 0;
+    public int _PeriodofServiceMonths { get; set; } = 0;
+    bool IsHiddenPersonSubmit;
+    bool IsHiddenDraft;
+    bool IsDraftDisabled;
+    bool IsSubmitDisabled;
+    bool IsHiddenRejected;
+    bool IsRejectDisabled;
+    bool IsHiddenApprove;
+    bool IsApproveDisabled;
+    SfDialog ConfirmationSubmitDialogue;
+    SfDialog ConfirmationApprovalDialogue;
+    string ConfirmationText { get; set; }
+    Syncfusion.Blazor.Grids.Action _previous { get; set; }
+    SfDialog ConfirmationDialogue;
+    SfDialog RejectLeaveDialogue;
+    EmployeeExitInterviewRejectionComments? RejectionCommentsModel { get; set; }
+    private List<ExitRatingClass> ExitRatingList = new List<ExitRatingClass>();
+    public bool OnSubmitButtonsBool { get; set; }
 
     public class  ExitRatingClass
     {
@@ -434,8 +573,19 @@
         public double? RatingValue { get; set; }
     }
 
-    private List<ExitRatingClass> ExitRatingList = new List<ExitRatingClass>();
+    private void ToggleRejectionComments(List<EmployeeExitInterviewRejectionComments>? HODCommentsChange)
+    {
+        if (ExitData != null && HODCommentsChange != null)
+        {
+            if (ExitData.EmployeeExitInterviewRejectionComments == null)
+            {
+                ExitData.EmployeeExitInterviewRejectionComments = new List<EmployeeExitInterviewRejectionComments>();
+            }
+            ExitData.EmployeeExitInterviewRejectionComments = HODCommentsChange;
+        }
+    }
 
+   
     private async void GenerateAssociationList()
     {
         try
@@ -528,79 +678,96 @@
     {
         try
         {
-            employeeno = null;
-            if (ExitRatingList != null)
-            {
-                ExitRatingList.Clear();
-            }
-            
-            var responseemployee = await Http.GetAsync($"BalanceScoreCard/GetEmployeeData");
-            var contentemployee = await responseemployee.Content.ReadAsStringAsync();            
-            var responseuserjobtitle = await Http.GetAsync($"Utilities/GetUserJobTitle");
-            var responseuserrole = await Http.GetAsync($"Utilities/GetUserRoleId");
-            var contentuserrole = await responseuserrole.Content.ReadAsStringAsync();
-            var contentuserjobtitle = await responseuserjobtitle.Content.ReadAsStringAsync();
-            var responseuserlevelid = await Http.GetAsync($"Utilities/GetEmployeeLevelId");
-            var contentuserlevelid = await responseuserlevelid.Content.ReadAsStringAsync();
-            var responseuserjobtitleid = await Http.GetAsync($"Utilities/GetUserJobTitleId");
-            var contentuserjobtitleid = await responseuserjobtitleid.Content.ReadAsStringAsync();
-            var responseuseryesno = await Http.GetAsync($"Utilities/GetYesNo");
-            var contentuseryesno = await responseuseryesno.Content.ReadAsStringAsync();
-            var responseuserexitrating = await Http.GetAsync($"Utilities/GetExitRating");
-            var contentuserexitrating = await responseuserexitrating.Content.ReadAsStringAsync();
-            var responseuserexitratingaspects = await Http.GetAsync($"Utilities/GetExitRatingAspects");
-            var contentuserexitratingaspects = await responseuserexitratingaspects.Content.ReadAsStringAsync();
-            var responseexitinterview = await Http.GetAsync($"EmployeeExit/GetEmployeeExitData");
-            var contentexitinterview = await responseexitinterview.Content.ReadAsStringAsync();
 
-            if (responseexitinterview.IsSuccessStatusCode)
+            await base.OnInitializedAsync();
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
             {
-                ExitInterviewData = await Http.GetFromJsonAsync<List<EmployeeExitInterview>>
-                ($"EmployeeExit/GetEmployeeExitData");
+                navManager.NavigateTo("/LoginPage", true);
             }
-
-            if (responseuserexitrating.IsSuccessStatusCode)
+            else
             {
-                ExitRatingData = await Http.GetFromJsonAsync<List<AExitRating>>
-                ($"Utilities/GetExitRating");
-            }
+                employeeno = null;
+                if (ExitRatingList != null)
+                {
+                    ExitRatingList.Clear();
+                }
+                Credentials = await AuthService.GetUserCredentials();
 
-            if (responseuserexitratingaspects.IsSuccessStatusCode)
-            {
-                ExitRatingAspectsData = await Http.GetFromJsonAsync<List<AExitRatingAspects>>
-                ($"Utilities/GetExitRatingAspects");
-            }
+                List<Task> t = new List<Task>();
 
-            if (responseemployee.IsSuccessStatusCode)
-            {
-                EmployeeData = await Http.GetFromJsonAsync<List<ViewBscEmployee>>
-                ($"BalanceScoreCard/GetEmployeeData");
-            }
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"BalanceScoreCard/GetEmployeeData");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(content, _options);
+                    }
+                }));
 
-            if (responseuseryesno.IsSuccessStatusCode)
-            {
-                YesNoData = await Http.GetFromJsonAsync<List<AYesNo>>
-                ($"Utilities/GetYesNo");
-            }
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetYesNo");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        YesNoData = JsonSerializer.Deserialize<List<AYesNo>>(content, _options);
+                    }
+                }));
 
-            if (responseuserjobtitle.IsSuccessStatusCode)
-            {
-                UserJobTitle = contentuserjobtitle;
-            }
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetExitRating");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        ExitRatingData = JsonSerializer.Deserialize<List<AExitRating>>(content, _options);
+                    }
+                }));
 
-            if (responseuserrole.IsSuccessStatusCode)
-            {
-                UserRole = contentuserrole;
-            }
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetExitRatingAspects");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        ExitRatingAspectsData = JsonSerializer.Deserialize<List<AExitRatingAspects>>(content, _options);
+                    }
+                }));
 
-            if (responseuserlevelid.IsSuccessStatusCode)
-            {
-                UserLevelId = Convert.ToInt32(contentuserlevelid);
-            }
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetExitRatingAspects");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        ExitRatingAspectsData = JsonSerializer.Deserialize<List<AExitRatingAspects>>(content, _options);
+                    }
+                }));
 
-            if (responseuserjobtitleid.IsSuccessStatusCode)
-            {
-                UserJobTitleId = Convert.ToInt32(contentuserjobtitleid);
+                t.Add(Task.Run(async () =>
+                {
+                    var responseseparationreason = await Http.GetAsync($"Utilities/GetSeparationReason");
+                    if (responseseparationreason.IsSuccessStatusCode)
+                    {
+                        var contentseparationreason = await responseseparationreason.Content.ReadAsStringAsync();
+                        DutyReasonData = JsonSerializer.Deserialize<List<ASeparationofDuty>>(contentseparationreason, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetEmployeeExitStatus");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        EmployeeExitStatusData = JsonSerializer.Deserialize<List<AEmployeeExitStatus>>(content, _options);
+                    }
+                }));
+
+                Task _t = Task.WhenAll(t);
+                await _t;
             }
 
         }
@@ -610,19 +777,75 @@
         }
     }
 
+    protected async Task OnEndDateChange(ChangedEventArgs<DateTime?> value)
+    {
+
+        try
+        {
+            var _employee = EmployeeData.FirstOrDefault(o=>o.Employeeid == ExitData.EmployeeId);
+            if(_employee != null && _employee.DateJoined != null)
+            {
+                _PeriodofServiceYears = Convert.ToDateTime(ExitData.DateToExit).Year - Convert.ToDateTime(_employee.DateJoined).Year;
+                _PeriodofServiceMonths = ((ExitData.DateToExit.Value.Year - _employee.DateJoined.Value.Year) * 12) + ExitData.DateToExit.Value.Month - _employee.DateJoined.Value.Month;
+                _PeriodofServiceDays = (ExitData.DateToExit.Value - _employee.DateJoined.Value).TotalDays;
+
+            }
+        }
+        catch(Exception ex)
+        {
+
+        }
+        finally
+        {
+
+        }
+    }
+
+    public async Task onSaveDraftForm()
+    {
+        try
+        {
+            if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                ExitData.EmployeeExitStatusId = 1;
+                ExitData.DateCreated = DateTime.Now;
+                await DataGrid.EndEditAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ClearAll();
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    #region submission
+
     public async Task onSubmitForm()
     {
         try
         {
-            if (ExitRatingGrid != null)
+            if (ExitData.EmployeeId == null)
             {
-                await ExitRatingGrid.EndEditAsync();
+                toastService.ClearAll();
+                toastService.ShowWarning("Please select the employee");
             }
-
-            if (DataGrid != null)
+            else if(ExitData.DateToExit == null)
             {
-                await DataGrid.EndEditAsync();
+                toastService.ClearAll();
+                toastService.ShowWarning("Please enter the last date worked for");
             }
+            else
+            {
+                ConfirmationText = "<p>Are you sure you want to submit this record? </p>";
+                await this.ConfirmationSubmitDialogue.ShowAsync();
+            }            
         }
         catch (Exception ex)
         {
@@ -635,16 +858,248 @@
         }
     }
 
+    public async Task ComfirmationSubmitYes()
+    {
+        try
+        {
+            if (DataGrid != null)
+            {
+                if (ExitRatingGrid != null)
+                {
+                    await ExitRatingGrid.EndEditAsync();
+                }
+
+                //For a new record
+                if(_previous == Syncfusion.Blazor.Grids.Action.Add)
+                {
+                    ExitData.EmployeeExitStatusId = 2;
+                    ExitData.DateCreated = DateTime.Now;
+                }
+                //Employee Editing - Draft
+                else if((_previous == Syncfusion.Blazor.Grids.Action.BeginEdit) && ExitData.EmployeeExitStatusId == 1)
+                {
+                    ExitData.EmployeeExitStatusId = 3;
+                    ExitData.DateSubmitted = DateTime.Now;
+                }
+
+                //Employee Editing Under Employee Section
+                else if((_previous == Syncfusion.Blazor.Grids.Action.BeginEdit) && ExitData.EmployeeExitStatusId == 2)
+                {
+                    ExitData.EmployeeExitStatusId = 3;
+                    ExitData.DateSubmitted = DateTime.Now;
+                }
+                //HR Returning
+                else if((_previous == Syncfusion.Blazor.Grids.Action.BeginEdit) && ExitData.EmployeeExitStatusId == 3)
+                {
+                    ExitData.EmployeeExitStatusId = 4;
+                    ExitData.DateReturned = DateTime.Now;
+                }
+                
+                await DataGrid.EndEditAsync();
+
+
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+            await this.ConfirmationSubmitDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void ComfirmationSubmitNo()
+    {
+        this.ConfirmationSubmitDialogue.HideAsync();
+    }
+
+    #endregion submission
+
+    #region rejection
+
+    public async Task onRejectForm()
+    {
+        try
+        {
+            ConfirmationText = "<p>Are you sure you want to return this form to the employee! </p>";
+            await this.ConfirmationDialogue.ShowAsync();
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+
+    private async void ComfirmationYes()
+    {
+        try
+        {
+            RejectionCommentsModel = new EmployeeExitInterviewRejectionComments();
+            if (ExitData != null)
+            {
+                RejectionCommentsModel.ExitInterviewId = ExitData.ExitInterviewId;
+            }
+
+            if (Credentials != null)
+            {
+                RejectionCommentsModel.AddedBy = Credentials.AccountHolderName;
+            }
+            RejectionCommentsModel.AddedDate = DateTime.Now;
+
+            if (ConfirmationDialogue != null)
+            {
+                await ConfirmationDialogue.HideAsync();
+            }
+
+            if (RejectLeaveDialogue != null)
+            {
+                await RejectLeaveDialogue.ShowAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            DataGrid.Refresh();
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void ComfirmationNo()
+    {
+        this.ConfirmationDialogue.HideAsync();
+    }
+
+    //Rejection Reason
+    private async Task RejectReasonYes()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(RejectionCommentsModel.RejectionComments))
+            {
+                toastService.ShowWarning("Please enter a reason as to why you are returning this");
+            }
+            else
+            {
+                await LoadingDialogue.ShowAsync();
+                if (ExitData.EmployeeExitInterviewRejectionComments == null)
+                {
+                    ExitData.EmployeeExitInterviewRejectionComments = new List<EmployeeExitInterviewRejectionComments>();
+                }
+                ExitData.EmployeeExitInterviewRejectionComments.Add(RejectionCommentsModel);
+
+                //HR Review
+                if (ExitData.EmployeeExitStatusId == 3)
+                {
+                    ExitData.EmployeeExitStatusId = 4;
+                    ExitData.DateReturned = DateTime.Now;
+                }
+
+                if (RejectLeaveDialogue != null)
+                {
+                    await RejectLeaveDialogue.HideAsync();
+                }
+
+                if(DataGrid != null)
+                {
+                    await DataGrid.EndEditAsync();
+                }
+                
+            }
+
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await DataGrid.Refresh();
+            await LoadingDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void RejectReasonNo()
+    {
+        DataGrid.Refresh();
+        this.RejectLeaveDialogue.HideAsync();
+    }
+    #endregion rejection
+
+    #region approve
+
+    public async Task onApproveForm()
+    {
+        try
+        {
+            ConfirmationText = "<p>Are you sure you want to approve this employee exit record! </p>";
+            await this.ConfirmationApprovalDialogue.ShowAsync();
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async void ComfirmationApprovalYes()
+    {
+        try
+        {
+            if (DataGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                ExitData.EmployeeExitStatusId = 5;
+                ExitData.DateApproved = DateTime.Now;
+
+                await DataGrid.EndEditAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+            await this.ConfirmationApprovalDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void ComfirmationApprovalNo()
+    {
+        this.ConfirmationApprovalDialogue.HideAsync();
+    }
+
+    #endregion approve
+
 
     public async void DialogCancelBtnclicked()
-    {
-        if (ExitRatingGrid != null)
-        {
-            await ExitRatingGrid.CloseEdit();
-        }
+    {        
         if (DataGrid != null)
         {
-            await DataGrid.CloseEdit();
+            if (ExitRatingGrid != null)
+            {
+                await ExitRatingGrid.CloseEditAsync();
+            }
+            await DataGrid.CloseEditAsync();
         }
     }
 
@@ -661,7 +1116,7 @@
         await ExitRatingGrid.SelectRow((int)rowIndex, false);
     }
 
-    public async void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewBscEmployee> args)
+    public async void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewEmployeeDropDown> args)
     {
         employeeno = args.ItemData;
     }
@@ -677,43 +1132,6 @@
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
         {
             
-            
-            var responseemployee = await Http.GetAsync($"BalanceScoreCard/GetEmployeeData");
-            var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-            var responseuserjobtitle = await Http.GetAsync($"Utilities/GetUserJobTitle");
-            var responseuserrole = await Http.GetAsync($"Utilities/GetUserRoleId");
-            var contentuserrole = await responseuserrole.Content.ReadAsStringAsync();
-            var contentuserjobtitle = await responseuserjobtitle.Content.ReadAsStringAsync();
-            var responseuserlevelid = await Http.GetAsync($"Utilities/GetEmployeeLevelId");
-            var contentuserlevelid = await responseuserlevelid.Content.ReadAsStringAsync();
-            var responseuserjobtitleid = await Http.GetAsync($"Utilities/GetUserJobTitleId");
-            var contentuserjobtitleid = await responseuserjobtitleid.Content.ReadAsStringAsync();
-
-            if (responseemployee.IsSuccessStatusCode)
-            {
-                EmployeeData = await Http.GetFromJsonAsync<List<ViewBscEmployee>>
-                ($"BalanceScoreCard/GetEmployeeData");
-            }
-
-            if (responseuserjobtitle.IsSuccessStatusCode)
-            {
-                UserJobTitle = contentuserjobtitle;
-            }
-
-            if (responseuserrole.IsSuccessStatusCode)
-            {
-                UserRole = contentuserrole;
-            }
-
-            if (responseuserlevelid.IsSuccessStatusCode)
-            {
-                UserLevelId = Convert.ToInt32(contentuserlevelid);
-            }
-
-            if (responseuserjobtitleid.IsSuccessStatusCode)
-            {
-                UserJobTitleId = Convert.ToInt32(contentuserjobtitleid);
-            }
         }
     }
 
@@ -722,36 +1140,12 @@
         var data = Args.Data;
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
         {
-            if (Args.Data.EmployeeId == null)
-            {
-                toastService.ShowWarning("Please select the employee.");
-                Args.Cancel = true;
-            }
+            _previous = Args.RequestType;
 
-            else if (Args.Data.DateToExit == null)
-            {
-                toastService.ShowWarning("Please enter the Exit Date.");
-                Args.Cancel = true;
-            }
-
-            else
-            {
-                var countdata = ExitInterviewData?
-                        .FirstOrDefault(o => o.EmployeeId 
-                        == Args.Data.EmployeeId);
-                if (countdata != null && (countdata.ExitInterviewId != Args.Data.ExitInterviewId))
-                {
-                    toastService.ShowWarning("This employee has arleady captured there details.Record Not Saved");
-                    Args.Cancel = true;
-                }
-                else
-                {
-                    await LoadingDialogue.ShowAsync();
-                }                
-            }
         }
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
         {
+            _previous = Args.RequestType;
             employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.EmployeeId);
 
             if (Args.RowData.EmployeeExitRating == null)
@@ -774,11 +1168,127 @@
                             });
                     }
                 }
+            }        
+        
+            //Draft
+            if (Args.RowData.EmployeeExitStatusId == 1)
+            {
+                IsHiddenRejected = true;
+                IsHiddenApprove = true;
+
+                //If person editing is the same as the employee, hide buttons and not draft
+                if (Args.RowData.EmployeeId == Credentials.StaffId)
+                {
+                    //Buttons
+                    IsHiddenDraft = false;
+                    IsHiddenPersonSubmit = false;                    
+                    OnSubmitButtonsBool = true;
+                }
+                else
+                {
+                    IsHiddenDraft = true;
+                    IsHiddenPersonSubmit = true;
+                    OnSubmitButtonsBool = false;
+                }
             }
+
+            //Under Employee Section
+            else if (Args.RowData.EmployeeExitStatusId == 2)
+            {
+                IsHiddenRejected = true;
+                IsHiddenApprove = true;
+
+                //If person editing is the same as the employee, hide buttons and not draft
+                if (Args.RowData.EmployeeId == Credentials.StaffId)
+                {
+                    //Buttons
+                    IsHiddenDraft = false;
+                    IsHiddenPersonSubmit = false;                    
+                    OnSubmitButtonsBool = true;
+                }
+                else
+                {
+                    IsHiddenDraft = true;
+                    IsHiddenPersonSubmit = true;
+                    OnSubmitButtonsBool = false;
+                }
+            }
+
+            //Submitted to HR
+            else if (Args.RowData.EmployeeExitStatusId == 3)
+            {
+                OnSubmitButtonsBool = false;
+                IsHiddenDraft = true;
+                IsHiddenPersonSubmit = true;
+
+                //If person editing is the same as the employee, hide buttons and not draft
+                if (Args.RowData.EmployeeId == Credentials.StaffId)
+                {
+                    //Buttons                    
+                    IsHiddenRejected = true;  
+                    IsHiddenApprove = true;
+                }
+                else
+                {
+                    IsHiddenRejected = false;
+                    IsHiddenApprove = false;
+                }
+            }
+
+            //Returned to Employee
+            else if (Args.RowData.EmployeeExitStatusId == 4)
+            {
+                IsHiddenApprove = true;
+                IsHiddenRejected = true;
+
+                //If person editing is the same as the employee, hide buttons and not draft
+                if (Args.RowData.EmployeeId == Credentials.StaffId)
+                {
+                    //Buttons
+                    IsHiddenDraft = false;
+                    IsHiddenPersonSubmit = false;
+                    OnSubmitButtonsBool = true;
+                }
+                else
+                {
+                    IsHiddenDraft = true;
+                    IsHiddenPersonSubmit = true;
+                    OnSubmitButtonsBool = false;
+                }
+            }
+
+            //Approved
+            else if (Args.RowData.EmployeeExitStatusId == 5)
+            {
+                IsHiddenApprove = true;
+                IsHiddenRejected = true;
+                IsHiddenDraft = true;
+                IsHiddenPersonSubmit = true;
+                OnSubmitButtonsBool = false;
+            }
+
+
+            if (employeeno != null && employeeno.DateJoined != null && Args.RowData.DateToExit != null)
+            {
+                _PeriodofServiceYears = Convert.ToDateTime(Args.RowData.DateToExit).Year - Convert.ToDateTime(employeeno.DateJoined).Year;
+                _PeriodofServiceMonths = ((Args.RowData.DateToExit.Value.Year - employeeno.DateJoined.Value.Year) * 12) + Args.RowData.DateToExit.Value.Month - employeeno.DateJoined.Value.Month;
+                _PeriodofServiceDays = (Args.RowData.DateToExit.Value - employeeno.DateJoined.Value).TotalDays;
+
+            }
+        
         }
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
         {
+            _previous = Args.RequestType;
             employeeno = null;
+            OnSubmitButtonsBool = true;
+
+            //Show buttons on add
+            IsHiddenDraft = false;
+            IsHiddenPersonSubmit = false;
+            IsHiddenRejected = true;
+            IsHiddenApprove = true;
+
             Args.RowData.EmployeeExitRating = new List<EmployeeExitRating>();
 
             if (ExitRatingAspectsData != null)
@@ -827,8 +1337,14 @@
         }
         else
         {
-            var  empdetail =  EmployeeData.FirstOrDefault(o=>o.Employeeid == Value.EmployeeId);
-            return "Edit " + empdetail.EmployeeDetails + "'s Record";
+            return "Editing Record ";
+
+            // if(EmployeeData != null)
+            // {
+            //     var empdetail = EmployeeData.FirstOrDefault(o => o.Employeeid == Value.EmployeeId);
+            //     return "Edit " + empdetail.EmployeeDetails + "'s Record";
+            // }             
+
         }
     }
 
@@ -921,7 +1437,7 @@
         {
             try
             {
-                
+                string? _baseurl = Navigation.BaseUri;
                 var val = (value as EmployeeExitInterview);
                 if (val != null)
                 {
@@ -995,7 +1511,7 @@
         {
             try
             {
-                
+                string? _baseurl = Navigation.BaseUri;
                 var val = (value as EmployeeExitInterview);
                 if (val != null)
                 {
@@ -1034,7 +1550,7 @@
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                        var result = await Http.PutAsync($"EmployeeExit/UpdateExitInterview", httpContent);
+                        var result = await Http.PutAsync($"EmployeeExit/UpdateExitInterview?_baseurl={_baseurl}", httpContent);
                         if (result.IsSuccessStatusCode)
                         {
                             var content = await result.Content.ReadAsStringAsync();

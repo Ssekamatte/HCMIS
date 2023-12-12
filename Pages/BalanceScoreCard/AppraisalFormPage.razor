@@ -402,7 +402,7 @@
                                                                         DataSource="@FinancialYearData" Placeholder="Please select"
                                                                         FloatLabelType="FloatLabelType.Never" AllowFiltering="true"
                                                                         FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
-                                                                        Enabled="@isFinancialYearEnabled">
+                                                                        Enabled="false">
                                                             <DropDownListFieldSettings Value="@nameof(AFinancialYear.Id)"
                                                                                        Text="@nameof(AFinancialYear.FinancialYear)">
                                                             </DropDownListFieldSettings>
@@ -454,10 +454,19 @@
                                 <HeaderTemplate><strong>SECTION 2: TARGET SETTING AND EVALUATION /  EXPECTED  ROLE KPIs or DELIVERABLES</strong></HeaderTemplate>
                                 <ContentTemplate>
                                     <HCMIS.Pages.BalanceScoreCard.PartialViews.SectionTwoPage BalanceScoreCardId="@BscData.BalanceScoreCardId" onscorecardtoggle="@ToggleBalanceScoreCardTarget" targetdata="@BscData.BalanceScoreCardTargetSetting.ToList()"
-                                                    BscPerspectiveTypeData="@BscPerspectiveTypeData" KpiDetailsData="@KpiDetailsData" MeasurementUnitData="@MeasurementUnitData"
-                                                    PopulatedData="@PopulatedData" FinancialYearData="@FinancialYearData" finyearid="@finyearid"
-                                                    IsSupervisorEnabledColumn="@IsSupervisorEnabledColumn"
-                                                    IsEmployeeEnabledColumn="@IsEmployeeEnabledColumn" @ref="targetsettingref">
+                                                                                              BscPerspectiveTypeData="@BscPerspectiveTypeData" 
+                                                                                              KpiDetailsData="@KpiDetailsData" 
+                                                                                              MeasurementUnitData="@MeasurementUnitData"
+                                                                                              PopulatedData="@PopulatedData" 
+                                                                                              FinancialYearData="@FinancialYearData" 
+                                                                                              finyearid="@finyearid"
+                                                                                              IsSupervisorEnabledColumn="@IsSupervisorEnabledColumn"
+                                                                                              IsEmployeeEnabledColumn="@IsEmployeeEnabledColumn" 
+                                                                                              @ref="targetsettingref" 
+                                                                                              perspweightscustomer="@perspweightscustomer"
+                                                                                              perspweightsfinancial="@perspweightsfinancial"
+                                                                                              perspweightsinternal="@perspweightsinternal"
+                                                                                              perspweightslearning="@perspweightslearning">
                                     </HCMIS.Pages.BalanceScoreCard.PartialViews.SectionTwoPage>
                                 </ContentTemplate>
                             </AccordionItem>
@@ -833,13 +842,15 @@
     List<AEmployeeEvidence>? EvidenceData { get; set; }
     List<ABehavioralCompetencies>? CompetenceData { get; set; }
     List<BalanceScoreCardTargetSetting>? TargetData { get; set; }
-    List<ViewBscPerspectiveperformanceIndicator>? PopulatedData { get; set; }
+    List<ViewABscKpidetails>? PopulatedData { get; set; }
     List<ABscPerspectivesType>? BscPerspectiveTypeData { get; set; }
     List<ALeaveApprovalStatus>? ApprovalStatusData { get; set; }
     List<AMeasurementMetric>? MeasurementUnitData { get; set; }
     List<APerformanceScale>? ScaleData { get; set; }
     List<ViewTargetSettingTotals>? TargetSettingTotalData { get; set; }
     List<ViewBehavioralTotals>? BehavioralTotalData { get; set; }
+    List<ViewABscPerspectivesDetail>? PerspectivesDetailData { get; set; }
+
     bool reasonBool = true;
     bool AllowAddingValue { get; set; }
     bool AllowEditingValue{ get; set; }
@@ -848,7 +859,7 @@
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     public Query MainQuery = new Query();
     private List<object>? BSCAttachmentToolbarItems { get; set; }
-    private DialogSettings AttachmentDialog = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "95%" };
+    private DialogSettings AttachmentDialog = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "98%" };
 
     AppraiseeCommentsPage AppraiseeCommentsref;
     SectionTwoPage targetsettingref;
@@ -856,6 +867,12 @@
     SectionFourPage individualdevelopmentplanref;
     HODCommentsPage HODCommentsref;
     CEOCommentsPage CEOCommentsref;
+
+    private static ViewABscPerspectivesDetail? perspweightsfinancial { get; set; }
+    private static ViewABscPerspectivesDetail? perspweightsinternal { get; set; }
+    private static ViewABscPerspectivesDetail? perspweightscustomer { get; set; }
+    private static ViewABscPerspectivesDetail? perspweightslearning { get; set; }
+
 
     private void ToggleSearchQuery(Query? DetailData)
     {
@@ -1046,7 +1063,7 @@
                 BscData.LeaveApprovalStatusId = 1;
                 BscData.AddedDate = DateTime.Now;
 
-                                if (AppraiseeCommentsref != null && AppraiseeCommentsref.AppraiseeCommentsGrid != null)
+                 if (AppraiseeCommentsref != null && AppraiseeCommentsref.AppraiseeCommentsGrid != null)
                 {
                     await AppraiseeCommentsref.AppraiseeCommentsGrid.EndEditAsync();
                 }
@@ -1540,11 +1557,20 @@
                             searchpanel.FinancialYearId = _finyearid.ToArray();
                             MainQuery = new Query().AddParams("FinancialYearId", string.Join(",", searchpanel.FinancialYearId));
 
+                            //Get Populated Date
                             var responsetargetpopulated = await Http.GetAsync($"TargetSetting/GetPopulatedData?YearId={finyearid}");
                             if (responsetargetpopulated.IsSuccessStatusCode)
                             {
                                 var contenttargetpopulated = await responsetargetpopulated.Content.ReadAsStringAsync();
-                                PopulatedData = JsonSerializer.Deserialize<List<ViewBscPerspectiveperformanceIndicator>>(contenttargetpopulated, _options);
+                                PopulatedData = JsonSerializer.Deserialize<List<ViewABscKpidetails>>(contenttargetpopulated, _options);
+                            }
+
+                            //Get Perspective Type Details
+                            var responsebscperspectivedetail = await Http.GetAsync($"BscPerspectives/GetBscPerspectivesDetail?YearId={finyearid}");
+                            if (responsebscperspectivedetail.IsSuccessStatusCode)
+                            {
+                                var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
+                                PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscPerspectivesDetail>>(contentbscperspectivedetail, _options);
                             }
                         }
 
@@ -2138,6 +2164,15 @@
 
                 #endregion PrimaryData
 
+                if (PerspectivesDetailData != null)
+                {
+                    perspweightsfinancial = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 1);
+                    perspweightsinternal = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 2);
+                    perspweightscustomer = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 3);
+                    perspweightslearning = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 4);
+
+                }
+
                 //await LoadingDialogue.ShowAsync();
                 _previous = Args.RequestType;
                 isFinancialYearEnabled = true;
@@ -2152,42 +2187,43 @@
 
 
 
-                if (Args.RowData.BalanceScoreCardTargetSetting == null)
-                {
-                    Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSetting>();
-                }
-                if (Args.RowData.BalanceScoreCardAppraiseeComments == null)
-                {
-                    Args.RowData.BalanceScoreCardAppraiseeComments = new List<BalanceScoreCardAppraiseeComments>();
-                }
-                if (Args.RowData.BalanceScoreCardCeocomments == null)
-                {
-                    Args.RowData.BalanceScoreCardCeocomments = new List<BalanceScoreCardCeocomments>();
-                }
-                if (Args.RowData.BalanceScoreCardHodcomments == null)
-                {
-                    Args.RowData.BalanceScoreCardHodcomments = new List<BalanceScoreCardHodcomments>();
-                }
-                if (Args.RowData.BalanceScoreCardSupervisorComments == null)
-                {
-                    Args.RowData.BalanceScoreCardSupervisorComments = new List<BalanceScoreCardSupervisorComments>();
-                }
-                if (Args.RowData.BalanceScoreCardTargetDevelopmentPlan == null)
-                {
-                    Args.RowData.BalanceScoreCardTargetDevelopmentPlan = new List<BalanceScoreCardTargetDevelopmentPlan>();
-                }
-                if (Args.RowData.BalanceScoreCardBehavioral == null)
-                {
-                    Args.RowData.BalanceScoreCardBehavioral = new List<BalanceScoreCardBehavioral>();
-                }
-                if (Args.RowData.BalanceScoreCardRejectionReasons == null)
-                {
-                    Args.RowData.BalanceScoreCardRejectionReasons = new List<BalanceScoreCardRejectionReasons>();
-                }
-                if (Args.RowData.BalanceScoreCardAttachment == null)
-                {
-                    Args.RowData.BalanceScoreCardAttachment = new List<BalanceScoreCardAttachment>();
-                }
+                // if (Args.RowData.BalanceScoreCardTargetSetting == null)
+                // {
+                //     Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSetting>();
+                // }
+                // if (Args.RowData.BalanceScoreCardAppraiseeComments == null)
+                // {
+                //     Args.RowData.BalanceScoreCardAppraiseeComments = new List<BalanceScoreCardAppraiseeComments>();
+                // }
+                // if (Args.RowData.BalanceScoreCardCeocomments == null)
+                // {
+                //     Args.RowData.BalanceScoreCardCeocomments = new List<BalanceScoreCardCeocomments>();
+                // }
+                // if (Args.RowData.BalanceScoreCardHodcomments == null)
+                // {
+                //     Args.RowData.BalanceScoreCardHodcomments = new List<BalanceScoreCardHodcomments>();
+                // }
+                // if (Args.RowData.BalanceScoreCardSupervisorComments == null)
+                // {
+                //     Args.RowData.BalanceScoreCardSupervisorComments = new List<BalanceScoreCardSupervisorComments>();
+                // }
+                // if (Args.RowData.BalanceScoreCardTargetDevelopmentPlan == null)
+                // {
+                //     Args.RowData.BalanceScoreCardTargetDevelopmentPlan = new List<BalanceScoreCardTargetDevelopmentPlan>();
+                // }
+                // if (Args.RowData.BalanceScoreCardBehavioral == null)
+                // {
+                //     Args.RowData.BalanceScoreCardBehavioral = new List<BalanceScoreCardBehavioral>();
+                // }
+                // if (Args.RowData.BalanceScoreCardRejectionReasons == null)
+                // {
+                //     Args.RowData.BalanceScoreCardRejectionReasons = new List<BalanceScoreCardRejectionReasons>();
+                // }
+                // if (Args.RowData.BalanceScoreCardAttachment == null)
+                // {
+                //     Args.RowData.BalanceScoreCardAttachment = new List<BalanceScoreCardAttachment>();
+                // }
+
                 //Enabling and Disabling Grid Columns
                 //If person editing is the same as the employee, disable supervision
                 if (Args.RowData.Employeeid == Credentials.StaffId)
@@ -2440,20 +2476,30 @@
 
             StateHasChanged();
         }
+        
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
         {
             Args.RowData.FinancialYearId = finyearid;
             Args.RowData.DateofReview = DateTime.Now;
 
-            Args.RowData.BalanceScoreCardAppraiseeComments = new List<BalanceScoreCardAppraiseeComments>();
-            Args.RowData.BalanceScoreCardCeocomments = new List<BalanceScoreCardCeocomments>();
-            Args.RowData.BalanceScoreCardHodcomments = new List<BalanceScoreCardHodcomments>();
-            Args.RowData.BalanceScoreCardSupervisorComments = new List<BalanceScoreCardSupervisorComments>();
-            Args.RowData.BalanceScoreCardTargetDevelopmentPlan = new List<BalanceScoreCardTargetDevelopmentPlan>();
-            Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSetting>();
-            Args.RowData.BalanceScoreCardBehavioral = new List<BalanceScoreCardBehavioral>();
-            Args.RowData.BalanceScoreCardRejectionReasons = new List<BalanceScoreCardRejectionReasons>();
-            Args.RowData.BalanceScoreCardAttachment = new List<BalanceScoreCardAttachment>();
+            // Args.RowData.BalanceScoreCardAppraiseeComments = new List<BalanceScoreCardAppraiseeComments>();
+            // Args.RowData.BalanceScoreCardCeocomments = new List<BalanceScoreCardCeocomments>();
+            // Args.RowData.BalanceScoreCardHodcomments = new List<BalanceScoreCardHodcomments>();
+            // Args.RowData.BalanceScoreCardSupervisorComments = new List<BalanceScoreCardSupervisorComments>();
+            // Args.RowData.BalanceScoreCardTargetDevelopmentPlan = new List<BalanceScoreCardTargetDevelopmentPlan>();
+            // Args.RowData.BalanceScoreCardTargetSetting = new List<BalanceScoreCardTargetSetting>();
+            // Args.RowData.BalanceScoreCardBehavioral = new List<BalanceScoreCardBehavioral>();
+            // Args.RowData.BalanceScoreCardRejectionReasons = new List<BalanceScoreCardRejectionReasons>();
+            // Args.RowData.BalanceScoreCardAttachment = new List<BalanceScoreCardAttachment>();
+
+            if (PerspectivesDetailData != null)
+            {
+                perspweightsfinancial = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 1);
+                perspweightsinternal = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 2);
+                perspweightscustomer = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 3);
+                perspweightslearning = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == 4);
+
+            }
 
             employeeno = null;
             _previous = Args.RequestType;

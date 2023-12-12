@@ -299,53 +299,45 @@
     {
         try
         {
-            
-            if (string.IsNullOrEmpty(_SystemSettings.AccessToken))
-            {
-                Navigation.NavigateTo("/");
-            }
-            else
-            {
-                var tasks = new List<Task>();
-                tasks.Add(Task.Run(async () =>
+            var tasks = new List<Task>();
+            tasks.Add(Task.Run(async () =>
+           {
+
+               var response = await Http.GetAsync($"Utilities/GetDepartment");
+               var content = await response.Content.ReadAsStringAsync();
+               if (response.IsSuccessStatusCode)
                {
-                   
-                   var response = await Http.GetAsync($"Utilities/GetDepartment");
-                   var content = await response.Content.ReadAsStringAsync();
-                   if (response.IsSuccessStatusCode)
+                   DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
+                   if (DepartmentData != null)
                    {
-                       DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
-                       if(DepartmentData != null)
+                       DataSource = new List<HierarchicalDetails>();
+                       foreach (var n in DepartmentData)
                        {
-                           DataSource = new List<HierarchicalDetails>();
-                           foreach(var n in DepartmentData)
+                           if (string.IsNullOrEmpty(n.ReportsTo))
                            {
-                               if (string.IsNullOrEmpty(n.ReportsTo))
-                               {
-                                   DataSource.Add(new HierarchicalDetails() { Id = n.DepartmentId.ToString(), Label = n.DepartmentDescription, FilllColor = "#e7704c", Border = "#c15433" });
-                               }
-                               else
-                               {
-                                   DataSource.Add(new HierarchicalDetails() { Id = n.DepartmentId.ToString(), Label = n.DepartmentDescription, ReportingPerson = n.ReportsTo.Split(",").ToList(), FilllColor = "#f3904a", Border = "#d3722e" });
-                               }
+                               DataSource.Add(new HierarchicalDetails() { Id = n.DepartmentId.ToString(), Label = n.DepartmentDescription, FilllColor = "#e7704c", Border = "#c15433" });
+                           }
+                           else
+                           {
+                               DataSource.Add(new HierarchicalDetails() { Id = n.DepartmentId.ToString(), Label = n.DepartmentDescription, ReportingPerson = n.ReportsTo.Split(",").ToList(), FilllColor = "#f3904a", Border = "#d3722e" });
                            }
                        }
                    }
-               }));
-                //tasks.Add(Task.Run(async () =>
-                //{
-                //    
-                //    var response = await Http.GetAsync($"Utilities/GetOrgStructureDepartment");
-                //    var content = await response.Content.ReadAsStringAsync();
-                //    if (response.IsSuccessStatusCode)
-                //    {
-                //        OrgaStructureDepartmentData = JsonSerializer.Deserialize<List<ViewOrgStructureDepartment>>(content, _options);
+               }
+           }));
+            //tasks.Add(Task.Run(async () =>
+            //{
+            //
+            //    var response = await Http.GetAsync($"Utilities/GetOrgStructureDepartment");
+            //    var content = await response.Content.ReadAsStringAsync();
+            //    if (response.IsSuccessStatusCode)
+            //    {
+            //        OrgaStructureDepartmentData = JsonSerializer.Deserialize<List<ViewOrgStructureDepartment>>(content, _options);
 
-                //    }
-                //}));
-                Task t = Task.WhenAll(tasks);
-                await t;
-            }
+            //    }
+            //}));
+            Task t = Task.WhenAll(tasks);
+            await t;
 
         }
         catch(Exception ex)

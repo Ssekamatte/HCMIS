@@ -19,6 +19,13 @@
 @using Microsoft.AspNetCore.Components;
 
 <style>
+
+    /*Custom color for multiline textbox*/
+    .e-custom .e-control.e-textbox 
+    { 
+        color: #03a9f4; 
+    } 
+
      /*Manage Records Button*/
     .e-grid .e-icons:not(.e-btn-icon) {
         color: #00cc00;
@@ -202,7 +209,7 @@
 </div>
 
 <div class="form-group col-md-12">
-    <SfSpinner @ref="SpinnerObj" Label="Loading Please Wait....." Size="50">
+    <SfSpinner @ref="SpinnerObj" Label="Loading Please Wait....." Size="50" ZIndex="1001">
         @*Render custom spinner component.*@
     </SfSpinner>
 </div>
@@ -696,35 +703,41 @@
                                 </AccordionItem>
 
                                 <div class="col-md-12" style="margin-top:10px">
-                                <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
-                                        <MudTabPanel Text="Attachment">
-                                            <h6 style="background-color:#6F1E51; color:ghostwhite;font-weight:bolder;font-size:large; text-align:center;">UPLOAD ATTACHMENT (Including any Evidence you have)</h6>
+                                    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+                                            <MudTabPanel Text="Attachment">
+                                                <h6 style="background-color:#6F1E51; color:ghostwhite;font-weight:bolder;font-size:large; text-align:center;">UPLOAD ATTACHMENT (Including any Evidence you have)</h6>
 
-                                            <div class="row">
-                                                <div class="col-md-12">
-                                                    <EmployeeLeaveAttachment EmployeeLeaveId="@LeaveData.EmployeeLeaveId"
-                                                                             OnHeaderAttachmentToggled="@ToggleBalanceScoreCardAttachment"
-                                                                             HeaderAttachmentData="@LeaveData.EmployeeLeaveHeaderAttachment.ToList()"
-                                                                             BSCAttachmentToolbarItems="@BSCAttachmentToolbarItems"
-                                                                             OnSubmitButtonsBool="@OnSubmitButtonsBool">
-                                                    </EmployeeLeaveAttachment>
+                                                <div class="row">
+                                                    <div class="col-md-12">
+                                                        <EmployeeLeaveAttachment EmployeeLeaveId="@LeaveData.EmployeeLeaveId"
+                                                                                 OnHeaderAttachmentToggled="@ToggleBalanceScoreCardAttachment"
+                                                                                 HeaderAttachmentData="@LeaveData.EmployeeLeaveHeaderAttachment.ToList()"
+                                                                                 BSCAttachmentToolbarItems="@BSCAttachmentToolbarItems"
+                                                                                 OnSubmitButtonsBool="@OnSubmitButtonsBool">
+                                                        </EmployeeLeaveAttachment>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </MudTabPanel>
+                                            </MudTabPanel>
 
-                                        <MudTabPanel Text="Rejection Comments">
-                                            <h6 style="background-color:#6F1E51; color:ghostwhite;font-weight:bolder;font-size:large; text-align:center;">REJECTION COMMENTS</h6>
-                                            <div class="row">
-                                                <div class="col-md-12">
-                                                    <LeaveRejectionCommentsPage EmployeeLeaveId="@LeaveData.EmployeeLeaveId"
-                                                                                onscorecardtoggle="@ToggleRejectionComments"
-                                                                                hodcommentsdata="@LeaveData.EmployeeLeaveRejectionComments.ToList()"
-                                                                                _previous="@_previous">
-                                                    </LeaveRejectionCommentsPage>
+                                            <MudTabPanel Text="Rejection Comments">
+                                                <h6 style="background-color:#6F1E51; color:ghostwhite;font-weight:bolder;font-size:large; text-align:center;">REJECTION COMMENTS</h6>
+                                                <div class="row">
+                                                    <div class="col-md-12">
+                                                        <LeaveRejectionCommentsPage EmployeeLeaveId="@LeaveData.EmployeeLeaveId"
+                                                                                    onscorecardtoggle="@ToggleRejectionComments"
+                                                                                    hodcommentsdata="@LeaveData.EmployeeLeaveRejectionComments.ToList()"
+                                                                                    _previous="@_previous">
+                                                        </LeaveRejectionCommentsPage>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </MudTabPanel>
-                                </MudTabs>
+                                            </MudTabPanel>
+
+                                            <MudTabPanel Text="Reason For Recall">
+                                                <div class="form-group col-md-12">
+                                                    <SfTextBox Multiline="true" CssClass="e-custom" Rows="5" @bind-Value="@(LeaveData.RecallReason)" Enabled="false" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                                                </div>
+                                            </MudTabPanel>
+                                    </MudTabs>
                                 </div>
 
                                 
@@ -740,6 +753,16 @@
                     <button @onclick="@onSubmitForm" disabled=@IsSubmitDisabled hidden=@IsHiddenPersonSubmit class="btn btn-success" data-ripple="true" style="margin-right:10px;">Submit Request</button>
                     <button @onclick="@onApproveForm" disabled=@IsApproveDisabled hidden=@IsHiddenApprove class="btn btn-secondary" data-ripple="true" style="margin-right:10px;">Approve</button>
                     <button @onclick="@onRejectForm" disabled=@IsRejectDisabled hidden=@IsHiddenRejected class="btn btn-warning" data-ripple="true" style="margin-right:10px;">Reject</button>
+                    @* <button @onclick="() => onRecallForm(LeaveData)" disabled=@IsRecallDisabled hidden=@IsHiddenRecall class="btn btn-info" data-ripple="true" style="margin-right:10px;">Recall</button>
+                     *@
+
+                    <button @onclick="() => onRecallForm(LeaveData)" disabled=@IsRecallDisabled hidden=@IsHiddenRecall class="btn btn-info" data-ripple="true" style="margin-right:10px;">
+                        @if(buttonspinner == true)
+                        {
+                             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        }
+                        Recall
+                    </button>
                 }
 
                 <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel Plan</button>
@@ -903,6 +926,120 @@
     </SfDialog>
 </div>
 
+@*Recall Confirmation*@
+
+<div class="form-group col-md-12">
+
+<SfDialog @ref="@ConfirmationRecallDialogue" Width="80%" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+    <DialogTemplates>
+        <Content>
+            <div class="form-row">
+                <div class="form-group col-md-12" style="font-weight:bolder;">
+                    @((MarkupString)@ConfirmationText)
+                </div>
+
+                <div class="form-group col-md-12" style="font-weight:bolder;">
+                    <h6 style="background-color:#6F1E51; color:ghostwhite;font-weight:bolder;font-size:large; text-align:center;margin-top: 10px;">LEAVE DETAIL SUMMARY</h6>
+                </div>
+
+                <div class="form-group col-md-12">
+                    @if (selecteddecision != null)
+                    {
+                        <div class='scroll'>
+                            <table class='table table-striped' style='min-width:99%;'>
+                                <thead class='thead-dark'><tr><td><p style='padding:10px;font-weight:bolder;'>Employee</p></td><td><p style='padding:10px;font-weight:bolder;'>Leave Type</p></td><td><p style='padding:10px;font-weight:bolder;'>Commencement Date</p></td><td><p style='padding:10px;font-weight:bolder;'>End Date</p></td><td><p style='padding:10px;font-weight:bolder;'>No. of Days Taken</p></td></tr></thead>
+                                <tbody>
+                                    @{    
+                                        <tr>
+                                             @if (EmployeeData != null)
+                                             {
+                                                 var impcolor = EmployeeData.FirstOrDefault(o => o.Employeeid == @selecteddecision.Employeeid);
+                                                 if (impcolor != null)
+                                                 {
+                                                     <td><p>@impcolor.EmployeeDetails</p></td>
+                                                 }
+                                             }
+                                            
+                                             @if (LeaveTypeData != null)
+                                             {
+                                                 var impcolor = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == @selecteddecision.LeaveTypeId);
+                                                 if (impcolor != null)
+                                                 {
+                                                     <td><p>@impcolor.LeaveTypeDescription</p></td>
+                                                 }
+                                             }
+
+                                            <td>
+                                                @if (selecteddecision.CommencementDate.HasValue)
+                                                {
+                                                    <p style='padding:10px;'>@selecteddecision.CommencementDate.Value.ToString("dd/MM/yyyy")</p>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (selecteddecision.EndDate.HasValue)
+                                                {
+                                                        <p style='padding:10px;'>@selecteddecision.EndDate.Value.ToString("dd/MM/yyyy")</p>
+                                                }
+                                            </td>
+
+                                            <td><p style='padding:10px;'>@selecteddecision.NoDaysAppliedFor</p></td>
+
+                                        </tr>
+                                        
+                                        <tr>
+                                            <td colspan="5">
+                                                <h6 style="background-color:#6F1E51; color:ghostwhite;font-weight:bolder;font-size:large; text-align:center;margin-top: 10px;">RECALL INFORMATION</h6>
+                                            </td>                                                
+                                        </tr>
+
+                                        <tr>
+                                           @{
+                                                    //Limit selection of date beyond the employees original end date
+
+                                                    int _year = Convert.ToDateTime(LeaveData.EndDate).Year;
+                                                    int _month = Convert.ToDateTime(LeaveData.EndDate).Month;
+                                                    int _day = Convert.ToDateTime(LeaveData.EndDate).Day;
+                                                    MaxRecallDate = new DateTime(_year, _month, _day);
+
+                                                    <td colspan="2">
+                                                        <p>Recall Date:<span style="color:red;">*</span></p>
+                                                         <SfDatePicker @bind-Value="@(LeaveData.RecallDate)" Enabled="true" ID="RecallDate" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never" Min="MinDate" Max='@MaxRecallDate'>
+                                                            <DatePickerEvents TValue="DateTime?" ValueChange="OnRecallDateChange"></DatePickerEvents>
+                                                        </SfDatePicker>
+                                                    </td>
+
+                                                    <td>
+                                                    <p>No. of Days Taken:</p>
+                                                        <SfNumericTextBox @bind-Value="@(LeaveData.RecallDaysTaken)" Enabled="false" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                                    </td>
+
+                                                    <td colspan="2">
+                                                        <p>Provide Reason Why you are recalling this employee:<span style="color:red;">*</span></p>
+                                                        <SfTextBox Multiline="true"
+                                                                   @bind-Value="@(LeaveData.RecallReason)"
+                                                                   Enabled="true"
+                                                                   FloatLabelType="FloatLabelType.Never">
+                                                        </SfTextBox>
+                                                    </td>
+
+                                           }                                            
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationRecallYes"/>
+        <DialogButton Content="No" OnClick="@ComfirmationRecallNo" />
+    </DialogButtons>
+</SfDialog>
+</div>
 
 <div>
     <SfDialog @ref="@LoadingDialogue"
@@ -936,6 +1073,9 @@
     </SfDialog>
 </div>
 
+<MudScrollToTop>
+    <MudFab Color="Color.Tertiary" StartIcon="@Icons.Material.Filled.ArrowCircleUp" />
+</MudScrollToTop>
 
 @code {
     public int? finyearid { get; set; }    
@@ -949,6 +1089,7 @@
     List<ALeaveType>? LeaveTypeData { get; set; }
     List<ALeaveApprovalStatus>? ApprovalStatusData { get; set; }
     List<EmployeeLeaveHeader>? LeaveDataSource { get; set; }
+    EmployeeLeaveHeader? selecteddecision { get; set; }
     private static EmployeeLeaveHeader? LeaveData { get; set; }
     List<APublicHolidays>? PublicHolidaysData { get; set; }
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -960,6 +1101,7 @@
 
     public DateTime MinDate { get; set; } = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
     public DateTime MaxDate { get; set; } = new DateTime(DateTime.Now.Year, 12, 31); 
+    public DateTime MaxRecallDate { get; set; } = new DateTime(DateTime.Now.Year,DateTime.Now.Month,DateTime.Now.Day); 
     Syncfusion.Blazor.Grids.Action _previous { get; set; }
     DateTime StartDate = DateTime.Now;
     DateTime EndDate = DateTime.Now;
@@ -968,6 +1110,7 @@
     public static int numberOfDays2 { get; set; } = 0;
     public static DateTime[]? datesselectedd = null;
     public static int LeaveDays { get; set; } = 0;
+    public static int RecallLeaveDays { get; set; } = 0;
     public static int TotalDaysTakenPrior { get; set; } = 0;
     public static int? AppliedDays { get; set; }
     public static int? OverrallTotal { get; set; }
@@ -981,6 +1124,8 @@
     bool IsSubmitDisabled;
     bool IsApproveDisabled;
     bool IsRejectDisabled;
+    bool IsRecallDisabled;
+    bool buttonspinner = false;
     string ConfirmationText { get; set; }
     public bool OnSubmitButtonsBool { get; set; }
     public bool EndDateEnablerBool { get; set; }
@@ -989,8 +1134,10 @@
     bool IsHiddenDraft;
     bool IsHiddenApprove;
     bool IsHiddenRejected;
+    bool IsHiddenRecall;
     SfDialog ConfirmationDialogue;
     SfDialog ConfirmationApprovalDialogue;
+    SfDialog ConfirmationRecallDialogue;
     SfDialog ConfirmationSubmitDialogue;
     SfDialog RejectLeaveDialogue;
     EmployeeLeaveRejectionComments? RejectionCommentsModel { get; set; }
@@ -1000,7 +1147,7 @@
     bool LeaveComputation = false;
     bool RejectionCommentsSection = false;
     private DialogSettings AttachmentDialog = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "95%" };
-    
+
     private List<object> ToolbarMenu = new List<object>()
     {
         new ItemModel() { Text = "Create Request", PrefixIcon = "e-add", Id = "Grid_add"},
@@ -1009,6 +1156,18 @@
         // new ItemModel(){ Text = "Update Request", PrefixIcon= "e-update", Id="Grid_update"},
         // new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
     };
+
+    // protected override async Task OnAfterRenderAsync(bool firstRender)
+    // {
+    //     if (firstRender)
+    //     {
+    //         await Task.Delay(500);
+    //         await SpinnerObj.ShowAsync();
+    //         await Task.Delay(5000);
+    //         await SpinnerObj.HideAsync();
+    //     }
+    // }
+
 
     private void ToggleRejectionComments(List<EmployeeLeaveRejectionComments>? HODCommentsChange)
     {
@@ -1545,7 +1704,10 @@
                     await RejectLeaveDialogue.HideAsync();
                 }
 
-                await DataGrid.EndEditAsync();
+                if (DataGrid != null)
+                {
+                    await DataGrid.EndEditAsync();
+                }
             }
 
         }
@@ -1555,7 +1717,7 @@
         }
         finally
         {
-            DataGrid.Refresh();
+            await DataGrid.Refresh();
             await LoadingDialogue.HideAsync();
             StateHasChanged();
         }
@@ -1574,6 +1736,72 @@
             await DataGrid.CloseEdit();
         }        
     }
+
+
+    #region Recall
+    public async Task onRecallForm(EmployeeLeaveHeader data)
+    {
+        try
+        {
+            buttonspinner = true;
+            selecteddecision = data;
+            ConfirmationText = "<p>Are you sure you want to recall this employee from leave! </p>";
+            await this.ConfirmationRecallDialogue.ShowAsync();
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async void ComfirmationRecallYes()
+    {
+        try
+        { 
+            if(LeaveData.RecallDate == null)
+            {
+                toastService.ShowWarning("Please select the recall date");
+            }
+
+            else if(string.IsNullOrEmpty(LeaveData.RecallReason))
+            {
+                toastService.ShowWarning("Please enter the reason why you are recalling the employee");
+            }
+            else
+            {
+                await LoadingDialogue.ShowAsync();                
+                LeaveData.LeaveApprovalStatusId = 13;
+                LeaveData.EndDate = LeaveData.RecallDate.Value.AddDays(-1);// Subtract one from the entered recall date to get the last leave day
+                LeaveData.NoDaysAppliedFor = LeaveData.RecallDaysTaken;
+
+                await DataGrid.EndEditAsync();
+                await this.ConfirmationRecallDialogue.HideAsync();
+                buttonspinner = false;
+            }
+
+            StateHasChanged();
+        }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+        }
+    }
+
+    private void ComfirmationRecallNo()
+    {
+        this.ConfirmationRecallDialogue.HideAsync();
+        buttonspinner = false;
+    }
+
+    #endregion Recall
 
     public string GetLeaveRequestHeader(EmployeeLeaveHeader Value)
     {
@@ -1801,16 +2029,6 @@
 
         LeaveData.NoDaysAppliedFor = LeaveDays;
 
-        // //Calculate the current number of days between the two dates
-        // if (StartDate.ToString("dd/MM/yyyy") != EndDate.ToString("dd/MM/yyyy"))
-        // { 
-        //     LeaveData.NoDaysAppliedFor = LeaveDays;
-        // }
-        // else
-        // {
-        //     LeaveData.NoDaysAppliedFor = 1;
-        // }
-        
         AppliedDays = LeaveData.TotalDays;
         if(getutilizeddays != null)
         {
@@ -1822,6 +2040,21 @@
             LeaveData.TotalDays = LeaveData.NoDaysAppliedFor + 0;
             TotalDaysTakenPrior = 0;
         }
+        StateHasChanged();
+    }
+
+    protected async Task OnRecallDateChange(ChangedEventArgs<DateTime?> value)
+    {
+        StartDate = Convert.ToDateTime(LeaveData.CommencementDate);
+        EndDate = Convert.ToDateTime(LeaveData.RecallDate).AddDays(-1); // Subtract one from the entered recall date to get the last leave day
+
+        numberOfDays2 = GetNumberOfDates(StartDate, EndDate);
+        datesselectedd = GetDatesBetween(StartDate, EndDate).ToArray();
+        PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDate);
+        RecallLeaveDays = numberOfDays2 - PublicHolidays;
+
+        LeaveData.RecallDaysTaken = RecallLeaveDays;
+
         StateHasChanged();
     }
 
@@ -1972,15 +2205,6 @@
 
                 Args.RowData.NoDaysAppliedFor = LeaveDays;
 
-                // //Calculate the current number of days between the two dates
-                // if (StartDate.ToString("dd/MM/yyyy") != EndDate.ToString("dd/MM/yyyy"))
-                // {
-                //     Args.RowData.NoDaysAppliedFor = LeaveDays;
-                // }
-                // else
-                // {
-                //     Args.RowData.NoDaysAppliedFor = 1;
-                // }
 
                 if(getutilizeddays != null)
                 {
@@ -2003,6 +2227,8 @@
                 //Draft
                 if(Args.RowData.LeaveApprovalStatusId == 1)
                 {
+                    IsHiddenRecall = true;
+
                     //If person editing is the same as the employee, hide buttons and not draft
                     if (Args.RowData.Employeeid == Credentials.StaffId)
                     {
@@ -2021,6 +2247,10 @@
                         LeaveComputation = false;
                         OnSubmitButtonsBool = false;
                         EndDateEnablerBool = false;
+                        IsHiddenDraft = true;
+                        IsHiddenPersonSubmit = true;
+                        IsHiddenApprove = true;
+                        IsHiddenRejected = true;
                     }
                 }
 
@@ -2029,6 +2259,7 @@
                 {
                     OnSubmitButtonsBool = false;
                     EndDateEnablerBool = false;
+                    IsHiddenRecall = true;
 
                     if ((Args.RowData.Employeeid != Credentials.StaffId) && (Args.RowData.ImmediateSupervisor == Credentials.StaffId))
                     {
@@ -2057,6 +2288,7 @@
                 {
                     OnSubmitButtonsBool = false;
                     EndDateEnablerBool = false;
+                    IsHiddenRecall = true;
 
                     //Buttons
                     IsHiddenDraft = true;
@@ -2070,6 +2302,8 @@
                 //Rejected By Supervisor
                 else if(Args.RowData.LeaveApprovalStatusId == 4)
                 {
+                    IsHiddenRecall = true;
+
                     //Owner of rejected application
                     if ((Args.RowData.Employeeid == Credentials.StaffId))
                     {
@@ -2106,6 +2340,7 @@
                 {
                     OnSubmitButtonsBool = false;
                     EndDateEnablerBool = false;
+                    IsHiddenRecall = true;
 
                     //If person editing is not the same as the employee and is selected as the hod and status is 5-Under Review By HOD
                     if ((Args.RowData.Employeeid != Credentials.StaffId)
@@ -2136,6 +2371,7 @@
                 {
                     OnSubmitButtonsBool = false;
                     EndDateEnablerBool = false;
+                    IsHiddenRecall = true;
 
                     //Buttons
                     IsHiddenDraft = true;
@@ -2149,6 +2385,8 @@
                 //Rejected By HOD
                 else if(Args.RowData.LeaveApprovalStatusId == 7)
                 {
+                    IsHiddenRecall = true;
+
                     //Owner of rejected application
                     if ((Args.RowData.Employeeid == Credentials.StaffId))
                     {
@@ -2185,6 +2423,7 @@
                 {
                     OnSubmitButtonsBool = false;
                     EndDateEnablerBool = false;
+                    IsHiddenRecall = true;
 
                     if ((Args.RowData.Employeeid != Credentials.StaffId)
                     && (Args.RowData.Chro == Credentials.StaffId))
@@ -2222,6 +2461,18 @@
                     IsHiddenApprove = true;
                     IsHiddenRejected = true;
 
+                    var _employeedetail = EmployeeData.FirstOrDefault(o=>o.Employeeid == Credentials.StaffId);
+                    
+                    //Show recall button for CHRO and HOD for a particular application
+                    if ((_employeedetail != null && _employeedetail.JibTitleId == 44 ) || Args.RowData.Hod == Credentials.StaffId)
+                    {
+                        IsHiddenRecall = false;
+                    }
+                    else
+                    {
+                        IsHiddenRecall = true;
+                    }
+
                 }
 
                 //Rejected By CHRO
@@ -2256,7 +2507,15 @@
                 //Recall
                 else if(Args.RowData.LeaveApprovalStatusId == 13)
                 {
+                    IsHiddenRecall = true;
+                    OnSubmitButtonsBool = false;
+                    EndDateEnablerBool = false;
 
+                    //Buttons
+                    IsHiddenDraft = true;
+                    IsHiddenPersonSubmit = true;
+                    IsHiddenApprove = true;
+                    IsHiddenRejected = true;
                 }
 
                 StateHasChanged();

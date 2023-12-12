@@ -1,0 +1,271 @@
+﻿@* <h3>BSCKPIDetailsPage</h3> *@
+
+@using HCMIS.SHARED.Data;
+@using HCMIS.SHARED.Models
+@inject IToastService toastService;
+
+@{
+    var Div = (new string[] { "BscPerspectiveTypeId"});
+}
+
+
+<SfGrid @ref="@ChildDataGrid"
+        TValue="ABscKpidetails"
+        ID="ChGrid"
+        DataSource="@datasource"
+        AllowPaging="false"
+        AllowFiltering="false"
+        AllowReordering="true"
+        AllowResizing="true"
+        AllowGrouping="true"
+        AllowExcelExport="true"
+        AllowPdfExport="true"
+        AllowSelection="true"
+        AllowSorting="true"
+        AllowTextWrap="true" GridLines="GridLine.Both" Height="600px">
+    <GridEditSettings AllowAdding="false" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false">
+
+    </GridEditSettings>
+
+    <GridGroupSettings Columns="@Div" ShowDropArea="false">
+        <CaptionTemplate Context="HeaderCaptionTemplateContext">
+            @{
+                dvn = (HeaderCaptionTemplateContext as CaptionTemplateContext);
+
+                string text = string.Empty;
+                if (dvn.Field == "BscPerspectiveTypeId" && BscPerspectiveTypeData != null)
+                {
+                    var data = BscPerspectiveTypeData.FirstOrDefault(o => o.BscPerspectiveTypeId.ToString() == dvn.Key);
+                    if (data != null)
+                    {
+                        text = "Perspective: " + data.BscPerspectiveTypeDescription;
+                    }
+                }
+                <div><p class="pp"><strong>@text</strong></p></div>
+            }
+        </CaptionTemplate>
+    </GridGroupSettings>
+
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+
+    <GridAggregates>
+        <GridAggregate>
+            <GridAggregateColumns>
+                <GridAggregateColumn Field=@nameof(ABscKpidetails.IndividualTargetWeight) Type="Syncfusion.Blazor.Grids.AggregateType.Sum">
+                    <GroupFooterTemplate>
+                        @{
+                            aggregate = (context as AggregateTemplateContext);
+                            <div>
+                                <p span style="color:Purple;">Total: @aggregate.Sum</p>
+                            </div>
+                        }
+                    </GroupFooterTemplate>
+                </GridAggregateColumn>
+            </GridAggregateColumns>
+        </GridAggregate>
+    </GridAggregates>
+
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell" CellSelectionMode="CellSelectionMode.Box"></GridSelectionSettings>
+
+    <GridEvents CellSelected="PerspectiveCellSelectHandler"
+                QueryCellInfo="QueryCellInfoHandlerChild"
+                OnActionComplete="DetailActionComplete"
+                CellSaved="OnCellSaved"
+                TValue="ABscKpidetails">
+    </GridEvents>
+
+    <GridColumns>
+        <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
+
+        <GridColumn Field=@nameof(ABscKpidetails.BsckpidetailsId)
+                    HeaderText="BsckpidetailsId"
+                    AllowEditing="false"
+                    IsPrimaryKey="true"
+                    Width="80"
+                    Visible="false"
+                    CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr3" }})">
+        </GridColumn>
+        <GridForeignColumn Field=@nameof(ABscKpidetails.BscPerspectiveTypeId)
+                           HeaderText="Perspective"
+                           Width="90"
+                           AllowEditing="false"
+                           ForeignKeyField="@(nameof(ABscPerspectivesType.BscPerspectiveTypeId))"
+                           ForeignKeyValue="@(nameof(ABscPerspectivesType.BscPerspectiveTypeDescription))"
+                           ForeignDataSource="@BscPerspectiveTypeData"
+                           AllowFiltering="false"
+                           IsFrozen="false"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridForeignColumn>
+
+        <GridColumn Field=@nameof(ABscKpidetails.Objective)
+                    HeaderText="Objective (s)"
+                    TextAlign="TextAlign.Justify"
+                    AllowEditing="true"
+                    ValidationRules="@(new ValidationRules { Required = false })"
+                    Width="150"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridColumn>
+
+        <GridColumn Field=@nameof(ABscKpidetails.IndividualTargetWeight)
+                    HeaderText="Individual Target Weight"
+                    TextAlign="TextAlign.Justify"
+                    AllowEditing="true"
+                    ValidationRules="@(new ValidationRules { Required = true, Min = 1 , Max=100 })"
+                    EditType="EditType.NumericEdit"
+                    Format="###.##"
+                    Width="50"
+                    ClipMode="ClipMode.EllipsisWithTooltip"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridColumn>
+
+        <GridForeignColumn Field=@nameof(ABscKpidetails.MeasurementMetricId)
+                           HeaderText="Basic Unit"
+                           TextAlign="TextAlign.Justify"
+                           Width="60"
+                           AllowEditing="true"
+                           ValidationRules="@(new ValidationRules { Required = true})"
+                           ForeignKeyField="@(nameof(AMeasurementMetric.MeasurementMetricId))"
+                           ForeignKeyValue="@(nameof(AMeasurementMetric.MeasurementMetricDesc))"
+                           ForeignDataSource="@MeasurementUnitData"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridForeignColumn>
+    </GridColumns>
+</SfGrid>
+
+@code {
+    [Parameter]
+    public List<ABscKpidetails>? targetdata { get; set; }
+    [Parameter]
+    public int Bsckpiid { get; set; }
+    [Parameter]
+    public EventCallback<List<ABscKpidetails>?> onscorecardtoggle { get; set; }
+    public SfGrid<ABscKpidetails>? ChildDataGrid { get; set; }
+    List<ABscKpidetails>? datasource { get; set; }
+    [Parameter]
+    public List<ABscPerspectivesType>? BscPerspectiveTypeData { get; set; }
+    [Parameter]
+    public List<ABscPerspectivesType>? BscPerspectiveTypeDataRepeated { get; set; }
+    [Parameter]
+    public List<AMeasurementMetric>? MeasurementUnitData { get; set; }
+        
+    Syncfusion.Blazor.Grids.CaptionTemplateContext? dvn { get; set; }
+    Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
+    int? previousBsckpiid { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (previousBsckpiid != Bsckpiid)
+        {
+            int countid = -10000;
+            previousBsckpiid = Bsckpiid;
+            datasource = new List<ABscKpidetails>();
+            if (targetdata != null && targetdata.Count() > 0)
+            {
+                datasource.AddRange(targetdata);
+            }
+            else
+            {
+
+                if (BscPerspectiveTypeDataRepeated != null)
+                {
+                    foreach (var item in BscPerspectiveTypeDataRepeated)
+                    {
+                        var m = new ABscKpidetails();
+                        m.BsckpidetailsId = countid;
+                        m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
+
+                        datasource.Add(m);
+                        countid++;
+                    }
+
+                    datasource = datasource.OrderBy(o => o.BscPerspectiveTypeId).ToList();
+                }
+            }
+        }
+    }
+
+    public void DetailActionComplete(ActionEventArgs<ABscKpidetails> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) ||
+        args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            ChildDataGrid.PreventRender(false);
+        }
+    }
+
+    private async Task OnCellSaved(CellSaveArgs<ABscKpidetails> args)
+    {
+        try
+        {
+            
+
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message);
+        }
+        finally
+        {
+            await ChildDataGrid.EndEditAsync();
+            await onscorecardtoggle.InvokeAsync(datasource);
+        }
+    }
+
+    //For Child Grid
+    //Enable cell edit on single click
+    public async Task PerspectiveCellSelectHandler(CellSelectEventArgs<ABscKpidetails> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await ChildDataGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await ChildDataGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await ChildDataGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
+
+    public void CellSaveHandler(CellSaveArgs<ABscKpidetails> args)
+    {
+        ChildDataGrid.EndEditAsync();
+        //var datainfo = ChildDataGrid.CurrentViewData;
+
+    }
+
+    public async void QueryCellInfoHandlerChild(QueryCellInfoEventArgs<ABscKpidetails> Args)
+    {
+        if (Args.Column.Field == nameof(ABscKpidetails.BscPerspectiveTypeId))
+        {
+            //Assign color to different perspectives
+            if (Args.Data.BscPerspectiveTypeId == 1)
+            {
+                Args.Cell.AddClass(new string[] { "financial" });
+            }
+            if (Args.Data.BscPerspectiveTypeId == 2)
+            {
+                Args.Cell.AddClass(new string[] { "Internal" });
+            }
+            if (Args.Data.BscPerspectiveTypeId == 3)
+            {
+                Args.Cell.AddClass(new string[] { "Customer" });
+            }
+            if (Args.Data.BscPerspectiveTypeId == 4)
+            {
+                Args.Cell.AddClass(new string[] { "Learning" });
+            }
+        }
+    }
+
+}

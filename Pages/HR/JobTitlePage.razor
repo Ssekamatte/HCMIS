@@ -322,62 +322,54 @@
     {
         try
         {
-            
-            if (string.IsNullOrEmpty(_SystemSettings.AccessToken))
-            {
-                Navigation.NavigateTo("/");
-            }
-            else
-            {
-                var tasks = new List<Task>();
-                tasks.Add(Task.Run(async () =>
+            var tasks = new List<Task>();
+            tasks.Add(Task.Run(async () =>
+           {
+
+               var response = await Http.GetAsync($"HumanResource/GetJobTitle");
+               var content = await response.Content.ReadAsStringAsync();
+               if (response.IsSuccessStatusCode)
                {
-                   
-                   var response = await Http.GetAsync($"HumanResource/GetJobTitle");
-                   var content = await response.Content.ReadAsStringAsync();
-                   if (response.IsSuccessStatusCode)
+                   JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
+                   if (JobTitleData != null)
                    {
-                       JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
-                       if(JobTitleData != null)
+                       DataSource = new List<HierarchicalDetails>();
+                       foreach (var n in JobTitleData)
                        {
-                           DataSource = new List<HierarchicalDetails>();
-                           foreach(var n in JobTitleData)
+                           if (string.IsNullOrEmpty(n.ReportsTo))
                            {
-                               if (string.IsNullOrEmpty(n.ReportsTo))
-                               {
-                                   DataSource.Add(new HierarchicalDetails() { Id = n.JobTitleId.ToString(), Label = n.JobTitleDescription, FilllColor = "#e7704c", Border = "#c15433" });
-                               }
-                               else
-                               {
-                                   DataSource.Add(new HierarchicalDetails() { Id = n.JobTitleId.ToString(), Label = n.JobTitleDescription, ReportingPerson = n.ReportsTo.Split(",").ToList(), FilllColor = "#f3904a", Border = "#d3722e" });
-                               }
+                               DataSource.Add(new HierarchicalDetails() { Id = n.JobTitleId.ToString(), Label = n.JobTitleDescription, FilllColor = "#e7704c", Border = "#c15433" });
+                           }
+                           else
+                           {
+                               DataSource.Add(new HierarchicalDetails() { Id = n.JobTitleId.ToString(), Label = n.JobTitleDescription, ReportingPerson = n.ReportsTo.Split(",").ToList(), FilllColor = "#f3904a", Border = "#d3722e" });
                            }
                        }
                    }
-               }));
-                tasks.Add(Task.Run(async () =>
+               }
+           }));
+            tasks.Add(Task.Run(async () =>
+           {
+
+               var response = await Http.GetAsync($"Utilities/GetDepartment");
+               var content = await response.Content.ReadAsStringAsync();
+               if (response.IsSuccessStatusCode)
                {
-                   
-                   var response = await Http.GetAsync($"Utilities/GetDepartment");
-                   var content = await response.Content.ReadAsStringAsync();
-                   if (response.IsSuccessStatusCode)
-                   {
-                       DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
-                   }
-               }));
-               //tasks.Add(Task.Run(async () =>
-               //{
-               //    
-               //    var response = await Http.GetAsync($"Utilities/GetOrgStructureJobTitle");
-               //    var content = await response.Content.ReadAsStringAsync();
-               //    if (response.IsSuccessStatusCode)
-               //    {
-               //        OrgaStructureJobTitleData = JsonSerializer.Deserialize<List<ViewOrgStructureJobTitle>>(content, _options);
-               //    }
-               //}));
-                Task t = Task.WhenAll(tasks);
-                await t;
-            }
+                   DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
+               }
+           }));
+            //tasks.Add(Task.Run(async () =>
+            //{
+            //
+            //    var response = await Http.GetAsync($"Utilities/GetOrgStructureJobTitle");
+            //    var content = await response.Content.ReadAsStringAsync();
+            //    if (response.IsSuccessStatusCode)
+            //    {
+            //        OrgaStructureJobTitleData = JsonSerializer.Deserialize<List<ViewOrgStructureJobTitle>>(content, _options);
+            //    }
+            //}));
+            Task t = Task.WhenAll(tasks);
+            await t;
 
         }
         catch(Exception ex)

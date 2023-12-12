@@ -1,0 +1,150 @@
+﻿@* @page "/EmployeeExitInterviewRejectionCommentsPage" *@
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@using HCMIS.Interface;
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using System.Collections;
+@using System.IO;
+@using HCMIS.SHARED.Models;
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager navigation;
+@inject SystemSettings _SystemSettings;
+@using HCMIS.ViewModel;
+@inject IToastService toastService;
+@inject IAuthenticationService AuthService;
+
+<SfGrid @ref="@RejectionCommentsGrid" DataSource="@datasource" GridLines="GridLine.Both"
+        TValue="EmployeeExitInterviewRejectionComments" ID="Grid1"
+        AllowTextWrap="true"
+        AllowPaging="true"
+        AllowFiltering="false"
+        AllowReordering="true"
+        AllowResizing="true"
+        AllowGrouping="false"
+        AllowExcelExport="true"
+        AllowPdfExport="true"
+        AllowSelection="true"
+        AllowSorting="true">
+    <GridEditSettings AllowAdding="false" AllowEditing="false" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
+    <GridEvents CellSelected="CellSelectHandlerHODComments"
+                CellSaved="HODCommentsCellSavedHandler"
+                TValue="EmployeeExitInterviewRejectionComments">
+    </GridEvents>
+
+    <GridColumns>
+        <GridColumn Field=@nameof(EmployeeExitInterviewRejectionComments.RejectionCommentId)
+                    HeaderText="Comment Id"
+                    TextAlign="TextAlign.Justify"
+                    IsPrimaryKey="true"
+                    IsIdentity="true"
+                    Visible="false"
+                    Width="180"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+        <GridColumn Field=@nameof(EmployeeExitInterviewRejectionComments.RejectionComments)
+                    HeaderText="Comment(s)"
+                    TextAlign="TextAlign.Justify"
+                    AllowEditing="true"
+                    ValidationRules="@(new ValidationRules { Required = false })"
+                    Width="180"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+        <GridColumn Field=@nameof(EmployeeExitInterviewRejectionComments.AddedDate)
+                    DefaultValue="@(DateTime.Now)"
+                    HeaderText="Comment Date"
+                    EditType="EditType.DatePickerEdit"
+                    Format="dd/MMMM/yyyy  HH:mm:ss"
+                    Type="ColumnType.Date"
+                    Width="160"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+
+        <GridColumn Field=@nameof(EmployeeExitInterviewRejectionComments.AddedBy)
+                    HeaderText="Comment By"
+                    TextAlign="TextAlign.Justify"
+                    AllowEditing="true"
+                    ValidationRules="@(new ValidationRules { Required = false })"
+                    Width="180"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+        </GridColumn>
+    </GridColumns>
+
+</SfGrid>
+
+@code {
+    [Parameter]
+    public List<EmployeeExitInterviewRejectionComments>? hodcommentsdata { get; set; }
+    [Parameter]
+    public int ExitInterviewId { get; set; }
+    [Parameter]
+    public EventCallback<List<EmployeeExitInterviewRejectionComments>?> onscorecardtoggle { get; set; }
+    SfGrid<EmployeeExitInterviewRejectionComments>? RejectionCommentsGrid { get; set; }
+    List<EmployeeExitInterviewRejectionComments>? datasource { get; set; }
+
+    Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
+    int? previousExitInterviewId { get; set; }
+    [Parameter]
+    public Syncfusion.Blazor.Grids.Action _previous { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (previousExitInterviewId != ExitInterviewId)
+        {
+            int countid = -10000;
+            previousExitInterviewId = ExitInterviewId;
+            datasource = new List<EmployeeExitInterviewRejectionComments>();
+            if (hodcommentsdata != null && hodcommentsdata.Count() > 0)
+            {
+                datasource.AddRange(hodcommentsdata);
+            }
+        }
+    }
+
+    //For HOD Comments Grid
+    //Enable cell edit on single click
+    public async Task CellSelectHandlerHODComments(CellSelectEventArgs<EmployeeExitInterviewRejectionComments> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await RejectionCommentsGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await RejectionCommentsGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await RejectionCommentsGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
+    private async Task HODCommentsCellSavedHandler(CellSaveArgs<EmployeeExitInterviewRejectionComments> args)
+    {
+        try
+        {
+
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message);
+        }
+        finally
+        {
+            await RejectionCommentsGrid.EndEditAsync();
+            await onscorecardtoggle.InvokeAsync(datasource);
+        }
+    }
+
+}

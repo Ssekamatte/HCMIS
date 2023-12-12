@@ -524,88 +524,81 @@
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     protected override async Task OnInitializedAsync()
     {
-        try{
-            
-            if (string.IsNullOrEmpty(_SystemSettings.AccessToken))
+        try
+        {
+            var tasks = new List<Task>();
+            tasks.Add(Task.Run(async () =>
+           {
+
+               var response = await Http.GetAsync($"HumanResource/GetJobTitle");
+               var content = await response.Content.ReadAsStringAsync();
+               if (response.IsSuccessStatusCode)
+               {
+                   JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
+               }
+           }));
+            tasks.Add(Task.Run(async () =>
+           {
+
+               var response = await Http.GetAsync($"Utilities/GetDepartment");
+               var content = await response.Content.ReadAsStringAsync();
+               if (response.IsSuccessStatusCode)
+               {
+                   DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
+               }
+           }));
+            tasks.Add(Task.Run(async () =>
             {
-                Navigation.NavigateTo("/");
-            }
-            else
+
+                var response = await Http.GetAsync($"Utilities/GetSalaryScale");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    SalaryScaleData = JsonSerializer.Deserialize<List<ASalaryScale>>(content, _options);
+                }
+            }));
+            tasks.Add(Task.Run(async () =>
             {
-                var tasks = new List<Task>();
-                tasks.Add(Task.Run(async () =>
+
+                var response = await Http.GetAsync($"Utilities/GetJobType");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    JobTypeData = JsonSerializer.Deserialize<List<AJobType>>(content, _options);
+                }
+            }));
+            tasks.Add(Task.Run(async () =>
+            {
+
+                var response = await Http.GetAsync($"Utilities/GetContractLengthType");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    ContractLengthTypeData = JsonSerializer.Deserialize<List<AContractLengthType>>(content, _options);
+                }
+            }));
+            tasks.Add(Task.Run(async () =>
+           {
+
+               var response = await Http.GetAsync($"Utilities/GetLevelofEducation");
+               var content = await response.Content.ReadAsStringAsync();
+               if (response.IsSuccessStatusCode)
                {
-                   
-                   var response = await Http.GetAsync($"HumanResource/GetJobTitle");
-                   var content = await response.Content.ReadAsStringAsync();
-                   if (response.IsSuccessStatusCode)
-                   {
-                       JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
-                   }
-               }));
-                tasks.Add(Task.Run(async () =>
-               {
-                   
-                   var response = await Http.GetAsync($"Utilities/GetDepartment");
-                   var content = await response.Content.ReadAsStringAsync();
-                   if (response.IsSuccessStatusCode)
-                   {
-                       DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
-                   }
-               }));
-                tasks.Add(Task.Run(async () =>
+                   LevelofEducationData = JsonSerializer.Deserialize<List<ALevelofEducation>>(content, _options);
+               }
+           }));
+            tasks.Add(Task.Run(async () =>
+            {
+
+                var response = await Http.GetAsync($"Utilities/GetFieldOfStudy");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
                 {
-                    
-                    var response = await Http.GetAsync($"Utilities/GetSalaryScale");
-                    var content = await response.Content.ReadAsStringAsync();
-                    if (response.IsSuccessStatusCode)
-                    {
-                        SalaryScaleData = JsonSerializer.Deserialize<List<ASalaryScale>>(content, _options);
-                    }
-                }));
-                tasks.Add(Task.Run(async () =>
-                {
-                    
-                    var response = await Http.GetAsync($"Utilities/GetJobType");
-                    var content = await response.Content.ReadAsStringAsync();
-                    if (response.IsSuccessStatusCode)
-                    {
-                        JobTypeData = JsonSerializer.Deserialize<List<AJobType>>(content, _options);
-                    }
-                }));
-                tasks.Add(Task.Run(async () =>
-                {
-                    
-                    var response = await Http.GetAsync($"Utilities/GetContractLengthType");
-                    var content = await response.Content.ReadAsStringAsync();
-                    if (response.IsSuccessStatusCode)
-                    {
-                        ContractLengthTypeData = JsonSerializer.Deserialize<List<AContractLengthType>>(content, _options);
-                    }
-                }));
-                tasks.Add(Task.Run(async () =>
-               {
-                   
-                   var response = await Http.GetAsync($"Utilities/GetLevelofEducation");
-                   var content = await response.Content.ReadAsStringAsync();
-                   if (response.IsSuccessStatusCode)
-                   {
-                       LevelofEducationData = JsonSerializer.Deserialize<List<ALevelofEducation>>(content, _options);
-                   }
-               }));
-                tasks.Add(Task.Run(async () =>
-                {
-                    
-                    var response = await Http.GetAsync($"Utilities/GetFieldOfStudy");
-                    var content = await response.Content.ReadAsStringAsync();
-                    if (response.IsSuccessStatusCode)
-                    {
-                        FieldOfStudyData = JsonSerializer.Deserialize<List<AFieldOfStudy>>(content, _options);
-                    }
-                }));
-                Task t = Task.WhenAll(tasks);
-                await t;
-            }
+                    FieldOfStudyData = JsonSerializer.Deserialize<List<AFieldOfStudy>>(content, _options);
+                }
+            }));
+            Task t = Task.WhenAll(tasks);
+            await t;
 
         }
         catch(Exception ex)

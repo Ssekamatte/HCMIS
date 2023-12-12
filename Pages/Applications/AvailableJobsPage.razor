@@ -436,62 +436,56 @@
         {
             IsPageLoaded = false;
             
-            if (string.IsNullOrEmpty(_SystemSettings.AccessToken))
-            {
-                Navigation.NavigateTo("/");
-            }
-            else
-            {
-                var tasks = new List<Task>();
-                tasks.Add(Task.Run(async () =>
+            var tasks = new List<Task>();
+            tasks.Add(Task.Run(async () =>
+           {
+
+               var response = await Http.GetAsync($"Utilities/GetCountry");
+               var content = await response.Content.ReadAsStringAsync();
+               if (response.IsSuccessStatusCode)
                {
-                   
-                   var response = await Http.GetAsync($"Utilities/GetCountry");
-                   var content = await response.Content.ReadAsStringAsync();
-                   if (response.IsSuccessStatusCode)
-                   {
-                       CountryData = JsonSerializer.Deserialize<List<ACountry>>(content, _options);
-                   }
-               }));
-                tasks.Add(Task.Run(async () =>
+                   CountryData = JsonSerializer.Deserialize<List<ACountry>>(content, _options);
+               }
+           }));
+            tasks.Add(Task.Run(async () =>
+            {
+
+                var response = await Http.GetAsync($"Utilities/GetGender");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
                 {
-                    
-                    var response = await Http.GetAsync($"Utilities/GetGender");
-                    var content = await response.Content.ReadAsStringAsync();
-                    if (response.IsSuccessStatusCode)
-                    {
-                        GenderData = JsonSerializer.Deserialize<List<AGender>>(content, _options);
-                    }
-                }));
-                tasks.Add(Task.Run(async () =>
+                    GenderData = JsonSerializer.Deserialize<List<AGender>>(content, _options);
+                }
+            }));
+            tasks.Add(Task.Run(async () =>
+           {
+
+               var response = await Http.GetAsync($"HumanResource/GetAvailableJobs");
+               var content = await response.Content.ReadAsStringAsync();
+               if (response.IsSuccessStatusCode)
                {
-                   
-                   var response = await Http.GetAsync($"HumanResource/GetAvailableJobs");
-                   var content = await response.Content.ReadAsStringAsync();
-                   if (response.IsSuccessStatusCode)
+                   availableJobsModel = JsonSerializer.Deserialize<List<AvailableJobsModel>>(content, _options);
+                   if (availableJobsModel != null && availableJobsModel.Count > 0)
                    {
-                       availableJobsModel = JsonSerializer.Deserialize<List<AvailableJobsModel>>(content, _options);
-                       if (availableJobsModel != null && availableJobsModel.Count > 0){
-                           foreach (var item in availableJobsModel)
-                           {
-                               JobDecriptionModel?.Add(item.viewAvailableJobs);
-                           }
+                       foreach (var item in availableJobsModel)
+                       {
+                           JobDecriptionModel?.Add(item.viewAvailableJobs);
                        }
                    }
-               }));
-                tasks.Add(Task.Run(async () =>
+               }
+           }));
+            tasks.Add(Task.Run(async () =>
+            {
+
+                var response = await Http.GetAsync($"Utilities/GetYesNo");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
                 {
-                    
-                    var response = await Http.GetAsync($"Utilities/GetYesNo");
-                    var content = await response.Content.ReadAsStringAsync();
-                    if (response.IsSuccessStatusCode)
-                    {
-                        YesNoData = JsonSerializer.Deserialize<List<AYesNo>>(content, _options);
-                    }
-                }));
-                Task t = Task.WhenAll(tasks);
-                await t;
-            }
+                    YesNoData = JsonSerializer.Deserialize<List<AYesNo>>(content, _options);
+                }
+            }));
+            Task t = Task.WhenAll(tasks);
+            await t;
 
         }
         catch (Exception ex)
