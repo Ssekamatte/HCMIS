@@ -223,9 +223,10 @@
 
             ms.Position = 0;
 
-            if (e.File.ContentType.ToLower().Contains("png") || e.File.ContentType.ToLower().Contains("gif") || e.File.ContentType.ToLower().Contains("jpeg") || e.File.ContentType.ToLower().Contains("jpg"))
+            System.IO.FileInfo info = new System.IO.FileInfo(e.File.Name);
+            if (info.Extension.ToLower().Contains("png") || info.Extension.ToLower().Contains("gif") || info.Extension.ToLower().Contains("jpeg") || info.Extension.ToLower().Contains("jpg"))
             {
-                var passextension = e.File.ContentType.Split("/");
+                var passextension = info.Extension.Split("/");
                 fileName = "BSC_" + AttachmentData.AttachmentName + "." + passextension[1].Trim();
                 byte[] bytes = ms.ToArray();
                 //byte[] bytes = file.Stream.ToArray();
@@ -233,7 +234,7 @@
                 DocumentBytes m = new DocumentBytes()
                     {
                         DocumentName = fileName,
-                        DocumentExt = e.File.ContentType.Trim(),
+                        DocumentExt = info.Extension.Trim(),
                         DocumentByte = bytes,
                         DocumentFolder = "BSC"
                     };
@@ -241,22 +242,22 @@
                 await _DocumentUploadModel.UploadDocument(m);
                 var result = "data:application/pdf;base64," + base64;
                 AttachmentData.AttachmentUrl = fileName;
-                AttachmentData.AttachmentExt = e.File.ContentType.Trim();
+                AttachmentData.AttachmentExt = info.Extension.Trim();
                 ImageString = result;
                 bytes = null;
 
             }
 
-            else if (e.File.ContentType.ToLower().Contains("pdf") || e.File.ContentType.ToLower().Contains("doc"))
+            else if (info.Extension.ToLower().Contains("pdf") || info.Extension.ToLower().Contains("doc"))
             {
                 string fileName = string.Empty;
-                if (e.File.ContentType.ToLower().Contains("doc"))
+                if (info.Extension.ToLower().Contains("doc"))
                 {
                     ms.Position = 0;
                     fileName = "BSC_" + AttachmentData.AttachmentName + ".pdf";
                     //Create a new document
                     Syncfusion.DocIO.DLS.WordDocument document;
-                    if (e.File.ContentType.Contains("doc") && !e.File.ContentType.Contains("docx"))
+                    if (info.Extension.Contains("doc") && !info.Extension.Contains("docx"))
                     {
                         document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Doc);
                     }
@@ -301,7 +302,7 @@
                     DocumentBytes m = new DocumentBytes()
                         {
                             DocumentName = fileName,
-                            DocumentExt = e.File.ContentType.Trim(),
+                            DocumentExt = info.Extension.Trim(),
                             DocumentByte = bytes,
                             DocumentFolder = "BSC"
                         };
@@ -309,7 +310,7 @@
                     await _DocumentUploadModel.UploadDocument(m);
                     var result = "data:application/pdf;base64," + base64;
                     AttachmentData.AttachmentUrl = fileName;
-                    AttachmentData.AttachmentExt = e.File.ContentType.Trim();
+                    AttachmentData.AttachmentExt = info.Extension.Trim();
                     ImageString = result;
                     bytes = null;
                 }

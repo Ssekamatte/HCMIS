@@ -11,6 +11,11 @@
 
 @*<h3>ExternalRegistrationPage</h3>*@
 <style>
+    /* .e-spinner-pane .e-spinner-inner .e-spin-bootstrap {
+        fill: blue;
+        stroke: blue;
+    } */
+
     /*Spinner Label Color*/
     .e-spinner-pane .e-spinner-inner .e-spin-label {
         color: red;
@@ -30,6 +35,11 @@
         padding-left: 0px;
     }
 </style>
+
+<MudOverlay @bind-Visible="@loadingspinner" DarkBackground="true" AutoClose="false" Absolute="true">
+<SfSpinner @bind-Visible="loadingspinner" Type="@Syncfusion.Blazor.Spinner.SpinnerType.Bootstrap" Size="70" Label="Page loading">
+</SfSpinner>
+</MudOverlay>
 
 <article class="content px-4">
     <ol class="breadcrumb" style="margin-top:5px;">
@@ -194,6 +204,7 @@
     List<AIdentificationType>? IdentificationTypeData{ get; set; }
     List<string>? missingfields{ get; set; } = new();
     bool IsSubmitDisabled;
+    public bool loadingspinner { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -201,6 +212,7 @@
         {
             inputmodel = new();
             inputmodel.NewNonStaff = new();
+            loadingspinner = true;
 
             List<Task> t = new List<Task>();
 
@@ -227,6 +239,10 @@
         {
             RegisterError = $"Error: {ex.Message}";
         }
+        finally
+        {
+            loadingspinner = false;
+        }
         await base.OnInitializedAsync();
     }
 
@@ -252,6 +268,7 @@
             missingfields = new();
             RegisterError = null;
             RegisterSuccess= null;
+
             if (string.IsNullOrEmpty(inputmodel.NewNonStaff.FirstName))
             {
                 missingfields.Add("First Name is required");

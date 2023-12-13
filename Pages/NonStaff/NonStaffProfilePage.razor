@@ -1,7 +1,9 @@
 ﻿@page "/NonStaffProfilePage"
 @using HCMIS.Data
+@using HCMIS.Interface
 @using HCMIS.Model
 @using System.Text.Json
+@using HCMIS.SHARED.DTO
 @using HCMIS.SHARED.Data;
 @using HCMIS.SHARED.Models;
 @using HCMIS.ViewModel
@@ -11,15 +13,37 @@
 @inject AppState AppState
 @inject NavigationManager Navigation
 @inject DocumentUploadModel _DocumentUploadModel;
+@inject IAuthenticationService AuthService;
+@inject NavigationManager navManager;
+@inject IToastService toastService;
 
 <style>
-    h3{
-        color:ghostwhite;
-        background-color:darkslategray;
-        padding:10px;
-        width:100%;
+    h3 {
+        color: ghostwhite;
+        background-color: #00cc00;
+        padding: 10px;
+        width: 100%;
+        font-size: large;
+    }
+
+    /*Spinner CSS*/
+    .e-spinner-pane .e-spinner-inner .e-spin-bootstrap {
+        fill: white;
+        stroke: white;
+        top:10px;
+    }
+
+    /*Spinner Label Color*/
+    .e-spinner-pane .e-spinner-inner .e-spin-label {
+        color: white;
     }
 </style>
+
+<MudOverlay @bind-Visible="@loadingspinner" DarkBackground="true" AutoClose="false" Absolute="true">
+<SfSpinner @bind-Visible="loadingspinner" Type="@Syncfusion.Blazor.Spinner.SpinnerType.Bootstrap" Size="70" Label="Page loading">
+</SfSpinner>
+</MudOverlay>
+
 <div class="row">
     <div class="col-lg-12 control-section">
         <SfToast @ref="ToastObj" ID="toast_type">
@@ -32,312 +56,312 @@
 </ol>
 <div class="row">
     <div class="col-md-12">
-        <SfTab HeaderPlacement="HeaderPosition.Left"> 
-            <TabItems>
-                <TabItem>
-                    <ChildContent>
-                        <TabHeader Text="Profile"></TabHeader>
-                    </ChildContent>
-                     <ContentTemplate>
-                         <div style="margin:10px; width:100%;">
-                             <EditForm Model="@inputmodel"  OnValidSubmit="@SaveProfile" class="row">
-   
-                                <div class="col-md-12">
-                                   <h3>Personal Information</h3>
-                                </div>
-                                <div class="col-md-4">
+    <MudExpansionPanels MultiExpansion="true">
+        <MudExpansionPanel Text="PROFILE" IsExpanded="true">
+            <MudTabs Outlined="true" Position="@MudBlazor.Position.Left" Rounded="true" Border="true"
+                     ApplyEffectsToContainer="true" Class="mt-8" PanelClass="pa-6">
+                    <MudTabPanel Text="Bio Data" Icon="@Icons.Material.Filled.ManageAccounts" BadgeColor="Color.Success">
+                    <MudText>
+                            <div style="margin:10px; width:100%;">
+                                <EditForm Model="@inputmodel" OnValidSubmit="@SaveProfile" class="row">
 
-                                    @if (!string.IsNullOrEmpty(inputmodel.FirstName) && !string.IsNullOrEmpty(inputmodel.LastName))
-                                    {
-                                        if (!string.IsNullOrEmpty(ProfilePicString))
+                                    <div class="col-md-12">
+                                        <h3>Personal Information</h3>
+                                    </div>
+                                    <div class="col-md-4">
+
+                                        @if (!string.IsNullOrEmpty(inputmodel.FirstName) && !string.IsNullOrEmpty(inputmodel.LastName))
                                         {
-                                            <img src="@ProfilePicString" class="img-thumbnail" height="250" width="200" style="margin-bottom:4px; margin-left:20%; margin-right:auto;" />
+                                            if (!string.IsNullOrEmpty(ImageString))
+                                            {
+                                                <img src="@ImageString" class="img-thumbnail" height="190" width="150" style="margin-bottom:4px; margin-left:20%; margin-right:auto;" />
+                                            }
+                                            else
+                                            {
+                                                <img src="/Image/blank-profile-picture.png" class="img-thumbnail" height="190" width="150" style="margin-bottom:4px; margin-left:20%; margin-right:auto;" />
+                                            }
+                                            <div class="col-md-12">
+                                                <p class="alert-primary" style="padding:10px;">Upload  png or Jpeg image</p>
+                                                <InputFile class="form-control" OnChange="@SingleUpload" />
+                                                <SfSpinner @ref="@UploadImageSpinner" Visible="false" Label="Uploading Image Please Wait.."></SfSpinner>
+                                            </div>
                                         }
-                                        else
-                                        {
-                                            <img src="/Image/blank-profile-picture.png" class="img-thumbnail" height="200" width="150" style="margin-bottom:4px; margin-left:20%; margin-right:auto;" />
-                                        }
-                                        <div class="form-group col-md-12">
-                                            <p class="alert-primary" style="padding:10px;">Please upload an image in png or Jpeg or gif  or jpg format not exceeding 5 Megabytes(MBs) in Size</p>
-                                            <SfUploader AutoUpload="true" ShowFileList="false">
-                                                <UploaderEvents ValueChange="OnImageChange"></UploaderEvents>
-                                            </SfUploader>
-                                            <SfSpinner @ref="@UploadImageSpinner" Visible="false" Label="UpLoading Image please wait.."></SfSpinner>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <p>First Name <span style="color:red;">*</span></p>
+                                                <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.FirstName" CssClass="form-control" Placeholder="Please enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                <p> <ValidationMessage For="@(() => inputmodel.FirstName)" /></p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p>Middle Name</p>
+                                                <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.MiddleName" CssClass="form-control" Placeholder="Please enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                <p> <ValidationMessage For="@(() => inputmodel.MiddleName)" /></p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p>Last Name <span style="color:red;">*</span></p>
+                                                <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.LastName" CssClass="form-control" Placeholder="Please enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                <p> <ValidationMessage For="@(() => inputmodel.LastName)" /></p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p>Gender <span style="color:red;">*</span></p>
+                                                <SfDropDownList @bind-Value="@(inputmodel.GenderId)" Enabled="true" TItem="AGender" TValue="int?" DataSource="@GenderData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                    <DropDownListFieldSettings Value="@nameof(AGender.GenderId)" Text="@nameof(AGender.GenderDesc)"></DropDownListFieldSettings>
+                                                </SfDropDownList>
+                                                <p> <ValidationMessage For="@(() => inputmodel.GenderId)" /></p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p>Date of Birth <span style="color:red;">*</span></p>
+                                                <SfDatePicker @bind-Value="@(inputmodel.DoB)" Placeholder="Select Date" Format="dd/MM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                                                <p> <ValidationMessage For="@(() => inputmodel.DoB)" /></p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p>Nationality <span style="color:red;">*</span></p>
+                                                <SfDropDownList @bind-Value="@(inputmodel.CoutryId)" Enabled="true" TItem="ACountry" TValue="int?" DataSource="@CountryData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                    <DropDownListFieldSettings Value="@nameof(ACountry.CoutryId)" Text="@nameof(ACountry.CountryDesc)"></DropDownListFieldSettings>
+                                                </SfDropDownList>
+                                                <p> <ValidationMessage For="@(() => inputmodel.GenderId)" /></p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p style="margin-bottom:29px;">Marital Status <span style="color:red;">*</span></p>
+                                                <SfDropDownList @bind-Value="@(inputmodel.MaritalStatusId)" Enabled="true" TItem="AMaritalStatus" TValue="int?" DataSource="@MaritalStatusData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                    <DropDownListFieldSettings Value="@nameof(AMaritalStatus.MaritalStatusId)" Text="@nameof(AMaritalStatus.MaritalStatusDescription)"></DropDownListFieldSettings>
+                                                </SfDropDownList>
+                                                <p> <ValidationMessage For="@(() => inputmodel.MaritalStatusId)" /></p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p>Official Email Address <span style="color:red;">*</span></p>
+                                                <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.EmailAddress" CssClass="form-control" Placeholder="Please enter email" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                <p> <ValidationMessage For="@(() => inputmodel.EmailAddress)" /></p>
+                                            </div>
                                         </div>
-                                    }
-                                </div>
-                               <div class="col-md-8">
-                                   <div class="row">
-                                       <div class="col-md-6">
-                                           <p>First Name <span style="color:red;">(*)</span></p>
-                                           <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.FirstName" CssClass="form-control" Placeholder="Please enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                                           <p> <ValidationMessage For="@(() => inputmodel.FirstName)" /></p>
-                                       </div>
-                                        <div class="col-md-6">
-                                            <p>Middle Name</p>
-                                           <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.MiddleName" CssClass="form-control" Placeholder="Please enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                                           <p> <ValidationMessage For="@(() => inputmodel.MiddleName)" /></p>
-                                       </div>
-                                        <div class="col-md-6">
-                                            <p>Last Name <span style="color:red;">(*)</span></p>
-                                           <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.LastName" CssClass="form-control" Placeholder="Please enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                                           <p> <ValidationMessage For="@(() => inputmodel.LastName)" /></p>
-                                       </div>
-                                       <div class="col-md-6">
-                                           <p>Gender <span style="color:red;">(*)</span></p>
-                                            <SfDropDownList @bind-Value="@(inputmodel.GenderId)" Enabled="true" TItem="AGender" TValue="int?" DataSource="@GenderData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                                <DropDownListFieldSettings Value="@nameof(AGender.GenderId)" Text="@nameof(AGender.GenderDesc)"></DropDownListFieldSettings>
-                                            </SfDropDownList>
-                                            <p> <ValidationMessage For="@(() => inputmodel.GenderId)" /></p>
-                                       </div>
-                                        <div class="col-md-6">
-                                           <p>Date of Birth <span style="color:red;">(*)</span></p>
-                                            <SfDatePicker @bind-Value="@(inputmodel.DoB)" Placeholder="Select Date" Format="dd/MM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
-                                            <p> <ValidationMessage For="@(() => inputmodel.DoB)" /></p>
-                                       </div>
-                                        <div class="col-md-6">
-                                            <p>Nationality <span style="color:red;">(*)</span></p>
-                                            <SfDropDownList @bind-Value="@(inputmodel.CoutryId)" Enabled="true" TItem="ACountry" TValue="int?" DataSource="@CountryData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                                <DropDownListFieldSettings Value="@nameof(ACountry.CoutryId)" Text="@nameof(ACountry.CountryDesc)"></DropDownListFieldSettings>
-                                            </SfDropDownList>
-                                            <p> <ValidationMessage For="@(() => inputmodel.GenderId)" /></p>
-                                       </div>
-                                       <div class="col-md-6">
-                                           <p style="margin-bottom:29px;">Marital Status <span style="color:red;">(*)</span></p>
-                                            <SfDropDownList @bind-Value="@(inputmodel.MaritalStatusId)" Enabled="true" TItem="AMaritalStatus" TValue="int?" DataSource="@MaritalStatusData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                                <DropDownListFieldSettings Value="@nameof(AMaritalStatus.MaritalStatusId)" Text="@nameof(AMaritalStatus.MaritalStatusDescription)"></DropDownListFieldSettings>
-                                            </SfDropDownList>
-                                            <p> <ValidationMessage For="@(() => inputmodel.MaritalStatusId)" /></p>
-                                       </div>
-                                        <div class="col-md-6">
-                                            <p>Official Email Address <span style="color:red;">(*)</span></p>
-                                           <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.EmailAddress" CssClass="form-control" Placeholder="Please enter email" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                                           <p> <ValidationMessage For="@(() => inputmodel.EmailAddress)" /></p>
-                                       </div>
-                                   </div>
-                               </div>
-                               <div class="col-md-4">
-                                   <p style="margin-bottom:29px;">Identification Type <span style="color:red;">(*)</span></p>
-                                    <SfDropDownList @bind-Value="@(inputmodel.IdentificationTypeId)" Enabled="true" TItem="AIdentificationType" TValue="int?" DataSource="@IdentificationTypeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                        <DropDownListFieldSettings Value="@nameof(AIdentificationType.IdentificationTypeId)" Text="@nameof(AIdentificationType.IdentificationTypeDesc)"></DropDownListFieldSettings>
-                                    </SfDropDownList>
-                                    <p> <ValidationMessage For="@(() => inputmodel.IdentificationTypeId)" /></p>
-                               </div>
-                               <div class="col-md-4">
-                                    <p>Identification Number <span style="color:red;">(*)</span></p>
-                                   <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.IdentificationNumber" CssClass="form-control" Placeholder="Please enter Nin/Passport/Driving permit No" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                                   <p> <ValidationMessage For="@(() => inputmodel.IdentificationNumber)" /></p>
-                               </div>
-                               <div class="col-md-4">
-                                    <p>Official Phone Number <span style="color:red;">(*)</span></p>
-                                   <SfNumericTextBox Format="N0"  @bind-Value="@inputmodel.OfficialPhoneNumber" CssClass="form-control" Placeholder="Please enter Phone Number" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
-                                   <p> <ValidationMessage For="@(() => inputmodel.OfficialPhoneNumber)" /></p>
-                               </div>
-                               <div class="col-md-4">
-                                    <p>Mobile Number</p>
-                                   <SfNumericTextBox Format="N0"  @bind-Value="@inputmodel.MobileNumber" CssClass="form-control" Placeholder="Please enter Phone Number" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
-                                   <p> <ValidationMessage For="@(() => inputmodel.MobileNumber)" /></p>
-                               </div>
-                               <div class="col-md-4">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p style="margin-bottom:29px;">Identification Type <span style="color:red;">*</span></p>
+                                        <SfDropDownList @bind-Value="@(inputmodel.IdentificationTypeId)" Enabled="true" TItem="AIdentificationType" TValue="int?" DataSource="@IdentificationTypeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                            <DropDownListFieldSettings Value="@nameof(AIdentificationType.IdentificationTypeId)" Text="@nameof(AIdentificationType.IdentificationTypeDesc)"></DropDownListFieldSettings>
+                                        </SfDropDownList>
+                                        <p> <ValidationMessage For="@(() => inputmodel.IdentificationTypeId)" /></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p>Identification Number <span style="color:red;">*</span></p>
+                                        <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.IdentificationNumber" CssClass="form-control" Placeholder="Please enter Nin/Passport/Driving permit No" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                        <p> <ValidationMessage For="@(() => inputmodel.IdentificationNumber)" /></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p>Mobile Phone Number<span style="color:red;"> *</span></p>
+                                        <SfNumericTextBox @bind-Value="@inputmodel.OfficialPhoneNumber" CssClass="form-control" Placeholder="Please enter Phone Number" FloatLabelType="FloatLabelType.Never"  Format="##" Decimals="0"></SfNumericTextBox>
+                                        <p> <ValidationMessage For="@(() => inputmodel.OfficialPhoneNumber)" /></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p>Other Mobile Phone Number</p>
+                                        <SfNumericTextBox @bind-Value="@inputmodel.MobileNumber" CssClass="form-control" Placeholder="Please enter Phone Number" FloatLabelType="FloatLabelType.Never"  Format="##" Decimals="0"></SfNumericTextBox>
+                                        <p> <ValidationMessage For="@(() => inputmodel.MobileNumber)" /></p>
+                                    </div>
+                                    @*<div class="col-md-4">
                                     <p>Other Number</p>
-                                   <SfNumericTextBox Format="N0"  @bind-Value="@inputmodel.OfficePhoneNumber" CssClass="form-control" Placeholder="Please enter Phone Number" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
-                                   <p> <ValidationMessage For="@(() => inputmodel.OfficePhoneNumber)" /></p>
-                               </div>
-                               <div class="col-md-4">
-                                    <p> National Social Security Fund Number </p>
-                                   <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.Nssfno" CssClass="form-control" Placeholder="Please enter  NSSF No" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                                   <p> <ValidationMessage For="@(() => inputmodel.Nssfno)" /></p>
-                               </div>
-                               <div class="col-md-4">
-                                    <p>Uganda Revenue Authority Tin Number</p>
-                                   <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.UraTinNo" CssClass="form-control" Placeholder="Please enter URA Tin No" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                                   <p> <ValidationMessage For="@(() => inputmodel.UraTinNo)" /></p>
-                               </div>
-                                 <div class="col-md-4">
-                                   <p style="margin-bottom:29px;">Bank</p>
-                                    <SfDropDownList @bind-Value="@(inputmodel.BankId)" Enabled="true" TItem="ABank" TValue="int?" DataSource="@BankData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                        <DropDownListFieldSettings Value="@nameof(ABank.BankId)" Text="@nameof(ABank.BankDesc)"></DropDownListFieldSettings>
-                                    </SfDropDownList>
-                                    <p> <ValidationMessage For="@(() => inputmodel.BankId)" /></p>
-                               </div>
-                               <div class="col-md-4">
-                                    <p>Bank Branch</p>
-                                   <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.BankBranch" CssClass="form-control" Placeholder="Please enter Branch" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                                   <p> <ValidationMessage For="@(() => inputmodel.BankBranch)" /></p>
-                               </div>
-                               <div class="col-md-4">
-                                    <p>Bank Account Number</p>
-                                   <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.BankAccountNumber" CssClass="form-control" Placeholder="Please enter Account Number" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                                   <p> <ValidationMessage For="@(() => inputmodel.BankAccountNumber)" /></p>
-                               </div>
-                               <div class="col-md-12">
-                                   <h3>Place Of Origin</h3>
-                               </div>
-                               <div class="col-md-4">
-                                   <p style="margin-bottom:29px;">District <span style="color:red;">(*)</span></p>
-                                    <SfDropDownList @bind-Value="@(inputmodel.PlaceofOriginDistrictId)" Enabled="true" TItem="ADistrict" TValue="int?" DataSource="@DistrictData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                        <DropDownListFieldSettings Value="@nameof(ADistrict.DistrictId)" Text="@nameof(ADistrict.DistrictDescription)"></DropDownListFieldSettings>
-                                    </SfDropDownList>
-                                    <p> <ValidationMessage For="@(() => inputmodel.PlaceofOriginDistrictId)" /></p>
-                               </div>
-                               <div class="col-md-4">
-                                   <p style="margin-bottom:29px;">Subcounty <span style="color:red;">(*)</span></p>
-                                    <SfDropDownList @bind-Value="@(inputmodel.PlaceofOriginSubCountyId)" Enabled="true" TItem="ASubCounty" TValue="int?" DataSource="@SubCountyData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                        <DropDownListFieldSettings Value="@nameof(ASubCounty.SubCountyId)" Text="@nameof(ASubCounty.SubCountyDescription)"></DropDownListFieldSettings>
-                                    </SfDropDownList>
-                                    <p> <ValidationMessage For="@(() => inputmodel.PlaceofOriginSubCountyId)" /></p>
-                               </div>
-                               <div class="col-md-4">
-                                   <p style="margin-bottom:29px;">Parish <span style="color:red;">(*)</span></p>
-                                    <SfDropDownList @bind-Value="@(inputmodel.PlaceofOriginParishId)" Enabled="true" TItem="AParish" TValue="int?" DataSource="@ParishData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                        <DropDownListFieldSettings Value="@nameof(AParish.ParishId)" Text="@nameof(AParish.ParishDesc)"></DropDownListFieldSettings>
-                                    </SfDropDownList>
-                                    <p> <ValidationMessage For="@(() => inputmodel.PlaceofOriginParishId)" /></p>
-                               </div>
-                               <div class="col-md-4">
-                                   <p style="margin-bottom:29px;">Village <span style="color:red;">(*)</span></p>
-                                    <SfDropDownList @bind-Value="@(inputmodel.PlaceofOriginVillageId)" Enabled="true" TItem="AVillage" TValue="int?" DataSource="@VillageData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                        <DropDownListFieldSettings Value="@nameof(AVillage.VillageId)" Text="@nameof(AVillage.ViallgeDescription)"></DropDownListFieldSettings>
-                                    </SfDropDownList>
-                                    <p> <ValidationMessage For="@(() => inputmodel.PlaceofOriginVillageId)" /></p>
-                               </div>
-                               <div class="col-md-12">
-                                   <h3>Current Place of Residence</h3>
-                               </div>
-                                <div class="col-md-4">
-                                   <p style="margin-bottom:29px;">District <span style="color:red;">(*)</span></p>
-                                    <SfDropDownList @bind-Value="@(inputmodel.PlaceofResidenceDistrictId)" Enabled="true" TItem="ADistrict" TValue="int?" DataSource="@DistrictData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                        <DropDownListFieldSettings Value="@nameof(ADistrict.DistrictId)" Text="@nameof(ADistrict.DistrictDescription)"></DropDownListFieldSettings>
-                                    </SfDropDownList>
-                                    <p> <ValidationMessage For="@(() => inputmodel.PlaceofResidenceDistrictId)" /></p>
-                               </div>
-                               <div class="col-md-4">
-                                   <p style="margin-bottom:29px;">Subcounty <span style="color:red;">(*)</span></p>
-                                    <SfDropDownList @bind-Value="@(inputmodel.PlaceofResidenceSubCountyId)" Enabled="true" TItem="ASubCounty" TValue="int?" DataSource="@SubCountyData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                        <DropDownListFieldSettings Value="@nameof(ASubCounty.SubCountyId)" Text="@nameof(ASubCounty.SubCountyDescription)"></DropDownListFieldSettings>
-                                    </SfDropDownList>
-                                    <p> <ValidationMessage For="@(() => inputmodel.PlaceofResidenceSubCountyId)" /></p>
-                               </div>
-                               <div class="col-md-4">
-                                   <p style="margin-bottom:29px;">Parish <span style="color:red;">(*)</span></p>
-                                    <SfDropDownList @bind-Value="@(inputmodel.PlaceofResidenceParishId)" Enabled="true" TItem="AParish" TValue="int?" DataSource="@ParishData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                        <DropDownListFieldSettings Value="@nameof(AParish.ParishId)" Text="@nameof(AParish.ParishDesc)"></DropDownListFieldSettings>
-                                    </SfDropDownList>
-                                    <p> <ValidationMessage For="@(() => inputmodel.PlaceofResidenceParishId)" /></p>
-                               </div>
-                               <div class="col-md-4">
-                                   <p style="margin-bottom:29px;">Village <span style="color:red;">(*)</span></p>
-                                    <SfDropDownList @bind-Value="@(inputmodel.PlaceofResidenceVillageId)" Enabled="true" TItem="AVillage" TValue="int?" DataSource="@VillageData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                        <DropDownListFieldSettings Value="@nameof(AVillage.VillageId)" Text="@nameof(AVillage.ViallgeDescription)"></DropDownListFieldSettings>
-                                    </SfDropDownList>
-                                    <p> <ValidationMessage For="@(() => inputmodel.PlaceofResidenceVillageId)" /></p>
-                               </div>
-                               <div class="col-md-12">
-                                   <h3>Social Media Handles</h3>
-                               </div>
-                               <div class="col-md-4">
-                                    <p>LinkedIn</p>
-                                   <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.LinkedIn" CssClass="form-control" Placeholder="Please enter Profile URL" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                                   <p> <ValidationMessage For="@(() => inputmodel.LinkedIn)" /></p>
-                               </div>
-                               <div class="col-md-4">
-                                    <p>Twitter</p>
-                                   <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.Twitter" CssClass="form-control" Placeholder="Please enter Profile URL" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                                   <p> <ValidationMessage For="@(() => inputmodel.Twitter)" /></p>
-                               </div>
-                               <div class="col-md-4">
-                                    <p>Github</p>
-                                   <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.Github" CssClass="form-control" Placeholder="Please enter Profile URL" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                                   <p> <ValidationMessage For="@(() => inputmodel.Github)" /></p>
-                               </div>
-                               <div class="col-md-12">
-                                    <button class="btn btn-success" style="margin-top:10px; margin-bottom:10px; float:right;">
-                                        <span class="button__text">Update Profile
-                                        <i class="fa-chevron-right"></i></span>
-                                    </button>
-                               </div>
-                               <div class="col-md-12">
-                                   <SfSpinner Visible=false @ref="@SavingSpinner" Label="Updating Profile Please wait..."></SfSpinner>
-                               </div>
-                                <div class="col-md-12">
-                                    <p class="alert-danger">
-                                         <DataAnnotationsValidator />
-                                        <ValidationSummary />
-                                    </p>
-                            @if(missingfields != null && missingfields.Count > 0)
-                            {
-                                <p class="alert-danger" style="padding:10px;">
-                                                 <ul>
-                                        @foreach(var a in missingfields)
-                                        {
-                                            <li>@a</li>
-                                        }
-                                    </ul>
-                                 </p>
-                            }
-                             @if (!string.IsNullOrEmpty(RegisterSuccess))
-                                    {
-                                         <p class="alert-success"  style="padding:10px;">
-                                             @RegisterSuccess
+                                    <SfNumericTextBox Format="N0"  @bind-Value="@inputmodel.OfficePhoneNumber" CssClass="form-control" Placeholder="Please enter Phone Number" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                    <p> <ValidationMessage For="@(() => inputmodel.OfficePhoneNumber)" /></p>
+                                    </div>*@
+                                    <div class="col-md-4">
+                                        <p> National Social Security Fund Number </p>
+                                        <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.Nssfno" CssClass="form-control" Placeholder="Please enter  NSSF No" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                        <p> <ValidationMessage For="@(() => inputmodel.Nssfno)" /></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p>Uganda Revenue Authority Tin Number</p>
+                                        <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.UraTinNo" CssClass="form-control" Placeholder="Please enter URA Tin No" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                        <p> <ValidationMessage For="@(() => inputmodel.UraTinNo)" /></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p style="margin-bottom:29px;">Bank</p>
+                                        <SfDropDownList @bind-Value="@(inputmodel.BankId)" Enabled="true" TItem="ABank" TValue="int?" DataSource="@BankData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                            <DropDownListFieldSettings Value="@nameof(ABank.BankId)" Text="@nameof(ABank.BankDesc)"></DropDownListFieldSettings>
+                                        </SfDropDownList>
+                                        <p> <ValidationMessage For="@(() => inputmodel.BankId)" /></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p>Bank Branch</p>
+                                        <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.BankBranch" CssClass="form-control" Placeholder="Please enter Branch" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                        <p> <ValidationMessage For="@(() => inputmodel.BankBranch)" /></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p>Bank Account Number</p>
+                                        <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.BankAccountNumber" CssClass="form-control" Placeholder="Please enter Account Number" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                        <p> <ValidationMessage For="@(() => inputmodel.BankAccountNumber)" /></p>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <h3>Place Of Origin</h3>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p style="margin-bottom:29px;">District <span style="color:red;">*</span></p>
+                                        <SfDropDownList @bind-Value="@(inputmodel.PlaceofOriginDistrictId)" Enabled="true" TItem="ADistrict" TValue="int?" DataSource="@DistrictData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                            <DropDownListFieldSettings Value="@nameof(ADistrict.DistrictId)" Text="@nameof(ADistrict.DistrictDescription)"></DropDownListFieldSettings>
+                                        </SfDropDownList>
+                                        <p> <ValidationMessage For="@(() => inputmodel.PlaceofOriginDistrictId)" /></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p style="margin-bottom:29px;">Subcounty <span style="color:red;">*</span></p>
+                                        <SfDropDownList @bind-Value="@(inputmodel.PlaceofOriginSubCountyId)" Query=@(new Query().Where(new WhereFilter() { Field = "DistrictId", Operator = "equal", value = inputmodel.PlaceofOriginDistrictId, IgnoreCase = false, IgnoreAccent = false })) 
+                                        Enabled="@(inputmodel.PlaceofOriginDistrictId == null ? false : true)" TItem="ASubCounty" TValue="int?" DataSource="@SubCountyData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                            <DropDownListFieldSettings Value="@nameof(ASubCounty.SubCountyId)" Text="@nameof(ASubCounty.SubCountyDescription)"></DropDownListFieldSettings>
+                                        </SfDropDownList>
+                                        <p> <ValidationMessage For="@(() => inputmodel.PlaceofOriginSubCountyId)" /></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p style="margin-bottom:29px;">Parish <span style="color:red;">*</span></p>
+                                        <SfDropDownList @bind-Value="@(inputmodel.PlaceofOriginParishId)" Query=@(new Query().Where(new WhereFilter() { Field = "SubCountyId", Operator = "equal", value = inputmodel.PlaceofOriginSubCountyId, IgnoreCase = false, IgnoreAccent = false }))
+                                                        Enabled="@(inputmodel.PlaceofOriginSubCountyId == null ? false : true)" TItem="AParish" TValue="int?" DataSource="@ParishData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                            <DropDownListFieldSettings Value="@nameof(AParish.ParishId)" Text="@nameof(AParish.ParishDesc)"></DropDownListFieldSettings>
+                                        </SfDropDownList>
+                                        <p> <ValidationMessage For="@(() => inputmodel.PlaceofOriginParishId)" /></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p style="margin-bottom:29px;">Village <span style="color:red;">*</span></p>
+                                        <SfDropDownList @bind-Value="@(inputmodel.PlaceofOriginVillageId)" Query=@(new Query().Where(new WhereFilter() { Field = "ParishId", Operator = "equal", value = inputmodel.PlaceofOriginParishId, IgnoreCase = false, IgnoreAccent = false }))
+                                                        Enabled="@(inputmodel.PlaceofOriginParishId == null ? false : true)" TItem="AVillage" TValue="int?" DataSource="@VillageData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                            <DropDownListFieldSettings Value="@nameof(AVillage.VillageId)" Text="@nameof(AVillage.ViallgeDescription)"></DropDownListFieldSettings>
+                                        </SfDropDownList>
+                                        <p> <ValidationMessage For="@(() => inputmodel.PlaceofOriginVillageId)" /></p>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <h3>Current Place of Residence</h3>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p style="margin-bottom:29px;">District <span style="color:red;">*</span></p>
+                                        <SfDropDownList @bind-Value="@(inputmodel.PlaceofResidenceDistrictId)" Enabled="true" TItem="ADistrict" TValue="int?" DataSource="@DistrictData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                            <DropDownListFieldSettings Value="@nameof(ADistrict.DistrictId)" Text="@nameof(ADistrict.DistrictDescription)"></DropDownListFieldSettings>
+                                        </SfDropDownList>
+                                        <p> <ValidationMessage For="@(() => inputmodel.PlaceofResidenceDistrictId)" /></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p style="margin-bottom:29px;">Subcounty <span style="color:red;">*</span></p>
+                                        <SfDropDownList @bind-Value="@(inputmodel.PlaceofResidenceSubCountyId)" Query=@(new Query().Where(new WhereFilter() { Field = "DistrictId", Operator = "equal", value = inputmodel.PlaceofResidenceDistrictId, IgnoreCase = false, IgnoreAccent = false }))
+                                                        Enabled="@(inputmodel.PlaceofResidenceDistrictId == null ? false : true)" TItem="ASubCounty" TValue="int?" DataSource="@SubCountyData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                            <DropDownListFieldSettings Value="@nameof(ASubCounty.SubCountyId)" Text="@nameof(ASubCounty.SubCountyDescription)"></DropDownListFieldSettings>                                            
+                                        </SfDropDownList>
+                                        <p> <ValidationMessage For="@(() => inputmodel.PlaceofResidenceSubCountyId)" /></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p style="margin-bottom:29px;">Parish <span style="color:red;">*</span></p>
+                                        <SfDropDownList @bind-Value="@(inputmodel.PlaceofResidenceParishId)" Query=@(new Query().Where(new WhereFilter() { Field = "SubCountyId", Operator = "equal", value = inputmodel.PlaceofResidenceSubCountyId, IgnoreCase = false, IgnoreAccent = false }))
+                                                        Enabled="@(inputmodel.PlaceofResidenceSubCountyId == null ? false : true)" TItem="AParish" TValue="int?" DataSource="@ParishData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                            <DropDownListFieldSettings Value="@nameof(AParish.ParishId)" Text="@nameof(AParish.ParishDesc)"></DropDownListFieldSettings>
+                                        </SfDropDownList>
+                                        <p> <ValidationMessage For="@(() => inputmodel.PlaceofResidenceParishId)" /></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p style="margin-bottom:29px;">Village <span style="color:red;">*</span></p>
+                                        <SfDropDownList @bind-Value="@(inputmodel.PlaceofResidenceVillageId)" Query=@(new Query().Where(new WhereFilter() { Field = "ParishId", Operator = "equal", value = inputmodel.PlaceofResidenceParishId, IgnoreCase = false, IgnoreAccent = false })) 
+                                            Enabled="@(inputmodel.PlaceofResidenceParishId == null ? false : true)" TItem="AVillage" TValue="int?" DataSource="@VillageData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                            <DropDownListFieldSettings Value="@nameof(AVillage.VillageId)" Text="@nameof(AVillage.ViallgeDescription)"></DropDownListFieldSettings>
+                                        </SfDropDownList>
+                                        <p> <ValidationMessage For="@(() => inputmodel.PlaceofResidenceVillageId)" /></p>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <h3>Social Media Handles</h3>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p>LinkedIn</p>
+                                        <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.LinkedIn" CssClass="form-control" Placeholder="Please enter Profile URL" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                        <p> <ValidationMessage For="@(() => inputmodel.LinkedIn)" /></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p>Twitter</p>
+                                        <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.Twitter" CssClass="form-control" Placeholder="Please enter Profile URL" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                        <p> <ValidationMessage For="@(() => inputmodel.Twitter)" /></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p>Github</p>
+                                        <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@inputmodel.Github" CssClass="form-control" Placeholder="Please enter Profile URL" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                        <p> <ValidationMessage For="@(() => inputmodel.Github)" /></p>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <button class="btn btn-success" style="margin-top:10px; margin-bottom:10px; float:right;" disabled=@IsSubmitDisabled>
+                                            <span class="button__text">
+                                                Update Profile
+                                                <i class="fa fa-sign-in"></i>
+                                            </span>
+                                        </button>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <SfSpinner Visible=false @ref="@SavingSpinner" Label="Updating Profile Please wait..."></SfSpinner>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <p class="alert-danger">
+                                            <DataAnnotationsValidator />
+                                            <ValidationSummary />
                                         </p>
-                                    }
-                    </div>
-                </EditForm>
-                         </div>
-                     </ContentTemplate>
-                </TabItem>
-                <TabItem>
-                    <ChildContent>
-                        <TabHeader Text="Qualifications"></TabHeader>
-                    </ChildContent>
-                     <ContentTemplate>
-                         <div style="margin:10px; width:100%;">
-                             <NonStaffQualificationPage NonstaffId="@_SystemSettings.StaffId" AccessToken="@_SystemSettings.AccessToken" LevelofEducationData="@LevelofEducationData" FieldOfStudyData="@FieldOfStudyData"/>
-                         </div>
-                     </ContentTemplate>
-                </TabItem>
-                <TabItem>
-                    <ChildContent>
-                        <TabHeader Text="Work Experience"></TabHeader>
-                    </ChildContent>
-                     <ContentTemplate>
-                         <div style="margin:10px; width:100%;">
-                             <NonStaffWorkExperiencePage NonstaffId="@_SystemSettings.StaffId" AccessToken="@_SystemSettings.AccessToken"/>
-                         </div>
-                     </ContentTemplate>
-                </TabItem>
-                <TabItem>
-                    <ChildContent>
-                        <TabHeader Text="Skills"></TabHeader>
-                    </ChildContent>
-                     <ContentTemplate>
-                         <div style="margin:10px; width:100%;">
-                             <NonStaffSkillsPage  NonstaffId="@_SystemSettings.StaffId" AccessToken="@_SystemSettings.AccessToken" SkillLevelData="@SkillLevelData"/>
-                         </div>
-                     </ContentTemplate>
-                </TabItem>
-                <TabItem>
-                    <ChildContent>
-                        <TabHeader Text="Next of Kin"></TabHeader>
-                    </ChildContent>
-                     <ContentTemplate>
-                         <div style="margin:10px; width:100%;">
-                             <NonStaffNextOfKinPage  NonstaffId="@_SystemSettings.StaffId" AccessToken="@_SystemSettings.AccessToken" GenderData="@GenderData" RelationshipData="@RelationshipData"/>
-                         </div>
-                     </ContentTemplate>
-                </TabItem>
-                <TabItem>
-                    <ChildContent>
-                        <TabHeader Text="Communication"></TabHeader>
-                    </ChildContent>
-                     <ContentTemplate>
-                         <div style="margin:10px; width:100%;">
-                             <NonStaffLanguagesKnownPage  NonstaffId="@_SystemSettings.StaffId" AccessToken="@_SystemSettings.AccessToken" LanguageProlificData="@LanguageProlificData" LanguagesData="@LanguagesData"/>
-                         </div>
-                     </ContentTemplate>
-                </TabItem>
-            </TabItems>
-        </SfTab>
+                                        @if (missingfields != null && missingfields.Count > 0)
+                                        {
+                                            <p class="alert-danger" style="padding:10px;">
+                                                <ul>
+                                                    @foreach (var a in missingfields)
+                                                    {
+                                                        <li>@a</li>
+                                                    }
+                                                </ul>
+                                            </p>
+                                        }
+                                        @if (!string.IsNullOrEmpty(RegisterSuccess))
+                                        {
+                                            <p class="alert-success" style="padding:10px;">
+                                                @RegisterSuccess
+                                            </p>
+                                        }
+                                    </div>
+                                </EditForm>
+                            </div>
+                    </MudText>
+                </MudTabPanel>
+                @if(Credentials != null)
+                {
+                        <MudTabPanel Text="Qualifications" Icon="@Icons.Material.Filled.AddCircle" BadgeColor="Color.Success">
+                            <MudText>
+                                <div style="margin:10px; width:100%;">
+                                    <NonStaffQualificationPage NonstaffId="@Credentials.StaffId" AccessToken="@Credentials.token" LevelofEducationData="@LevelofEducationData" FieldOfStudyData="@FieldOfStudyData" UniversityData="@UniversityData" />
+                                </div>
+                            </MudText>
+                        </MudTabPanel>
+
+                        <MudTabPanel Text="Work Experience" Icon="@Icons.Material.Filled.Build" BadgeColor="Color.Success">
+                            <MudText>
+                                <div style="margin:10px; width:100%;">
+                                    <NonStaffWorkExperiencePage NonstaffId="@Credentials.StaffId" AccessToken="@Credentials.token" />
+                                </div>
+                            </MudText>
+                        </MudTabPanel>
+
+                        <MudTabPanel Text="Skills" Icon="@Icons.Material.Filled.Api" BadgeColor="Color.Success">
+                            <MudText>
+                                <div style="margin:10px; width:100%;">
+                                    <NonStaffSkillsPage NonstaffId="@Credentials.StaffId" AccessToken="@Credentials.token" SkillLevelData="@SkillLevelData" />
+                                </div>
+                            </MudText>
+                        </MudTabPanel>
+
+                        <MudTabPanel Text="Next of Kin" Icon="@Icons.Material.Filled.AddIcCall" BadgeColor="Color.Success">
+                            <MudText>
+                                <div style="margin:10px; width:100%;">
+                                    <NonStaffNextOfKinPage NonstaffId="@Credentials.StaffId" AccessToken="@Credentials.token" GenderData="@GenderData" RelationshipData="@RelationshipData" />
+                                </div>
+                            </MudText>
+                        </MudTabPanel>
+
+                        <MudTabPanel Text="Communication" Icon="@Icons.Material.Filled.SpatialAudio" BadgeColor="Color.Success">
+                            <MudText>
+                                <div style="margin:10px; width:100%;">
+                                    <NonStaffLanguagesKnownPage NonstaffId="@Credentials.StaffId" AccessToken="@Credentials.token" LanguageProlificData="@LanguageProlificData" LanguagesData="@LanguagesData" />
+                                </div>
+                            </MudText>
+                        </MudTabPanel>
+                }                
+
+            </MudTabs>
+        </MudExpansionPanel>
+    </MudExpansionPanels>
+
     </div>
      <div class="col-md-12">
           @if (!string.IsNullOrEmpty(RegisterError))
@@ -374,6 +398,7 @@
     List<AGender>? GenderData{ get; set; }
     List<ACountry>? CountryData{ get; set; }
     List<AIdentificationType>? IdentificationTypeData{ get; set; }
+    List<AUniversities>? UniversityData { get; set; }
     List<ADistrict>? DistrictData{ get; set; }
     List<AParish>? ParishData{ get; set; }
     List<ASubCounty>? SubCountyData{ get; set; }
@@ -388,107 +413,108 @@
     List<ALanguages>? LanguagesData{ get; set; }
     List<string>? missingfields{ get; set; } = new();
     SfSpinner? UploadImageSpinner;
-    string? ProfilePicString { get; set; } = null;
+    string? ImageString { get; set; }
     string? CVString { get; set; } = null;
+    LoginResultModel? Credentials { get; set; }
+    public bool loadingspinner { get; set; }
+    long maxFileSize = 1048576/* 1024L * 1024L * 1024L * 2L */;
+    string fileName = string.Empty;
+    bool IsSubmitDisabled;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
+            await base.OnInitializedAsync();
             inputmodel = new();
-            
-            //if(string.IsNullOrEmpty(_SystemSettings.AccessToken))
-            //{
-            //    AppState.LoggedIn = false;
-            //    Navigation.NavigateTo("/");
-            //}
-            //else if(DateTime.Now > _SystemSettings.ExpiryDate)
-            //{
-            //    AppState.LoggedIn = false;
-            //    Navigation.NavigateTo("/");
-            //}
+            loadingspinner = true;
 
-            var tasks = new List<Task>();
-
-            tasks.Add(Task.Run(async () =>
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
             {
-            //
-                var response = await Http.GetAsync($"NonStaff/GetRegistrationPrimartData");
-                var content = await response.Content.ReadAsStringAsync();
-                if (response.IsSuccessStatusCode)
-                {
-                    var _ExternalRegistrationModel = JsonSerializer.Deserialize<ExternalRegistrationModel>(content, _options);
+                navManager.NavigateTo("/LoginPage", true);
+            }
 
-                    if(_ExternalRegistrationModel != null)
+            else
+            {
+                Credentials = await AuthService.GetUserCredentials();
+                var tasks = new List<Task>();
+
+                tasks.Add(Task.Run(async () =>
+                {
+
+                    var response = await Http.GetAsync($"NonStaff/GetRegistrationPrimartData");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
                     {
-                        GenderData = _ExternalRegistrationModel.Gender;
-                        if(_ExternalRegistrationModel.Coutry != null)
+                        var _ExternalRegistrationModel = JsonSerializer.Deserialize<ExternalRegistrationModel>(content, _options);
+
+                        if (_ExternalRegistrationModel != null)
                         {
-                            CountryData = _ExternalRegistrationModel.Coutry.OrderBy(o=> o.CountryDesc).ToList();
+                            GenderData = _ExternalRegistrationModel.Gender;
+                            if (_ExternalRegistrationModel.Coutry != null)
+                            {
+                                CountryData = _ExternalRegistrationModel.Coutry.OrderBy(o => o.CountryDesc).ToList();
+                            }
+                            IdentificationTypeData = _ExternalRegistrationModel.IdentificationType;
+                            DistrictData = _ExternalRegistrationModel.District;
+                            SubCountyData = _ExternalRegistrationModel.SubCounty;
+                            VillageData = _ExternalRegistrationModel.Village;
+                            ParishData = _ExternalRegistrationModel.Parish;
+                            MaritalStatusData = _ExternalRegistrationModel.MaritalStatus;
+                            BankData = _ExternalRegistrationModel.Bank;
+                            FieldOfStudyData = _ExternalRegistrationModel.FieldOfStudy;
+                            LevelofEducationData = _ExternalRegistrationModel.LevelofEducation;
+                            SkillLevelData = _ExternalRegistrationModel.SkillLevel;
+                            RelationshipData = _ExternalRegistrationModel.Relationship;
+                            LanguageProlificData = _ExternalRegistrationModel.LanguageProlific;
+                            LanguagesData = _ExternalRegistrationModel.Languages;
+                            UniversityData = _ExternalRegistrationModel.Universities;
                         }
-                        IdentificationTypeData = _ExternalRegistrationModel.IdentificationType;
-                        DistrictData = _ExternalRegistrationModel.District;
-                        SubCountyData = _ExternalRegistrationModel.SubCounty;
-                        VillageData = _ExternalRegistrationModel.Village;
-                        ParishData = _ExternalRegistrationModel.Parish;
-                        MaritalStatusData = _ExternalRegistrationModel.MaritalStatus;
-                        BankData=_ExternalRegistrationModel.Bank;
-                        FieldOfStudyData=_ExternalRegistrationModel.FieldOfStudy;
-                        LevelofEducationData=_ExternalRegistrationModel.LevelofEducation;
-                        SkillLevelData=_ExternalRegistrationModel.SkillLevel;
-                        RelationshipData=_ExternalRegistrationModel.Relationship;
-                        LanguageProlificData=_ExternalRegistrationModel.LanguageProlific;
-                        LanguagesData=_ExternalRegistrationModel.Languages;
                     }
-                }
-            }));
-            tasks.Add(Task.Run(async () =>
-            {
-            //
-                var response = await Http.GetAsync($"NonStaff/GetNonStaffById/{_SystemSettings.StaffId}");
-                var content = await response.Content.ReadAsStringAsync();
-                if (response.IsSuccessStatusCode)
+                }));
+
+                tasks.Add(Task.Run(async () =>
                 {
-                    inputmodel = JsonSerializer.Deserialize<NonStaff>(content, _options);
-                }
-            }));
+                    var response = await Http.GetAsync($"NonStaff/GetNonStaffById/{Credentials.StaffId}");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        inputmodel = JsonSerializer.Deserialize<NonStaff>(content, _options);
 
-            Task t = Task.WhenAll(tasks);
-            await t;
+                        if (!string.IsNullOrEmpty(inputmodel.Photograph))
+                        {
+                            ImageString = await GetImageString(inputmodel.Photograph, inputmodel.PhotographExt, "PassportPhoto");
+                        }
 
-            var _tasks = new List<Task>();
+                        if (!string.IsNullOrEmpty(inputmodel.CvdocumentName))
+                        {
+                            CVString = await GetImageString(inputmodel.CvdocumentName, inputmodel.CvdocumentExt, "CV");
+                        }
+                    }
+                }));
 
-            _tasks.Add(Task.Run(async () =>
-           {
-               if (!string.IsNullOrEmpty(inputmodel.Photograph))
-               {
-                   ProfilePicString = await GetImageString(inputmodel.Photograph, inputmodel.PhotographExt, "ProfilePic");
-               }
-            }));
-
-             _tasks.Add(Task.Run(async () =>
-            {
-                if (!string.IsNullOrEmpty(inputmodel.CvdocumentName))
-               {
-                   CVString = await GetImageString(inputmodel.CvdocumentName, inputmodel.CvdocumentExt, "CV");
-               }
-            }));
-             Task _t = Task.WhenAll(_tasks);
-            await _t;
-
+                Task _t = Task.WhenAll(tasks);
+                await _t;
+            }   
         }
         catch (Exception ex)
         {
             RegisterError = $"Error: {ex.Message}";
         }
-        await base.OnInitializedAsync();
+        finally
+        {
+            loadingspinner = false;
+        }        
     }
+    
     private async Task SaveProfile()
     {
         try
         {
             await SavingSpinner.ShowAsync();
-            
+            IsSubmitDisabled = true;
+
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(inputmodel);
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -524,69 +550,70 @@
         finally
         {
             await SavingSpinner.HideAsync();
+            IsSubmitDisabled = false;
         }
     }
 
-    private async void OnImageChange(UploadChangeEventArgs args)
+
+    #region image
+
+    private async Task SingleUpload(InputFileChangeEventArgs e)
     {
         try
         {
-            // await UploadImageSpinner.ShowAsync();
-            // foreach (var file in args.Files)
-            // {
-            //     if (file.FileInfo.Size <= 5242880)
-            //     {
-            //         file.Stream.Position = 0;
-            //         if (file.FileInfo.Type.ToLower().Contains("png") || file.FileInfo.Type.ToLower().Contains("gif") || file.FileInfo.Type.ToLower().Contains("jpeg")|| file.FileInfo.Type.ToLower().Contains("jpg"))
-            //         {
+            //IsSaveDisabled = true;
+            await UploadImageSpinner.ShowAsync();
+            MemoryStream ms = new MemoryStream();
+            await e.File.OpenReadStream(maxFileSize).CopyToAsync(ms);
 
-            //             string fileName = "Profile_"+inputmodel.FirstName+ "_"+inputmodel.LastName+"_" + inputmodel.NonStaffid + "." + file.FileInfo.Type.Trim();
+            ms.Position = 0;
 
-            //             byte[] bytes = file.Stream.ToArray();
-            //             string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+            if (e.File.ContentType.ToLower().Contains("png") || e.File.ContentType.ToLower().Contains("gif") || e.File.ContentType.ToLower().Contains("jpeg") || e.File.ContentType.ToLower().Contains("jpg"))
+            {
+                var passextension = e.File.ContentType.Split("/");
+                fileName = "PassportPhoto_" + inputmodel.FirstName + "_" + inputmodel.LastName + "." + passextension[1].Trim();
+                
+                byte[] bytes = ms.ToArray();
+                //byte[] bytes = file.Stream.ToArray();
+                string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                DocumentBytes m = new DocumentBytes()
+                    {
+                        DocumentName = fileName,
+                        DocumentExt = e.File.ContentType.Trim(),
+                        DocumentByte = bytes,
+                        DocumentFolder = "PassportPhoto"
+                    };
 
-            //             ImageUpload m = new ImageUpload()
-            //             {
-            //                 ImageName = fileName,
-            //                 ImageExt = file.FileInfo.Type.Trim(),
-            //                 Imagebyte = bytes,
-            //                 Rootfolder="ProfilePic"
-            //             };
+                await _DocumentUploadModel.UploadDocument(m);
+                var result = "data:application/pdf;base64," + base64;
+                inputmodel.Photograph = fileName;
+                inputmodel.PhotographExt = e.File.ContentType.Trim();
+                ImageString = result;
+                bytes = null;
 
-            //             var Requestresult = await _DocumentUploadModel.SaveDocument(m,_SystemSettings.AccessToken);
-            //             if (Requestresult != null && Requestresult.IsSuccess)
-            //             {
-            //                 var result = "data:image/" + file.FileInfo.Type.Trim() + ";base64," + base64;
-            //                 inputmodel.Photograph = fileName;
-            //                 inputmodel.PhotographExt= file.FileInfo.Type.Trim();
-            //                 ProfilePicString = result;
-            //                 bytes = null;
-            //             }
-            //             else if(Requestresult != null)
-            //             {
-            //                 await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-            //             }
-            //         }
-            //         else
-            //         {
-            //             await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = "Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg).", CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-            //         }
+            }
 
-            //         //Save infor into the DB
-            //     }
-            // }
+            else
+            {
+                toastService.ShowWarning("Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg)");
+            }
         }
         catch (Exception ex)
+
         {
-            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+            throw ex;
         }
+
         finally
         {
+            //IsSaveDisabled = false;
             await UploadImageSpinner.HideAsync();
             StateHasChanged();
         }
 
     }
+
+    #endregion Image
 
     private async void OnCVChange(UploadChangeEventArgs args)
     {
@@ -640,7 +667,7 @@
         //                     };
 
 
-        //                     var Requestresult = await _DocumentUploadModel.SaveDocument(m,_SystemSettings.AccessToken);
+        //                     var Requestresult = await _DocumentUploadModel.SaveDocument(m,Credentials.token);
         //                     if (Requestresult != null && Requestresult.IsSuccess)
         //                     {
         //                         var result = "data:application/pdf;base64," + base64;
@@ -680,7 +707,7 @@
         //                         Rootfolder="CV"
         //                     };
 
-        //                     var Requestresult = await _DocumentUploadModel.SaveDocument(m,_SystemSettings.AccessToken);
+        //                     var Requestresult = await _DocumentUploadModel.SaveDocument(m,Credentials.token);
         //                     if (Requestresult != null && Requestresult.IsSuccess)
         //                     {
         //                         var result = "data:application/pdf;base64," + base64;
@@ -711,7 +738,7 @@
         //                     Rootfolder="CV"
         //                 };
 
-        //                 var Requestresult = await _DocumentUploadModel.SaveDocument(m,_SystemSettings.AccessToken);
+        //                 var Requestresult = await _DocumentUploadModel.SaveDocument(m,Credentials.token);
         //                 if (Requestresult != null && Requestresult.IsSuccess)
         //                 {
         //                     var result = "data:image/" + file.FileInfo.Type.Trim() + ";base64," + base64;
@@ -746,37 +773,35 @@
 
     }
 
-    private async Task<string> GetImageString(string imageUrl, string ext,string Rootfolder)
+    private async Task<string> GetImageString(string imageUrl, string ext, string DocumentFolder)
     {
-        string? result = null;
-        // try
-        // {
-        //     if (!string.IsNullOrEmpty(imageUrl))
-        //     {
-        //         ImageUpload a = await _DocumentUploadModel.GetDocument(imageUrl,Rootfolder,_SystemSettings.AccessToken);
+        string result = null;
+        try
+        {
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                var a = await _DocumentUploadModel.GetDocument(imageUrl, DocumentFolder);
 
-        //         if (a != null)
-        //         {
-        //             if(a.Imagebyte != null)
-        //             {
-        //                 if (!string.IsNullOrEmpty(a.ImageExt) && a.ImageExt.Contains("pdf"))
-        //                 {
-        //                     string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
-        //                     result = "data:application/pdf;base64," + base64String;
-        //                 }
-        //                 else if(!string.IsNullOrEmpty(a.ImageExt))
-        //                 {
-        //                     string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
-        //                     result = "data:image/" + a.ImageExt + ";base64," + base64String;
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-        // catch (Exception ex)
-        // {
-        //     await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-        // }
+                if (a != null)
+                {
+                    if (a.DocumentExt.Contains("pdf"))
+                    {
+                        string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                        result = "data:application/pdf;base64," + base64String;
+                    }
+                    else
+                    {
+                        string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                        result = "data:image/" + a.DocumentExt + ";base64," + base64String;
+                    }
+
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
         return result;
     }
 }

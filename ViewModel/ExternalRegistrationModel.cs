@@ -1,4 +1,5 @@
 ﻿
+using HCMIS.SHARED;
 using HCMIS.SHARED.Models;
 using HCMISAPI.Models;
 
@@ -21,6 +22,7 @@ namespace HCMIS.ViewModel
         public List<ARelationship>? Relationship { get; set; }
         public List<ALanguageProlific>? LanguageProlific { get; set; }
         public List<ALanguages>? Languages { get; set; }
+        public List<AUniversities>? Universities { get; set; }
     }
 
     public class EmployeeRegistrationModel
@@ -42,6 +44,7 @@ namespace HCMIS.ViewModel
         public List<ALanguages>? Languages { get; set; }
         public List<ADepartment>? Departments { get; set; }
         public List<JobDescription>? jobDescriptions { get; set; }
+        public List<AUniversities>? universities { get; set; }
     }
 
     public class EmployeeExitPrimaryData

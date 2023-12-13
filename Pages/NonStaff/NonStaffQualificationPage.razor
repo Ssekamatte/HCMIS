@@ -1,6 +1,7 @@
 ﻿@using HCMIS.Data
 @using HCMIS.Model
 @using System.Text.Json
+@using HCMIS.SHARED.DTO
 @using HCMIS.SHARED.Data;
 @using HCMIS.SHARED.Models;
 @using HCMIS.ViewModel
@@ -10,6 +11,26 @@
 @inject ApiConfig _ApiConfig;
 @inject NavigationManager Navigation
 @inject DocumentUploadModel _DocumentUploadModel;
+@inject IToastService toasterservice;
+
+<style>
+     /*Manage Records Button*/
+    .e-grid .e-icons:not(.e-btn-icon) 
+    {
+        color: #00cc00;
+        color: floralwhite;
+        font-size: smaller;
+        font-weight: bolder;
+    }
+
+     /*Auto complete search icon*/
+    /* .e-ddl.e-input-group.e-control-wrapper .e-ddl-icon::before {
+        content: '\e275';
+        font-family: 'e-icons';
+        font-size: 16px;
+        opacity: 0.4;
+    } */
+</style>
 
 <div class="row">
     <div class="col-lg-12 control-section">
@@ -30,9 +51,8 @@
                                 @*<GridGroupSettings Columns="@GroupedColumns"></GridGroupSettings>*@
                                 <SfDataManager AdaptorInstance="@typeof(NonStaffQualificationAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
                                 <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
-                                <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
-                               @* OnActionBegin="OnQualificationActionBegin"*@
-                                <GridEvents  OnActionComplete="@OnQualificationActionComplete" TValue="NonStaffQualification"></GridEvents>
+                                <GridSearchSettings IgnoreCase="true"></GridSearchSettings>                              
+                                <GridEvents OnActionBegin="OnQualificationActionBegin" OnActionComplete="@OnQualificationActionComplete" TValue="NonStaffQualification"></GridEvents>
                                 <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
 
                                     <HeaderTemplate>
@@ -53,17 +73,23 @@
                                                                     <SfNumericTextBox @bind-Value="@(QualificationReviewData.QualificationId)" Enabled="false" Placeholder="BranchId" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
                                                                 </div>
                                                                 <div class="col-md-6">
-                                                                     <p>Institution Name</p>
-                                                                    <SfTextBox Multiline="false" @bind-Value="@(QualificationReviewData.InstitutionName)" Enabled="true" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                                @if(UniversityData != null)
+                                                                {
+                                                                    <p>Institution Name <span style="color:red;">*</span></p>
+                                                                    <SfAutoComplete @bind-Value="@QualificationReviewData.InstitutionName" TValue="string" TItem="AUniversities" Placeholder="Start Typing ....." AllowCustom=true DataSource="@UniversityData">
+                                                                        <AutoCompleteFieldSettings Value="UniversityName" />
+                                                                    </SfAutoComplete>
+                                                                }
+                                                                    @*<SfTextBox Multiline="false" @bind-Value="@(QualificationReviewData.InstitutionName)" Enabled="true" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>*@
                                                                 </div>
                                                                <div class="col-md-6">
-                                                                    <p>Level of Education <span style="color:red;">(*)</span></p>
+                                                                    <p>Level of Education <span style="color:red;">*</span></p>
                                                                     <SfDropDownList @bind-Value="@(QualificationReviewData.LevelofEducationId)" Enabled="true" TItem="ALevelofEducation" TValue="int?" DataSource="@LevelofEducationData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                                                         <DropDownListFieldSettings Value="@nameof(ALevelofEducation.LevelofEducationId)" Text="@nameof(ALevelofEducation.LevelofEducationDesc)"></DropDownListFieldSettings>
                                                                     </SfDropDownList>
                                                                 </div>
                                                                 <div class="col-md-6">
-                                                                     <p>Field of study <span style="color:red;">(*)</span></p>
+                                                                     <p>Field of study <span style="color:red;">*</span></p>
                                                                     <SfDropDownList @bind-Value="@(QualificationReviewData.FieldOfStudyId)" Enabled="true" TItem="AFieldOfStudy" TValue="int?" DataSource="@FieldOfStudyData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                                                         <DropDownListFieldSettings Value="@nameof(AFieldOfStudy.FieldOfStudyId)" Text="@nameof(AFieldOfStudy.FieldOfStudyDesc)"></DropDownListFieldSettings>
                                                                     </SfDropDownList>
@@ -73,7 +99,7 @@
                                                                     <SfTextBox Multiline="false" @bind-Value="@(QualificationReviewData.OtherFieldOfStudy)" Enabled="true" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                                                                 </div>
                                                                 <div class="col-md-6">
-                                                                     <p>From <span style="color:red;">(*)</span></p>
+                                                                     <p>From <span style="color:red;">*</span></p>
                                                                     <SfDatePicker @bind-Value="@(QualificationReviewData.StartDate)" Placeholder="Select Date" Format="dd/MM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
                                                                 </div>
                                                                 <div class="col-md-6">
@@ -83,26 +109,28 @@
                                                                 <div class="col-md-6" style="padding-top:35px; padding-bottom:10px;">   
                                                                     <SfCheckBox Label="Is Current" @bind-Checked="@(QualificationReviewData.IsCurrent)"></SfCheckBox>
                                                                 </div> 
-                                                                @if(!string.IsNullOrEmpty(QualificationReviewData.InstitutionName) && QualificationReviewData.LevelofEducationId != null){
-                                                                     <div class="form-group col-md-12">
-                                                                        <p class="alert-primary" style="padding:10px;">Please upload an image in png or Jpeg or gif  or jpg format Or a PDF Document not exceeding 5 Megabytes(MBs) in Size</p>
-                                                                        <SfUploader AutoUpload="true" ShowFileList="false">
-                                                                            <UploaderEvents ValueChange="OnQualificationChange"></UploaderEvents>
-                                                                        </SfUploader>
-                                                                        <SfSpinner @ref="@UploadQualificationSpinner" Visible="false" Label="UpLoading document please wait.."></SfSpinner>
+                                                                
+                                                                @if(!string.IsNullOrEmpty(QualificationReviewData.InstitutionName) && QualificationReviewData.LevelofEducationId != null)
+                                                                {
+                                                                    <div class="form-group col-md-12">
+                                                                        <p class="alert-info" style="padding:10px;">Ensure that the document does not exceed 5 Mega Bytes (MB) and is of the following formats (Microsoft Word, PDF or an Image (png,gif,jpeg and jpg))</p>
+                                                                        <InputFile class="form-control" OnChange="@SingleUpload" />
+                                                                        <div>
+                                                                            <SfSpinner @ref="UploadAttachmentSpinner" CssClass="SpinnerClass" Visible="false" Size="30" Label="Saving document Please wait......."> </SfSpinner>
+                                                                        </div>
                                                                     </div>
-                                                            }
+                                                                }
                                                                
                                                                 <div class="form-group col-md-12">
-                                                                    @if (!string.IsNullOrEmpty(QualificationDocumentString))
+                                                                @if (!string.IsNullOrEmpty(ImageString))
                                                                 {
                                                                     if (!string.IsNullOrEmpty(QualificationReviewData.QualificationDocumentExt) && QualificationReviewData.QualificationDocumentExt.ToLower().Contains("pdf"))
                                                                     {
-                                                                            <embed src="@QualificationDocumentString" width="100%" height="600px" style="border: none;" frameborder="0" allowfullscreen="true" />
+                                                                            <embed src="@ImageString" width="100%" height="600px" style="border: none;" frameborder="0" allowfullscreen="true" />
                                                                     }
                                                                     else
                                                                     {
-                                                                            <img src="@QualificationDocumentString" class="img-thumbnail" height="500" width="100%" style="margin-bottom:10px; margin:10%; margin-right:auto;" />
+                                                                            <img src="@ImageString" class="img-thumbnail" height="500" width="100%" style="margin-bottom:10px; margin:10%; margin-right:auto;" />
                                                                     }
                                                                 }
                                                                 </div>
@@ -117,14 +145,21 @@
                                 <GridPageSettings PageSize="20"></GridPageSettings>
                                 <GridColumns>
                                     <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
-                                    <GridColumn Field=@nameof(NonStaffQualification.QualificationId) HeaderText="PatientId" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
-                                    <GridForeignColumn Field=@nameof(NonStaffQualification.LevelofEducationId) HeaderText="Level of Education" Width="150" ForeignKeyField="@(nameof(ALevelofEducation.LevelofEducationId))" ForeignKeyValue="@(nameof(ALevelofEducation.LevelofEducationDesc))" ForeignDataSource="@LevelofEducationData"></GridForeignColumn>
-                                    <GridForeignColumn Field=@nameof(NonStaffQualification.FieldOfStudyId) HeaderText="field of study" Width="150" ForeignKeyField="@(nameof(AFieldOfStudy.FieldOfStudyId))" ForeignKeyValue="@(nameof(AFieldOfStudy.FieldOfStudyDesc))" ForeignDataSource="@FieldOfStudyData"></GridForeignColumn>
-                                    <GridColumn Field=@nameof(NonStaffQualification.OtherFieldOfStudy) HeaderText="Other field of study" Width="150"></GridColumn>
-                                    <GridColumn Field=@nameof(NonStaffQualification.InstitutionName) HeaderText="Institution" Width="150"></GridColumn>
-                                    <GridColumn Field=@nameof(NonStaffQualification.StartDate) Format="dd/MM/yyyy" HeaderText="From" Width="180"></GridColumn>
-                                    <GridColumn Field=@nameof(NonStaffQualification.EndDate) Format="dd/MM/yyyy" HeaderText="To" Width="180"></GridColumn>
-                                    <GridColumn Field=@nameof(NonStaffQualification.IsCurrent) HeaderText="To Current" Width="180"></GridColumn>
+                                    <GridColumn HeaderText="Edit"
+                                                Width="40"
+                                                TextAlign="TextAlign.Left">
+                                        <GridCommandColumns>
+                                            <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit"></GridCommandColumn>
+                                        </GridCommandColumns>
+                                    </GridColumn>
+                                    <GridColumn Field=@nameof(NonStaffQualification.QualificationId) HeaderText="PatientId" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="60"></GridColumn>
+                                    <GridForeignColumn Field=@nameof(NonStaffQualification.LevelofEducationId) HeaderText="Level of Education" Width="80" ForeignKeyField="@(nameof(ALevelofEducation.LevelofEducationId))" ForeignKeyValue="@(nameof(ALevelofEducation.LevelofEducationDesc))" ForeignDataSource="@LevelofEducationData"></GridForeignColumn>
+                                    <GridForeignColumn Field=@nameof(NonStaffQualification.FieldOfStudyId) HeaderText="field of study" Width="60" ForeignKeyField="@(nameof(AFieldOfStudy.FieldOfStudyId))" ForeignKeyValue="@(nameof(AFieldOfStudy.FieldOfStudyDesc))" ForeignDataSource="@FieldOfStudyData"></GridForeignColumn>
+                                    <GridColumn Field=@nameof(NonStaffQualification.OtherFieldOfStudy) HeaderText="Other field of study" Width="60"></GridColumn>
+                                    <GridColumn Field=@nameof(NonStaffQualification.InstitutionName) HeaderText="Institution" Width="60"></GridColumn>
+                                    <GridColumn Field=@nameof(NonStaffQualification.StartDate) Format="dd/MM/yyyy" HeaderText="From" Width="50"></GridColumn>
+                                    <GridColumn Field=@nameof(NonStaffQualification.EndDate) Format="dd/MM/yyyy" HeaderText="To" Width="50"></GridColumn>
+                                    <GridColumn Field=@nameof(NonStaffQualification.IsCurrent) HeaderText="To Current" Width="50"></GridColumn>
                                 </GridColumns>
                             </SfGrid>
     </div>
@@ -161,15 +196,21 @@
     public List<AFieldOfStudy> FieldOfStudyData{ get; set; }
     [Parameter]
     public List<ALevelofEducation> LevelofEducationData{ get; set; }
+    [Parameter]
+    public List<AUniversities> UniversityData { get; set; }
 
-    SfSpinner UploadQualificationSpinner;
+    SfSpinner UploadAttachmentSpinner;
     SfGrid<NonStaffQualification>? QualificationGrid;
     private NonStaffQualification? QualificationReviewData{ get; set; }
     Query mainQuery { get; set; } = new();
-    string QualificationDocumentString { get; set; } = null;
     string? ErrorMessage { get; set; } = null;
     private DialogSettings DialogParams = new DialogSettings { Height="auto",MinHeight="85vh",Width="95%" };
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    string? ImageString { get; set; }
+    long maxFileSize = 5242880/* 1024L * 1024L * 1024L * 2L */;//5 Megabytes
+    string fileName = string.Empty;
+
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -180,13 +221,13 @@
             var tasks = new List<Task>();
             tasks.Add(Task.Run(async () =>
            {
-           // 
-           //var response = await Http.GetAsync($"NonStaff/GetNonStaffById/{NonstaffId}");
-           //var content = await response.Content.ReadAsStringAsync();
-           //if (response.IsSuccessStatusCode)
-           //{
-           //    inputmodel = JsonSerializer.Deserialize<NonStaff>(content, _options);
-           //}
+               // 
+               //var response = await Http.GetAsync($"NonStaff/GetNonStaffById/{NonstaffId}");
+               //var content = await response.Content.ReadAsStringAsync();
+               //if (response.IsSuccessStatusCode)
+               //{
+               //    inputmodel = JsonSerializer.Deserialize<NonStaff>(content, _options);
+               //}
            }));
 
             Task t = Task.WhenAll(tasks);
@@ -205,7 +246,7 @@
         private readonly JsonSerializerOptions _options;
         SystemSettings _SystemSettings;
         ApiConfig _ApiConfig;
-        public IToastService toastService;
+        public IToastService toasterservice;
         //private UserManagement _userManagement;
         public NonStaffQualificationAdapter(HttpClient _http, IToastService ts/*, UserManagement userManagement*/
         ,SystemSettings systemSettings,ApiConfig apiConfig)
@@ -215,7 +256,7 @@
             _SystemSettings = systemSettings;
             _ApiConfig = apiConfig;
             //_userManagement = userManagement;
-            toastService = ts;
+            toasterservice = ts;
         }
 
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
@@ -243,7 +284,7 @@
                     }
                 }
 
-                 
+
                 var response = await Http.GetAsync($"NonStaff/GetQualificationForNonStaff/{NonstaffId}");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
@@ -254,7 +295,7 @@
             }
             catch (Exception ex)
             {
-                toastService.ShowError(ex.Message.ToString());
+                toasterservice.ShowError(ex.Message.ToString());
             }
 
             IEnumerable GridData = data;
@@ -299,13 +340,13 @@
         {
             try
             {
-                
+
                 var val = (value as NonStaffQualification);
                 if(val != null)
                 {
                     if (val.QualificationId == 0)
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -318,23 +359,23 @@
                             {
                                 if (data.IsSuccess)
                                 {
-                                    toastService.ShowSuccess(data.Message);
+                                    toasterservice.ShowSuccess(data.Message);
                                 }
                                 else
                                 {
-                                    toastService.ShowError(data.Message);
+                                    toasterservice.ShowError(data.Message);
                                 }
                             }
                         }
                         else
                         {
-                            toastService.ShowError(result.ReasonPhrase);
+                            toasterservice.ShowError(result.ReasonPhrase);
                         }
 
                     }
                     else
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -347,24 +388,24 @@
                             {
                                 if (data.IsSuccess)
                                 {
-                                    toastService.ShowSuccess(data.Message);
+                                    toasterservice.ShowSuccess(data.Message);
                                 }
                                 else
                                 {
-                                    toastService.ShowError(data.Message);
+                                    toasterservice.ShowError(data.Message);
                                 }
                             }
                         }
                         else
                         {
-                            toastService.ShowError(result.ReasonPhrase);
+                            toasterservice.ShowError(result.ReasonPhrase);
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                toastService.ShowError(ex.Message.ToString());
+                toasterservice.ShowError(ex.Message.ToString());
             }
             return value;
         }
@@ -385,7 +426,7 @@
             //}
             //catch (Exception ex)
             //{
-            //    toastService.ShowError(ex.Message.ToString());
+            //    toasterservice.ShowError(ex.Message.ToString());
             //}
 
 
@@ -395,13 +436,13 @@
         {
             try
             {
-                
+
                 var val = (value as NonStaffQualification);
                 if(val != null)
                 {
                     if (val.QualificationId == 0)
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -414,23 +455,23 @@
                             {
                                 if (data.IsSuccess)
                                 {
-                                    toastService.ShowSuccess(data.Message);
+                                    toasterservice.ShowSuccess(data.Message);
                                 }
                                 else
                                 {
-                                    toastService.ShowError(data.Message);
+                                    toasterservice.ShowError(data.Message);
                                 }
                             }
                         }
                         else
                         {
-                            toastService.ShowError(result.ReasonPhrase);
+                            toasterservice.ShowError(result.ReasonPhrase);
                         }
 
                     }
                     else
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -443,24 +484,24 @@
                             {
                                 if (data.IsSuccess)
                                 {
-                                    toastService.ShowSuccess(data.Message);
+                                    toasterservice.ShowSuccess(data.Message);
                                 }
                                 else
                                 {
-                                    toastService.ShowError(data.Message);
+                                    toasterservice.ShowError(data.Message);
                                 }
                             }
                         }
                         else
                         {
-                            toastService.ShowError(result.ReasonPhrase);
+                            toasterservice.ShowError(result.ReasonPhrase);
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                toastService.ShowError(ex.Message.ToString());
+                toasterservice.ShowError(ex.Message.ToString());
             }
 
             return value;
@@ -470,7 +511,7 @@
             object? products = null;
             try
             {
-                
+
                 if (Changed != null)
                 {
                     products = Changed;
@@ -480,7 +521,7 @@
                         {
                             if (val.QualificationId == 0)
                             {
-                                
+
                                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -493,23 +534,23 @@
                                     {
                                         if (data.IsSuccess)
                                         {
-                                            toastService.ShowSuccess(data.Message);
+                                            toasterservice.ShowSuccess(data.Message);
                                         }
                                         else
                                         {
-                                            toastService.ShowError(data.Message);
+                                            toasterservice.ShowError(data.Message);
                                         }
                                     }
                                 }
                                 else
                                 {
-                                    toastService.ShowError(result.ReasonPhrase);
+                                    toasterservice.ShowError(result.ReasonPhrase);
                                 }
 
                             }
                             else
                             {
-                                
+
                                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -522,17 +563,17 @@
                                     {
                                         if (data.IsSuccess)
                                         {
-                                            toastService.ShowSuccess(data.Message);
+                                            toasterservice.ShowSuccess(data.Message);
                                         }
                                         else
                                         {
-                                            toastService.ShowError(data.Message);
+                                            toasterservice.ShowError(data.Message);
                                         }
                                     }
                                 }
                                 else
                                 {
-                                    toastService.ShowError(result.ReasonPhrase);
+                                    toasterservice.ShowError(result.ReasonPhrase);
                                 }
                             }
                         }
@@ -548,7 +589,7 @@
                         {
                             if (val.QualificationId == 0)
                             {
-                                
+
                                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -561,23 +602,23 @@
                                     {
                                         if (data.IsSuccess)
                                         {
-                                            toastService.ShowSuccess(data.Message);
+                                            toasterservice.ShowSuccess(data.Message);
                                         }
                                         else
                                         {
-                                            toastService.ShowError(data.Message);
+                                            toasterservice.ShowError(data.Message);
                                         }
                                     }
                                 }
                                 else
                                 {
-                                    toastService.ShowError(result.ReasonPhrase);
+                                    toasterservice.ShowError(result.ReasonPhrase);
                                 }
 
                             }
                             else
                             {
-                                
+
                                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -590,17 +631,17 @@
                                     {
                                         if (data.IsSuccess)
                                         {
-                                            toastService.ShowSuccess(data.Message);
+                                            toasterservice.ShowSuccess(data.Message);
                                         }
                                         else
                                         {
-                                            toastService.ShowError(data.Message);
+                                            toasterservice.ShowError(data.Message);
                                         }
                                     }
                                 }
                                 else
                                 {
-                                    toastService.ShowError(result.ReasonPhrase);
+                                    toasterservice.ShowError(result.ReasonPhrase);
                                 }
                             }
                         }
@@ -619,11 +660,71 @@
             }
             catch (Exception ex)
             {
-                toastService.ShowError(ex.Message.ToString());
+                toasterservice.ShowError(ex.Message.ToString());
             }
             return products;
         }
     }
+    
+    public async void OnQualificationActionBegin(ActionEventArgs<NonStaffQualification> Args)
+    {
+        try
+        {
+            if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+            {
+                
+            }
+
+            if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+               
+            }
+            if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+            {
+                if (String.IsNullOrEmpty(Args.Data.InstitutionName))
+                {
+                    toasterservice.ShowWarning("Please enter the institution name.");
+                    Args.Cancel = true;
+                }
+                else if (Args.Data.LevelofEducationId == null)
+                {
+                    toasterservice.ShowWarning("Please select the level of education");
+                    Args.Cancel = true;
+                }
+                else if (Args.Data.FieldOfStudyId == null)
+                {
+                    toasterservice.ShowWarning("Please select the field of study");
+                    Args.Cancel = true;
+                }
+                else if (Args.Data.StartDate == null)
+                {
+                    toasterservice.ShowWarning("Please enter the start date");
+                    Args.Cancel = true;
+                }
+                else if (Args.Data.StartDate > Args.Data.EndDate)
+                {
+                    toasterservice.ShowWarning("Your end date cannot be before the start date");
+                    Args.Cancel = true;
+                }
+                else if (Args.Data.IsCurrent == false && Args.Data.EndDate == null)
+                {
+                    toasterservice.ShowWarning("Please enter the end date");
+                    Args.Cancel = true;
+                }
+            }
+
+        }
+        catch (Exception ex)
+        {
+
+        }
+        finally
+        {
+
+        }
+
+    }
+
     public async Task OnQualificationActionComplete(ActionEventArgs<NonStaffQualification> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
@@ -631,11 +732,12 @@
             QualificationGrid.PreventRender(false);
             if(!string.IsNullOrEmpty(args.RowData.QualificationDocumentName) && !string.IsNullOrEmpty(args.RowData.QualificationDocumentExt))
             {
-                QualificationDocumentString = await GetImageString(args.RowData.QualificationDocumentName, args.RowData.QualificationDocumentExt,"Qualifications");
+                ImageString = await GetImageString(args.RowData.QualificationDocumentName, args.RowData.QualificationDocumentExt,"EmployeeQualification");
             }
-            
+
         }
     }
+    
     public string GetQualificationHeader(NonStaffQualification Value)
     {
         if (Value.QualificationId == 0)
@@ -648,197 +750,164 @@
         }
     }
 
-    private async void OnQualificationChange(UploadChangeEventArgs args)
+    private async Task SingleUpload(InputFileChangeEventArgs e)
     {
         try
         {
-            // await UploadQualificationSpinner.ShowAsync();
-            // foreach (var file in args.Files)
-            // {
-            //     if (file.FileInfo.Size <= 5242880)
-            //     {
-            //         file.Stream.Position = 0;
-            //         if (file.FileInfo.Type.ToLower().Contains("pdf") || file.FileInfo.Type.ToLower().Contains("doc"))
-            //         {
+            //IsSaveDisabled = true;
+            await UploadAttachmentSpinner.ShowAsync();
+            MemoryStream ms = new MemoryStream();
+            await e.File.OpenReadStream(maxFileSize).CopyToAsync(ms);
 
-            //             string fileName = string.Empty;
-            //             if (file.FileInfo.Type.Trim().Contains("doc"))
-            //             {
-            //                 //fileName = "TradingLicence_" + NonstaffId + ".pdf";
+            ms.Position = 0;
+            System.IO.FileInfo info = new System.IO.FileInfo(e.File.Name);
+            if (info.Extension.ToLower().Contains("png") || info.Extension.ToLower().Contains("gif") || info.Extension.ToLower().Contains("jpeg") || info.Extension.ToLower().Contains("jpg"))
+            {
+                var passextension = info.Extension.Split("/");
+                var a = FieldOfStudyData.FirstOrDefault(o => o.FieldOfStudyId == QualificationReviewData.FieldOfStudyId);
+                fileName = "EmployeeQualification_" + a.FieldOfStudyDesc + "_" + QualificationReviewData.InstitutionName + "." + passextension[1].Trim();
+                
+                byte[] bytes = ms.ToArray();
+                //byte[] bytes = file.Stream.ToArray();
+                string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                DocumentBytes m = new DocumentBytes()
+                    {
+                        DocumentName = fileName,
+                        DocumentExt = info.Extension.Trim(),
+                        DocumentByte = bytes,
+                        DocumentFolder = "EmployeeQualification"
+                    };
 
-            //                 var a = FieldOfStudyData.FirstOrDefault(o => o.FieldOfStudyId == QualificationReviewData.FieldOfStudyId);
+                await _DocumentUploadModel.UploadDocument(m);
+                var result = "data:application/pdf;base64," + base64;
+                QualificationReviewData.QualificationDocumentName = fileName;
+                QualificationReviewData.QualificationDocumentExt = info.Extension.Trim();
+                ImageString = result;
+                bytes = null;
 
-            //                 fileName = a.FieldOfStudyDesc +"_"+QualificationReviewData.InstitutionName+ "_" + NonstaffId + ".pdf";
+            }
 
-            //                 //Create a new document
-            //                 Syncfusion.DocIO.DLS.WordDocument document;
-            //                 if (file.FileInfo.Type.Contains("doc") && !file.FileInfo.Type.Contains("docx"))
-            //                 {
-            //                     document = new Syncfusion.DocIO.DLS.WordDocument(file.Stream, Syncfusion.DocIO.FormatType.Doc);
-            //                 }
-            //                 else
-            //                 {
-            //                     document = new Syncfusion.DocIO.DLS.WordDocument(file.Stream, Syncfusion.DocIO.FormatType.Docx);
-            //                 }
-            //                 //Creates an instance of the DocToPDFConverter
-            //                 DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
-            //                 PdfDocument pdfDocument = render.ConvertToPDF(document);
+            else if (info.Extension.ToLower().Contains("pdf") || info.Extension.ToLower().Contains("doc"))
+            {
+                string fileName = string.Empty;
+                if (info.Extension.ToLower().Contains("doc"))
+                {
+                    ms.Position = 0;
 
-            //                 MemoryStream _ms = new MemoryStream();
-            //                 pdfDocument.Save(_ms);
-            //                 _ms.Position = 0;
+                    var a = FieldOfStudyData.FirstOrDefault(o => o.FieldOfStudyId == QualificationReviewData.FieldOfStudyId);
+                    fileName = a.FieldOfStudyDesc + "_" + QualificationReviewData.InstitutionName + "_" + NonstaffId + ".pdf";
 
-            //                 byte[] bytes = file.Stream.ToArray();
-            //                 string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                    //Create a new document
+                    Syncfusion.DocIO.DLS.WordDocument document;
+                    if (info.Extension.Contains("doc") && !info.Extension.Contains("docx"))
+                    {
+                        document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Doc);
+                    }
+                    else
+                    {
+                        document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Docx);
+                    }
+                    //Creates an instance of the DocToPDFConverter
+                    DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
+                    PdfDocument pdfDocument = render.ConvertToPDF(document);
 
-            //                 ImageUpload m = new ImageUpload()
-            //                 {
-            //                     ImageName = fileName,
-            //                     ImageExt = file.FileInfo.Type.Trim(),
-            //                     Imagebyte = bytes,
-            //                     Rootfolder="Qualifications"
-            //                 };
+                    MemoryStream _ms = new MemoryStream();
+                    pdfDocument.Save(_ms);
+                    _ms.Position = 0;
 
 
-            //                 var Requestresult = await _DocumentUploadModel.SaveDocument(m,AccessToken);
-            //                 if (Requestresult != null && Requestresult.IsSuccess)
-            //                 {
-            //                     var result = "data:application/pdf;base64," + base64;
-            //                     QualificationReviewData.QualificationDocumentName = fileName;
-            //                     QualificationReviewData.QualificationDocumentExt = "pdf";
-            //                     QualificationDocumentString = result;
+                    DocumentBytes m = new DocumentBytes();
+                    m.DocumentName = fileName;
+                    m.DocumentFolder = "EmployeeQualification";
+                    m.DocumentByte = _ms.ToArray();
+                    m.DocumentExt = "pdf";
 
-            //                     bytes = null;
-            //                     _ms.Close();
-            //                     _ms.Dispose();
-            //                     pdfDocument.Close();
-            //                     pdfDocument.Dispose();
-            //                     render.Dispose();
-            //                     document.Close();
-            //                     document.Dispose();
-            //                 }
-            //                 else if(Requestresult != null)
-            //                 {
-            //                     await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-            //                 }
-            //             }
-            //             else
-            //             {
-            //                 //fileName = "TradingLicence_" + NonstaffId + ".pdf";
-            //                 var a =FieldOfStudyData.FirstOrDefault(o => o.FieldOfStudyId ==  QualificationReviewData.FieldOfStudyId);
+                    await _DocumentUploadModel.UploadDocument(m);
+                    _ms.Position = 0;
+                    byte[] _bytes = _ms.ToArray();
+                    string base64 = Convert.ToBase64String(_bytes, 0, _bytes.Length);
 
-            //                 fileName = a.FieldOfStudyDesc +"_"+QualificationReviewData.InstitutionName + "_" + NonstaffId + ".pdf";
-            //                 MemoryStream ms = new MemoryStream();
-            //                 file.Stream.WriteTo(ms);
-            //                 ms.Position = 0;
-            //                 byte[] bytes = file.Stream.ToArray();
-            //                 string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                    var result = "data:application/pdf;base64," + base64;
+                    QualificationReviewData.QualificationDocumentName = fileName;
+                    QualificationReviewData.QualificationDocumentExt = "pdf";
+                    ImageString = result;
+                }
 
-            //                 ImageUpload m = new ImageUpload()
-            //                 {
-            //                     ImageName = fileName,
-            //                     ImageExt = file.FileInfo.Type.Trim(),
-            //                     Imagebyte = bytes,
-            //                     Rootfolder="Qualifications"
-            //                 };
+                else
+                {
+                    var a = FieldOfStudyData.FirstOrDefault(o => o.FieldOfStudyId == QualificationReviewData.FieldOfStudyId);
+                    fileName = a.FieldOfStudyDesc +"_"+QualificationReviewData.InstitutionName + "_" + NonstaffId + ".pdf";
 
-            //                 var Requestresult = await _DocumentUploadModel.SaveDocument(m,AccessToken);
-            //                 if (Requestresult != null && Requestresult.IsSuccess)
-            //                 {
-            //                     var result = "data:application/pdf;base64," + base64;
-            //                     QualificationReviewData.QualificationDocumentName = fileName;
-            //                     QualificationReviewData.QualificationDocumentExt = file.FileInfo.Type.Trim();
-            //                     QualificationDocumentString = result;
-            //                     bytes = null;
-            //                 }
-            //                 else if(Requestresult != null)
-            //                 {
-            //                     await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-            //                 }
-            //             }
-            //         }
-            //         else if (file.FileInfo.Type.ToLower().Contains("png") || file.FileInfo.Type.ToLower().Contains("gif") || file.FileInfo.Type.ToLower().Contains("jpeg"))
-            //         {
-            //             //string fileName = "TradingLicence_" + NonstaffId + "." + file.FileInfo.Type.Trim();
-            //             var a =FieldOfStudyData.FirstOrDefault(o => o.FieldOfStudyId == QualificationReviewData.FieldOfStudyId);
+                    ms.Position = 0;
+                    byte[] bytes = ms.ToArray();
+                    string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
 
-            //             string fileName = a.FieldOfStudyDesc +"_"+QualificationReviewData.InstitutionName + "_" + NonstaffId + "." + file.FileInfo.Type.Trim();
+                    DocumentBytes m = new DocumentBytes()
+                        {
+                            DocumentName = fileName,
+                            DocumentExt = info.Extension.Trim(),
+                            DocumentByte = bytes,
+                            DocumentFolder = "EmployeeQualification"
+                        };
 
-            //             byte[] bytes = file.Stream.ToArray();
-            //             string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                    await _DocumentUploadModel.UploadDocument(m);
+                    var result = "data:application/pdf;base64," + base64;
+                    QualificationReviewData.QualificationDocumentName = fileName;
+                    QualificationReviewData.QualificationDocumentExt = info.Extension.Trim();
+                    ImageString = result;
+                    bytes = null;
+                }
 
-            //             ImageUpload m = new ImageUpload()
-            //             {
-            //                 ImageName = fileName,
-            //                 ImageExt = file.FileInfo.Type.Trim(),
-            //                 Imagebyte = bytes,
-            //                 Rootfolder="Qualifications"
-            //             };
-
-            //             var Requestresult = await _DocumentUploadModel.SaveDocument(m,AccessToken);
-            //             if (Requestresult != null && Requestresult.IsSuccess)
-            //             {
-            //                 var result = "data:image/" + file.FileInfo.Type.Trim() + ";base64," + base64;
-            //                 QualificationReviewData.QualificationDocumentName = fileName;
-            //                 QualificationReviewData.QualificationDocumentExt = file.FileInfo.Type.Trim();
-            //                 QualificationDocumentString = result;
-            //                 bytes = null;
-            //             }
-            //             else if(Requestresult != null)
-            //                 {
-            //                     await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-            //                 }
-            //         }
-            //         else
-            //         {
-            //             await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = "Please ensure that the uploaded document is either a pdf or doc or docx or image(png/Jpeg/gif).", CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-            //         }
-
-            //         //Save infor into the DB
-            //     }
-            // }
+            }
+            else
+            {
+                toasterservice.ShowWarning("Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg) or pdf or word document (doc,docx).");
+            }
         }
         catch (Exception ex)
+
         {
-            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+            throw ex;
         }
+
         finally
         {
-            await UploadQualificationSpinner.HideAsync();
+            ///IsSaveDisabled = false;
+            await UploadAttachmentSpinner.HideAsync();
             StateHasChanged();
         }
 
     }
 
-    private async Task<string> GetImageString(string imageUrl, string ext,string Rootfolder)
+    private async Task<string> GetImageString(string imageUrl, string ext, string DocumentFolder)
     {
         string result = null;
-        // try
-        // {
-        //     if (!string.IsNullOrEmpty(imageUrl))
-        //     {
-        //         ImageUpload a = await _DocumentUploadModel.GetDocument(imageUrl,Rootfolder,AccessToken);
+        try
+        {
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                var a = await _DocumentUploadModel.GetDocument(imageUrl, DocumentFolder);
 
-        //         if (a != null)
-        //         {
-        //             if (a.ImageExt.Contains("pdf"))
-        //             {
-        //                 string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
-        //                 result = "data:application/pdf;base64," + base64String;
-        //             }
-        //             else
-        //             {
-        //                 string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
-        //                 result = "data:image/" + a.ImageExt + ";base64," + base64String;
-        //             }
+                if (a != null)
+                {
+                    if (a.DocumentExt.Contains("pdf"))
+                    {
+                        string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                        result = "data:application/pdf;base64," + base64String;
+                    }
+                    else
+                    {
+                        string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                        result = "data:image/" + a.DocumentExt + ";base64," + base64String;
+                    }
 
-        //         }
-        //     }
-        // }
-        // catch (Exception ex)
-        // {
-        //     await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-        // }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toasterservice.ShowError(ex.Message.ToString());
+        }
         return result;
     }
 }
