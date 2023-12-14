@@ -1,0 +1,487 @@
+﻿@* <h3>NonStaffQualificationAttachment</h3> *@
+@page "/NonStaffQualificationAttachment"
+@using Blazored.Toast.Services;
+@using HCMIS.Data;
+@using HCMIS.Interface;
+@using HCMIS.Model
+@using HCMIS.SHARED.DTO
+@using HCMIS.SHARED.Models;
+@using HCMIS.ViewModel;
+@using Syncfusion.DocIORenderer;
+@using Syncfusion.Pdf;
+@using System.Text.Json
+@using System.Collections
+@inject IToastService toasterservice;
+@inject DocumentUploadModel _DocumentUploadModel;
+@inject HttpClient Http
+@inject ApiConfig _ApiConfig;
+
+<style>
+    /*Manage Records Button*/
+    .e-grid .e-icons:not(.e-btn-icon) {
+        color: #00cc00;
+        color: floralwhite;
+        font-size: smaller;
+        font-weight: bolder;
+    }
+</style>
+
+<SfGrid @ref="NonStaffQualificationAttachmentGrid" Query="@mainQuery" ID="EmployeeQualificationGrid" TValue="NonStaffQualificationAttachment"
+        Toolbar="@(new string[] {"Add"})" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+        AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true">
+    <SfDataManager AdaptorInstance="@typeof(NonStaffQualificationAttachmentAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+    <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+    <GridEvents OnActionBegin="OnAttachmentActionBegin"
+                OnActionComplete="@OnAttachmentActionComplete" TValue="NonStaffQualificationAttachment"></GridEvents>
+    <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="@DialogParams">
+        <Template Context="AttachmentContext">
+            @{
+                AttachmentData = (AttachmentContext as NonStaffQualificationAttachment);
+
+                <div style="padding:15px;">
+                    <div class="form-row">
+                        <div class="form-group col-md-12" hidden>
+                            <SfNumericTextBox ID="AttachmentId" @bind-Value="@(AttachmentData.AttachmentId)" Enabled="false" Placeholder="Attachment Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                        </div>
+                        <div class="form-group col-md-12">
+                            <p>Attachment Name <span style="color:red;">*</span></p>
+                            <SfTextBox Multiline="true" @bind-Value="@(AttachmentData.AttachmentName)" Enabled="true" Placeholder="Attachment Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(AttachmentData.AttachmentName))
+                        {
+                            <div class="form-group col-md-12">
+                                <p class="alert-info" style="padding:10px;">Ensure that the document does not exceed 1 Mega Byte (MB) and is of the following formats (Microsoft Word, PDF or an Image (png,gif,jpeg and jpg))</p>
+                                <InputFile class="form-control" OnChange="@SingleUpload" />
+                                <div>
+                                    <SfSpinner @ref="UploadAttachmentSpinner" CssClass="SpinnerClass" Visible="false" Size="30" Label="Saving document Please wait......."> </SfSpinner>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="form-group col-md-12">
+                            @if (!string.IsNullOrEmpty(ImageString))
+                            {
+                                @if (!string.IsNullOrEmpty(AttachmentData.AttachmentUrl) && !string.IsNullOrEmpty(AttachmentData.AttachmentExt))
+                                {
+                                    if (AttachmentData.AttachmentExt.Contains("pdf") || AttachmentData.AttachmentExt.Contains("doc") || AttachmentData.AttachmentExt.Contains("docx"))
+                                    {
+                                        <embed src="@ImageString" width="100%" height="600px" style="border: none;" frameborder="0" allowfullscreen="true" />
+                                    }
+                                    else
+                                    {
+                                        <img src="@ImageString" alt="@AttachmentData.AttachmentUrl" class="img-thumbnail Imagecenter" style="margin-bottom:10px; width:100%;" />
+                                    }
+                                }
+
+                            }
+
+
+                        </div>
+                    </div>
+                </div>
+            }
+        </Template>
+        <FooterTemplate Context="AttachmentFooterContext">
+            @if (IsSaveDisabled == false)
+            {
+                <SfButton IsPrimary="true" Disabled="@IsSaveDisabled" OnClick="@OnSaveDocumentClick">Save Document</SfButton>
+                <SfButton IsPrimary="false" Disabled="@IsSaveDisabled" OnClick="@OnCloseDocumentClick">Close</SfButton>
+            }
+
+        </FooterTemplate>
+    </GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSize="20"></GridPageSettings>
+    <GridColumns>
+        @*<GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>*@
+        <GridColumn Field=@nameof(NonStaffQualificationAttachment.AttachmentId) HeaderText="Attachment Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+        <GridColumn Field=@nameof(NonStaffQualificationAttachment.AttachmentName) HeaderText="Attachment"></GridColumn>
+        <GridColumn HeaderText="Manage Records" Width="140">
+            <GridCommandColumns>
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="View" })" Title="View"></GridCommandColumn>
+            </GridCommandColumns>
+        </GridColumn>
+    </GridColumns>
+</SfGrid>
+
+@code {
+    [Parameter]
+    public List<NonStaffQualificationAttachment>? HeaderAttachmentData { get; set; }
+    [Parameter]
+    public int NonstaffId { get; set; }
+    [Parameter]
+    public EventCallback<List<NonStaffQualificationAttachment>?> OnHeaderAttachmentToggled { get; set; }
+    SfGrid<NonStaffQualificationAttachment>? NonStaffQualificationAttachmentGrid { get; set; }
+    NonStaffQualificationAttachment? AttachmentData { get; set; }
+    SfSpinner? UploadAttachmentSpinner;
+    bool IsSaveDisabled { get; set; }
+    [Parameter]
+    public bool allowediting { get; set; }
+    [Parameter]
+    public string? UserRole { get; set; }
+    [Parameter]
+    public List<object>? EmployeeQualificationAttachmentToolbarItems { get; set; }
+    [Parameter]
+    public string? AccessToken { get; set; }
+    int? PreviousNonStaffid { get; set; }
+    int? AttachmentId { get; set; }
+
+    string? ImageString { get; set; }
+    long maxFileSize = 1048576/* 1024L * 1024L * 1024L * 2L */;
+    string fileName = string.Empty;
+    int random = -9999;
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "80%" };
+    Query mainQuery { get; set; } = new();
+    string? ErrorMessage { get; set; } = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            mainQuery = new();
+            mainQuery.AddParams("NonstaffId", NonstaffId).AddParams("AccessToken", AccessToken).AddParams("BaseUrl", _ApiConfig.BaseUrl);
+
+            var tasks = new List<Task>();
+            tasks.Add(Task.Run(async () =>
+           {
+               //
+               //var response = await Http.GetAsync($"NonStaff/GetNonStaffById/{NonstaffId}");
+               //var content = await response.Content.ReadAsStringAsync();
+               //if (response.IsSuccessStatusCode)
+               //{
+               //    inputmodel = JsonSerializer.Deserialize<NonStaff>(content, _options);
+               //}
+           }));
+
+            Task t = Task.WhenAll(tasks);
+            await t;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error: {ex.Message}";
+        }
+        await base.OnInitializedAsync();
+    }
+
+
+    private async Task OnSaveDocumentClick()
+    {
+        if (NonStaffQualificationAttachmentGrid != null)
+        {
+            await NonStaffQualificationAttachmentGrid.EndEditAsync();
+        }
+    }
+    private async Task OnCloseDocumentClick()
+    {
+        if (NonStaffQualificationAttachmentGrid != null)
+        {
+            await NonStaffQualificationAttachmentGrid.CloseEditAsync();
+        }
+    }
+
+     public class NonStaffQualificationAttachmentAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        public IToastService toasterservice;
+        IAuthenticationService _AuthService;
+
+        //private UserManagement _userManagement;
+        public NonStaffQualificationAttachmentAdapter(HttpClient _http, IToastService ts, IAuthenticationService authservice)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            //_userManagement = userManagement;
+            toasterservice = ts;
+            _AuthService = authservice;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<NonStaffQualificationAttachment>();
+            try
+            {
+                int? NonstaffId = null;
+                string? AccessToken = null;
+                string? BaseUrl = null;
+                if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
+                {
+                    var val = dataManagerRequest.Params;
+                    if (val.FirstOrDefault(o => o.Key == "NonstaffId").Value != null)
+                    {
+                        NonstaffId = Convert.ToInt32(val.FirstOrDefault(o => o.Key == "NonstaffId").Value.ToString());
+                    }
+                    if (val.FirstOrDefault(o => o.Key == "AccessToken").Value != null)
+                    {
+                        AccessToken = val.FirstOrDefault(o => o.Key == "AccessToken").Value.ToString();
+                    }
+                    if (val.FirstOrDefault(o => o.Key == "BaseUrl").Value != null)
+                    {
+                        BaseUrl = val.FirstOrDefault(o => o.Key == "BaseUrl").Value.ToString();
+                    }
+                }
+
+
+                var response = await Http.GetAsync($"NonStaff/GetNonStaffAttachment/{NonstaffId}");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    data = JsonSerializer.Deserialize<List<NonStaffQualificationAttachment>>(content, _options);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                toasterservice.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<NonStaffQualificationAttachment>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+       
+    }
+
+    public async Task OnAttachmentActionBegin(Syncfusion.Blazor.Grids.ActionEventArgs<NonStaffQualificationAttachment> args)
+    {
+        if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+        {
+
+        }
+        if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+        {
+            args.Data.AttachmentId = random;
+            random++;
+        }
+        if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
+        {
+
+        }
+        if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+        {
+            if (string.IsNullOrEmpty(args.Data.AttachmentName))
+            {
+                toasterservice.ShowWarning("Please enter the Report/Attachment Name");
+                args.Cancel = true;
+            }
+        }
+    }
+
+
+    public async Task OnAttachmentActionComplete(Syncfusion.Blazor.Grids.ActionEventArgs<NonStaffQualificationAttachment> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            NonStaffQualificationAttachmentGrid.PreventRender(false);
+            if (!string.IsNullOrEmpty(args.RowData.AttachmentUrl) && !string.IsNullOrEmpty(args.RowData.AttachmentExt))
+            {
+                ImageString = await GetImageString(args.RowData.AttachmentUrl, args.RowData.AttachmentExt, "EmployeeQualification");
+            }
+        }
+        // else if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Refresh))
+        // {
+        //     await OnHeaderAttachmentToggled.InvokeAsync(DataSource);
+        // }
+    }
+
+    private async Task SingleUpload(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            IsSaveDisabled = true;
+            await UploadAttachmentSpinner.ShowAsync();
+            MemoryStream ms = new MemoryStream();
+            await e.File.OpenReadStream(maxFileSize).CopyToAsync(ms);
+
+            ms.Position = 0;
+
+            System.IO.FileInfo info = new System.IO.FileInfo(e.File.Name);
+            if (info.Extension.ToLower().Contains("png") || info.Extension.ToLower().Contains("gif") || info.Extension.ToLower().Contains("jpeg") || info.Extension.ToLower().Contains("jpg"))
+            {
+                var passextension = info.Extension.Split("/");
+                fileName = "EmployeeQualification_" + AttachmentData.AttachmentName + "." + passextension[1].Trim();
+                byte[] bytes = ms.ToArray();
+                //byte[] bytes = file.Stream.ToArray();
+                string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                DocumentBytes m = new DocumentBytes()
+                    {
+                        DocumentName = fileName,
+                        DocumentExt = info.Extension.Trim(),
+                        DocumentByte = bytes,
+                        DocumentFolder = "EmployeeQualification"
+                    };
+
+                await _DocumentUploadModel.UploadDocument(m);
+                var result = "data:application/pdf;base64," + base64;
+                AttachmentData.AttachmentUrl = fileName;
+                AttachmentData.AttachmentExt = info.Extension.Trim();
+                ImageString = result;
+                bytes = null;
+
+
+            }
+
+            else if (info.Extension.ToLower().Contains("pdf") || info.Extension.ToLower().Contains("doc"))
+            {
+                string fileName = string.Empty;
+                if (info.Extension.ToLower().Contains("doc"))
+                {
+                    ms.Position = 0;
+                    fileName = "EmployeeQualification_" + AttachmentData.AttachmentName + ".pdf";
+                    //Create a new document
+                    Syncfusion.DocIO.DLS.WordDocument document;
+                    if (info.Extension.Contains("doc") && !info.Extension.Contains("docx"))
+                    {
+                        document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Doc);
+                    }
+                    else
+                    {
+                        document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Docx);
+                    }
+                    //Creates an instance of the DocToPDFConverter
+                    DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
+                    PdfDocument pdfDocument = render.ConvertToPDF(document);
+
+                    MemoryStream _ms = new MemoryStream();
+                    pdfDocument.Save(_ms);
+                    _ms.Position = 0;
+
+
+                    DocumentBytes m = new DocumentBytes();
+                    m.DocumentName = fileName;
+                    m.DocumentFolder = "EmployeeQualification";
+                    m.DocumentByte = _ms.ToArray();
+                    m.DocumentExt = "pdf";
+
+                    await _DocumentUploadModel.UploadDocument(m);
+                    _ms.Position = 0;
+                    byte[] _bytes = _ms.ToArray();
+                    string base64 = Convert.ToBase64String(_bytes, 0, _bytes.Length);
+
+                    var result = "data:application/pdf;base64," + base64;
+                    AttachmentData.AttachmentUrl = fileName;
+                    AttachmentData.AttachmentExt = "pdf";
+                    ImageString = result;
+                }
+
+                else
+                {
+                    fileName = "EmployeeQualification_" + AttachmentData.AttachmentName + ".pdf";
+
+                    ms.Position = 0;
+                    byte[] bytes = ms.ToArray();
+                    string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+
+                    DocumentBytes m = new DocumentBytes()
+                        {
+                            DocumentName = fileName,
+                            DocumentExt = info.Extension.Trim(),
+                            DocumentByte = bytes,
+                            DocumentFolder = "EmployeeQualification"
+                        };
+
+                    await _DocumentUploadModel.UploadDocument(m);
+                    var result = "data:application/pdf;base64," + base64;
+                    AttachmentData.AttachmentUrl = fileName;
+                    AttachmentData.AttachmentExt = info.Extension.Trim();
+                    ImageString = result;
+                    bytes = null;
+                }
+
+                //Save to table
+                AttachmentData.NonStaffid = NonstaffId;
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(AttachmentData);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                var _result = await Http.PostAsync($"NonStaff/PostQualificationAttachment", httpContent);
+            }
+            
+            else
+            {
+                toasterservice.ShowWarning("Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg) or pdf or word document (doc,docx).");
+            }
+        }
+        catch (Exception ex)
+
+        {
+            throw ex;
+        }
+
+        finally
+        {
+            IsSaveDisabled = false;
+            await UploadAttachmentSpinner.HideAsync();
+            StateHasChanged();
+        }
+
+    }
+
+    private async Task<string> GetImageString(string imageUrl, string ext, string DocumentFolder)
+    {
+        string result = null;
+        try
+        {
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                var a = await _DocumentUploadModel.GetDocument(imageUrl, DocumentFolder);
+
+                if (a != null)
+                {
+                    if (a.DocumentExt.Contains("pdf"))
+                    {
+                        string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                        result = "data:application/pdf;base64," + base64String;
+                    }
+                    else
+                    {
+                        string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                        result = "data:image/" + a.DocumentExt + ";base64," + base64String;
+                    }
+
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toasterservice.ShowError(ex.Message.ToString());
+        }
+        return result;
+    }
+
+
+}

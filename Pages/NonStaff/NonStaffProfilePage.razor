@@ -320,7 +320,7 @@
                         <MudTabPanel Text="Qualifications" Icon="@Icons.Material.Filled.AddCircle" BadgeColor="Color.Success">
                             <MudText>
                                 <div style="margin:10px; width:100%;">
-                                    <NonStaffQualificationPage NonstaffId="@Credentials.StaffId" AccessToken="@Credentials.token" LevelofEducationData="@LevelofEducationData" FieldOfStudyData="@FieldOfStudyData" UniversityData="@UniversityData" />
+                                    <NonStaffQualificationPage NonstaffId="@Credentials.StaffId" AccessToken="@Credentials.token" LevelofEducationData="@LevelofEducationData" FieldOfStudyData="@FieldOfStudyData" UniversityData="@UniversityData" DegreeClassData="@DegreeClassData" />
                                 </div>
                             </MudText>
                         </MudTabPanel>
@@ -353,6 +353,17 @@
                             <MudText>
                                 <div style="margin:10px; width:100%;">
                                     <NonStaffLanguagesKnownPage NonstaffId="@Credentials.StaffId" AccessToken="@Credentials.token" LanguageProlificData="@LanguageProlificData" LanguagesData="@LanguagesData" />
+                                </div>
+                            </MudText>
+                        </MudTabPanel>
+
+                        <MudTabPanel Text="Supporting Documents" Icon="@Icons.Material.Filled.SpatialAudio" BadgeColor="Color.Success">
+                            <MudText>
+                                <div style="margin:10px; width:100%;">
+                                    <h6 style="background-color:#6F1E51; color:ghostwhite;font-weight:bolder;font-size:large; text-align:center;">Supporting Documents for Academic Qualifications, Work Experience,Previous Contracts</h6>
+
+                                    <NonStaffQualificationAttachmentPage NonstaffId="@Credentials.StaffId" AccessToken="@Credentials.token"/>
+
                                 </div>
                             </MudText>
                         </MudTabPanel>
@@ -411,6 +422,7 @@
     List<ARelationship>? RelationshipData{ get; set; }
     List<ALanguageProlific>? LanguageProlificData{ get; set; }
     List<ALanguages>? LanguagesData{ get; set; }
+    List<ADegreeClass>? DegreeClassData { get; set; }
     List<string>? missingfields{ get; set; } = new();
     SfSpinner? UploadImageSpinner;
     string? ImageString { get; set; }
@@ -494,6 +506,16 @@
                     }
                 }));
 
+                tasks.Add(Task.Run(async () =>
+                {
+                    var responseDegreeClass = await Http.GetAsync($"Utilities/GetDegreeClass");
+                    if (responseDegreeClass.IsSuccessStatusCode)
+                    {
+                        var contentDegreeClass = await responseDegreeClass.Content.ReadAsStringAsync();
+                        DegreeClassData = JsonSerializer.Deserialize<List<ADegreeClass>>(contentDegreeClass, _options);
+                    }
+                }));
+
                 Task _t = Task.WhenAll(tasks);
                 await _t;
             }   
@@ -508,6 +530,19 @@
         }        
     }
     
+    private void ToggleBalanceScoreCardAttachment(List<NonStaffQualificationAttachment>? AttachmentChange)
+    {
+        if (inputmodel != null && AttachmentChange != null)
+        {
+            if (inputmodel.NonStaffQualificationAttachment == null)
+            {
+                inputmodel.NonStaffQualificationAttachment = new List<NonStaffQualificationAttachment>();
+            }
+            inputmodel.NonStaffQualificationAttachment = AttachmentChange;
+        }
+    }
+
+
     private async Task SaveProfile()
     {
         try
