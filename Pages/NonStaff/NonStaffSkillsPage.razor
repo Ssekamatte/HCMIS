@@ -1,4 +1,5 @@
 ﻿@using HCMIS.Data
+@using HCMIS.Interface
 @using HCMIS.Model
 @using System.Text.Json
 @using HCMIS.SHARED.Data;
@@ -10,6 +11,7 @@
 @inject ApiConfig _ApiConfig;
 @inject NavigationManager Navigation
 @inject DocumentUploadModel _DocumentUploadModel;
+@inject IToastService toasterservice;
 
 <div class="row">
     <div class="col-lg-12 control-section">
@@ -25,15 +27,19 @@
     </div>
       <div class="col-md-12">
          <SfGrid @ref="SkillsGrid" TValue="NonStaffSkills" Query="@mainQuery"
-                                    Toolbar="@(new string[] {"Add","Edit","Delete","Update","Cancel","ColumnChooser"})" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+                                    Toolbar="@(new string[] {"Add"})" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
                                     AllowPaging="true" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" GridLines="GridLine.Both" AllowSelection="true">
                                 @*<GridGroupSettings Columns="@GroupedColumns"></GridGroupSettings>*@
                                 <SfDataManager AdaptorInstance="@typeof(NonStaffSkillsAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-                                <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+                                <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
                                 <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
-                               @* OnActionBegin="OnSkillsActionBegin"*@
-                                <GridEvents  OnActionComplete="@OnSkillsActionComplete" TValue="NonStaffSkills"></GridEvents>
-                                <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
+                                <GridEvents CellSelected="CellSelectHandler"
+                                            CellSaved="CellSavedHandler"
+                                            CommandClicked="OnCommandClicked"
+                                            TValue="NonStaffSkills">
+                                </GridEvents>
+                                @* <GridEvents  OnActionComplete="@OnSkillsActionComplete" TValue="NonStaffSkills"></GridEvents> *@
+                                <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Batch" Dialog="DialogParams" ShowConfirmDialog=false NewRowPosition="NewRowPosition.Bottom">
 
                                     <HeaderTemplate>
                                         @{
@@ -76,11 +82,20 @@
                                 <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
                                 <GridPageSettings PageSize="20"></GridPageSettings>
                                 <GridColumns>
-                                    <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                                    <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
                                     <GridColumn Field=@nameof(NonStaffSkills.ExtraSkillsId) HeaderText="ExtraSkillsId" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
-                                   <GridColumn Field=@nameof(NonStaffSkills.SkillDescription) HeaderText="Skill" Width="150"></GridColumn>
-                                     <GridForeignColumn Field=@nameof(NonStaffSkills.SkillLevelId) HeaderText="Skill Level" Width="150" ForeignKeyField="@(nameof(ASkillLevel.SkillLevelId))" ForeignKeyValue="@(nameof(ASkillLevel.SkillLevelDesc))" ForeignDataSource="@SkillLevelData"></GridForeignColumn>
-                                    <GridColumn Field=@nameof(NonStaffSkills.YearsofExperience) HeaderText="Years of Experience" Width="150"></GridColumn>
+                                   <GridColumn Field=@nameof(NonStaffSkills.SkillDescription) HeaderText="Skill" Width="80"></GridColumn>
+                                     <GridForeignColumn Field=@nameof(NonStaffSkills.SkillLevelId) HeaderText="Skill Level" Width="80" ForeignKeyField="@(nameof(ASkillLevel.SkillLevelId))" ForeignKeyValue="@(nameof(ASkillLevel.SkillLevelDesc))" ForeignDataSource="@SkillLevelData"></GridForeignColumn>
+                                    <GridColumn Field=@nameof(NonStaffSkills.YearsofExperience) HeaderText="Years of Experience" Width="50"></GridColumn>
+                                    <GridColumn HeaderText="Action"
+                                                TextAlign="TextAlign.Center"
+                                                Width="80"
+                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+                                        <GridCommandColumns>
+                                            <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-delete", CssClass = "e-flat"})" ID="Delete"></GridCommandColumn>
+                                        </GridCommandColumns>
+                                    </GridColumn>
+                                
                                 </GridColumns>
                             </SfGrid>
     </div>
@@ -91,6 +106,47 @@
         }
     </div>
  </div>
+
+@*Confirm Deletion*@
+
+<div class="form-group col-md-12">
+    <SfDialog @ref="@ConfirmationDeleteDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @((MarkupString)@ConfirmationText)
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationApproveYes" />
+            <DialogButton Content="No" OnClick="@ComfirmationApproveNo" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+@*Saving Dialogue*@
+
+@*Saving Dialogue*@
+<div class="form-group col-md-12">
+    <SfDialog Width="80%" Height="20vh" AllowDragging=true EnableResize=true
+              CloseOnEscape=false IsModal=true ShowCloseIcon=false
+              Target=".mainbody" @ref=@SavingDialog Visible=false>
+        <DialogTemplates>
+            <Content>
+                <div class="dialogContent">
+                    <div class="loader">
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader-Saving-text"></div>
+                    </div>
+                    @*<p>Saving Record please wait......</p>*@
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+</div>
 
 @code {
     #region Toasters
@@ -121,6 +177,10 @@
     string? ErrorMessage { get; set; } = null;
     private DialogSettings DialogParams = new DialogSettings { Height="auto",MinHeight="60vh",Width="60%" };
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    SfDialog ConfirmationDeleteDialogue;
+    string ConfirmationText { get; set; }
+    NonStaffSkills selectedemployee { get; set; }
+    SfDialog SavingDialog { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -158,9 +218,11 @@
         SystemSettings _SystemSettings;
         ApiConfig _ApiConfig;
         public IToastService toastService;
+        IAuthenticationService _AuthService;
+
         //private UserManagement _userManagement;
         public NonStaffSkillsAdapter(HttpClient _http, IToastService ts/*, UserManagement userManagement*/
-        ,SystemSettings systemSettings,ApiConfig apiConfig)
+        , SystemSettings systemSettings, ApiConfig apiConfig, IAuthenticationService authservice)
         {
             Http = _http;
             _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -168,6 +230,7 @@
             _ApiConfig = apiConfig;
             //_userManagement = userManagement;
             toastService = ts;
+            _AuthService = authservice;
         }
 
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
@@ -417,165 +480,188 @@
 
             return value;
         }
-        public override async Task<object> BatchUpdateAsync(DataManager dm, object Changed, object Added, object Deleted, string KeyField, string Key, int? dropIndex)
+        
+        public override async Task<object> BatchUpdateAsync(DataManager dataManager, object changedRecords, object addedRecords, object deletedRecords, string primaryColumnName, string key, int? dropIndex)
         {
-            object? products = null;
+            int? NonstaffId = null;
+
+            var credentials = await _AuthService.GetUserCredentials();
+            if (credentials != null)
+            {
+                NonstaffId = credentials.StaffId;
+            }
+
+            object ReturnValue = changedRecords;
+            if (changedRecords != null)
+            {
+                ReturnValue = changedRecords;
+
+                var val = (changedRecords as List<NonStaffSkills>);
+                if (val != null && val.Count > 0)
+                {
+                    foreach (var item in val)
+                    {
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(item);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                        var result = await Http.PutAsync($"NonStaff/PutSkills", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            toastService.ShowSuccess("Record was sucessfully updated");
+                        }
+                        else
+                        {
+                            toastService.ShowError("Ooops. Something went wrong");
+                        }
+                    }
+                }
+            }
+
+            if (addedRecords != null)
+            {
+                ReturnValue = addedRecords;
+
+                var val = (addedRecords as List<NonStaffSkills>);
+                if (val != null && val.Count > 0)
+                {
+                    foreach (var item in val)
+                    {
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(item);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                        var result = await Http.PostAsync($"NonStaff/PostSkills?NonstaffId={NonstaffId}", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            toastService.ShowSuccess("Record was sucessfully added");
+                        }
+                        else
+                        {
+                            toastService.ShowError("Ooops. Something went wrong");
+                        }
+                    }
+                }
+            }
+
+            return ReturnValue;
+        }
+
+    }
+
+    public async Task OnCommandClicked(CommandClickEventArgs<NonStaffSkills> args)
+    {
+
+        if (args.CommandColumn.ID == "Delete")
+        {
             try
             {
-                
-                if (Changed != null)
-                {
-                    products = Changed;
-                    foreach (var val in (List<NonStaffSkills>)Changed)
-                    {
-                        if(val != null)
-                        {
-                            if (val.ExtraSkillsId == 0)
-                            {
-                                
-                                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
-                                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-
-                                var result = await Http.PostAsync($"NonStaff/PostSkills", httpContent);
-                                if (result.IsSuccessStatusCode)
-                                {
-                                    var content = await result.Content.ReadAsStringAsync();
-                                    var data = JsonSerializer.Deserialize<Response>(content, _options);
-                                    if(data != null)
-                                    {
-                                        if (data.IsSuccess)
-                                        {
-                                            toastService.ShowSuccess(data.Message);
-                                        }
-                                        else
-                                        {
-                                            toastService.ShowError(data.Message);
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    toastService.ShowError(result.ReasonPhrase);
-                                }
-
-                            }
-                            else
-                            {
-                                
-                                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
-                                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-
-                                var result = await Http.PutAsync($"NonStaff/PutSkills", httpContent);
-                                if (result.IsSuccessStatusCode)
-                                {
-                                    var content = await result.Content.ReadAsStringAsync();
-                                    var data = JsonSerializer.Deserialize<Response>(content, _options);
-                                    if(data != null)
-                                    {
-                                        if (data.IsSuccess)
-                                        {
-                                            toastService.ShowSuccess(data.Message);
-                                        }
-                                        else
-                                        {
-                                            toastService.ShowError(data.Message);
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    toastService.ShowError(result.ReasonPhrase);
-                                }
-                            }
-                        }
-                    }
-
-                }
-                if (Added != null)
-                {
-                    products = Added;
-                    foreach (var val in (List<NonStaffSkills>)Added)
-                    {
-                        if(val != null)
-                        {
-                            if (val.ExtraSkillsId == 0)
-                            {
-                                
-                                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
-                                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-
-                                var result = await Http.PostAsync($"NonStaff/PostSkills", httpContent);
-                                if (result.IsSuccessStatusCode)
-                                {
-                                    var content = await result.Content.ReadAsStringAsync();
-                                    var data = JsonSerializer.Deserialize<Response>(content, _options);
-                                    if(data != null)
-                                    {
-                                        if (data.IsSuccess)
-                                        {
-                                            toastService.ShowSuccess(data.Message);
-                                        }
-                                        else
-                                        {
-                                            toastService.ShowError(data.Message);
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    toastService.ShowError(result.ReasonPhrase);
-                                }
-
-                            }
-                            else
-                            {
-                                
-                                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
-                                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-
-                                var result = await Http.PutAsync($"NonStaff/PutSkills", httpContent);
-                                if (result.IsSuccessStatusCode)
-                                {
-                                    var content = await result.Content.ReadAsStringAsync();
-                                    var data = JsonSerializer.Deserialize<Response>(content, _options);
-                                    if(data != null)
-                                    {
-                                        if (data.IsSuccess)
-                                        {
-                                            toastService.ShowSuccess(data.Message);
-                                        }
-                                        else
-                                        {
-                                            toastService.ShowError(data.Message);
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    toastService.ShowError(result.ReasonPhrase);
-                                }
-                            }
-                        }
-                    }
-
-                }
-                if (Deleted != null)
-                {
-                    products = Deleted;
-                    //foreach (var rec in (List<OrderDetails>)Deleted)
-                    //{
-                    //    Orders.Remove(Orders.Where(or => or.OrderID == rec.OrderID).FirstOrDefault());
-                    //}
-
-                }
+                selectedemployee = args.RowData;
+                ConfirmationText = "<p>Are you sure you want to delete this record? </p>";
+                await this.ConfirmationDeleteDialogue.ShowAsync();
             }
             catch (Exception ex)
             {
-                toastService.ShowError(ex.Message.ToString());
+                toasterservice.ShowError(ex.Message.ToString());
             }
-            return products;
+            finally
+            {
+                StateHasChanged();
+            }
+
         }
     }
+
+    private async void ComfirmationApproveYes()
+    {
+        try
+        {
+            await this.ConfirmationDeleteDialogue.HideAsync();
+
+            await SavingDialog.ShowAsync();
+
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(selectedemployee);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            var result = await Http.PostAsync($"NonStaff/DeleteSkill?qualificationid={selectedemployee.ExtraSkillsId}", httpContent);
+
+            if (result.IsSuccessStatusCode)
+            {
+                try
+                {
+                    if (SkillsGrid != null)
+                    {
+                        await SkillsGrid.Refresh();
+                    }
+
+                    toasterservice.ShowSuccess("Record Successfully Deleted");
+                }
+                catch (Exception ex)
+                {
+
+                }
+                finally
+                {
+                    await SavingDialog.HideAsync();
+                }
+
+            }
+            else
+            {
+                toasterservice.ShowError("Record Not Deleted");
+            }
+        }
+        catch (Exception ex)
+        {
+            toasterservice.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await SavingDialog.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void ComfirmationApproveNo()
+    {
+        this.ConfirmationDeleteDialogue.HideAsync();
+    }
+
+    private async Task CellSavedHandler(CellSaveArgs<NonStaffSkills> args)
+    {
+        try
+        {
+            
+        }
+        catch (Exception ex)
+        {
+            toasterservice.ShowError(ex.Message);
+        }
+        finally
+        {
+            await SkillsGrid.EndEditAsync();
+        }
+    }
+
+    //Enable cell edit on single click
+    public async Task CellSelectHandler(CellSelectEventArgs<NonStaffSkills> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await SkillsGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await SkillsGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await SkillsGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
     public async Task OnSkillsActionComplete(ActionEventArgs<NonStaffSkills> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))

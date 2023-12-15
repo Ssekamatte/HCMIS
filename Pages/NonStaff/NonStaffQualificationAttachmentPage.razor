@@ -1,5 +1,5 @@
 ﻿@* <h3>NonStaffQualificationAttachment</h3> *@
-@page "/NonStaffQualificationAttachment"
+@* @page "/NonStaffQualificationAttachment" *@
 @using Blazored.Toast.Services;
 @using HCMIS.Data;
 @using HCMIS.Interface;
@@ -15,14 +15,36 @@
 @inject DocumentUploadModel _DocumentUploadModel;
 @inject HttpClient Http
 @inject ApiConfig _ApiConfig;
+@inject Microsoft.JSInterop.IJSRuntime JS;
 
 <style>
     /*Manage Records Button*/
-    .e-grid .e-icons:not(.e-btn-icon) {
-        color: #00cc00;
-        color: floralwhite;
+    /*Edit Button*/
+    /* button.e-control.e-btn.e-lib.e-flat.e-edit-delete.e-Editbutton {
+        background-color: green;
         font-size: smaller;
-        font-weight: bolder;
+        color:white;
+    } */
+
+    /*Delete Button*/
+    /* button.e-control.e-btn.e-lib.e-flat.e-edit-delete.e-Deletebutton {
+        background-color: red;
+        font-size: smaller;
+    } */
+
+    /*Hide Dialog Close Button*/
+    .e-dialog .e-dlg-header-content .e-btn.e-dlg-closeicon-btn {
+        background-color: rgba(0,0,0,0);
+        border-color: rgba(0,0,0,0);
+        border-radius: 2px;
+        bottom: 0;
+        float: right;
+        height: 32px;
+        left: 15px;
+        position: relative;
+        width: 32px;
+        padding: 4px 9px;
+        visibility: hidden;
     }
 </style>
 
@@ -33,8 +55,19 @@
     <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
     <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
     <GridEvents OnActionBegin="OnAttachmentActionBegin"
-                OnActionComplete="@OnAttachmentActionComplete" TValue="NonStaffQualificationAttachment"></GridEvents>
+                OnActionComplete="@OnAttachmentActionComplete" 
+                CommandClicked="OnCommandClicked"
+                TValue="NonStaffQualificationAttachment"></GridEvents>
     <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="@DialogParams">
+        <HeaderTemplate>
+            @{
+                var text = GetHeadDetails((context as NonStaffQualificationAttachment));
+                <div class="headerbandimg">
+                    <span>@text</span>
+                </div>
+            }
+        </HeaderTemplate>
+        
         <Template Context="AttachmentContext">
             @{
                 AttachmentData = (AttachmentContext as NonStaffQualificationAttachment);
@@ -44,21 +77,26 @@
                         <div class="form-group col-md-12" hidden>
                             <SfNumericTextBox ID="AttachmentId" @bind-Value="@(AttachmentData.AttachmentId)" Enabled="false" Placeholder="Attachment Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
                         </div>
-                        <div class="form-group col-md-12">
-                            <p>Attachment Name <span style="color:red;">*</span></p>
-                            <SfTextBox Multiline="true" @bind-Value="@(AttachmentData.AttachmentName)" Enabled="true" Placeholder="Attachment Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                        </div>
-
-                        @if (!string.IsNullOrEmpty(AttachmentData.AttachmentName))
+                        @if(_previous == Syncfusion.Blazor.Grids.Action.Add)
                         {
+
                             <div class="form-group col-md-12">
-                                <p class="alert-info" style="padding:10px;">Ensure that the document does not exceed 1 Mega Byte (MB) and is of the following formats (Microsoft Word, PDF or an Image (png,gif,jpeg and jpg))</p>
-                                <InputFile class="form-control" OnChange="@SingleUpload" />
-                                <div>
-                                    <SfSpinner @ref="UploadAttachmentSpinner" CssClass="SpinnerClass" Visible="false" Size="30" Label="Saving document Please wait......."> </SfSpinner>
-                                </div>
+                                <p>Attachment Name <span style="color:red;">*</span></p>
+                                <SfTextBox Multiline="true" @bind-Value="@(AttachmentData.AttachmentName)" Enabled="true" Placeholder="Attachment Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                             </div>
-                        }
+
+                            @if (!string.IsNullOrEmpty(AttachmentData.AttachmentName))
+                            {
+                                <div class="form-group col-md-12">
+                                    <p class="alert-info" style="padding:10px;">Ensure that the document does not exceed 1 Mega Byte (MB) and is of the following formats (Microsoft Word, PDF or an Image (png,gif,jpeg and jpg))</p>
+                                    <InputFile class="form-control" OnChange="@SingleUpload" />
+                                    <div>
+                                        <SfSpinner @ref="UploadAttachmentSpinner" CssClass="SpinnerClass" Visible="false" Size="30" Label="Saving document Please wait......."> </SfSpinner>
+                                    </div>
+                                </div>
+                            }
+                            
+                        }                        
 
                         <div class="form-group col-md-12">
                             @if (!string.IsNullOrEmpty(ImageString))
@@ -86,7 +124,6 @@
         <FooterTemplate Context="AttachmentFooterContext">
             @if (IsSaveDisabled == false)
             {
-                <SfButton IsPrimary="true" Disabled="@IsSaveDisabled" OnClick="@OnSaveDocumentClick">Save Document</SfButton>
                 <SfButton IsPrimary="false" Disabled="@IsSaveDisabled" OnClick="@OnCloseDocumentClick">Close</SfButton>
             }
 
@@ -97,14 +134,58 @@
     <GridColumns>
         @*<GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>*@
         <GridColumn Field=@nameof(NonStaffQualificationAttachment.AttachmentId) HeaderText="Attachment Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
-        <GridColumn Field=@nameof(NonStaffQualificationAttachment.AttachmentName) HeaderText="Attachment"></GridColumn>
-        <GridColumn HeaderText="Manage Records" Width="140">
+        <GridColumn Field=@nameof(NonStaffQualificationAttachment.AttachmentName) HeaderText="Attachment" Width="80"></GridColumn>
+        <GridColumn HeaderText="Manage Records" Width="80">
             <GridCommandColumns>
-                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="View" })" Title="View"></GridCommandColumn>
+                <GridCommandColumn Type="CommandButtonType.None" ButtonOption="@(new CommandButtonOptions() {IconCss = "fa fa-cloud-download", CssClass = "e-flat"})" ID="Download"></GridCommandColumn>
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})"></GridCommandColumn>
+                <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-delete", CssClass = "e-flat"})" ID="Delete"></GridCommandColumn>
             </GridCommandColumns>
         </GridColumn>
     </GridColumns>
 </SfGrid>
+
+@*Confirm Deletion*@
+
+<div class="form-group col-md-12">
+    <SfDialog @ref="@ConfirmationDeleteDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @((MarkupString)@ConfirmationText)
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationApproveYes" />
+            <DialogButton Content="No" OnClick="@ComfirmationApproveNo" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+
+
+@*Saving Dialogue*@
+<div class="form-group col-md-12">
+    <SfDialog Width="80%" Height="20vh" AllowDragging=true EnableResize=true
+              CloseOnEscape=false IsModal=true ShowCloseIcon=false
+              Target=".mainbody" @ref=@SavingDialog Visible=false>
+        <DialogTemplates>
+            <Content>
+                <div class="dialogContent">
+                    <div class="loader">
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader-Saving-text"></div>
+                    </div>
+                    @*<p>Saving Record please wait......</p>*@
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+</div>
+
 
 @code {
     [Parameter]
@@ -135,6 +216,11 @@
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "80%" };
     Query mainQuery { get; set; } = new();
     string? ErrorMessage { get; set; } = null;
+    NonStaffQualificationAttachment selectedemployee { get; set; }
+    string ConfirmationText { get; set; }
+    SfDialog ConfirmationDeleteDialogue;
+    SfDialog SavingDialog { get; set; }
+    Syncfusion.Blazor.Grids.Action _previous { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -165,23 +251,115 @@
         await base.OnInitializedAsync();
     }
 
-
-    private async Task OnSaveDocumentClick()
-    {
-        if (NonStaffQualificationAttachmentGrid != null)
-        {
-            await NonStaffQualificationAttachmentGrid.EndEditAsync();
-        }
-    }
     private async Task OnCloseDocumentClick()
     {
         if (NonStaffQualificationAttachmentGrid != null)
         {
+            await NonStaffQualificationAttachmentGrid.EndEditAsync();
             await NonStaffQualificationAttachmentGrid.CloseEditAsync();
         }
     }
 
-     public class NonStaffQualificationAttachmentAdapter : DataAdaptor
+    public async Task OnCommandClicked(CommandClickEventArgs<NonStaffQualificationAttachment> args)
+    {
+
+        if (args.CommandColumn.ID == "Delete")
+        {
+            try
+            {
+                selectedemployee = args.RowData;
+                ConfirmationText = "<p>Are you sure you want to delete this record? </p>";
+                await this.ConfirmationDeleteDialogue.ShowAsync();
+            }
+            catch (Exception ex)
+            {
+                toasterservice.ShowError(ex.Message.ToString());
+            }
+            finally
+            {
+                StateHasChanged();
+            }
+
+        }
+        if (args.CommandColumn.ID == "Download")
+        {
+            selectedemployee = args.RowData;
+            
+            var a = await _DocumentUploadModel.GetDocument(selectedemployee.AttachmentUrl,"EmployeeQualification");
+
+            if (a != null)
+            {
+                if (a.DocumentExt.Contains("pdf"))
+                {
+                    string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                    JS.InvokeAsync<object>("saveAsFile", selectedemployee.AttachmentUrl, base64String);
+                }
+                else
+                {
+                    string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                    JS.InvokeAsync<object>("saveAsFile", selectedemployee.AttachmentUrl, base64String);
+                }
+
+            }
+        }
+    }
+
+    private async void ComfirmationApproveYes()
+    {
+        try
+        {
+            await this.ConfirmationDeleteDialogue.HideAsync();
+
+            await SavingDialog.ShowAsync();
+
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(selectedemployee);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            var result = await Http.PostAsync($"NonStaff/DeleteQualificationAttachment?attachmentid={selectedemployee.AttachmentId}", httpContent);
+
+            if (result.IsSuccessStatusCode)
+            {
+                try
+                {
+                    if (NonStaffQualificationAttachmentGrid != null)
+                    {
+                        await NonStaffQualificationAttachmentGrid.Refresh();
+                    }
+
+                    toasterservice.ShowSuccess("Record Successfully Deleted");
+                }
+                catch (Exception ex)
+                {
+
+                }
+                finally
+                {
+                    await SavingDialog.HideAsync();
+                }
+
+            }
+            else
+            {
+                toasterservice.ShowError("Record Not Deleted");
+            }
+        }
+        catch (Exception ex)
+        {
+            toasterservice.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await SavingDialog.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void ComfirmationApproveNo()
+    {
+        this.ConfirmationDeleteDialogue.HideAsync();
+    }
+
+    public class NonStaffQualificationAttachmentAdapter : DataAdaptor
     {
         HttpClient Http;
         private readonly JsonSerializerOptions _options;
@@ -275,17 +453,18 @@
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
         }
-       
+
     }
 
     public async Task OnAttachmentActionBegin(Syncfusion.Blazor.Grids.ActionEventArgs<NonStaffQualificationAttachment> args)
     {
         if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
         {
-
+            _previous = args.RequestType;
         }
         if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
         {
+            _previous = args.RequestType;
             args.Data.AttachmentId = random;
             random++;
         }
@@ -334,8 +513,7 @@
             System.IO.FileInfo info = new System.IO.FileInfo(e.File.Name);
             if (info.Extension.ToLower().Contains("png") || info.Extension.ToLower().Contains("gif") || info.Extension.ToLower().Contains("jpeg") || info.Extension.ToLower().Contains("jpg"))
             {
-                var passextension = info.Extension.Split("/");
-                fileName = "EmployeeQualification_" + AttachmentData.AttachmentName + "." + passextension[1].Trim();
+                fileName = "EmployeeQualification_" + AttachmentData.AttachmentName + info.Extension;
                 byte[] bytes = ms.ToArray();
                 //byte[] bytes = file.Stream.ToArray();
                 string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
@@ -354,7 +532,22 @@
                 ImageString = result;
                 bytes = null;
 
+                try
+                {
+                    //Save to table
+                    AttachmentData.NonStaffid = NonstaffId;
+                    string json = Newtonsoft.Json.JsonConvert.SerializeObject(AttachmentData);
+                    StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                    var _result = await Http.PostAsync($"NonStaff/PostQualificationAttachment", httpContent);
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+                finally
+                {
 
+                }
             }
 
             else if (info.Extension.ToLower().Contains("pdf") || info.Extension.ToLower().Contains("doc"))
@@ -424,11 +617,23 @@
                     bytes = null;
                 }
 
-                //Save to table
-                AttachmentData.NonStaffid = NonstaffId;
-                string json = Newtonsoft.Json.JsonConvert.SerializeObject(AttachmentData);
-                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                var _result = await Http.PostAsync($"NonStaff/PostQualificationAttachment", httpContent);
+                try
+                {
+                    //Save to table
+                    AttachmentData.NonStaffid = NonstaffId;
+                    string json = Newtonsoft.Json.JsonConvert.SerializeObject(AttachmentData);
+                    StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                    var _result = await Http.PostAsync($"NonStaff/PostQualificationAttachment", httpContent);
+                }
+                catch(Exception ex)
+                {
+                    throw ex;
+                }
+                finally
+                {
+                    
+                }
+                
             }
             
             else
@@ -484,4 +689,8 @@
     }
 
 
+    public string GetHeadDetails(NonStaffQualificationAttachment Value)
+    {
+        return Value.AttachmentName;
+    }
 }

@@ -1,6 +1,7 @@
 ﻿@using HCMIS.Data
 @using HCMIS.Model
 @using System.Text.Json
+@using HCMIS.SHARED.DTO
 @using HCMIS.SHARED.Data;
 @using HCMIS.SHARED.Models;
 @using HCMIS.ViewModel
@@ -10,6 +11,7 @@
 @inject ApiConfig _ApiConfig;
 @inject NavigationManager Navigation
 @inject DocumentUploadModel _DocumentUploadModel;
+@inject IToastService toasterservice;
 
 <div class="row">
     <div class="col-lg-12 control-section">
@@ -24,15 +26,14 @@
     </div>
    <div class="col-md-12">
          <SfGrid @ref="WorkExperienceGrid" TValue="NonStaffWorkExperience" Query="@mainQuery"
-                                    Toolbar="@(new string[] {"Add","Edit","Delete","Update","Cancel","ColumnChooser"})" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+                                    Toolbar="@(new string[] {"Add"})" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
                                     AllowPaging="true" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" GridLines="GridLine.Both" AllowSelection="true">
                                 @*<GridGroupSettings Columns="@GroupedColumns"></GridGroupSettings>*@
                                 <SfDataManager AdaptorInstance="@typeof(NonStaffWorkExperienceAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
                                 <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
                                 <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
-                               @* OnActionBegin="OnQualificationActionBegin"*@
-                                <GridEvents  OnActionComplete="@OnWorkExperienceActionComplete" TValue="NonStaffWorkExperience"></GridEvents>
-                                <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
+                                <GridEvents  OnActionBegin="OnWorkExperienceActionBegin" OnActionComplete="@OnWorkExperienceActionComplete" CommandClicked="OnCommandClicked" TValue="NonStaffWorkExperience"></GridEvents>
+                                <GridEditSettings AllowAdding="true" AllowDeleting="true" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
 
                                     <HeaderTemplate>
                                         @{
@@ -52,15 +53,15 @@
                                                                         <SfNumericTextBox @bind-Value="@(WorkExperienceReviewData.WorkExperienceId)" Enabled="false" Placeholder="WorkExperienceId" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
                                                                     </div>
                                                                     <div class="col-md-6">
-                                                                         <p>Organisation <span style="color:red;">(*)</span></p>
+                                                                         <p>Organisation <span style="color:red;">*</span></p>
                                                                         <SfTextBox Multiline="false" @bind-Value="@(WorkExperienceReviewData.Organisation)" Enabled="true" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                                                                     </div>
                                                                    <div class="col-md-6">
-                                                                        <p>Job Title <span style="color:red;">(*)</span></p>
+                                                                        <p>Job Title <span style="color:red;">*</span></p>
                                                                          <SfTextBox Multiline="false" @bind-Value="@(WorkExperienceReviewData.JobTitle)" Enabled="true" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                                                                     </div>
                                                                     <div class="col-md-6">
-                                                                         <p>From <span style="color:red;">(*)</span></p>
+                                                                         <p>From <span style="color:red;">*</span></p>
                                                                         <SfDatePicker @bind-Value="@(WorkExperienceReviewData.StartDate)" Placeholder="Select Date" Format="dd/MM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
                                                                     </div>
                                                                     <div class="col-md-6">
@@ -72,16 +73,16 @@
                                                                     </div> 
                                                                     <div class="col-md-12"></div>
                                                                     <div class="col-md-6">
-                                                                         <p>Employer Name <span style="color:red;">(*)</span></p>
+                                                                         <p>Employer Name</p>
                                                                         <SfTextBox Multiline="false" @bind-Value="@(WorkExperienceReviewData.EmployerName)" Enabled="true" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                                                                     </div>
                                                                     <div class="col-md-6">
-                                                                         <p>Employer Email <span style="color:red;">(*)</span></p>
+                                                                         <p>Employer Email</p>
                                                                         <SfTextBox Multiline="false" @bind-Value="@(WorkExperienceReviewData.EmployerOfficialEmail)" Enabled="true" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                                                                     </div>
                                                                     <div class="col-md-6">
-                                                                         <p>Employer Official Number <span style="color:red;">(*)</span></p>
-                                                                        <SfNumericTextBox @bind-Value="@(WorkExperienceReviewData.EmployerOfficialNumber)" Format="N0" Enabled="true" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                                                         <p>Employer Official Number</p>
+                                                                        <SfNumericTextBox @bind-Value="@(WorkExperienceReviewData.EmployerOfficialNumber)"   Format="##" Decimals="0" Enabled="true" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
                                                                     </div>
                                                                     <div class="col-md-12" style="margin-bottom:10px;">
                                                                         <p>Responsibilities</p>
@@ -90,28 +91,38 @@
                                                                         <RichTextEditorToolbarSettings Type="@Tooltype" Items="@Tools" Enable=true   EnableFloating="true" />
                                                                         </SfRichTextEditor>
                                                                     </div>
-                                                                    @if(!string.IsNullOrEmpty(WorkExperienceReviewData.Organisation) && !string.IsNullOrEmpty(WorkExperienceReviewData.JobTitle)){
-                                                                         <div class="form-group col-md-12"  style="margin-bottom:10px;">
-                                                                            <p class="alert-primary" style="padding:10px;">Please upload an image in png or Jpeg or gif  or jpg format Or a PDF Document not exceeding 5 Megabytes(MBs) in Size</p>
-                                                                            <SfUploader AutoUpload="true" ShowFileList="false">
-                                                                                <UploaderEvents ValueChange="OnWorkExperienceChange"></UploaderEvents>
-                                                                            </SfUploader>
-                                                                            <SfSpinner @ref="@UploadWorkExperienceSpinner" Visible="false" Label="UpLoading document please wait.."></SfSpinner>
+                                                                    @if(!string.IsNullOrEmpty(WorkExperienceReviewData.Organisation) && !string.IsNullOrEmpty(WorkExperienceReviewData.JobTitle))
+                                                                    {
+                                                                        <div class="col-md-12" style="margin-bottom:10px;">
+                                                                        <h6 style="background-color:#6F1E51; color:ghostwhite;font-weight:bolder;font-size:large; text-align:center;">UPLOAD ANY CONTRACTS YOU HAVE (NOT MANDATORY)</h6>
+
+                                                                            <p class="alert-info" style="padding:10px;">Ensure that the document does not exceed 1 Mega Byte (MB) and is of the following formats (Microsoft Word, PDF or an Image (png,gif,jpeg and jpg))</p>
+                                                                            <InputFile class="form-control" OnChange="@SingleUpload" style="background-color;green;"/>
+                                                                            <div>
+                                                                                <SfSpinner @ref="UploadAttachmentSpinner" CssClass="SpinnerClass" Visible="false" Size="30" Label="Saving document Please wait......."> </SfSpinner>
+                                                                            </div>
                                                                         </div>
-                                                                 }
-                                                                   
+                                                                    }
+
                                                                     <div class="form-group col-md-12">
-                                                                        @if (!string.IsNullOrEmpty(WorkExperienceDocumentString))
+                                                                        @if (!string.IsNullOrEmpty(ImageString))
                                                                         {
-                                                                            if (!string.IsNullOrEmpty(WorkExperienceReviewData.AppointmentLetterExt) && WorkExperienceReviewData.AppointmentLetterExt.ToLower().Contains("pdf"))
+                                                                            // @if (!string.IsNullOrEmpty(WorkExperienceReviewData.AppointmentLetterExt) && WorkExperienceReviewData.AppointmentLetterExt.ToLower().Contains("pdf"))
+                                                                            @if (!string.IsNullOrEmpty(WorkExperienceReviewData.AppointmentLetterUrl) && !string.IsNullOrEmpty(WorkExperienceReviewData.AppointmentLetterExt))
                                                                             {
-                                                                                        <embed src="@WorkExperienceDocumentString" width="100%" height="600px" style="border: none;" frameborder="0" allowfullscreen="true" />
+                                                                                if (WorkExperienceReviewData.AppointmentLetterExt.Contains("pdf") || WorkExperienceReviewData.AppointmentLetterExt.Contains("doc") || WorkExperienceReviewData.AppointmentLetterExt.Contains("docx"))
+                                                                                {
+                                                                                    <embed src="@ImageString" width="100%" height="600px" style="border: none;" frameborder="0" allowfullscreen="true" />
+                                                                                }
+                                                                                else
+                                                                                {
+                                                                                    <img src="@ImageString" alt="@WorkExperienceReviewData.AppointmentLetterUrl" class="img-thumbnail Imagecenter" style="margin-bottom:10px; width:100%;" />
+                                                                                }
                                                                             }
-                                                                            else if(!string.IsNullOrEmpty(WorkExperienceReviewData.AppointmentLetterExt))
-                                                                            {
-                                                                                        <img src="@WorkExperienceDocumentString" class="img-thumbnail" height="500" width="100%" style="margin-bottom:10px; margin:10%; margin-right:auto;" />
-                                                                            }
+
                                                                         }
+
+
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -123,16 +134,27 @@
                                 <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
                                 <GridPageSettings PageSize="20"></GridPageSettings>
                                 <GridColumns>
-                                    <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                                    <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
+                                    
                                     <GridColumn Field=@nameof(NonStaffWorkExperience.WorkExperienceId) HeaderText="WorkExperienceId" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
-                                    <GridColumn Field=@nameof(NonStaffWorkExperience.Organisation) HeaderText="Organisation" Width="150"></GridColumn>
-                                    <GridColumn Field=@nameof(NonStaffWorkExperience.JobTitle) HeaderText="Job Title" Width="150"></GridColumn>
-                                    <GridColumn Field=@nameof(NonStaffWorkExperience.EmployerName) HeaderText="Employer Name" Width="150"></GridColumn>
-                                    <GridColumn Field=@nameof(NonStaffWorkExperience.EmployerOfficialEmail) HeaderText="Email" Width="150"></GridColumn>
-                                    <GridColumn Field=@nameof(NonStaffWorkExperience.EmployerOfficialNumber) HeaderText="Official Number" Width="150"></GridColumn>
-                                    <GridColumn Field=@nameof(NonStaffWorkExperience.StartDate) Format="dd/MM/yyyy" HeaderText="From" Width="180"></GridColumn>
-                                    <GridColumn Field=@nameof(NonStaffWorkExperience.EndDate) Format="dd/MM/yyyy" HeaderText="To" Width="180"></GridColumn>
-                                    <GridColumn Field=@nameof(NonStaffWorkExperience.IsCurrent) HeaderText="To Current" Width="180"></GridColumn>
+                                    <GridColumn Field=@nameof(NonStaffWorkExperience.Organisation) HeaderText="Organisation" Width="50"></GridColumn>
+                                    <GridColumn Field=@nameof(NonStaffWorkExperience.JobTitle) HeaderText="Job Title" Width="50"></GridColumn>
+                                   @*  <GridColumn Field=@nameof(NonStaffWorkExperience.EmployerName) HeaderText="Employer Name" Width="50"></GridColumn>
+                                    <GridColumn Field=@nameof(NonStaffWorkExperience.EmployerOfficialEmail) HeaderText="Email" Width="50"></GridColumn> 
+                                    <GridColumn Field=@nameof(NonStaffWorkExperience.EmployerOfficialNumber) HeaderText="Official Number" Width="50"></GridColumn>*@
+                                    <GridColumn Field=@nameof(NonStaffWorkExperience.StartDate) Format="dd/MM/yyyy" HeaderText="From" Width="50"></GridColumn>
+                                    <GridColumn Field=@nameof(NonStaffWorkExperience.EndDate) Format="dd/MM/yyyy" HeaderText="To" Width="50"></GridColumn>
+                                    @* <GridColumn Field=@nameof(NonStaffWorkExperience.IsCurrent) HeaderText="To Current" Width="40"></GridColumn> *@
+
+                                    <GridColumn HeaderText="Action"
+                                                Width="60"
+                                                CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr3" }})"
+                                                TextAlign="TextAlign.Left">
+                                        <GridCommandColumns>
+                                            <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})"></GridCommandColumn>
+                                            <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-delete", CssClass = "e-flat"})" ID="Delete"></GridCommandColumn>
+                                        </GridCommandColumns>
+                                    </GridColumn>
                                 </GridColumns>
                             </SfGrid>
     </div>
@@ -142,6 +164,48 @@
             <p class="alert-danger" style="padding:10px;">@ErrorMessage</p>
         }
     </div>
+</div>
+
+
+@*Confirm Deletion*@
+
+<div class="form-group col-md-12">
+    <SfDialog @ref="@ConfirmationDeleteDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @((MarkupString)@ConfirmationText)
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationApproveYes" />
+            <DialogButton Content="No" OnClick="@ComfirmationApproveNo" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+@*Saving Dialogue*@
+
+@*Saving Dialogue*@
+<div class="form-group col-md-12">
+    <SfDialog Width="80%" Height="20vh" AllowDragging=true EnableResize=true
+              CloseOnEscape=false IsModal=true ShowCloseIcon=false
+              Target=".mainbody" @ref=@SavingDialog Visible=false>
+        <DialogTemplates>
+            <Content>
+                <div class="dialogContent">
+                    <div class="loader">
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader-Saving-text"></div>
+                    </div>
+                    @*<p>Saving Record please wait......</p>*@
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
 </div>
 
 @code {
@@ -203,14 +267,21 @@
         new LinkToolbarItemModel() { Command = LinkToolbarCommand.UnLink }
     };
 
-    SfSpinner? UploadWorkExperienceSpinner;
+    SfSpinner? UploadAttachmentSpinner;
     SfGrid<NonStaffWorkExperience>? WorkExperienceGrid;
     private NonStaffWorkExperience? WorkExperienceReviewData{ get; set; }
     Query mainQuery { get; set; } = new();
-    string  WorkExperienceDocumentString { get; set; } = null;
     string? ErrorMessage { get; set; } = null;
     private DialogSettings DialogParams = new DialogSettings { Height="auto",MinHeight="85vh",Width="95%" };
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    bool IsSaveDisabled { get; set; }
+    long maxFileSize = 1048576/* 1024L * 1024L * 1024L * 2L */;
+    string fileName = string.Empty;
+    string? ImageString { get; set; }
+    SfDialog ConfirmationDeleteDialogue;
+    string ConfirmationText { get; set; }
+    NonStaffWorkExperience selectedemployee { get; set; }
+    SfDialog SavingDialog { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -675,7 +746,7 @@
                 WorkExperienceGrid.PreventRender(false);
                 if(!string.IsNullOrEmpty(args.RowData.AppointmentLetterUrl) && !string.IsNullOrEmpty(args.RowData.AppointmentLetterExt))
                 {
-                    WorkExperienceDocumentString = await GetImageString(args.RowData.AppointmentLetterUrl, args.RowData.AppointmentLetterExt,"WorkExperience");
+                    ImageString = await GetImageString(args.RowData.AppointmentLetterUrl, args.RowData.AppointmentLetterExt, "WorkExperience");
                 }
 
             }
@@ -690,6 +761,45 @@
         }
 
     }
+    
+    public async Task OnWorkExperienceActionBegin(Syncfusion.Blazor.Grids.ActionEventArgs<NonStaffWorkExperience> args)
+    {
+        if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+        {
+
+        }
+        if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+        {
+           
+        }
+        if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
+        {
+
+        }
+        if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+        {
+            if (string.IsNullOrEmpty(args.Data.Organisation))
+            {
+                toasterservice.ShowWarning("Please enter the Organisation");
+                args.Cancel = true;
+            }
+            else if (string.IsNullOrEmpty(args.Data.JobTitle))
+            {
+                toasterservice.ShowWarning("Please enter the job title");
+                args.Cancel = true;
+            }
+            else if (args.Data.StartDate == null)
+            {
+                toasterservice.ShowWarning("Please enter the date you joined");
+                args.Cancel = true;
+            }
+            else
+            {
+                //args.Data.EmployeeLeaveId = EmployeeLeaveId.Value;
+            }
+        }
+    }
+
     public string GetWorkExperienceHeader(NonStaffWorkExperience Value)
     {
         if (Value.WorkExperienceId == 0)
@@ -698,192 +808,241 @@
         }
         else
         {
-            return "Edit Details for " + Value.EmployerName;
+            return "Edit Work Experience";
         }
     }
 
-    private async void OnWorkExperienceChange(UploadChangeEventArgs args)
+    private async Task SingleUpload(InputFileChangeEventArgs e)
     {
-        // try
-        // {
-        //     await UploadWorkExperienceSpinner.ShowAsync();
-        //     foreach (var file in args.Files)
-        //     {
-        //         if (file.FileInfo.Size <= 5242880)
-        //         {
-        //             file.Stream.Position = 0;
-        //             if (file.FileInfo.Type.ToLower().Contains("pdf") || file.FileInfo.Type.ToLower().Contains("doc"))
-        //             {
+        try
+        {
+            IsSaveDisabled = true;
+            await UploadAttachmentSpinner.ShowAsync();
+            MemoryStream ms = new MemoryStream();
+            await e.File.OpenReadStream(maxFileSize).CopyToAsync(ms);
 
-        //                 string fileName = string.Empty;
-        //                 if (file.FileInfo.Type.Trim().Contains("doc"))
-        //                 {
+            ms.Position = 0;
 
-        //                     fileName = WorkExperienceReviewData.Organisation +"_"+WorkExperienceReviewData.JobTitle+ "_" + NonstaffId + ".pdf";
+            System.IO.FileInfo info = new System.IO.FileInfo(e.File.Name);
+            if (info.Extension.ToLower().Contains("png") || info.Extension.ToLower().Contains("gif") || info.Extension.ToLower().Contains("jpeg") || info.Extension.ToLower().Contains("jpg"))
+            {
+                fileName = "WorkExperience_" + WorkExperienceReviewData.Organisation + "_" + WorkExperienceReviewData.JobTitle + "_" + NonstaffId + info.Extension;
+                byte[] bytes = ms.ToArray();
+                //byte[] bytes = file.Stream.ToArray();
+                string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                DocumentBytes m = new DocumentBytes()
+                    {
+                        DocumentName = fileName,
+                        DocumentExt = info.Extension.Trim(),
+                        DocumentByte = bytes,
+                        DocumentFolder = "WorkExperience"
+                    };
 
-        //                     //Create a new document
-        //                     Syncfusion.DocIO.DLS.WordDocument document;
-        //                     if (file.FileInfo.Type.Contains("doc") && !file.FileInfo.Type.Contains("docx"))
-        //                     {
-        //                         document = new Syncfusion.DocIO.DLS.WordDocument(file.Stream, Syncfusion.DocIO.FormatType.Doc);
-        //                     }
-        //                     else
-        //                     {
-        //                         document = new Syncfusion.DocIO.DLS.WordDocument(file.Stream, Syncfusion.DocIO.FormatType.Docx);
-        //                     }
-        //                     //Creates an instance of the DocToPDFConverter
-        //                     DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
-        //                     PdfDocument pdfDocument = render.ConvertToPDF(document);
+                await _DocumentUploadModel.UploadDocument(m);
+                var result = "data:application/pdf;base64," + base64;
+                WorkExperienceReviewData.AppointmentLetterUrl = fileName;
+                WorkExperienceReviewData.AppointmentLetterExt = info.Extension.Trim();
+                ImageString = result;
+                bytes = null;
 
-        //                     MemoryStream _ms = new MemoryStream();
-        //                     pdfDocument.Save(_ms);
-        //                     _ms.Position = 0;
+            }
 
-        //                     byte[] bytes = file.Stream.ToArray();
-        //                     string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+            else if (info.Extension.ToLower().Contains("pdf") || info.Extension.ToLower().Contains("doc"))
+            {
+                string fileName = string.Empty;
+                if (info.Extension.ToLower().Contains("doc"))
+                {
+                    ms.Position = 0;
+                    fileName = "WorkExperience_" + WorkExperienceReviewData.Organisation + "_" + WorkExperienceReviewData.JobTitle + "_" + NonstaffId + ".pdf";
 
-        //                     ImageUpload m = new ImageUpload()
-        //                     {
-        //                         ImageName = fileName,
-        //                         ImageExt = file.FileInfo.Type.Trim(),
-        //                         Imagebyte = bytes,
-        //                         Rootfolder="WorkExperience"
-        //                     };
+                    //Create a new document
+                    Syncfusion.DocIO.DLS.WordDocument document;
+                    if (info.Extension.Contains("doc") && !info.Extension.Contains("docx"))
+                    {
+                        document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Doc);
+                    }
+                    else
+                    {
+                        document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Docx);
+                    }
+                    //Creates an instance of the DocToPDFConverter
+                    DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
+                    PdfDocument pdfDocument = render.ConvertToPDF(document);
+
+                    MemoryStream _ms = new MemoryStream();
+                    pdfDocument.Save(_ms);
+                    _ms.Position = 0;
 
 
-        //                     var Requestresult = await _DocumentUploadModel.SaveDocument(m,AccessToken);
-        //                     if (Requestresult != null && Requestresult.IsSuccess)
-        //                     {
-        //                         var result = "data:application/pdf;base64," + base64;
-        //                         WorkExperienceReviewData.AppointmentLetterUrl = fileName;
-        //                         WorkExperienceReviewData.AppointmentLetterExt = "pdf";
-        //                          WorkExperienceDocumentString = result;
+                    DocumentBytes m = new DocumentBytes();
+                    m.DocumentName = fileName;
+                    m.DocumentFolder = "WorkExperience";
+                    m.DocumentByte = _ms.ToArray();
+                    m.DocumentExt = "pdf";
 
-        //                         bytes = null;
-        //                         _ms.Close();
-        //                         _ms.Dispose();
-        //                         pdfDocument.Close();
-        //                         pdfDocument.Dispose();
-        //                         render.Dispose();
-        //                         document.Close();
-        //                         document.Dispose();
-        //                     }
-        //                     else if(Requestresult != null)
-        //                     {
-        //                         await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-        //                     }
-        //                 }
-        //                 else
-        //                 {
-        //                      fileName = WorkExperienceReviewData.Organisation +"_"+WorkExperienceReviewData.JobTitle+ "_" + NonstaffId + ".pdf";
-        //                     MemoryStream ms = new MemoryStream();
-        //                     file.Stream.WriteTo(ms);
-        //                     ms.Position = 0;
-        //                     byte[] bytes = file.Stream.ToArray();
-        //                     string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                    await _DocumentUploadModel.UploadDocument(m);
+                    _ms.Position = 0;
+                    byte[] _bytes = _ms.ToArray();
+                    string base64 = Convert.ToBase64String(_bytes, 0, _bytes.Length);
 
-        //                     ImageUpload m = new ImageUpload()
-        //                     {
-        //                         ImageName = fileName,
-        //                         ImageExt = file.FileInfo.Type.Trim(),
-        //                         Imagebyte = bytes,
-        //                         Rootfolder="WorkExperience"
-        //                     };
+                    var result = "data:application/pdf;base64," + base64;
+                    WorkExperienceReviewData.AppointmentLetterUrl = fileName;
+                    WorkExperienceReviewData.AppointmentLetterExt = "pdf";
+                    ImageString = result;
+                }
 
-        //                     var Requestresult = await _DocumentUploadModel.SaveDocument(m,AccessToken);
-        //                     if (Requestresult != null && Requestresult.IsSuccess)
-        //                     {
-        //                         var result = "data:application/pdf;base64," + base64;
-        //                         WorkExperienceReviewData.AppointmentLetterUrl = fileName;
-        //                         WorkExperienceReviewData.AppointmentLetterExt = file.FileInfo.Type.Trim();
-        //                          WorkExperienceDocumentString = result;
-        //                         bytes = null;
-        //                     }
-        //                     else if(Requestresult != null)
-        //                     {
-        //                         await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-        //                     }
-        //                 }
-        //             }
-        //             else if (file.FileInfo.Type.ToLower().Contains("png") || file.FileInfo.Type.ToLower().Contains("gif") || file.FileInfo.Type.ToLower().Contains("jpeg"))
-        //             {
-        //                 string fileName = WorkExperienceReviewData.Organisation +"_"+WorkExperienceReviewData.JobTitle+ "_" + NonstaffId + ".pdf";
-        //                 byte[] bytes = file.Stream.ToArray();
-        //                 string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                else
+                {
+                    fileName = "WorkExperience_" + WorkExperienceReviewData.Organisation + "_" + WorkExperienceReviewData.JobTitle + "_" + NonstaffId + ".pdf";
+                    
+                    ms.Position = 0;
+                    byte[] bytes = ms.ToArray();
+                    string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
 
-        //                 ImageUpload m = new ImageUpload()
-        //                 {
-        //                     ImageName = fileName,
-        //                     ImageExt = file.FileInfo.Type.Trim(),
-        //                     Imagebyte = bytes,
-        //                     Rootfolder="WorkExperience"
-        //                 };
+                    DocumentBytes m = new DocumentBytes()
+                        {
+                            DocumentName = fileName,
+                            DocumentExt = info.Extension.Trim(),
+                            DocumentByte = bytes,
+                            DocumentFolder = "WorkExperience"
+                        };
 
-        //                 var Requestresult = await _DocumentUploadModel.SaveDocument(m,AccessToken);
-        //                 if (Requestresult != null && Requestresult.IsSuccess)
-        //                 {
-        //                     var result = "data:image/" + file.FileInfo.Type.Trim() + ";base64," + base64;
-        //                     WorkExperienceReviewData.AppointmentLetterUrl = fileName;
-        //                     WorkExperienceReviewData.AppointmentLetterExt = file.FileInfo.Type.Trim();
-        //                      WorkExperienceDocumentString = result;
-        //                     bytes = null;
-        //                 }
-        //                 else if(Requestresult != null)
-        //                     {
-        //                         await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = Requestresult.Message, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-        //                     }
-        //             }
-        //             else
-        //             {
-        //                 await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = "Please ensure that the uploaded document is either a pdf or doc or docx or image(png/Jpeg/gif).", CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-        //             }
+                    await _DocumentUploadModel.UploadDocument(m);
+                    var result = "data:application/pdf;base64," + base64;
+                    WorkExperienceReviewData.AppointmentLetterUrl = fileName;
+                    WorkExperienceReviewData.AppointmentLetterExt = info.Extension.Trim();
+                    ImageString = result;
+                    bytes = null;
+                }
 
-        //             //Save infor into the DB
-        //         }
-        //     }
-        // }
-        // catch (Exception ex)
-        // {
-        //     await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-        // }
-        // finally
-        // {
-        //     await UploadWorkExperienceSpinner.HideAsync();
-        //     StateHasChanged();
-        // }
+            }
+            else
+            {
+                toasterservice.ShowWarning("Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg) or pdf or word document (doc,docx).");
+            }
+        }
+        catch (Exception ex)
+
+        {
+            throw ex;
+        }
+
+        finally
+        {
+            IsSaveDisabled = false;
+            await UploadAttachmentSpinner.HideAsync();
+            StateHasChanged();
+        }
 
     }
 
-    private async Task<string> GetImageString(string imageUrl, string ext,string Rootfolder)
+    private async Task<string> GetImageString(string imageUrl, string ext, string DocumentFolder)
     {
         string result = null;
         try
         {
-            // if (!string.IsNullOrEmpty(imageUrl))
-            // {
-            //     ImageUpload a = await _DocumentUploadModel.GetDocument(imageUrl,Rootfolder,AccessToken);
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                var a = await _DocumentUploadModel.GetDocument(imageUrl, DocumentFolder);
 
-            //     if (a != null)
-            //     {
-            //         if (a.ImageExt.Contains("pdf"))
-            //         {
-            //             string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
-            //             result = "data:application/pdf;base64," + base64String;
-            //         }
-            //         else
-            //         {
-            //             string base64String = Convert.ToBase64String(a.Imagebyte, 0, a.Imagebyte.Length);
-            //             result = "data:image/" + a.ImageExt + ";base64," + base64String;
-            //         }
+                if (a != null)
+                {
+                    if (a.DocumentExt.Contains("pdf"))
+                    {
+                        string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                        result = "data:application/pdf;base64," + base64String;
+                    }
+                    else
+                    {
+                        string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                        result = "data:image/" + a.DocumentExt.Replace(".","") + ";base64," + base64String;
+                    }
 
-            //     }
-            // }
+                }
+            }
         }
         catch (Exception ex)
         {
-            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+            toasterservice.ShowError(ex.Message.ToString());
         }
         return result;
     }
 
+    public async Task OnCommandClicked(CommandClickEventArgs<NonStaffWorkExperience> args)
+    {
+
+        if (args.CommandColumn.ID == "Delete")
+        {
+            try
+            {
+                selectedemployee = args.RowData;
+                ConfirmationText = "<p>Are you sure you want to delete this record? </p>";
+                await this.ConfirmationDeleteDialogue.ShowAsync();
+            }
+            catch (Exception ex)
+            {
+                toasterservice.ShowError(ex.Message.ToString());
+            }
+            finally
+            {
+                StateHasChanged();
+            }
+
+        }
+    }
+
+    private async void ComfirmationApproveYes()
+    {
+        try
+        {
+            await this.ConfirmationDeleteDialogue.HideAsync();
+
+            await SavingDialog.ShowAsync();
+
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(selectedemployee);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            var result = await Http.PostAsync($"NonStaff/DeleteExperience?qualificationid={selectedemployee.WorkExperienceId}", httpContent);
+
+            if (result.IsSuccessStatusCode)
+            {
+                try
+                {
+                    if (WorkExperienceGrid != null)
+                    {
+                        await WorkExperienceGrid.Refresh();
+                    }
+
+                    toasterservice.ShowSuccess("Record Successfully Deleted");
+                }
+                catch (Exception ex)
+                {
+
+                }
+                finally
+                {
+                    await SavingDialog.HideAsync();
+                }
+
+            }
+            else
+            {
+                toasterservice.ShowError("Record Not Deleted");
+            }
+        }
+        catch (Exception ex)
+        {
+            toasterservice.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await SavingDialog.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void ComfirmationApproveNo()
+    {
+        this.ConfirmationDeleteDialogue.HideAsync();
+    }
 }
