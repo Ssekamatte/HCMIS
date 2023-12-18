@@ -1,6 +1,11 @@
 ﻿@using HCMIS.Interface;
+@using HCMIS.Model
+@using HCMIS.Repository
+@using HCMIS.SHARED.Models
+@using System.Text.Json
 @inject IAuthenticationService IAuthService;
 @inject NavigationManager Navigation;
+@inject HttpClient Http;
 
 <MudAppBar Elevation="3">
     <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="MudBlazor.Color.Inherit" Edge="Edge.Start"
@@ -21,6 +26,28 @@
     public EventCallback OnLogoutToggled { get; set; }
     [Parameter]
     public EventCallback<MudTheme> OnThemeToggled { get; set; }
+    LoginResultModel? Credentials { get; set; }
+    List<ViewUserManagement>? UsersData { get; set; }
+    
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+
+        }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+
+        }
+
+    }
+
     private async Task ToggleTheme()
     {
         _isLightMode = !_isLightMode;
@@ -48,8 +75,24 @@
 
     private async Task LogOut()
     {
-        await IAuthService.Logout();
-        Navigation.NavigateTo("/");
+        try
+        {
+            // Save LogOut Log
+           
+            var result = await Http.PutAsync($"Utilities/UpdateLoginLog", null);
+
+            await IAuthService.Logout();
+            Navigation.NavigateTo("/");
+        }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            
+        }
+        
     }
 
     private async Task Log(MenuEventArgs<MenuItem> args)

@@ -8,6 +8,43 @@
 @inject HttpClient Http;
 @*@inject IAuthenticationService AccountService;*@
 
+<style>
+
+    .tooltip {
+        position: relative;
+        display: inline-block;
+        border-bottom: 1px dotted black;
+    }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 120px;
+            background-color: black;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 0;
+            /* Position the tooltip */
+            position: absolute;
+            z-index: 1;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+        }
+
+/*css for badges*/
+/* https://codepen.io/ahmadmilzam/pen/QKEXaM - For circle */
+.badge {
+    background-color: green;
+    color: white;
+    padding: 4px 8px;
+    text-align: center;
+    border-radius: 5px;
+    font-size: small;
+}
+</style>
+
 <MudDrawer @bind-Open="@SideBarOpen" Elevation="1" ClipMode="DrawerClipMode.Never" Style="margin-top:2px;">
     <MudDrawerHeader>
         <MudAvatar Color="Color.Transparent" Size="Size.Large">
@@ -47,10 +84,12 @@
                         </MudNavGroup>
                         <MudNavGroup Title="EMPLOYEE LEAVE" Icon="fa fa-university" Expanded="false">
                             <MudNavLink Href="/AnnualLeaveRosterPage" Icon="fa fa-calendar">ANNUAL LEAVE ROASTER</MudNavLink>
-                        <MudBadge Content="0" Overlap="true" Class="mx-6 my-4">
-                            <MudNavLink Href="/EmployeeLeaveApplicationPage" Icon="fa fa-pencil-square-o">LEAVE REQUEST</MudNavLink>
-                        </MudBadge>
-                            @* <MudNavLink Href="/EmployeeLeaveApplicationPage" Icon="fa fa-pencil-square-o">LEAVE REQUEST</MudNavLink> *@
+
+                        <MudNavLink Href="/EmployeeLeaveApplicationPage" Icon="fa fa-pencil-square-o">
+                            <MudTooltip Text="Pending You Approval" Color="Color.Secondary" Placement="MudBlazor.Placement.Bottom" Arrow="true">
+                                LEAVE REQUEST <span class="badge">@dailylogins</span>
+                            </MudTooltip>
+                        </MudNavLink>
                         </MudNavGroup>
                         <MudNavGroup Title="LEARNING AND DEVELOPMENT" Icon="fa fa-exchange" Expanded="false">
                             <MudNavLink Href="/AssessmentSurveyPage" Icon="fa fa-assistive-listening-systems">ASSESSMENT SURVEY</MudNavLink>
@@ -89,6 +128,12 @@
                             <MudNavLink Href="/AccountManagementPage" Icon="fa fa-user-plus">ACCOUNT MANAGEMENT</MudNavLink>
                             <MudNavLink Href="/PrimaryDataPage" Icon="fa fa-users">PRIMARY DATA</MudNavLink>
                         </MudNavGroup>
+
+                    <MudNavLink Href="/LogInLogsPage" Icon="fa fa-sign-in">
+                        <MudTooltip Text="No. of Logins" Color="Color.Tertiary" Placement="MudBlazor.Placement.Bottom" Arrow="true">
+                            LOGINS TODAY <span class="badge">@dailylogins</span>
+                        </MudTooltip>                        
+                    </MudNavLink>
                     </MudNavGroup>
                 }
 
@@ -273,6 +318,9 @@
 
     List<ADepartment>? DepartmentsData { get; set; }
     List<ViewUserManagement>? SystemUsersData { get; set; }
+    List<ALoginLog>? LoginLogData { get; set; }
+
+    int dailylogins = 0;
 
     protected async override void OnInitialized()
     {
@@ -291,6 +339,23 @@
             }
         }));
 
-        SystemUsersData = await AuthService.GetSystemUsers();
+        t.Add(Task.Run(async () =>
+        {
+            var response = await Http.GetAsync($"Utilities/GetLoginLog");
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                LoginLogData = JsonSerializer.Deserialize<List<ALoginLog>>(content, _options);
+                dailylogins = LoginLogData.Where(o => o.LoginDate.Value.ToString("dd/MM/yyyy") == DateTime.Now.ToString("dd/MM/yyyy")).Count();
+            }
+        }));
+
+        t.Add(Task.Run(async () =>
+        {
+            SystemUsersData = await AuthService.GetSystemUsers();
+        }));
+
+        Task _t = Task.WhenAll(t);
+        await _t;
     }
 }

@@ -71,6 +71,7 @@ using static HCMIS.Pages.Utilities.MaximumYearPage;
 using static HCMIS.Pages.Utilities.SectionsPage;
 using static HCMIS.Pages.Utilities.LeaveRoasterDeadlineDatePage;
 using static HCMIS.Pages.NonStaff.NonStaffQualificationAttachmentPage;
+using static HCMIS.Pages.Utilities.LogInLogsPage;
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.Services.AddSyncfusionBlazor();
 builder.Services.AddMudServices();
@@ -162,6 +163,7 @@ builder.Services.AddScoped<PerspectivesDetailsAdapter>();
 builder.Services.AddScoped<SectionAdapter>();
 builder.Services.AddScoped<MaximumYearAdapter>();
 builder.Services.AddScoped<NonStaffQualificationAttachmentAdapter>();
+builder.Services.AddScoped<LoginLogAdapter>();
 
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IReportService, ReportService>();
