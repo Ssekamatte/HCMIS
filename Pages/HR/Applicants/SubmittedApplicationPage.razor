@@ -8,9 +8,11 @@
 @using HCMIS.ViewModel;
 @inject HttpClient Http
 @inject NavigationManager Navigation
-@inject SystemSettings _SystemSettings
 @inject ApiConfig _ApiConfig;
 @inject IToastService toastService;
+@inject IAuthenticationService AuthService;
+@inject NavigationManager navManager;
+
 @*<h3>SubmittedApplicationPage</h3>*@
 <style>
     p{
@@ -216,22 +218,23 @@
     List<ALanguageProlific>? LanguageProlificData { get; set; }
     List<ASkillLevel>? SkillLevelData { get; set; }
     string? AccessToken { get; set; }
+        LoginResultModel? Credentials { get; set; }
 
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        
-        if (string.IsNullOrEmpty(_SystemSettings.AccessToken))
+
+        var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+        if (isAuthenticated == false)
         {
-            Navigation.NavigateTo("/");
+            navManager.NavigateTo("/LoginPage", true);
         }
+
         else
         {
-            AccessToken = _SystemSettings.AccessToken;
-            
-
+            Credentials = await AuthService.GetUserCredentials();
             var tasks = new List<Task>();
             tasks.Add(Task.Run(async () =>
             {
@@ -256,6 +259,7 @@
                 }
             }));
         }
+
     }
 
     private void ApproveApplicant()
@@ -277,7 +281,7 @@
     {
         CommentModel = new AppliedForJobsComment();
         CommentModel.CommentDate = DateTime.Now;
-        CommentModel.CommentedBy = _SystemSettings.AccountHolderName;
+        CommentModel.CommentedBy = Credentials.AccountHolderName;
         ConfirmationDialog.HideAsync();
         CommentDialog.ShowAsync();
         //AppliedForJobGrid.EndEditAsync();

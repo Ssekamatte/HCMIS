@@ -4,8 +4,10 @@
 @using HCMIS.Model;
 @inject IToastService toastService;
 @inject IJobApplications JobRepo;
-@inject SystemSettings _SystemSettings
-@inject NavigationManager Navigation
+@inject IAuthenticationService AuthService;
+@inject NavigationManager navManager;
+
+
 <BreadcrumbPage CategoryName="Applications" PageName="My applications" />
 @*<h3>MyApplicationsPage</h3>*@
 @if(LoadingPageComplete)
@@ -90,14 +92,24 @@ else{
     private int SkipValue { get; set; }
     private int pageSize { get; set; }
     private int TakeValue { get; set; } = 5;
+    LoginResultModel? Credentials { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
         try
         {
             LoadingPageComplete = false;
-            
-            MyApplicationData = await JobRepo.GetMyApplicationsAsync("null", _SystemSettings.StaffId.ToString());
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
+            {
+                navManager.NavigateTo("/LoginPage", true);
+            }
+            else
+            {
+                Credentials = await AuthService.GetUserCredentials();
+                MyApplicationData = await JobRepo.GetMyApplicationsAsync("null", Credentials.StaffId.ToString());
+            }            
         }
         catch (Exception ex)
         {
@@ -116,6 +128,6 @@ else{
     }
     private void StartAmptituddeTest(int? JobTitleId, int? AppliedForJobsId)
     {
-        Navigation.NavigateTo($"ApplicantAptituddeTestPage/{JobTitleId}/{AppliedForJobsId}");
+        navManager.NavigateTo($"ApplicantAptituddeTestPage/{JobTitleId}/{AppliedForJobsId}");
     }
 }

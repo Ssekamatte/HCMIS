@@ -11,6 +11,9 @@
 @inject SystemSettings _SystemSettings
 @inject ApiConfig _ApiConfig;
 @inject IToastService toastService;
+@inject NavigationManager navManager;
+@inject IAuthenticationService AuthService;
+
 @*<h3>FinalApplicationAssessmentPage</h3>*@
 <style>
     p {
@@ -226,22 +229,22 @@
     string? AccessToken { get; set; }
     AppliedForJobsComment? CommentModel { get; set; }
     int? previousStatusId { get; set; }
+    LoginResultModel? Credentials { get; set; }
 
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        
-        if (string.IsNullOrEmpty(_SystemSettings.AccessToken))
+
+        var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+        if (isAuthenticated == false)
         {
-            Navigation.NavigateTo("/");
+            navManager.NavigateTo("/LoginPage", true);
         }
         else
         {
-            AccessToken = _SystemSettings.AccessToken;
-            
-
+            Credentials = await AuthService.GetUserCredentials();
             var tasks = new List<Task>();
             tasks.Add(Task.Run(async () =>
             {

@@ -1,6 +1,7 @@
 ﻿@page "/AptitudeTestPage"
 @using HCMIS.Interface;
 @using HCMIS.Repository
+@using HCMIS.SHARED.DTO
 @using HCMIS.SHARED.Data;
 @using HCMIS.SHARED.Models;
 @using HCMIS.ViewModel
@@ -8,12 +9,17 @@
 @using System.Collections
 @inject HttpClient http;
 @inject ISettingsRepository settingsRepo;
+@inject DocumentUploadModel _DocumentUploadModel;
+@inject IToastService toasterservice;
+
+
 <style>
-    h3{
-        color:ghostwhite;
-        background-color:darkslategray;
-        padding:10px;
-        width:100%;
+    h3 {
+        color: ghostwhite;
+        background-color: #00cc00;
+        padding: 10px;
+        width: 100%;
+        font-size: large;
     }
     label {
         margin-top:6px;
@@ -96,7 +102,7 @@
                                             <SfNumericTextBox @bind-Value="@(HeaderReviewData.NoOfQuestionsPerSession)" Enabled="true" Placeholder="Enter No" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
                                         </div>
                                         <div class="col-md-12">
-                                            <h3>Aptitudde Question</h3>
+                                            <h3>Aptitude Question</h3>
                                         </div>
                                         <div class="col-md-12">
                                             <SfGrid @ref=@AptituddeTestQuestionGrid TValue="AptituddeTestQuestionModel" DataSource="@((context as AptituddeTestModel)?.Aptituddetestquestions)" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
@@ -121,8 +127,8 @@
                                                                             <div class="col-md-12" hidden>
                                                                                 <SfNumericTextBox @bind-Value="@(QuestionReviewData.AptituddeTestQuestionId)" Enabled="false" Placeholder="Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
                                                                             </div>
-                                                                            <div>
-                                                                                <label>Dificulty Level</label>
+                                                                            <div class="col-md-12">
+                                                                                <p>Dificulty Level</p>
                                                                                 <SfDropDownList @bind-Value="@(QuestionReviewData.DifficultyLevelId)" Enabled="true" TItem="ADifficultyLevel" TValue="int?" DataSource="@DifficultyLevelData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                                                                     <DropDownListFieldSettings Value="@nameof(ADifficultyLevel.DifficultyLevelId)" Text="@nameof(ADifficultyLevel.DifficultyLevelDesc)"></DropDownListFieldSettings>
                                                                                 </SfDropDownList>
@@ -134,6 +140,26 @@
                                                                                     <RichTextEditorToolbarSettings Type="@Tooltype" Items="@Tools" Enable=true   EnableFloating="true" />
                                                                                 </SfRichTextEditor>
                                                                             </div>
+
+                                                                            <div class="form-group col-md-12">
+                                                                                        <p class="alert-info" style="padding:10px;">Ensure that the image does not exceed 1 Mega Byte (MB) and is of the following formats (png,gif,jpeg and jpg))</p>
+                                                                                        <InputFile class="form-control" OnChange="@SingleUpload" />
+                                                                                        <div>
+                                                                                            <SfSpinner @ref="UploadAttachmentSpinner" CssClass="SpinnerClass" Visible="false" Size="30" Label="Saving document Please wait......."> </SfSpinner>
+                                                                                        </div>
+                                                                            </div>
+
+                                                                            <div class="form-group col-md-12">
+                                                                                @if (!string.IsNullOrEmpty(ImageString))
+                                                                                {                                                                                    
+                                                                                    if (!string.IsNullOrEmpty(QuestionReviewData.QuestionImageName))
+                                                                                    {
+                                                                                        <img src="@ImageString" class="img-thumbnail" height="700" width="700" style="margin-bottom:10px; margin:10%; margin-right:auto;" />
+                                                                                    }
+                                                                                }
+
+                                                                            </div>
+
                                                                             <div class="col-md-4">
                                                                                 <label>Score</label>
                                                                                 <SfNumericTextBox @bind-Value="@(QuestionReviewData.QuestionMark)" Enabled="true" Placeholder="Score" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
@@ -325,6 +351,10 @@
     private List<ADifficultyLevel>? DifficultyLevelData { get; set; }
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "80vh", Width = "96%" };
+    SfSpinner UploadAttachmentSpinner;
+    string? ImageString { get; set; }
+    long maxFileSize = 5242880/* 1024L * 1024L * 1024L * 2L */;//5 Megabytes
+    string fileName = string.Empty;
 
     private ToolbarType Tooltype = ToolbarType.MultiRow;
     private List<ToolbarItemModel> Tools = new List<ToolbarItemModel>()
@@ -562,6 +592,7 @@
             if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
             {
                 AptituddeTestHeaderGrid?.PreventRender(false);
+                
             }
         }
         catch (Exception ex)
@@ -601,6 +632,10 @@
             if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
             {
                 AptituddeTestQuestionGrid?.PreventRender(false);
+                if(!string.IsNullOrEmpty(args.RowData.Aptituddetestquestions.QuestionImageName) && !string.IsNullOrEmpty(args.RowData.Aptituddetestquestions.QuestionImageExt))
+                {
+                    ImageString = await GetImageString(args.RowData.Aptituddetestquestions.QuestionImageName, args.RowData.Aptituddetestquestions.QuestionImageExt,"AptitudeQuestionImages");
+                }
             }
         }
         catch (Exception ex)
@@ -672,5 +707,92 @@
             await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
         }
 
+    }
+
+    private async Task SingleUpload(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            //IsSaveDisabled = true;
+            await UploadAttachmentSpinner.ShowAsync();
+            MemoryStream ms = new MemoryStream();
+            await e.File.OpenReadStream(maxFileSize).CopyToAsync(ms);
+
+            ms.Position = 0;
+            System.IO.FileInfo info = new System.IO.FileInfo(e.File.Name);
+            if (info.Extension.ToLower().Contains("png") || info.Extension.ToLower().Contains("gif") || info.Extension.ToLower().Contains("jpeg") || info.Extension.ToLower().Contains("jpg"))
+            {
+                fileName = "AptitudeQuestionImages_" + DateTime.Now.ToString("dd-MM-yyyy HH-mm-ss") + info.Extension;
+                
+                byte[] bytes = ms.ToArray();
+                //byte[] bytes = file.Stream.ToArray();
+                string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                DocumentBytes m = new DocumentBytes()
+                    {
+                        DocumentName = fileName,
+                        DocumentExt = info.Extension.Trim(),
+                        DocumentByte = bytes,
+                        DocumentFolder = "AptitudeQuestionImages"
+                    };
+
+                await _DocumentUploadModel.UploadDocument(m);
+                var result = "data:application/pdf;base64," + base64;
+                QuestionReviewData.QuestionImageName = fileName;
+                QuestionReviewData.QuestionImageExt = info.Extension.Trim();
+                ImageString = result;
+                bytes = null;
+
+            }
+
+            else
+            {
+                toasterservice.ShowWarning("Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg).");
+            }
+        }
+        catch (Exception ex)
+
+        {
+            throw ex;
+        }
+
+        finally
+        {
+            ///IsSaveDisabled = false;
+            await UploadAttachmentSpinner.HideAsync();
+            StateHasChanged();
+        }
+
+    }
+
+    private async Task<string> GetImageString(string imageUrl, string ext, string DocumentFolder)
+    {
+        string result = null;
+        try
+        {
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                var a = await _DocumentUploadModel.GetDocument(imageUrl, DocumentFolder);
+
+                if (a != null && !string.IsNullOrEmpty(a.DocumentExt) && a.DocumentByte != null && a.DocumentByte.Length > 0)
+                {
+                    if (a.DocumentExt.Contains("pdf"))
+                    {
+                        string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                        result = "data:application/pdf;base64," + base64String;
+                    }
+                    else
+                    {
+                        string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                        result = "data:image/" + a.DocumentExt.Replace(".","").Trim() + ";base64," + base64String;
+                    }
+
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toasterservice.ShowError(ex.Message.ToString());
+        }
+        return result;
     }
 }

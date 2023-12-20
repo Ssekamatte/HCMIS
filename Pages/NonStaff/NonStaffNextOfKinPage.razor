@@ -10,6 +10,7 @@
 @inject ApiConfig _ApiConfig;
 @inject NavigationManager Navigation
 @inject DocumentUploadModel _DocumentUploadModel;
+@inject IToastService toasterservice;
 
 <div class="row">
     <div class="col-lg-12 control-section">
@@ -25,14 +26,19 @@
     </div>
       <div class="col-md-12">
          <SfGrid @ref="NextOfKinGrid" TValue="NonStaffNextOfKin" Query="@mainQuery"
-                                    Toolbar="@(new string[] {"Add","Edit","Delete","Update","Cancel","ColumnChooser"})" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+                                    Toolbar="@(new string[] {"Add"})" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
                                     AllowPaging="true" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" GridLines="GridLine.Both" AllowSelection="true">
                                 @*<GridGroupSettings Columns="@GroupedColumns"></GridGroupSettings>*@
                                 <SfDataManager AdaptorInstance="@typeof(NonStaffNextOfKinAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
                                 <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
                                 <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
-                               @* OnActionBegin="OnNextOfKinActionBegin"*@
-                                <GridEvents  OnActionComplete="@OnNextOfKinActionComplete" TValue="NonStaffNextOfKin"></GridEvents>
+                               
+                                <GridEvents  
+                                    OnActionComplete="@OnNextOfKinActionComplete"
+                                    OnActionBegin="OnNextOfKinActionBegin"
+                                    CommandClicked="OnCommandClicked"
+                                    TValue="NonStaffNextOfKin">
+                                </GridEvents>
                                 <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
 
                                     <HeaderTemplate>
@@ -53,7 +59,7 @@
                                                                     <SfNumericTextBox @bind-Value="@(NextOfKinReviewData.NonStaffNextOfKinId)" Enabled="false" Placeholder="NonStaffNextOfKinId" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
                                                                 </div>
                                                                 <div class="col-md-4">
-                                                                     <p>First Name <span style="color:red;">(*)</span></p>
+                                                                     <p>First Name <span style="color:red;">*</span></p>
                                                                     <SfTextBox Multiline="false" @bind-Value="@(NextOfKinReviewData.FirstName)" Enabled="true" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                                                                 </div>
                                                                  <div class="col-md-4">
@@ -61,17 +67,17 @@
                                                                     <SfTextBox Multiline="false" @bind-Value="@(NextOfKinReviewData.MiddleName)" Enabled="true" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                                                                 </div>
                                                                  <div class="col-md-4">
-                                                                     <p>Last Name <span style="color:red;">(*)</span></p>
+                                                                     <p>Last Name <span style="color:red;">*</span></p>
                                                                     <SfTextBox Multiline="false" @bind-Value="@(NextOfKinReviewData.LastName)" Enabled="true" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                                                                 </div>
                                                                <div class="col-md-4">
-                                                                    <p>Gender <span style="color:red;">(*)</span></p>
+                                                                    <p>Gender <span style="color:red;">*</span></p>
                                                                     <SfDropDownList @bind-Value="@(NextOfKinReviewData.GenderId)" Enabled="true" TItem="AGender" TValue="int?" DataSource="@GenderData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                                                         <DropDownListFieldSettings Value="@nameof(AGender.GenderId)" Text="@nameof(AGender.GenderDesc)"></DropDownListFieldSettings>
                                                                     </SfDropDownList>
                                                                 </div>
                                                                  <div class="col-md-4">
-                                                                    <p>Relationship <span style="color:red;">(*)</span></p>
+                                                                    <p>Relationship <span style="color:red;">*</span></p>
                                                                     <SfDropDownList @bind-Value="@(NextOfKinReviewData.RelationshipId)" Enabled="true" TItem="ARelationship" TValue="int?" DataSource="@RelationshipData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                                                         <DropDownListFieldSettings Value="@nameof(ARelationship.RelationshipId)" Text="@nameof(ARelationship.RelationshipName)"></DropDownListFieldSettings>
                                                                     </SfDropDownList>
@@ -81,12 +87,12 @@
                                                                     <SfTextBox Multiline="false" @bind-Value="@(NextOfKinReviewData.EmailAddress)" Enabled="true" Placeholder="Enter Email" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                                                                 </div>
                                                                 <div class="col-md-4">
-                                                                     <p>Official Phone Number <span style="color:red;">(*)</span></p>
-                                                                    <SfNumericTextBox Format="N0" @bind-Value="@(NextOfKinReviewData.OfficialPhoneNumber)" Enabled="true" Placeholder="Enter number" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                                                     <p>Official Phone Number <span style="color:red;">*</span></p>
+                                                                    <SfNumericTextBox @bind-Value="@(NextOfKinReviewData.OfficialPhoneNumber)" Enabled="true" Placeholder="Enter number" FloatLabelType="FloatLabelType.Never" Format="##" Decimals="0"></SfNumericTextBox>
                                                                 </div> 
                                                                  <div class="col-md-4">
                                                                      <p>Mobile Number</p>
-                                                                    <SfNumericTextBox Format="N0" @bind-Value="@(NextOfKinReviewData.MobileNumber)" Enabled="true" Placeholder="Enter Number" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                                                    <SfNumericTextBox @bind-Value="@(NextOfKinReviewData.MobileNumber)" Enabled="true" Placeholder="Enter Number" FloatLabelType="FloatLabelType.Never" Format="##" Decimals="0"></SfNumericTextBox>
                                                                 </div> 
                                                             </div>
                                                         </div>
@@ -98,16 +104,25 @@
                                 <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
                                 <GridPageSettings PageSize="20"></GridPageSettings>
                                 <GridColumns>
-                                    <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                                    @* <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn> *@
                                     <GridColumn Field=@nameof(NonStaffNextOfKin.NonStaffNextOfKinId) HeaderText="NonStaffNextOfKinId" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
-                                   <GridColumn Field=@nameof(NonStaffNextOfKin.FirstName) HeaderText="First Name" Width="150"></GridColumn>
-                                   <GridColumn Field=@nameof(NonStaffNextOfKin.MiddleName) HeaderText="Middle Name" Width="150"></GridColumn>
-                                   <GridColumn Field=@nameof(NonStaffNextOfKin.LastName) HeaderText="Last Name" Width="150"></GridColumn>
-                                    <GridForeignColumn Field=@nameof(NonStaffNextOfKin.GenderId) HeaderText="Gender" Width="150" ForeignKeyField="@(nameof(AGender.GenderId))" ForeignKeyValue="@(nameof(AGender.GenderDesc))" ForeignDataSource="@GenderData"></GridForeignColumn>
-                                     <GridForeignColumn Field=@nameof(NonStaffNextOfKin.RelationshipId) HeaderText="Relationship" Width="150" ForeignKeyField="@(nameof(ARelationship.RelationshipId))" ForeignKeyValue="@(nameof(ARelationship.RelationshipName))" ForeignDataSource="@RelationshipData"></GridForeignColumn>
-                                    <GridColumn Field=@nameof(NonStaffNextOfKin.EmailAddress) HeaderText="Email" Width="150"></GridColumn>
-                                    <GridColumn Field=@nameof(NonStaffNextOfKin.OfficialPhoneNumber) HeaderText="Official Phone Number" Width="150"></GridColumn>
-                                    <GridColumn Field=@nameof(NonStaffNextOfKin.MobileNumber) HeaderText="Mobile Number" Width="150"></GridColumn>
+                                   <GridColumn Field=@nameof(NonStaffNextOfKin.FirstName) HeaderText="First Name" Width="50"></GridColumn>
+                                   @* <GridColumn Field=@nameof(NonStaffNextOfKin.MiddleName) HeaderText="Middle Name" Width="150"></GridColumn> *@
+                                   <GridColumn Field=@nameof(NonStaffNextOfKin.LastName) HeaderText="Last Name" Width="50"></GridColumn>
+                                    @* <GridForeignColumn Field=@nameof(NonStaffNextOfKin.GenderId) HeaderText="Gender" Width="150" ForeignKeyField="@(nameof(AGender.GenderId))" ForeignKeyValue="@(nameof(AGender.GenderDesc))" ForeignDataSource="@GenderData"></GridForeignColumn> *@
+                                     <GridForeignColumn Field=@nameof(NonStaffNextOfKin.RelationshipId) HeaderText="Relationship" Width="50" ForeignKeyField="@(nameof(ARelationship.RelationshipId))" ForeignKeyValue="@(nameof(ARelationship.RelationshipName))" ForeignDataSource="@RelationshipData"></GridForeignColumn>
+                                    @* <GridColumn Field=@nameof(NonStaffNextOfKin.EmailAddress) HeaderText="Email" Width="150"></GridColumn> *@
+                                    <GridColumn Field=@nameof(NonStaffNextOfKin.OfficialPhoneNumber) HeaderText="Official Phone Number" Width="60"></GridColumn>
+                                    <GridColumn Field=@nameof(NonStaffNextOfKin.MobileNumber) HeaderText="Mobile Number" Width="60"></GridColumn>
+                                    <GridColumn HeaderText="Action"
+                                                TextAlign="TextAlign.Center"
+                                                Width="60"
+                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+                                        <GridCommandColumns>
+                                            <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})"></GridCommandColumn>
+                                            <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-delete", CssClass = "e-flat"})" ID="Delete"></GridCommandColumn>
+                                        </GridCommandColumns>
+                                    </GridColumn>
                                 </GridColumns>
                             </SfGrid>
     </div>
@@ -118,6 +133,47 @@
         }
     </div>
  </div>
+
+ @*Confirm Deletion*@
+
+<div class="form-group col-md-12">
+    <SfDialog @ref="@ConfirmationDeleteDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @((MarkupString)@ConfirmationText)
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationApproveYes" />
+            <DialogButton Content="No" OnClick="@ComfirmationApproveNo" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+@*Saving Dialogue*@
+
+@*Saving Dialogue*@
+<div class="form-group col-md-12">
+    <SfDialog Width="80%" Height="20vh" AllowDragging=true EnableResize=true
+              CloseOnEscape=false IsModal=true ShowCloseIcon=false
+              Target=".mainbody" @ref=@SavingDialog Visible=false>
+        <DialogTemplates>
+            <Content>
+                <div class="dialogContent">
+                    <div class="loader">
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader-Saving-text"></div>
+                    </div>
+                    @*<p>Saving Record please wait......</p>*@
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+</div>
 
 @code {
     #region Toasters
@@ -150,6 +206,10 @@
     string? ErrorMessage { get; set; } = null;
     private DialogSettings DialogParams = new DialogSettings { Height="auto",MinHeight="85vh",Width="90%" };
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    SfDialog ConfirmationDeleteDialogue;
+    string ConfirmationText { get; set; }
+    NonStaffNextOfKin selectedemployee { get; set; }
+    SfDialog SavingDialog { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -612,6 +672,59 @@
             NextOfKinGrid.PreventRender(false);
         }
     }
+    
+    public async void OnNextOfKinActionBegin(ActionEventArgs<NonStaffNextOfKin> args)
+    {
+        try
+        {
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+            {
+                if (string.IsNullOrEmpty(args.Data.FirstName))
+                {
+                    toasterservice.ShowWarning("Please enter the first name.");
+                    args.Cancel = true;
+                }
+                else if (string.IsNullOrEmpty(args.Data.LastName))
+                {
+                    toasterservice.ShowWarning("Please enter the last name.");
+                    args.Cancel = true;
+                }
+                else if (args.Data.GenderId == null)
+                {
+                    toasterservice.ShowWarning("Please select the gender.");
+                    args.Cancel = true;
+                }
+                else if (args.Data.RelationshipId == null)
+                {
+                    toasterservice.ShowWarning("Please select the relationship.");
+                    args.Cancel = true;
+                }
+                else if (args.Data.OfficialPhoneNumber == null)
+                {
+                    toasterservice.ShowWarning("Please enter the official phone number.");
+                    args.Cancel = true;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toasterservice.ShowError(ex.Message.ToString());
+        }
+    }
+    
+    
     public string GetNextOfKinHeader(NonStaffNextOfKin Value)
     {
         if (Value.NonStaffNextOfKinId == 0)
@@ -622,6 +735,84 @@
         {
             return "Edit Details for " + Value.FirstName +" "+Value.LastName;
         }
+    }
+    
+    public async Task OnCommandClicked(CommandClickEventArgs<NonStaffNextOfKin> args)
+    {
+
+        if (args.CommandColumn.ID == "Delete")
+        {
+            try
+            {
+                selectedemployee = args.RowData;
+                ConfirmationText = "<p>Are you sure you want to delete this record? </p>";
+                await this.ConfirmationDeleteDialogue.ShowAsync();
+            }
+            catch (Exception ex)
+            {
+                toasterservice.ShowError(ex.Message.ToString());
+            }
+            finally
+            {
+                StateHasChanged();
+            }
+
+        }
+    }
+
+    private async void ComfirmationApproveYes()
+    {
+        try
+        {
+            await this.ConfirmationDeleteDialogue.HideAsync();
+
+            await SavingDialog.ShowAsync();
+
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(selectedemployee);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            var result = await Http.PostAsync($"NonStaff/DeleteNextOfKin?qualificationid={selectedemployee.NonStaffNextOfKinId}", httpContent);
+
+            if (result.IsSuccessStatusCode)
+            {
+                try
+                {
+                    if (NextOfKinGrid != null)
+                    {
+                        await NextOfKinGrid.Refresh();
+                    }
+
+                    toasterservice.ShowSuccess("Record Successfully Deleted");
+                }
+                catch (Exception ex)
+                {
+
+                }
+                finally
+                {
+                    await SavingDialog.HideAsync();
+                }
+
+            }
+            else
+            {
+                toasterservice.ShowError("Record Not Deleted");
+            }
+        }
+        catch (Exception ex)
+        {
+            toasterservice.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await SavingDialog.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void ComfirmationApproveNo()
+    {
+        this.ConfirmationDeleteDialogue.HideAsync();
     }
 }
 

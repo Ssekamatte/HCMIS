@@ -1,14 +1,16 @@
 ﻿@page "/ApplicantAptituddeTestPage/{JobTitleId}/{AppliedForJobsId}"
 @using HCMIS.DTOs;
 @using HCMIS.Interface;
+@using HCMIS.Model
 @using HCMIS.SHARED.Models;
 @using HCMIS.ViewModel;
 @using System.Text.Json;
 @using System.Timers;
 @inject IAptituddeTestReopsitory TestRepo;
 @inject IToastService toastService;
-@inject HttpClient http;
-@inject ISettingsRepository settingsRepo;
+@inject HttpClient http
+@inject IAuthenticationService AuthenticationService;
+@inject DocumentUploadModel _DocumentUploadModel;
 
 @if (haspageLoaded == true)
 {
@@ -75,6 +77,12 @@
                                             <div class="col-md-4">
                                                 <p style="color:@timerColor">Remaining Time: @Minutescounter:@Secondcounter minutes</p>
                                             </div>
+
+                                            @if (!string.IsNullOrEmpty(SelectedQuestion.Aptituddetestquestions.QuestionImageExt) && !string.IsNullOrEmpty(SelectedQuestion.Aptituddetestquestions.QuestionImageName))
+                                            {
+                                                <img src="@ImageString" class="img-thumbnail" height="700" width="700" style="margin-bottom:10px; margin:10%; margin-right:auto;" />
+                                            }
+                                            
                                             <div class="col-md-12">
                                                 @((MarkupString)@SelectedQuestion.Aptituddetestquestions.Question)
                                             </div>
@@ -202,11 +210,13 @@ else
     bool showInstructions { get; set; } = true;
     bool showQuestions { get; set; } = false;
     bool showCompetionPage { get; set; } = false;
+    string? ImageString { get; set; }
     private static Timer aTimer;
     private int Secondcounter { get; set; } = 60;
     private int Minutescounter { get; set; } = 6;
     private string timerColor { get; set; } = "black";
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    LoginResultModel? Credentials { get; set; }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -231,6 +241,7 @@ else
                         count++;
                     }
                     SelectedQuestion = MyTestData.Aptituddetestquestions.FirstOrDefault();
+                    ImageString = await GetImageString(SelectedQuestion.Aptituddetestquestions.QuestionImageName, SelectedQuestion.Aptituddetestquestions.QuestionImageExt, "AptitudeQuestionImages");
                     LoadSelectedAnswer();
                 }
             }
@@ -253,9 +264,10 @@ else
         await base.OnInitializedAsync();
         try
         {
+            Credentials = await AuthenticationService.GetUserCredentials();
+
             dataSource = new();
-            string? accessToken = await settingsRepo.GetAccessToken();
-             
+            
             var tasks = new List<Task>();
             tasks.Add(Task.Run(async () =>
             {
@@ -283,6 +295,7 @@ else
         //SelectedIndex = e.ItemData.Id;
         QuestionNo = e.ItemData.Name;
         SelectedQuestion = MyTestData.Aptituddetestquestions?.FirstOrDefault(o => o.AptituddeTestQuestionId == e.ItemData.Id);
+        ImageString = await GetImageString(SelectedQuestion.Aptituddetestquestions.QuestionImageName, SelectedQuestion.Aptituddetestquestions.QuestionImageExt, "AptitudeQuestionImages");
         LoadSelectedAnswer();
         InvokeAsync(StateHasChanged);
     }
@@ -385,6 +398,37 @@ else
     {
 
     }
+    private async Task<string> GetImageString(string imageUrl, string ext, string DocumentFolder)
+    {
+        string result = null;
+        try
+        {
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                var a = await _DocumentUploadModel.GetDocument(imageUrl, DocumentFolder);
+
+                if (a != null && !string.IsNullOrEmpty(a.DocumentExt) && a.DocumentByte != null && a.DocumentByte.Length > 0)
+                {
+                    if (a.DocumentExt.Contains("pdf"))
+                    {
+                        string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                        result = "data:application/pdf;base64," + base64String;
+                    }
+                    else
+                    {
+                        string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                        result = "data:image/" + a.DocumentExt.Replace(".", "").Trim() + ";base64," + base64String;
+                    }
+
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        return result;
+    }
     private async Task StartTestConfirmationYes()
     {
         await StartTestDialog.HideAsync();
@@ -392,14 +436,14 @@ else
         TestDoneModel.TestDoneHeader = new();
         TestDoneModel.TestDoneAnswers = new();
         TestDoneModel.TestDoneHeader.AptituddeTestHeaderId = MyTestData.AptituddeTestHeaderId;
-        string userrole = await settingsRepo.GetUserRole();
+        string userrole = Credentials.UserRole;
         if (userrole == "Non-Staff")
         {
-            TestDoneModel.TestDoneHeader.NonStaffid = await settingsRepo.GetStaffId();
+            TestDoneModel.TestDoneHeader.NonStaffid = Credentials.StaffId;
         }
         else
         {
-            TestDoneModel.TestDoneHeader.Employeeid = await settingsRepo.GetStaffId();
+            TestDoneModel.TestDoneHeader.Employeeid = Credentials.StaffId;
         }
         TestDoneModel.TestDoneHeader.AppliedForJobsId = _AppliedForJobsId;
         TestDoneModel.TestDoneHeader.IsSubmitted = false;
@@ -459,6 +503,7 @@ else
             await QuestionListView.CheckItemsAsync(NextQuestion);
             QuestionNo = NextQuestion[0].Name;
             SelectedQuestion = MyTestData.Aptituddetestquestions?.FirstOrDefault(o => o.AptituddeTestQuestionId == NextQuestion[0].Id);
+            ImageString = await GetImageString(SelectedQuestion.Aptituddetestquestions.QuestionImageName, SelectedQuestion.Aptituddetestquestions.QuestionImageExt, "AptitudeQuestionImages");
         }
         else
         {
@@ -467,6 +512,7 @@ else
             await QuestionListView.CheckItemsAsync(NextQuestion);
             QuestionNo = NextQuestion[0].Name;
             SelectedQuestion = MyTestData.Aptituddetestquestions?.FirstOrDefault(o => o.AptituddeTestQuestionId == NextQuestion[0].Id);
+            ImageString = await GetImageString(SelectedQuestion.Aptituddetestquestions.QuestionImageName, SelectedQuestion.Aptituddetestquestions.QuestionImageExt, "AptitudeQuestionImages");
         }
         LoadSelectedAnswer();
     }
