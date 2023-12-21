@@ -15,6 +15,7 @@
 @using HCMIS.ViewModel;
 @inject IToastService toastService;
 @inject IAuthenticationService AuthService;
+@inject IJSRuntime JSRuntime
 
 <style>
     /*Wrap grouping text*/
@@ -415,7 +416,6 @@ else
     [Parameter]
     public ViewABscPerspectivesDetail? perspweightslearning { get; set; }
 
-
     protected override async Task OnInitializedAsync()
     {
         if(previousBalanceScoreCardId!=BalanceScoreCardId)
@@ -514,7 +514,7 @@ else
         }
     }
 
-    public void CellSaveHandler(CellSaveArgs<BalanceScoreCardTargetSetting> args)
+    public async Task CellSaveHandler(CellSaveArgs<BalanceScoreCardTargetSetting> args)
     {
         if (args.ColumnName == nameof(BalanceScoreCardTargetSetting.EmployeeSelfAssessTgt)
         || args.ColumnName == nameof(BalanceScoreCardTargetSetting.SupervisorAssessTgt))
@@ -530,8 +530,26 @@ else
             {
                 toastService.ClearAll();
                 toastService.ShowWarning("The employee self assessment % target achievement value should not exceed the Individual target weight. Input will not be captured");
+            
                 args.Cancel = true;
             }
+
+            // https://www.syncfusion.com/forums/180016/change-cell-background-color-when-another-cell-is-modified
+            //https://support.syncfusion.com/support/tickets/534347 -- ticket link
+            // else if (args.Data.EmployeeSelfAssessTgt > args.Data.IndividualTargetWeight)
+            // {
+            //     var ColumnIndex = await TargetsettingGrid.GetColumnIndexByFieldAsync(args.ColumnName);
+            //     var rowindex = await TargetsettingGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.TargetSettingId);
+            //     var index = args.ColumnObject.Index + 1;
+            //     await JSRuntime.InvokeVoidAsync("highlightHeader", index, rowindex);
+            //     //await JSRuntime.InvokeAsync<object>("highlightHeader", index, rowindex);
+            //     //await JSRuntime.InvokeAsync<object>("visible1");
+
+            //     toastService.ClearAll();
+            //     toastService.ShowWarning("The employee self assessment % target achievement value should not exceed the Individual target weight. Input will not be captured");
+                
+            //     args.Cancel = true;
+            // }
             else if (args.Data.SupervisorAssessTgt > args.Data.IndividualTargetWeight)
             {
                 toastService.ClearAll();
@@ -545,8 +563,16 @@ else
         }
     }
 
-    public void QueryCellInfoHandlerTargets(QueryCellInfoEventArgs<BalanceScoreCardTargetSetting> Args)
+    public void QueryCellInfoHandlerTargets(QueryCellInfoEventArgs<BalanceScoreCardTargetSetting> args)
     {
+        if ((args.Column.Field == "EmployeeSelfAssessTgt" || args.Column.Field == "SupervisorAssessTgt" ) && args.Column.Field == "EmployeeSelfAssessTgt")
+        {
+           if (args.Data.EmployeeSelfAssessTgt > args.Data.IndividualTargetWeight)
+            {
+                //args.Cell.AddClass(new string[] { "takeaction" });
+            } 
+            
+        }
         //if (_previous == Syncfusion.Blazor.Grids.Action.Add)
         //{
         //    if (Args.Column.Field == nameof(BalanceScoreCardTargetSetting.SupervisorAssessTgt))
@@ -576,3 +602,16 @@ else
     #endregion TargetMethods
 }
 
+<style>
+/*QueryCellInfoCSS*/
+    /*Change background color*/
+    .takeaction {
+        background-color: red;
+    }
+/*Change color for text in Grid*/
+    .e-grid .e-gridcontent .e-rowcell.takeaction 
+    {
+        color: ghostwhite;
+    }
+
+</style>

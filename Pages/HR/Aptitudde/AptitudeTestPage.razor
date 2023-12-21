@@ -43,7 +43,7 @@
     <div class="col-md-12">
         <SfGrid @ref=@AptituddeTestHeaderGrid TValue="AptituddeTestModel" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
                 AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true"
-                Toolbar="@(new string[] {"Add","Edit","Update","Cancel","ColumnChooser"})">
+                Toolbar="@(new string[] {"Add"})">
             <SfDataManager AdaptorInstance="@typeof(AptituddeTestAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
             <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
             <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
@@ -101,13 +101,13 @@
                                             <label>No of Question per session</label>
                                             <SfNumericTextBox @bind-Value="@(HeaderReviewData.NoOfQuestionsPerSession)" Enabled="true" Placeholder="Enter No" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
                                         </div>
-                                        <div class="col-md-12">
+                                        <div class="col-md-12" style="margin-top: 10px;">
                                             <h3>Aptitude Question</h3>
                                         </div>
                                         <div class="col-md-12">
                                             <SfGrid @ref=@AptituddeTestQuestionGrid TValue="AptituddeTestQuestionModel" DataSource="@((context as AptituddeTestModel)?.Aptituddetestquestions)" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
                                             AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true"
-                                            Toolbar="@(new string[] {"Add","Edit","Update","Cancel","ColumnChooser"})">
+                                            Toolbar="@(new string[] {"Add"})">
                                                 <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
                                                 <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
                                                 <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
@@ -167,45 +167,78 @@
                                                                             <div class="col-md-4" style="padding-top:15px;">
                                                                                 <SfCheckBox @bind-Checked=@QuestionReviewData.IsAmultiselectQuestion Label="Allows Multiple answers" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After" />
                                                                             </div>
-                                                                            <div class="col-md-12">
+                                                                            <div class="col-md-12" style="margin-top: 10px;">
                                                                                 <h3>Answers</h3>
                                                                             </div>
                                                                             <div>
                                                                                 <SfGrid @ref=@AptituddeTestAnswerGrid TValue="AptituddeTestQuestionAnswers" DataSource="@((QuestionContext as AptituddeTestQuestionModel)?.Aptituddetestquestionanswers)" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
-                                                                    AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true"
-                                                                    Toolbar="@(new string[] {"Add","Edit","Update","Cancel","ColumnChooser"})">
-                                                                                <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+                                                                                AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true"
+                                                                                Toolbar="@(new string[] {"Add"})">
+                                                                                <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
                                                                                 <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
                                                                                 <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
                                                                                 <GridPageSettings PageSize="20"></GridPageSettings>
-                                                                                    <GridEvents OnActionComplete="@OnAnswerActionComplete" OnActionBegin="@OnAnswerActionBegin" TValue="AptituddeTestQuestionAnswers"></GridEvents>
-                                                                                <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
+                                                                                    @*<GridEvents OnActionComplete="@OnAnswerActionComplete" OnActionBegin="@OnAnswerActionBegin" TValue="AptituddeTestQuestionAnswers"></GridEvents>*@
+
+                                                                                    <GridEvents 
+                                                                                        CellSelected="CellSelectHandler"
+                                                                                        CellSaved="CellSavedHandler"
+                                                                                        CommandClicked="OnCommandClicked"
+                                                                                        OnActionComplete="@OnAnswerActionComplete"
+                                                                                        TValue="AptituddeTestQuestionAnswers">
+                                                                                    </GridEvents>
+
+                                                                                    <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Batch" Dialog="DialogParams" ShowConfirmDialog=false  NewRowPosition="NewRowPosition.Bottom">
                                                                                         <Template Context="AnswerContext">
                                                                                         @{
-                                                                             AnswerReviewData = (AnswerContext as AptituddeTestQuestionAnswers);
-                                                                            if (AnswerReviewData != null)
-                                                                            {
-                                                                                                        <div class="row" style="margin:10px;">
-                                                                                                            <div class="col-md-12" hidden>
-                                                                                                                <SfNumericTextBox @bind-Value="@(AnswerReviewData.AptituddeTestQuestionAnswersId)" Enabled="false" Placeholder="Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
-                                                                                                            </div>
-                                                                                                            <div class="col-md-12">
-                                                                                                                <p>Question</p>
-                                                                                                                <SfTextBox Multiline="true" @bind-Value="@(AnswerReviewData.Answer)" Enabled="true" Placeholder="Enter Question" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                                                                                                            </div>
-                                                                                                            <div class="col-md-4" style="padding-top:15px;">
-                                                                                                                <SfCheckBox @bind-Checked=@AnswerReviewData.IsCorrectAnswer Label="Is the Correct Answer?" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After" />
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                            }
+                                                                                             AnswerReviewData = (AnswerContext as AptituddeTestQuestionAnswers);
+                                                                                            if (AnswerReviewData != null)
+                                                                                            {
+                                                                                                                        <div class="row" style="margin:10px;">
+                                                                                                                            <div class="col-md-12" hidden>
+                                                                                                                                <SfNumericTextBox @bind-Value="@(AnswerReviewData.AptituddeTestQuestionAnswersId)" Enabled="false" Placeholder="Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                                                                                                                            </div>
+                                                                                                                            <div class="col-md-12">
+                                                                                                                                <p>Question</p>
+                                                                                                                                <SfTextBox Multiline="true" @bind-Value="@(AnswerReviewData.Answer)" Enabled="true" Placeholder="Enter Question" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                                                                                            </div>
+                                                                                                                            <div class="col-md-4" style="padding-top:15px;">
+                                                                                                                                <SfCheckBox @bind-Checked=@AnswerReviewData.IsCorrectAnswer Label="Is the Correct Answer?" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After" />
+                                                                                                                            </div>
+                                                                                                                        </div>
+                                                                                            }
                                                                                         }
                                                                                     </Template>
                                                                                 </GridEditSettings>
                                                                                 <GridColumns>
-                                                                                    <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                                                                                    @*<GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>*@
+                                                                                <GridColumn HeaderText="Action"
+                                                                                            TextAlign="TextAlign.Center"
+                                                                                            Width="80"
+                                                                                            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+                                                                                    <GridCommandColumns>
+                                                                                        <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-delete", CssClass = "e-flat"})" ID="Delete"></GridCommandColumn>
+                                                                                    </GridCommandColumns>
+                                                                                </GridColumn>
                                                                                     <GridColumn Field=@nameof(AptituddeTestQuestionAnswers.AptituddeTestQuestionAnswersId) HeaderText="Id" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
                                                                                     <GridColumn Field=@nameof(AptituddeTestQuestionAnswers.Answer) HeaderText="Question" Width="200" AllowFiltering="false"></GridColumn>
-                                                                                        <GridColumn Field=@nameof(AptituddeTestQuestionAnswers.IsCorrectAnswer) HeaderText="Is Correct Answer" Width="120" AllowFiltering="false"></GridColumn>
+                                                                                    @*<GridColumn HeaderText="Rating" TextAlign="TextAlign.Center" Width="150">
+                                                                                        <Template Context="RadioContext">
+                                                                                            @{
+                                                                                                var employee = (RadioContext as AptituddeTestQuestionAnswers);
+
+                                                                                                <div class="col-md-12">
+                                                                                                    <SfRadioButton Label="Yes" Name="options" Value=true TChecked="bool" @bind-Checked="@(employee.IsCorrectAnswer)" ValueChange="OnValueChange"></SfRadioButton>
+                                                                                                    <SfRadioButton Label="No" Name="options" Value=false TChecked="bool" @bind-Checked="@(employee.IsCorrectAnswer)" ValueChange="OnValueChange"></SfRadioButton>
+                                                                                                </div>
+                                                                                            }
+                                                                                        </Template>
+                                                                                    </GridColumn>*@
+
+                                                                                    <GridColumn Field=@nameof(AptituddeTestQuestionAnswers.IsCorrectAnswer) HeaderText="Correct Answer" Width="120" DisplayAsCheckBox="true" AllowEditing="true">
+                                                                                    
+                                                                                    </GridColumn>
+                                                                                    @*<GridColumn Field=@nameof(AptituddeTestQuestionAnswers.IsCorrectAnswer) HeaderText="Is Correct Answer" Width="120" AllowFiltering="false"></GridColumn>*@
                                                                                 </GridColumns>
                                                                             </SfGrid>
                                                                             </div>
@@ -215,7 +248,15 @@
                                                     </Template>
                                                 </GridEditSettings>
                                                 <GridColumns>
-                                                    <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                                                    @*<GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>*@
+                                                    <GridColumn HeaderText="Action"
+                                                                TextAlign="TextAlign.Center"
+                                                                Width="50"
+                                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+                                                        <GridCommandColumns>
+                                                            <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})"></GridCommandColumn>
+                                                        </GridCommandColumns>
+                                                    </GridColumn>
                                                     <GridColumn Field=@nameof(AptituddeTestQuestionModel.AptituddeTestQuestionId) HeaderText="Id" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
                                                     <GridColumn HeaderText="Question" Width="200" AllowFiltering="false">
                                                         <Template Context="QuestionContext">
@@ -281,7 +322,15 @@
                 </Template>
             </GridEditSettings>
             <GridColumns>
-                <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                @*<GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>*@
+                <GridColumn HeaderText="Action"
+                            TextAlign="TextAlign.Center"
+                            Width="50"
+                            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+                    <GridCommandColumns>
+                        <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})"></GridCommandColumn>
+                    </GridCommandColumns>
+                </GridColumn>
                 <GridColumn Field=@nameof(AptituddeTestModel.AptituddeTestHeaderId) HeaderText="Id" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
                 <GridForeignColumn Field=@nameof(AptituddeTestModel.DepartmentId) HeaderText="Department" Width="150" ForeignKeyField="@(nameof(ADepartment.DepartmentId))" ForeignKeyValue="@(nameof(ADepartment.DepartmentDescription))" ForeignDataSource="@DepartmentData"></GridForeignColumn>
                 <GridForeignColumn Field=@nameof(AptituddeTestModel.JobTitleId) HeaderText="Job Title" Width="150" ForeignKeyField="@(nameof(AJobTitle.JobTitleId))" ForeignKeyValue="@(nameof(AJobTitle.JobTitleDescription))" ForeignDataSource="@JobTitleData"></GridForeignColumn>
@@ -322,6 +371,52 @@
     </div>
 </div>
 
+
+
+
+@*Confirm Deletion*@
+
+<div class="form-group col-md-12">
+    <SfDialog @ref="@ConfirmationDeleteDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @((MarkupString)@ConfirmationText)
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationApproveYes" />
+            <DialogButton Content="No" OnClick="@ComfirmationApproveNo" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+@*Saving Dialogue*@
+
+@*Saving Dialogue*@
+<div class="form-group col-md-12">
+    <SfDialog Width="80%" Height="20vh" AllowDragging=true EnableResize=true
+              CloseOnEscape=false IsModal=true ShowCloseIcon=false
+              Target=".mainbody" @ref=@SavingDialog Visible=false>
+        <DialogTemplates>
+            <Content>
+                <div class="dialogContent">
+                    <div class="loader">
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader-Saving-text"></div>
+                    </div>
+                    @*<p>Saving Record please wait......</p>*@
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+</div>
+
+
+
 @code {
     #region Toasters
     public static string? ToastContent { get; set; }
@@ -355,6 +450,12 @@
     string? ImageString { get; set; }
     long maxFileSize = 5242880/* 1024L * 1024L * 1024L * 2L */;//5 Megabytes
     string fileName = string.Empty;
+    SfRadioButton<bool> RadioButtonInstance;
+    public bool radiovalue;
+    SfDialog ConfirmationDeleteDialogue;
+    string ConfirmationText { get; set; }
+    AptituddeTestQuestionAnswers selectedemployee { get; set; }
+    SfDialog SavingDialog { get; set; }
 
     private ToolbarType Tooltype = ToolbarType.MultiRow;
     private List<ToolbarItemModel> Tools = new List<ToolbarItemModel>()
@@ -399,7 +500,7 @@
         try
         {
             string? accessToken = await settingsRepo.GetAccessToken();
-             
+
             var tasks = new List<Task>();
             tasks.Add(Task.Run(async () =>
             {
@@ -419,15 +520,15 @@
                    DurationTypeData = JsonSerializer.Deserialize<List<ADurationType>>(content, _options);
                }
            }));
-           tasks.Add(Task.Run(async () =>
-           {
+            tasks.Add(Task.Run(async () =>
+            {
                 var response = await http.GetAsync($"Utilities/GetDifficultyLevel");
-               var content = await response.Content.ReadAsStringAsync();
-               if (response.IsSuccessStatusCode)
-               {
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
                     DifficultyLevelData = JsonSerializer.Deserialize<List<ADifficultyLevel>>(content, _options);
-               }
-           }));
+                }
+            }));
             tasks.Add(Task.Run(async () =>
             {
                 var response = await http.GetAsync($"HumanResource/GetJobTitle");
@@ -550,6 +651,7 @@
             }
             return value;
         }
+
         public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
         {
             try
@@ -584,6 +686,59 @@
 
             return value;
         }
+
+        // public override async Task<object> BatchUpdateAsync(DataManager dataManager, object changedRecords, object addedRecords, object deletedRecords, string primaryColumnName, string key, int? dropIndex)
+        // {
+        //     object ReturnValue = changedRecords;
+        //     if (changedRecords != null)
+        //     {
+        //         ReturnValue = changedRecords;
+
+        //         var val = (changedRecords as List<AptituddeTestModel>);
+        //         if (val != null && val.Count > 0)
+        //         {
+        //             foreach (var item in val)
+        //             {
+        //                 var result = await reopsitory.SaveAptituddeTest(item);
+
+        //                 if (result.IsSuccessStatusCode)
+        //                 {
+        //                     toastService.ShowSuccess("Record was sucessfully updated");
+        //                 }
+        //                 else
+        //                 {
+        //                     toastService.ShowError("Ooops. Something went wrong");
+        //                 }
+        //             }
+        //         }
+        //     }
+
+        //     if (addedRecords != null)
+        //     {
+        //         ReturnValue = addedRecords;
+
+        //         var val = (addedRecords as List<AptituddeTestModel>);
+        //         if (val != null && val.Count > 0)
+        //         {
+        //             foreach (var item in val)
+        //             {
+        //                 var result = await reopsitory.SaveAptituddeTest(item);
+
+        //                 if (result.IsSuccessStatusCode)
+        //                 {
+        //                     toastService.ShowSuccess("Record was sucessfully added");
+        //                 }
+        //                 else
+        //                 {
+        //                     toastService.ShowError("Ooops. Something went wrong");
+        //                 }
+        //             }
+        //         }
+        //     }
+
+        //     return ReturnValue;
+        // }
+
     }
     public async Task OnAptituddeTestActionComplete(ActionEventArgs<AptituddeTestModel> args)
     {
@@ -592,7 +747,7 @@
             if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
             {
                 AptituddeTestHeaderGrid?.PreventRender(false);
-                
+
             }
         }
         catch (Exception ex)
@@ -679,6 +834,10 @@
             {
                 AptituddeTestAnswerGrid?.PreventRender(false);
             }
+            else if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Refresh))
+            {
+                AptituddeTestAnswerGrid?.Refresh();
+            }
         }
         catch (Exception ex)
         {
@@ -699,7 +858,7 @@
             }
             else if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
             {
-                
+
             }
         }
         catch (Exception ex)
@@ -707,6 +866,138 @@
             await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
         }
 
+    }
+
+    private async Task CellSavedHandler(CellSaveArgs<AptituddeTestQuestionAnswers> args)
+    {
+        try
+        {
+            await AptituddeTestAnswerGrid.EndEditAsync();
+        }
+        catch (Exception ex)
+        {
+            toasterservice.ShowError(ex.Message);
+        }
+        finally
+        {
+
+        }
+    }
+
+    //Enable cell edit on single click
+    public async Task CellSelectHandler(CellSelectEventArgs<AptituddeTestQuestionAnswers> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await AptituddeTestAnswerGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await AptituddeTestAnswerGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await AptituddeTestAnswerGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
+    public async Task OnCommandClicked(CommandClickEventArgs<AptituddeTestQuestionAnswers> args)
+    {
+
+        if (args.CommandColumn.ID == "Delete")
+        {
+            try
+            {
+                selectedemployee = args.RowData;
+                ConfirmationText = "<p>Are you sure you want to delete this record? </p>";
+                await this.ConfirmationDeleteDialogue.ShowAsync();
+            }
+            catch (Exception ex)
+            {
+                toasterservice.ShowError(ex.Message.ToString());
+            }
+            finally
+            {
+                StateHasChanged();
+            }
+
+        }
+    }
+
+
+    private async void ComfirmationApproveYes()
+    {
+        try
+        {
+            await this.ConfirmationDeleteDialogue.HideAsync();
+                        
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(selectedemployee);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            if(selectedemployee.AptituddeTestQuestionAnswersId != 0)
+            {
+                await SavingDialog.ShowAsync();
+                var result = await http.PostAsync($"HumanResource/DeleteAptituddeTestAnswer?qualificationid={selectedemployee.AptituddeTestQuestionAnswersId}", httpContent);
+
+                if (result.IsSuccessStatusCode)
+                {
+                    try
+                    {
+                        if (AptituddeTestAnswerGrid != null)
+                        {
+                            await AptituddeTestAnswerGrid.Refresh();
+                        }
+                        toasterservice.ClearAll();
+                        toasterservice.ShowSuccess("Record Successfully Deleted");
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                    finally
+                    {
+                        await SavingDialog.HideAsync();
+                    }
+
+                }
+                else
+                {
+                    toasterservice.ClearAll();
+                    toasterservice.ShowWarning("Record cannot be deleted because it is arleady used else where in the system");
+                }
+            }
+
+            else
+            {
+                toasterservice.ClearAll();
+                toasterservice.ShowWarning("This record is not yet saved in the database. There is nothing to be deleted.");
+            }
+        }
+        catch (Exception ex)
+        {
+            toasterservice.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await SavingDialog.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void ComfirmationApproveNo()
+    {
+        this.ConfirmationDeleteDialogue.HideAsync();
+    }
+
+    private void OnValueChange(ChangeArgs<bool> args)
+    {
+        radiovalue = args.Value;
     }
 
     private async Task SingleUpload(InputFileChangeEventArgs e)
