@@ -26,11 +26,11 @@ using static HCMIS.Pages.HR.Applicants.InterviewApplicationPage;
 using static HCMIS.Pages.HR.Applicants.FinalApplicationAssessmentPage;
 
 using static HCMIS.Pages.Utilities.BscPerspectivesFormPage;
-//using static HCMIS.Pages.Training.AssessmentSurveyPage;
-//using static HCMIS.Pages.Training.SurveyDeadlinePage;
-//using static HCMIS.Pages.Training.TrainingEvaluationForm;
+using static HCMIS.Pages.Training.AssessmentSurveyPage;
+using static HCMIS.Pages.Training.SurveyDeadlinePage;
+using static HCMIS.Pages.Training.TrainingEvaluationFormPage;
 //using static HCMIS.Pages.Training.CPDPage;
-//using static HCMIS.Pages.Training.GeneralInternalPage;
+using static HCMIS.Pages.Training.GeneralInternalPage;
 //using static HCMIS.Pages.Training.CPDSummaryPage;
 //using static HCMIS.Pages.Training.SubscriptionPage;
 using static HCMIS.Pages.BalanceScoreCard.AppraisalFormPage;
@@ -116,11 +116,11 @@ builder.Services.AddScoped<FinalStageApplicationAdapter>();
 builder.Services.AddScoped<BscPerspectiveAdapter>();
 builder.Services.AddScoped<AAnnualLeaveRoasterDeadlineDateAdapter>();
 
-//builder.Services.AddScoped<AssessmentAdapter>(); 
-//builder.Services.AddScoped<AssessmentDeadlineAdapter>();
-//builder.Services.AddScoped<EvaluationAdapter>(); 
+builder.Services.AddScoped<AssessmentAdapter>();
+builder.Services.AddScoped<AssessmentDeadlineAdapter>();
+builder.Services.AddScoped<EvaluationAdapter>();
 //builder.Services.AddScoped<CPDAdapter>(); 
-//builder.Services.AddScoped<GeneralInternalAdapter>();
+builder.Services.AddScoped<GeneralInternalAdapter>();
 //builder.Services.AddScoped<CPDSummaryAdapter>();
 //builder.Services.AddScoped<SubscriptionSummaryAdapter>(); 
 builder.Services.AddScoped<BSCAdapter>();
@@ -180,6 +180,6 @@ builder.Services.AddScoped<IUtilityRepository,UtilityRepository>();
 builder.Services.AddScoped<IAuthenticationService,AuthenticationService>();
 
 //builder.Services.AddSyncfusionBlazor(options => { options.IgnoreScriptIsolation = false; });
-Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("MjgxODg0MEAzMjMzMmUzMDJlMzBrVFl6QXUrYnBORlpHbmtMOEZwTm50enVkR2E5YjRKc0lIUU1ROXlsLzFZPQ==");
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Mjk5OTUxOEAzMjM0MmUzMDJlMzBqNjMyUXFBTTB0OEh1N1NmUlZHZTZlVzc4amo1ZCtQWHZadnF0dTBnKy9rPQ==");
 await builder.Build().RunAsync();
 

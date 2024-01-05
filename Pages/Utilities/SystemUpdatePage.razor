@@ -1,0 +1,72 @@
+﻿@*https://techcommunity.microsoft.com/t5/web-development/blazor-wasm-pwa-applications-updates-cache-busting-with/m-p/3920976*@
+
+@page "/SystemUpdatePage"
+
+<h3>SystemUpdate</h3>
+
+@inject IJSRuntime _jsRuntime
+@inject NavigationManager uriHelper
+
+@*To Prompt User to update*@
+@if (_newVersionAvailable)
+{
+    <button type="button" class="btn btn-danger shadow floating-update-button" onclick="window.location.reload()">
+        A new version of the application is available. Click here to upgrade.
+    </button>
+}
+
+@code {
+    private bool _newVersionAvailable = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RegisterForUpdateAvailableNotification();
+    }
+
+    private async Task RegisterForUpdateAvailableNotification()
+    {
+        await _jsRuntime.InvokeAsync<object>(
+            identifier: "registerForUpdateAvailableNotification",
+            DotNetObjectReference.Create(this),
+            nameof(OnUpdateAvailable));
+    }
+
+    [JSInvokable(nameof(OnUpdateAvailable))]
+    public Task OnUpdateAvailable()
+    {
+        _newVersionAvailable = true;
+
+        StateHasChanged();
+
+        return Task.CompletedTask;
+    }
+}
+
+@*To automatically update*@
+
+@*
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await RegisterForUpdateAvailableNotification();
+    }
+
+    private async Task RegisterForUpdateAvailableNotification()
+    {
+        await _jsRuntime.InvokeAsync<object>(
+            identifier: "registerForUpdateAvailableNotification",
+            DotNetObjectReference.Create(this),
+            nameof(OnUpdateAvailable));
+    }
+
+    [JSInvokable(nameof(OnUpdateAvailable))]
+    public Task OnUpdateAvailable()
+    {
+        uriHelper.NavigateTo(uriHelper.Uri, forceLoad: true);
+
+        StateHasChanged();
+
+        return Task.CompletedTask;
+    }
+}
+*@

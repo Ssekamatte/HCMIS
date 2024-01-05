@@ -1,0 +1,150 @@
+﻿@* @page "/GeneralInternalBudgetPage" *@
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@using HCMIS.Interface;
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using System.Collections;
+@using System.IO;
+@using HCMIS.SHARED.Models;
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager navigation;
+@inject SystemSettings _SystemSettings;
+@using HCMIS.ViewModel;
+@inject IToastService toastService;
+@inject IAuthenticationService AuthService;
+
+<SfGrid @ref="@BudgetGrid" DataSource="@datasource" GridLines="GridLine.Both"
+        TValue="TrainingGeneralInternalBudget" ID="Grid1" AllowTextWrap="true" AllowPaging="false" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="false" AllowSorting="false">
+    <GridEditSettings AllowAdding="false" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
+    <GridEvents CellSelected="CellSelectHandler"
+                CellSaved="CellSavedHandler"
+                TValue="TrainingGeneralInternalBudget">
+    </GridEvents>
+
+    <GridColumns>
+        <GridColumn Field=@nameof(TrainingGeneralInternalBudget.GeneralInternalBudgetId) HeaderText="Id" AllowEditing="false" IsPrimaryKey="true" Visible="false" Width="150"></GridColumn>
+        <GridColumn Field=@nameof(TrainingGeneralInternalBudget.GeneralInternalId) HeaderText="GeneralInternalId" Visible="false" Width="150"></GridColumn>
+        <GridForeignColumn Field="@nameof(TrainingGeneralInternalBudget.FinancialYearId)"
+                           Visible="true"
+                           HeaderText="Financial Year"
+                           Width="100"
+                           ForeignKeyField="@nameof(AFinancialYear.Id)"
+                           ForeignKeyValue="@nameof(AFinancialYear.FinancialYear)"
+                           ForeignDataSource="@FinancialYearData"
+                           ValidationRules="@(new ValidationRules {Required=true})"
+                           AllowEditing="false"
+                           CustomAttributes="@(new Dictionary<string,
+                                                       object>(){ { "class", "e-attr1" }})">
+        </GridForeignColumn>
+        <GridColumn Field=@nameof(TrainingGeneralInternalBudget.Budget) HeaderText="Budget" Width="100"
+                    CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})">
+        </GridColumn>
+    </GridColumns>
+</SfGrid>
+
+@code
+{
+    [Parameter]
+    public List<TrainingGeneralInternalBudget>? behaviourdata { get; set; }
+    [Parameter]
+    public int GeneralInternalId { get; set; }
+    [Parameter]
+    public int? finyearid { get; set; }
+    [Parameter]
+    public EventCallback<List<TrainingGeneralInternalBudget>?> onscorecardtoggle { get; set; }
+    public SfGrid<TrainingGeneralInternalBudget>? BudgetGrid { get; set; }
+    List<TrainingGeneralInternalBudget>? datasource { get; set; }
+    [Parameter]
+    public List<AFinancialYear>? FinancialYearData { get; set; }
+
+    Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
+    int? previousGeneralInternalId { get; set; }
+    [Parameter]
+    public Syncfusion.Blazor.Grids.Action _previous { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (previousGeneralInternalId != GeneralInternalId)
+        {
+            int countid = -10000;
+            previousGeneralInternalId = GeneralInternalId;
+            datasource = new List<TrainingGeneralInternalBudget>();
+            if (behaviourdata != null && behaviourdata.Count() > 0)
+            {
+                datasource.AddRange(behaviourdata);
+            }
+            else
+            {
+                if (FinancialYearData != null)
+                {
+                    var _FinancialYearData = FinancialYearData.Where(o => o.Id == finyearid).ToList();
+                    foreach (var item in _FinancialYearData)
+                    {
+                        var m = new TrainingGeneralInternalBudget();
+                        m.GeneralInternalBudgetId = countid;
+                        m.FinancialYearId = item.Id;
+
+                        datasource.Add(m);
+                        countid++;
+                    }
+
+                    datasource = datasource.OrderBy(o => o.GeneralInternalBudgetId).ToList();
+                }
+            }
+        }
+    }
+
+    #region BehaviourMethods
+
+    //For Behavioral Plan Grid
+    //Enable cell edit on single click
+    public async Task CellSelectHandler(CellSelectEventArgs<TrainingGeneralInternalBudget> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await BudgetGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await BudgetGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await BudgetGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
+    private async Task CellSavedHandler(CellSaveArgs<TrainingGeneralInternalBudget> args)
+    {
+        try
+        {
+
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message);
+        }
+        finally
+        {
+            await BudgetGrid.EndEditAsync();
+            await onscorecardtoggle.InvokeAsync(datasource);
+        }
+    }
+
+    #endregion BehaviourMethods
+}
+
+
+

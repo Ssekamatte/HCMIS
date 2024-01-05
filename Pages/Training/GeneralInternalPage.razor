@@ -1,5 +1,7 @@
 ﻿@page "/GeneralInternalPage"
+@using HCMIS.Data
 @using HCMIS.Model
+@using HCMIS.Pages.Training.PartialViews
 @using HCMIS.SHARED.Data;
 @using HCMIS.SHARED.Models;
 @using HCMIS.ViewModel
@@ -8,7 +10,7 @@
 @inject ApiConfig _ApiConfig;
 @inject HttpClient Http
 @inject AppState AppState
-@inject NavigationManager Navigation
+@inject NavigationManager navManager
 @using System.Collections;
 
 @inject IToastService toastService;
@@ -67,165 +69,253 @@
         z-index: 9999; /* Adjust the value as needed */
     }
 
+        .e-spinner-pane.e-spin-overlay {
+        background-color: rgb(192,192,192);
+    }
 
+    /*hide the Default Grid spinner */
+    .e-grid .e-spinner-pane {
+        display: none;
+    }
+
+    /*Disable select all on grid checkbox*/
+    .e-headercelldiv.e-headerchkcelldiv .e-checkbox-wrapper.e-css {
+        pointer-events: none;
+        opacity: 0.5;
+    }
 </style>
+
 
 <center>
     <h5>
-        <strong>TRAINING PLAN FOR THE FINANCIAL YEAR</strong>
+        <strong>TRAINING PLAN FOR THE FINANCIAL YEAR: @financialyeardesc</strong>
     </h5>
 </center>
 
-<SfGrid @ref="@DataGrid" TValue="ViewGeneralInternal" 
-    ID="Grid" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" 
-    AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" 
-    AllowSorting="true" AllowTextWrap="true" Toolbar="@ToolbarMenu" GridLines="GridLine.Both">
-    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="@EditMode.Dialog"
-                      Dialog="@DialogParams">
-        <HeaderTemplate>
-            @{
-                var text = GetGeneralHeader((context as ViewGeneralInternal));
+<div class="form-row">
+    <div class="form-group col-md-12">
+        <SfAccordion ExpandMode="@ExpandMode.Single">
+            <AccordionItems>
+                <AccordionItem Expanded="false" CssClass="const">
+                    <HeaderTemplate>Search Panel</HeaderTemplate>
+                    <ContentTemplate>
+                        <HCMIS.Pages.Training.PartialViews.SearchTrainingsPage 
+                            FinancialYearData="@FinancialYearData" 
+                            finyearid="@finyearid" 
+                            onsearchtoggle="@ToggleSearchQuery">
+                        </HCMIS.Pages.Training.PartialViews.SearchTrainingsPage>
+                    </ContentTemplate>
+                </AccordionItem>
+            </AccordionItems>
+        </SfAccordion>
+    </div>
+</div>
+
+<div class="form-group col-md-12">
+    <SfSpinner @ref="SpinnerObj" Label="Loading Please Wait....." Size="50" ZIndex="1001">
+        @*Render custom spinner component.*@
+    </SfSpinner>
+</div>
+
+<div class="col-md-12">
+    <SfGrid @ref="@DataGrid"
+                TValue="TrainingGeneralInternal"
+                ID="Grid"
+                AllowPaging="true"
+                AllowFiltering="false"
+                AllowReordering="true"
+                AllowResizing="true"
+                AllowGrouping="false"
+                AllowExcelExport="true"
+                AllowPdfExport="true"
+                AllowSelection="true"
+                AllowSorting="true"
+                @attributes="@GridAttributes"
+                Query="@MainQuery"
+                GridLines="GridLine.Both"
+                AllowTextWrap="true" Toolbar="@ToolbarMenu">
+
+        <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="@EditMode.Dialog"
+                          Dialog="@DialogParams">
+            <HeaderTemplate>
+                @{
+                    var text = GetGeneralHeader((context as TrainingGeneralInternal));
                     <div class="headerbandimg" />
                     <span>@text</span>
-            }
-        </HeaderTemplate>
-        <Template>
-            @{
-                <center>
-                <h5>
-                <strong>TRAINING PLAN FOR THE FINANCIAL YEAR</strong>
-                </h5>
-                </center>
-                GeneralData = (context as ViewGeneralInternal);
-                <div>
-                    <div class="row">
-                        <div class="col-md-4" hidden="hidden">
-                             <SfNumericTextBox ID="Id" @bind-Value="@(GeneralData.Id)" Placeholder="Id" Enabled="false" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
-                        </div>
-                        <div class="col-md-4">
-                        <p><h3>Training Description<span style="color:red;">*</span></h3></p>
-                              <SfTextBox Multiline="false" ID="TrainingDescription" @bind-Value="@(GeneralData.TrainingDescription)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
-                        </div>
-                        <div class="col-md-4">
-                        <p><h3>Scheduled Start Date<span style="color:red;">*</span></h3></p>
-                               <SfDatePicker @bind-Value="@(GeneralData.StartDate)" Enabled="true" Placeholder="Start Date" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
-                        </div>
-                        <div class="col-md-4">
-                        <p><h3>Scheduled End Date<span style="color:red;">*</span></h3></p>
-                               <SfDatePicker @bind-Value="@(GeneralData.EndDate)" Enabled="true" Placeholder="End Date" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
-                        </div>
+                }
+            </HeaderTemplate>
+            <Template>
+                @{
+                    <center>
+                        <h5>
+                            <strong>TRAINING PLAN FOR THE FINANCIAL YEAR: @financialyeardesc</strong>
+                        </h5>
+                    </center>
 
-                        <div class="col-md-4">
-                            <p><h3>National/International<span style="color:red;">*</span></h3></p>
-                            <SfDropDownList @bind-Value="@(GeneralData.LocalityId)" Enabled="true" TItem="ATrainingLocality" TValue="int?" DataSource="@LocalityData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                <DropDownListFieldSettings Value="@nameof(ATrainingLocality.LocalityId)" Text="@nameof(ATrainingLocality.LocalityDesc)"></DropDownListFieldSettings>
-                            </SfDropDownList>
-                        </div>
+                    GeneralData = (context as TrainingGeneralInternal);
+                    <div>
+                        <div class="row">
+                            <div class="col-md-4" hidden="hidden">
+                                <SfNumericTextBox ID="Id" @bind-Value="@(GeneralData.GeneralInternalId)" Placeholder="Id" Enabled="false" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <p>Financial Year:<span style="color:red;">*</span></p>
+                                <SfDropDownList @bind-Value="@(GeneralData.FinancialYearId)" TItem="AFinancialYear" TValue="int?"
+                                                DataSource="@FinancialYearData" Placeholder="Please select"
+                                                FloatLabelType="FloatLabelType.Never" AllowFiltering="true"
+                                                FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                                                Enabled="false">
+                                    <DropDownListFieldSettings Value="@nameof(AFinancialYear.Id)"
+                                                               Text="@nameof(AFinancialYear.FinancialYear)">
+                                    </DropDownListFieldSettings>
+                                </SfDropDownList>
+                            </div>
+                            <div class="col-md-4">
+                                <p>Training Description<span style="color:red;">*</span></p>
+                                <SfTextBox Multiline="false" ID="TrainingDescription" @bind-Value="@(GeneralData.TrainingDescription)" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                            </div>
+                            <div class="col-md-4">
+                                <p>Scheduled Start Date<span style="color:red;">*</span></p>
+                                <SfDatePicker @bind-Value="@(GeneralData.StartDate)" Enabled="true" Placeholder="Start Date" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never" Min="MinDate" Max='@MaxDate'></SfDatePicker>
+                            </div>
+                            <div class="col-md-4">
+                                <p>Scheduled End Date<span style="color:red;">*</span></p>
+                                <SfDatePicker @bind-Value="@(GeneralData.EndDate)" Enabled="true" Placeholder="End Date" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never" Min="MinDate" Max='@MaxDate'></SfDatePicker>
+                            </div>
 
-                        <div class="col-md-4">
-                        <p><h3>Approach / Method<span style="color:red;">*</span></h3></p>
-                                <SfMultiSelect @ref="@TrainingMethodDatasourceObj" TValue="int[]" TItem="TrainingAMethod" AllowFiltering="true" Mode="@VisualMode.CheckBox" DataSource="@TrainingMethodData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Approach/Method" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
+                            <div class="col-md-4">
+                                <p>Training Type<span style="color:red;">*</span></p>
+                                <SfDropDownList @bind-Value="@(GeneralData.LocalityId)" Enabled="true" TItem="ATrainingLocality" TValue="int?" DataSource="@LocalityData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                    <DropDownListFieldSettings Value="@nameof(ATrainingLocality.LocalityId)" Text="@nameof(ATrainingLocality.LocalityDesc)"></DropDownListFieldSettings>
+                                </SfDropDownList>
+                            </div>
+
+                            <div class="col-md-4">
+                                <p>Approach / Method<span style="color:red;">*</span></p>
+                                <SfMultiSelect @ref="@TrainingMethodDatasourceObj" TValue="int[]" TItem="TrainingAMethod" AllowFiltering="true" Mode="@VisualMode.CheckBox" DataSource="@TrainingMethodData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Approach/Method" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
                                     <MultiSelectFieldSettings Value="@nameof(TrainingAMethod.Id)" Text="@nameof(TrainingAMethod.TrainingMethod)"></MultiSelectFieldSettings>
                                     <MultiSelectEvents TValue="int[]" TItem="TrainingAMethod" ValueChange="OnMethodDatasourceChange" DataBound="OnMethodDatasourceBound"></MultiSelectEvents>
                                 </SfMultiSelect>
-                        </div>
-                        <div class="col-md-4">
-                        <p><h3>Target Team</h3></p>
-                                <SfMultiSelect @ref="@TrainingTargetDatasourceObj" TValue="int[]" TItem="TrainingATargetTeam" AllowFiltering="true" Mode="@VisualMode.CheckBox" DataSource="@TrainingTargetData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Approach/Method" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
+                            </div>
+                            <div class="col-md-4">
+                                <p>Target Team</p>
+                                <SfMultiSelect @ref="@TrainingTargetDatasourceObj" TValue="int[]" TItem="TrainingATargetTeam" AllowFiltering="true" Mode="@VisualMode.CheckBox" DataSource="@TrainingTargetData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Approach/Method" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
                                     <MultiSelectFieldSettings Value="@nameof(TrainingATargetTeam.Id)" Text="@nameof(TrainingATargetTeam.TargetTeam)"></MultiSelectFieldSettings>
                                     <MultiSelectEvents TValue="int[]" TItem="TrainingATargetTeam" ValueChange="OnTargetDatasourceChange" DataBound="OnTargetDatasourceBound"></MultiSelectEvents>
                                 </SfMultiSelect>
-                        </div>
-                        <div class="col-md-4">
-                               <p><h3>ExpectedOutcomes</h3></p>
-                               <SfTextBox Multiline="true" ID="Location" @bind-Value="@(GeneralData.ExpectedOutcomes)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
-                        </div>
-                        <div class="col-md-12">
-                            <center>
-                                <h5>
-                                    <strong>BUDGETING SECTION</strong>
-                                </h5>
-                            </center>
+                            </div>
+                            <div class="col-md-8">
+                                <p>Expected Outcomes</p>
+                                <SfTextBox Multiline="true" ID="Location" rows="6" @bind-Value="@(GeneralData.ExpectedOutcomes)" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                            </div>
+                            <div class="col-md-12">
 
-                                <SfGrid @ref="@DataGrid1"
-                                    DataSource="@GeneralData.TrainingGeneralInternalBudget"
-                                    TValue="ViewGeneralInternalBudget" 
-                                    ID="Grid1" 
-                                    AllowPaging="true" AllowFiltering="false" AllowReordering="true" 
-                                    AllowResizing="true" AllowGrouping="true" AllowExcelExport="false"
-                                    AllowPdfExport="false" AllowSelection="true" AllowSorting="true">
-                                <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" 
-                                    Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
-                                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.FilterBar"></GridFilterSettings>
-                                    <GridPageSettings PageSizes="true"></GridPageSettings>
-                                        <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Both" 
-                                         Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
-                                    <GridEvents CellSelected="CellSelectHandler" TValue="ViewGeneralInternalBudget"></GridEvents>
-                                <GridColumns>
-    	                                <GridColumn Field=@nameof(ViewGeneralInternalBudget.Id) HeaderText="Id" AllowEditing="false" IsPrimaryKey="true" Visible="false" Width="150"></GridColumn>
-                                        <GridColumn Field=@nameof(ViewGeneralInternalBudget.GeneralInternalId) HeaderText="GeneralInternalId" Visible="false" Width="150"></GridColumn>
-                                        <GridForeignColumn Field="@nameof(ViewGeneralInternalBudget.FinancialYear)"
-                                                       Visible="true"
-                                                       HeaderText="Financial Year"
-                                                       Width="100"
-                                                       ForeignKeyField="@nameof(AFinancialYear.Id)"
-                                                       ForeignKeyValue="@nameof(AFinancialYear.FinancialYear)"
-                                                       ForeignDataSource="@FinancialYearData"
-                                                       ValidationRules="@(new ValidationRules {Required=true})"
-                                                       AllowEditing="false"
-                                                       CustomAttributes="@(new Dictionary<string,
-                                                       object>(){ { "class", "e-attr1" }})">
-                                        </GridForeignColumn>
-                                        <GridColumn Field=@nameof(ViewGeneralInternalBudget.Budget) HeaderText="Budget"  Width="100"
-                                            CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})">
-                                         </GridColumn>
-                                         </GridColumns>
-                                </SfGrid>
+                                <h6 style="background-color:#268cff; color:ghostwhite;font-weight:bolder;font-size:large; text-align:center;margin-top:20px;">BUDGET SECTION</h6>
+
+
+                                <HCMIS.Pages.Training.PartialViews.GeneralInternalBudgetPage behaviourdata="@GeneralData.TrainingGeneralInternalBudget.ToList()"
+                                                                                             FinancialYearData="@FinancialYearData"
+                                                                                             GeneralInternalId="@GeneralData.GeneralInternalId"
+                                                                                             onscorecardtoggle="@ToggleTrainingGeneralInternalBehaviour" 
+                                                                                             finyearid="@finyearid">
+                                </HCMIS.Pages.Training.PartialViews.GeneralInternalBudgetPage>
+                            </div>
                         </div>
                     </div>
-                </div>
-            }
-        </Template>
-        <FooterTemplate>
-            @if (!string.IsNullOrEmpty(UserRole)&& UserRole.Contains("Human Resource"
-                 , StringComparison.CurrentCultureIgnoreCase))
-            {
-                <button @onclick="@onApproveForm" class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Approve Plan</button>
-                <button @onclick="@onRejectForm" class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Reject Plan</button>
-                <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel Plan</button>                
-            }
-            else
-            {
-                <button @onclick="@onSaveDraftForm" class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
-                <button @onclick="@onSubmitForm" class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Submit Plan</button>
-                <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel Plan</button>                
-            }
-        </FooterTemplate>
-    </GridEditSettings>
-    <GridPageSettings PageSizes="true"></GridPageSettings>
+                }
+            </Template>
+            <FooterTemplate>
+                <button @onclick="@onSubmitForm" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Save Plan</button>
+                <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel Plan</button>
+            </FooterTemplate>
+        </GridEditSettings>
+        <GridPageSettings PageSizes="true"></GridPageSettings>
         <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple"></GridSelectionSettings>
         <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
-    <GridEvents OnActionBegin="TrainingActionBegin" OnActionComplete="TrainingActionComplete" TValue="ViewGeneralInternal"></GridEvents>
-    <SfDataManager AdaptorInstance="@typeof(GeneralInternalAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-    <GridColumns>
-      <GridColumn Type="ColumnType.CheckBox" Width="20"></GridColumn>
-        <GridColumn Field=@nameof(ViewGeneralInternal.Id) HeaderText="Id" AllowEditing="false" IsPrimaryKey="true" Visible="false" Width="150"></GridColumn>
-        <GridColumn Field=@nameof(ViewGeneralInternal.TrainingDescription) HeaderText="Training Description" Width="120" CustomAttributes="@(new Dictionary<string,
+        <GridEvents 
+                    OnActionBegin="TrainingActionBegin" 
+                    OnActionComplete="TrainingActionComplete"
+                    OnLoad="LoadHandler"
+                    DataBound="DataBound"
+            TValue="TrainingGeneralInternal">
+        </GridEvents>
+        <SfDataManager AdaptorInstance="@typeof(GeneralInternalAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+        <GridColumns>
+            @* <GridColumn Type="ColumnType.CheckBox" Width="20"></GridColumn> *@
+            <GridColumn HeaderText="Manage"
+                        Width="30"
+                        CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"
+                        TextAlign="TextAlign.Left">
+                <GridCommandColumns>
+                    <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})"></GridCommandColumn>
+                </GridCommandColumns>
+            </GridColumn>
+            <GridColumn Field=@nameof(TrainingGeneralInternal.GeneralInternalId) HeaderText="Id" AllowEditing="false" IsPrimaryKey="true" Visible="false" Width="150"></GridColumn>
+            <GridColumn Field=@nameof(TrainingGeneralInternal.TrainingDescription) HeaderText="Training Description" Width="120" CustomAttributes="@(new Dictionary<string,
         object>(){ { "class", "e-attr1" }})"></GridColumn>
-        <GridColumn Field=@nameof(ViewGeneralInternal.StartDate) HeaderText="Training Start Date" Format="dd/MMMM/yyyy" TextAlign="TextAlign.Justify" Width="100" 
-        ClipMode="ClipMode.EllipsisWithTooltip" Type="ColumnType.Date" CustomAttributes="@(new Dictionary<string,
+            <GridColumn Field=@nameof(TrainingGeneralInternal.StartDate) HeaderText="Training Start Date" Format="dd/MMMM/yyyy" TextAlign="TextAlign.Justify" Width="100"
+                        ClipMode="ClipMode.EllipsisWithTooltip" Type="ColumnType.Date" CustomAttributes="@(new Dictionary<string,
         object>(){ { "class", "e-attr1" }})"></GridColumn>
-        <GridColumn Field=@nameof(ViewGeneralInternal.EndDate) HeaderText="Training End Date" Format="dd/MMMM/yyyy" TextAlign="TextAlign.Justify" Width="100"
-        ClipMode="ClipMode.EllipsisWithTooltip" Type="ColumnType.Date" CustomAttributes="@(new Dictionary<string,
+            <GridColumn Field=@nameof(TrainingGeneralInternal.EndDate) HeaderText="Training End Date" Format="dd/MMMM/yyyy" TextAlign="TextAlign.Justify" Width="100"
+                        ClipMode="ClipMode.EllipsisWithTooltip" Type="ColumnType.Date" CustomAttributes="@(new Dictionary<string,
         object>(){ { "class", "e-attr1" }})"></GridColumn>
-        @*<GridColumn Field=@nameof(ViewGeneralInternal.Location) HeaderText="Location"  Width="90" CustomAttributes="@(new Dictionary<string,
-        object>(){ { "class", "e-attr1" }})"></GridColumn>
-        <GridColumn Field=@nameof(ViewGeneralInternal.Officers) HeaderText="Officers"  Width="90" CustomAttributes="@(new Dictionary<string,
-        object>(){ { "class", "e-attr1" }})"></GridColumn>
-        <GridColumn Field=@nameof(ViewGeneralInternal.Amount) HeaderText="Amount"  Width="90" CustomAttributes="@(new Dictionary<string,
-        object>(){ { "class", "e-attr1" }})"></GridColumn>*@
-    </GridColumns>
-</SfGrid>
+            @*<GridColumn Field=@nameof(TrainingGeneralInternal.Location) HeaderText="Location"  Width="90" CustomAttributes="@(new Dictionary<string,
+            object>(){ { "class", "e-attr1" }})"></GridColumn>
+            <GridColumn Field=@nameof(TrainingGeneralInternal.Officers) HeaderText="Officers"  Width="90" CustomAttributes="@(new Dictionary<string,
+            object>(){ { "class", "e-attr1" }})"></GridColumn>
+            <GridColumn Field=@nameof(TrainingGeneralInternal.Amount) HeaderText="Amount"  Width="90" CustomAttributes="@(new Dictionary<string,
+            object>(){ { "class", "e-attr1" }})"></GridColumn>*@
+        </GridColumns>
+    </SfGrid>
+
+</div>
+
+<div class="form-group col-md-12">
+    <SfDialog @ref="@ConfirmationSubmitDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @((MarkupString)@ConfirmationText)
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationSubmitYes" />
+            <DialogButton Content="No" OnClick="@ComfirmationSubmitNo" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+
+<div>
+    <SfDialog @ref="@LoadingDialogue"
+              ID="LoadingDialog"
+              Height="auto"
+              Width="40%"
+              AllowDragging="true"
+              Target=".mainbody"
+              ShowCloseIcon="false"
+              IsModal=true
+              Visible="false">
+        <DialogTemplates>
+            <Content>
+                <div style="padding:25px">
+                    <div class="loader">
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader-Saving-text"></div>
+                    </div>
+                </div>
+            </Content>
+            <FooterTemplate>
+
+            </FooterTemplate>
+        </DialogTemplates>
+    </SfDialog>
+</div>
+
 
 @code {
     #region Toasters
@@ -243,10 +333,10 @@
         };
     #endregion Toasters
 
-    SfGrid<ViewGeneralInternalBudget>? DataGrid1 { get; set; }
+    SfGrid<TrainingGeneralInternalBudget>? DataGrid1 { get; set; }
 
-    SfGrid<ViewGeneralInternal>? DataGrid { get; set; }
-    private static ViewGeneralInternal? GeneralData { get; set; }
+    SfGrid<TrainingGeneralInternal>? DataGrid { get; set; }
+    private static TrainingGeneralInternal? GeneralData { get; set; }
     List<TrainingAMethod>? TrainingMethodData { get; set; }
     List<TrainingATargetTeam>? TrainingTargetData { get; set; }
     List<AFinancialYear>? FinancialYearData { get; set; }
@@ -256,15 +346,27 @@
     string UserRole { get; set; }
     List<ATrainingLocality>? LocalityData { get; set; }
     LoginResultModel? Credentials { get; set; }
-    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "100%"};
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "98%" };
+    public int? finyearid { get; set; }
+    public AppraisalSearch searchpanel { get; set; } = new AppraisalSearch();
+    public Query MainQuery = new Query();
+    string? financialyeardesc = null;
+    public DateTime MinDate { get; set; } = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
+    public DateTime MaxDate { get; set; } = new DateTime(DateTime.Now.Year, 12, 31); 
+    private Dictionary<string, object> GridAttributes { get; set; } = new Dictionary<string, object>();
+    SfSpinner? SpinnerObj;
+    SfDialog ConfirmationSubmitDialogue;
+    string ConfirmationText { get; set; }
+    SfDialog? LoadingDialogue;
+    GeneralInternalBudgetPage traininginstructionsref;
 
     private List<object> ToolbarMenu = new List<object>()
     {
-        new ItemModel() { Text = "Capture Training Plan", PrefixIcon = "e-add", Id = "Grid_add"},
-        new ItemModel(){ Text = "Edit Training Plan", PrefixIcon= "e-edit", Id="Grid_edit"},
-        new ItemModel(){ Text = "Delete Training Plan", PrefixIcon= "e-delete", Id="Grid_delete"},
-        new ItemModel(){ Text = "Update Training Plan", PrefixIcon= "e-update", Id="Grid_update"},
-        new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
+        new ItemModel() { Text = "Capture Training Plan", PrefixIcon = "e-add", Id = "Grid_add"}
+        // ,new ItemModel(){ Text = "Edit Training Plan", PrefixIcon= "e-edit", Id="Grid_edit"},
+        // new ItemModel(){ Text = "Delete Training Plan", PrefixIcon= "e-delete", Id="Grid_delete"},
+        // new ItemModel(){ Text = "Update Training Plan", PrefixIcon= "e-update", Id="Grid_update"},
+        // new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
     };
 
     public class  FinancialYearsClass
@@ -280,143 +382,198 @@
 
     private List<FinancialYearsClass> FinancialYearsList = new List<FinancialYearsClass>();
 
-    private async void GenerateFinancialYearsList()
+    private void ToggleSearchQuery(Query? DetailData)
     {
         try
         {
-            if (FinancialYearData == null)
+            if (DetailData != null)
             {
-                return;
+                MainQuery = DetailData;
             }
-
-            //if (GeneralInternalEntity != null && GeneralInternalEntity.TrainingGeneralInternalBudget == null)
-            if (GeneralData != null && GeneralData.TrainingGeneralInternalBudget == null)
-            {
-                List<ViewGeneralInternalBudget> m = new List<ViewGeneralInternalBudget>();
-
-                foreach (var n in FinancialYearData)
-                {
-                    Random random = new Random();
-                    m.Add(new ViewGeneralInternalBudget
-                        {
-                            Id = random.Next(1000, 10000),
-                            FinancialYear = n.Id
-                        });
-                }
-                GeneralData.TrainingGeneralInternalBudget = m;
-            }
-
-            else
-            {
-                foreach (var n in FinancialYearData)
-                {
-                    var x = GeneralData.TrainingGeneralInternalBudget.FirstOrDefault(o => o.FinancialYear == n.Id);
-                    if (x == null)
-                    {
-                        Random random = new Random();
-                        GeneralData.TrainingGeneralInternalBudget.Add(new ViewGeneralInternalBudget
-                            {
-                                Id = random.Next(1000, 10000),
-                                FinancialYear = n.Id
-                            });
-                    }
-                }
-            }
-
         }
         catch (Exception ex)
         {
-
+            throw ex;
         }
-
         finally
         {
-
+            StateHasChanged();
         }
+
     }
 
-    protected override async Task OnParametersSetAsync()
+    private void ToggleTrainingGeneralInternalBehaviour(List<TrainingGeneralInternalBudget>? BehaviourChange)
     {
-        GenerateFinancialYearsList();
+        if (GeneralData != null && BehaviourChange != null)
+        {
+            if (GeneralData.TrainingGeneralInternalBudget == null)
+            {
+                GeneralData.TrainingGeneralInternalBudget = new List<TrainingGeneralInternalBudget>();
+            }
+            GeneralData.TrainingGeneralInternalBudget = BehaviourChange;
+        }
     }
 
     protected override async Task OnInitializedAsync()
     {
-
-        if(FinancialYearsList!=null)
+        try
         {
-            FinancialYearsList.Clear();
+            await base.OnInitializedAsync();
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
+            {
+                navManager.NavigateTo("/LoginPage", true);
+            }
+            else
+            {
+                Credentials = await AuthService.GetUserCredentials();
+                JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                List<Task> t = new List<Task>();
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responsemethod = await Http.GetAsync($"Utilities/GetTrainingMethod");
+                    if (responsemethod.IsSuccessStatusCode)
+                    {
+                        var contentmethod = await responsemethod.Content.ReadAsStringAsync();
+                        TrainingMethodData = JsonSerializer.Deserialize<List<TrainingAMethod>>(contentmethod, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responsetarget = await Http.GetAsync($"Utilities/GetTargetTeam");
+                    if (responsetarget.IsSuccessStatusCode)
+                    {
+                        var contenttarget = await responsetarget.Content.ReadAsStringAsync();
+                        TrainingTargetData = JsonSerializer.Deserialize<List<TrainingATargetTeam>>(contenttarget, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responsefinyear = await Http.GetAsync($"FinancialYear/list");
+                    if (responsefinyear.IsSuccessStatusCode)
+                    {
+                        var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
+                        FinancialYearData = JsonSerializer.Deserialize<List<AFinancialYear>>(contentfinyear, _options);
+
+                        DateTime currentdate = DateTime.Now;
+                        if (currentdate.Month >= 6)
+                        {
+                            financialyeardesc = $"{currentdate.Year}/{(currentdate.Year + 1)}";    
+                            
+                            MinDate = new DateTime(currentdate.Year, 06, 01);
+                            MaxDate = new DateTime(currentdate.Year + 1, 06, 30);
+                        }
+                        else if (currentdate.Month < 6)
+                        {
+                            financialyeardesc = $"{(currentdate.Year - 1)}/{currentdate.Year}";
+                           
+                            MinDate = new DateTime(currentdate.Year - 1, 06, 01);
+                            MaxDate = new DateTime(currentdate.Year, 06, 30);
+                        }
+
+                        var b = FinancialYearData.FirstOrDefault(o => o.FinancialYear.Trim() == financialyeardesc.Trim());
+                        if (b != null)
+                        {
+                            finyearid = b.Id;
+                            List<int?> _finyearid = new List<int?>();
+                            _finyearid.Add(finyearid);
+                            searchpanel.FinancialYearId = _finyearid.ToArray();
+                            MainQuery = new Query().AddParams("FinancialYearId", string.Join(",", searchpanel.FinancialYearId));
+                        }
+
+                    }
+                }));
+
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responseuserrole = await Http.GetAsync($"Utilities/GetUserRole");
+                    if (responseuserrole.IsSuccessStatusCode)
+                    {
+                        var contentuserrole = await responseuserrole.Content.ReadAsStringAsync();
+                        UserRole = contentuserrole;
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responselocality = await Http.GetAsync($"Utilities/GetLocality");
+                    if (responselocality.IsSuccessStatusCode)
+                    {
+                        var contentlocality = await responselocality.Content.ReadAsStringAsync();
+                        LocalityData = JsonSerializer.Deserialize<List<ATrainingLocality>>(contentlocality, _options);
+                    }
+                }));
+                
+            }
+
         }
-
-        Credentials = await AuthService.GetUserCredentials();
-        JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-        List<Task> t = new List<Task>();
-
-        t.Add(Task.Run(async () =>
+        catch(Exception ex)
         {
-            var responsemethod = await Http.GetAsync($"Utilities/GetTrainingMethod");
-            if (responsemethod.IsSuccessStatusCode)
-            {
-                var contentmethod = await responsemethod.Content.ReadAsStringAsync();
-                TrainingMethodData = JsonSerializer.Deserialize<List<TrainingAMethod>>(contentmethod, _options);
-            }
-        }));
 
-        t.Add(Task.Run(async () =>
+        }
+        finally
         {
-            var responsetarget = await Http.GetAsync($"Utilities/GetTargetTeam");
-            if (responsetarget.IsSuccessStatusCode)
-            {
-                var contenttarget = await responsetarget.Content.ReadAsStringAsync();
-                TrainingTargetData = JsonSerializer.Deserialize<List<TrainingATargetTeam>>(contenttarget, _options);
-            }
-        }));
+            //await InvokeAsync(StateHasChanged);
+        }
+        
+    }
 
-        t.Add(Task.Run(async () =>
-        {
-            var responsefinancialyear = await Http.GetAsync($"FinancialYear/list");
-            if (responsefinancialyear.IsSuccessStatusCode)
-            {
-                var contentfinancialyear = await responsefinancialyear.Content.ReadAsStringAsync();
-                FinancialYearData = JsonSerializer.Deserialize<List<AFinancialYear>>(contentfinancialyear, _options);
-            }
-        }));
+    public async void LoadHandler()
+    {
+        SpinnerObj.ShowAsync();
+        GridAttributes.Add("disable", "yes");
+    }
 
-        t.Add(Task.Run(async () =>
-        {
-            var responseuserrole = await Http.GetAsync($"Utilities/GetUserRole"); 
-            if (responseuserrole.IsSuccessStatusCode)
-            {
-                var contentuserrole = await responseuserrole.Content.ReadAsStringAsync();
-                UserRole = contentuserrole;
-            }
-        }));
-
-           
-        t.Add(Task.Run(async () =>
-        {
-            var responselocality = await Http.GetAsync($"Utilities/GetLocality");
-            if (responselocality.IsSuccessStatusCode)
-            {
-                var contentlocality = await responselocality.Content.ReadAsStringAsync();
-                LocalityData = JsonSerializer.Deserialize<List<ATrainingLocality>>(contentlocality, _options);
-            }
-        }));
+    public async void DataBound()
+    {
+        GridAttributes["disable"] = "no";
+        await SpinnerObj.HideAsync();
     }
 
     public async Task onSubmitForm()
     {
         try
         {
-            if (DataGrid1 != null)
+            if (string.IsNullOrEmpty(GeneralData.TrainingDescription))
             {
-                await DataGrid1.EndEditAsync();
+                toastService.ClearAll();
+                toastService.ShowWarning("Please enter the training description");
             }
 
-            if (DataGrid != null)
+            else if (GeneralData.StartDate == null)
             {
-                await DataGrid.EndEditAsync();
-            }  
+                toastService.ClearAll();
+                toastService.ShowWarning("Please enter the scheduled start date");
+            }
+            else if (GeneralData.EndDate == null)
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please enter the scheduled end date");
+            }
+            else if (GeneralData.StartDate > GeneralData.EndDate)
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("The scheduled end date can not be before the scheduled start date");
+            }
+            else if (GeneralData.LocalityId == null)
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please select the training type");
+            }
+            else if (GeneralData.TrainingMethod == null)
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please select the approach/method");
+            }
+            else
+            {
+                ConfirmationText = "<p>Are you sure you want to save this plan! </p>";
+                await this.ConfirmationSubmitDialogue.ShowAsync();
+            }
         }
         catch (Exception ex)
         {
@@ -428,109 +585,46 @@
         }
     }
 
-    public async Task onSaveDraftForm()
+    public async Task ComfirmationSubmitYes()
     {
         try
         {
-            if (DataGrid1 != null)
-            {
-                await DataGrid1.EndEditAsync();
-            }
-
             if (DataGrid != null)
             {
+                await LoadingDialogue.ShowAsync();
+                if (traininginstructionsref != null && traininginstructionsref.BudgetGrid != null)
+                {
+                    await traininginstructionsref.BudgetGrid.EndEditAsync();
+                }
                 await DataGrid.EndEditAsync();
             }
-
-
-            string json = Newtonsoft.Json.JsonConvert.SerializeObject(GeneralData);
-            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-
-            var result = await Http.PostAsync($"GeneralInternal/DraftGeneralInternalTrainings", httpContent);
-
         }
         catch (Exception ex)
         {
-            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+            toastService.ShowError(ex.Message.ToString());
         }
         finally
         {
+            await LoadingDialogue.HideAsync();
+            await this.ConfirmationSubmitDialogue.HideAsync();
             StateHasChanged();
         }
     }
 
-
-    public async Task onApproveForm()
+    private void ComfirmationSubmitNo()
     {
-        try
-        {
-            if (DataGrid1 != null)
-            {
-                await DataGrid1.EndEditAsync();
-            }
-
-            if (DataGrid != null)
-            {
-                await DataGrid.EndEditAsync();
-            }  
-
-
-            string json = Newtonsoft.Json.JsonConvert.SerializeObject(GeneralData);
-            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-
-            var result = await Http.PostAsync($"GeneralInternal/ApproveGeneralInternalTrainings", httpContent);
-
-        }
-        catch (Exception ex)
-        {
-            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-        }
-        finally
-        {
-            StateHasChanged();
-        }
-    }
-
-    public async Task onRejectForm()
-    {
-        try
-        {
-            if (DataGrid1 != null)
-            {
-                await DataGrid1.EndEditAsync();
-            }
-
-            if (DataGrid != null)
-            {
-                await DataGrid.EndEditAsync();
-            }  
-
-
-            string json = Newtonsoft.Json.JsonConvert.SerializeObject(GeneralData);
-            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-
-            var result = await Http.PostAsync($"GeneralInternal/RejectGeneralInternalTrainings", httpContent);
-
-        }
-        catch (Exception ex)
-        {
-            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
-        }
-        finally
-        {
-            StateHasChanged();
-        }
+        this.ConfirmationSubmitDialogue.HideAsync();
     }
 
     public async void DialogCancelBtnclicked()
     {
         if (DataGrid != null)
         {
-            await DataGrid.CloseEdit();
-        }
-        if (DataGrid1 != null)
-        {
-            await DataGrid1.CloseEdit();
+            if (traininginstructionsref != null && traininginstructionsref.BudgetGrid != null)
+            {
+                await traininginstructionsref.BudgetGrid.EndEditAsync();
+            }
+            await DataGrid.CloseEditAsync();
         }
     }
 
@@ -555,48 +649,35 @@
             _AuthService = authservice;
         }
 
+
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
-        {       
-            var data = new List<ViewGeneralInternal>();
-            int? employid = null;
+        {
+            string? _FinancialYearId = null;
 
-            int? TrainingPlanStatusId = null;
+            if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
+            {
+                var val = dataManagerRequest.Params;
 
+                if (val.FirstOrDefault(o => o.Key == "FinancialYearId").Value != null)
+                {
+                    _FinancialYearId = val.FirstOrDefault(o => o.Key == "FinancialYearId").Value.ToString();
+                }
+            }
+
+            var data = new List<TrainingGeneralInternal>();
             try
             {
-                //var response = await Http.GetAsync($"GeneralInternal/GetGeneralInternalList");
-                //var content = await response.Content.ReadAsStringAsync();
-                //if (response.IsSuccessStatusCode)
-                //{
-                //    data = JsonSerializer.Deserialize<List<ViewGeneralInternal>>(content, _options);
-                //}
-                var credentials = await _AuthService.GetUserCredentials();
-                if (credentials != null && credentials.UserRole.Contains("Human Resource"))
+                var response = await Http.GetAsync($"GeneralInternal/GetGeneralInternalList?finyearid={_FinancialYearId}");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
                 {
-                    TrainingPlanStatusId = 1;
-                    var response = await Http.GetAsync($"GeneralInternal/GetGeneralInternalList/{TrainingPlanStatusId}");
-                    var content = await response.Content.ReadAsStringAsync();
-                    if (response.IsSuccessStatusCode)
-                    {
-                        data = JsonSerializer.Deserialize<List<ViewGeneralInternal>>(content, _options);
-                    }
+                    data = JsonSerializer.Deserialize<List<TrainingGeneralInternal>>(content, _options);
                 }
 
-                else 
-                {
-                    TrainingPlanStatusId = 2;
-                    var response = await Http.GetAsync($"GeneralInternal/GetGeneralInternalList/{TrainingPlanStatusId}");
-                    var content = await response.Content.ReadAsStringAsync();
-                    if (response.IsSuccessStatusCode)
-                    {
-                        data = JsonSerializer.Deserialize<List<ViewGeneralInternal>>(content, _options);
-                    }
-                }
-                
             }
             catch (Exception ex)
             {
-                toastService.ShowError(ex.ToString());
+                toastService.ShowError(ex.Message.ToString());
             }
 
             IEnumerable GridData = data;
@@ -632,7 +713,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<ViewGeneralInternal>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<TrainingGeneralInternal>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -643,10 +724,10 @@
             try
             {
                 
-                var val = (value as ViewGeneralInternal);
+                var val = (value as TrainingGeneralInternal);
                 if (val != null)
                 {
-                    if (val.Id == 0)
+                    if (val.GeneralInternalId == 0)
                     {
                         
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
@@ -717,10 +798,10 @@
             try
             {
                 
-                var val = (value as ViewGeneralInternal);
+                var val = (value as TrainingGeneralInternal);
                 if (val != null)
                 {
-                    if (val.Id == 0)
+                    if (val.GeneralInternalId == 0)
                     {
                         
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
@@ -788,7 +869,7 @@
         }
     }
 
-    public void TrainingActionComplete(ActionEventArgs<ViewGeneralInternal> args)
+    public void TrainingActionComplete(ActionEventArgs<TrainingGeneralInternal> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
         {
@@ -796,7 +877,7 @@
         }
     }
 
-    public async void TrainingActionBegin(ActionEventArgs<ViewGeneralInternal> Args)
+    public async void TrainingActionBegin(ActionEventArgs<TrainingGeneralInternal> Args)
     {
         var data = Args.Data;
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
@@ -834,36 +915,11 @@
         }
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
             {
-                if(Args.RowData.TrainingGeneralInternalBudget== null){
-                    Args.RowData.TrainingGeneralInternalBudget = new List<ViewGeneralInternalBudget>();
-                }
-                foreach (var n in FinancialYearData)
-                {
-                    var x = Args.RowData.TrainingGeneralInternalBudget.FirstOrDefault(o => o.FinancialYear == n.Id);
-                    if (x == null)
-                    {
-                        Random random = new Random();
-                        Args.RowData.TrainingGeneralInternalBudget.Add(new ViewGeneralInternalBudget
-                            {
-                            Id = random.Next(1000, 10000),
-                            FinancialYear = n.Id
-                            });
-                    }
-                }
+                
             }
             if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
             {
-                Args.RowData.TrainingGeneralInternalBudget = new List<ViewGeneralInternalBudget>();
-                
-                foreach (var n in FinancialYearData)
-                {
-                   Random random = new Random();
-                   Args.RowData.TrainingGeneralInternalBudget.Add(new ViewGeneralInternalBudget
-                            {
-                                Id = random.Next(1000, 10000),
-                                FinancialYear = n.Id
-                            });
-                }
+                Args.RowData.FinancialYearId = finyearid;
             }
     
     }
@@ -921,7 +977,7 @@
     }
 
     //Enable cell edit on single click
-    public async Task CellSelectHandler(CellSelectEventArgs<ViewGeneralInternalBudget> args)
+    public async Task CellSelectHandler(CellSelectEventArgs<TrainingGeneralInternalBudget> args)
     {
         //get selected cell index
         var CellIndexes = await DataGrid1.GetSelectedRowCellIndexesAsync();
@@ -937,9 +993,9 @@
     }
 
 
-    public string GetGeneralHeader(ViewGeneralInternal Value)
+    public string GetGeneralHeader(TrainingGeneralInternal Value)
     {
-        if (Value.Id == 0)
+        if (Value.GeneralInternalId == 0)
         {
             return "Add a new Plan";
         }

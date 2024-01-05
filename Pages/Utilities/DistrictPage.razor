@@ -12,17 +12,10 @@
 @inject SystemSettings _SystemSettings;
 @using HCMIS.ViewModel;
 @inject IToastService toastService;
+@inject IJSRuntime JSRuntime
 
 <style>
-    /*For Actual Application*/
-    /*.e-edit-dialog {
-        max-height: 30%;
-        max-width: 60%;
-        min-width: 50%;
-        min-height: 20%;
-    }*/
-
-    .headerbandimg {
+       .headerbandimg {
         background-image: url(/image/comesalogo.png);
         background-size: 20px;
         background-repeat: no-repeat;
@@ -73,7 +66,8 @@
                         </div>
                         <div class="col-md-12">
                             <p>District<span style="color:red;">*</span></p>
-                            <SfTextBox Multiline=false @bind-Value="@(KpiData.DistrictDescription)" Width="100%" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                             @*@onkeypress='@KeyPressed'*@
+                            <SfTextBox @ref="DistrictIdObj" ID="DistrictId" CssClass="requiredfield" Multiline=false @bind-Value="@(KpiData.DistrictDescription)" Width="100%" FloatLabelType="FloatLabelType.Never" @onclick="@((args) => OnClick(DistrictIdObj.ID))"></SfTextBox>
                         </div>
                     </div>
                 }
@@ -102,6 +96,8 @@
 @code {
     SfGrid<ADistrict>? DataGrid { get; set; }
     List<ADistrict>? DistrictData { get; set; }
+    SfTextBox DistrictIdObj;
+
     /// <summary>
     /// Event for Toolbar click for Grid Exporting
     /// </summary>
@@ -121,7 +117,7 @@
         }
     }
 
-     protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
         
         
@@ -134,6 +130,17 @@
             DistrictData = await Http.GetFromJsonAsync<List<ADistrict>>
             ($"Utilities/GetDistrict");
         }
+    }
+
+    public void KeyPressed()
+    {
+        Console.WriteLine("Key Pressed!");
+    }
+
+    public async void OnClick(string clickedid)
+    {
+        await JSRuntime.InvokeVoidAsync("RequiredFieldClearFunction", clickedid);
+        //Console.WriteLine(clickedid);
     }
 
     #region Districts Region
@@ -310,9 +317,10 @@
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
             {
                 if (string.IsNullOrEmpty(args.Data.DistrictDescription))
-                {
+                {                    
                     toastService.ShowWarning("Please enter the district.");
                     args.Cancel = true;
+                    await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
                 }
 
                 else

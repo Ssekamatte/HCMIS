@@ -1,4 +1,5 @@
-﻿@page "/SurveyDeadlinePage"
+﻿@* @page "/SurveyDeadlinePage" *@
+@using HCMIS.Interface
 @using HCMIS.Model
 @using HCMIS.SHARED.Data;
 @using HCMIS.SHARED.Models;
@@ -7,19 +8,13 @@
 @using System.Text.RegularExpressions
 @inject ApiConfig _ApiConfig;
 @inject HttpClient Http
-@inject NavigationManager Navigation
-@inject SystemSettings _SystemSettings
+@inject NavigationManager navManager
 @using System.Collections;
 @inject IToastService toastService;
+@inject IAuthenticationService AuthService;
+
 
 <style>
-    .e-edit-dialog {
-        max-height: 70%;
-        max-width: 80%;
-        min-width: 80%;
-        min-height: 70%;
-    }
-
     h6 {
         color: ghostwhite;
         background-color: blue;
@@ -70,20 +65,21 @@
     </h5>
 </center>
 
-<center>
-    <h5>
-        <strong>TRAINING NEEDS ASSESSMENT SURVEY- @DateTime.Now.Year</strong>
-    </h5>
-</center>
 <div class="row">    
-    <SfGrid ID="Grid" @ref="AssessmentDeadlineGrid" TValue="TrainingAssessmentSurveyDeadline"
+    <SfGrid ID="Grid" @ref="DataGrid" TValue="TrainingAssessmentSurveyDeadline"
             Toolbar="@ToolbarMenu" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
-            AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true">
+            AllowPaging="true" AllowFiltering="false" GridLines="GridLine.Both" AllowSelection="true">
         <SfDataManager AdaptorInstance="@typeof(AssessmentDeadlineAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-        <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+        <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
         <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
-        <GridEvents OnActionBegin="AssessmentActionBegin" OnActionComplete="AssessmentActionComplete" TValue="TrainingAssessmentSurveyDeadline"></GridEvents>
-        <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog">
+        <GridEvents
+                    CellSelected="CellSelectHandler"
+                    CellSaved="CellSavedHandler"
+                    DataBound="DataBound"
+                    TValue="TrainingAssessmentSurveyDeadline">
+        </GridEvents>
+
+        <GridEditSettings AllowAdding="false" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Batch" ShowConfirmDialog=false>
             <HeaderTemplate>
                 @{
                     var text = GetAssessmentHeader((context as TrainingAssessmentSurveyDeadline));
@@ -110,12 +106,16 @@
                 }
             </Template>
         </GridEditSettings>
-        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
-        <GridPageSettings PageSize="20"></GridPageSettings>
         <GridColumns>
-            <GridColumn Type="ColumnType.CheckBox" Width="20"></GridColumn>
+            @*<GridColumn Type="ColumnType.CheckBox" Width="20"></GridColumn>*@
             <GridColumn Field=@nameof(TrainingAssessmentSurveyDeadline.DeadlineId) HeaderText="Deadline Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="50"></GridColumn>
-            <GridColumn Field=@nameof(TrainingAssessmentSurveyDeadline.DeadlineDate) HeaderText="Deadline Date" Format="dd/MMMM/yyyy" TextAlign="TextAlign.Justify" Width="60" ClipMode="ClipMode.EllipsisWithTooltip" Type="ColumnType.Date"></GridColumn>            
+            <GridColumn Field=@nameof(TrainingAssessmentSurveyDeadline.DeadlineDate)
+                        HeaderText="Deadline Date"
+                        Format="dd/MMMM/yyyy HH:mm:ss"
+                        TextAlign="TextAlign.Justify"
+                        ClipMode="ClipMode.EllipsisWithTooltip"
+                        Type="ColumnType.DateTime" EditType="EditType.DateTimePickerEdit">
+            </GridColumn>        
         </GridColumns>
     </SfGrid>
 </div>
@@ -136,32 +136,41 @@
         };
     #endregion Toasters
 
-    private SfGrid<TrainingAssessmentSurveyDeadline>? AssessmentDeadlineGrid;
+    private SfGrid<TrainingAssessmentSurveyDeadline>? DataGrid;
     private static TrainingAssessmentSurveyDeadline? Deadlinedata { get; set; }
+    private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    LoginResultModel? Credentials { get; set; }
+
 
     private List<object> ToolbarMenu = new List<object>() {
-        new ItemModel() { Text = "Capture Date", PrefixIcon = "e-add", Id = "Grid_add"},//Here Grid is SfGrid ID
-        new ItemModel(){ Text = "Edit Date", PrefixIcon= "e-edit", Id="Grid_edit"},
-        new ItemModel(){ Text = "Delete Date", PrefixIcon= "e-delete", Id="Grid_delete"},
-        new ItemModel(){ Text = "Update Date", PrefixIcon= "e-update", Id="Grid_update"},
-        new ItemModel(){ Text = "Cancel Date", PrefixIcon= "e-cancel", Id="Grid_cancel"}
+        new ItemModel() { Text = "Capture Date", PrefixIcon = "e-add", Id = "Grid_add"},
+        new ItemModel(){ Text = "Edit Date", PrefixIcon= "e-edit", Id="Grid_edit"}
     };
 
     protected override async Task OnInitializedAsync()
     {
-        
 
-        
-        var responseJobTitle = await Http.GetAsync($"HumanResource/GetJobTitle");
-        var content = await responseJobTitle.Content.ReadAsStringAsync();
+        await base.OnInitializedAsync();
+        var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+        if (isAuthenticated == false)
+        {
+            navManager.NavigateTo("/LoginPage", true);
+        }
+        else
+        {
+            Credentials = await AuthService.GetUserCredentials();
+            JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-        ToolbarMenu = new List<object>(){
-        new ItemModel() { Text = "Capture Date", PrefixIcon = "e-add", Id = "Grid_add" },//Here Grid is SfGrid ID
-        new ItemModel() { Text = "Edit Date", PrefixIcon = "e-edit", Id = "Grid_edit" },
-        new ItemModel() { Text = "Delete Date", PrefixIcon = "e-delete", Id = "Grid_delete" },
-        new ItemModel() { Text = "Update Date", PrefixIcon = "e-update", Id = "Grid_update" },
-        new ItemModel() { Text = "Cancel Date", PrefixIcon = "e-cancel", Id = "Grid_cancel" }
-        };
+            List<Task> t = new List<Task>();
+            t.Add(Task.Run(async () =>
+            {
+                var response = await Http.GetAsync($"HumanResource/GetJobTitle");
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                }
+            }));
+        }
     }
 
     #region AssessmentDeadlineAdapter
@@ -169,34 +178,30 @@
     {
         HttpClient Http;
         private readonly JsonSerializerOptions _options;
-        SystemSettings _SystemSettings;
         ApiConfig _ApiConfig;
         public IToastService toastService;
         private readonly NavigationManager Navigation;
 
-        public AssessmentDeadlineAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation
-            , SystemSettings systemSettings, ApiConfig apiConfig)
+        public AssessmentDeadlineAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation, ApiConfig apiConfig)
         {
             Http = _http;
             _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             toastService = ts;
             Navigation = _Navigation;
             _ApiConfig = apiConfig;
-            _SystemSettings = systemSettings;
         }
 
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         {
-            
+
 
             var data = new List<TrainingAssessmentSurveyDeadline>();
 
-            string? AccessToken = _SystemSettings.AccessToken;
             string? BaseUrl = _ApiConfig.BaseUrl;
 
             try
             {
-                 
+
                 var response = await Http.GetAsync($"AssessmentSurveyDeadline/GetAllAssessmentDeadlines");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
@@ -252,13 +257,13 @@
         {
             try
             {
-                
+
                 var val = (value as TrainingAssessmentSurveyDeadline);
                 if (val != null)
                 {
                     if (val.DeadlineId == 0)
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -287,7 +292,7 @@
                     }
                     else
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -350,13 +355,13 @@
         {
             try
             {
-                
+
                 var val = (value as TrainingAssessmentSurveyDeadline);
                 if (val != null)
                 {
                     if (val.DeadlineId == 0)
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -385,7 +390,7 @@
                     }
                     else
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -420,12 +425,59 @@
 
             return value;
         }
+
+
+        public override async Task<object> BatchUpdateAsync(DataManager dataManager, object changedRecords, object addedRecords, object deletedRecords, string primaryColumnName, string key, int? dropIndex)
+        {
+            object ReturnValue = changedRecords;
+            if (changedRecords != null)
+            {
+                ReturnValue = changedRecords;
+
+                var val = (changedRecords as List<TrainingAssessmentSurveyDeadline>);
+                if (val != null && val.Count > 0)
+                {
+                    foreach (var item in val)
+                    {
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(item);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                        var result = await Http.PutAsync($"AssessmentSurveyDeadline/UpdateAssessmentDeadline", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            toastService.ShowSuccess(item.DeadlineDate + " was sucessfully updated");
+                        }
+                        else
+                        {
+                            toastService.ShowError("Ooops. Something went wrong");
+                        }
+                    }
+                }
+            }
+
+            // if (changedRecords != null)
+            // {
+            //     ReturnValue = changedRecords;
+
+            //     var val = (changedRecords as List<Mtspframework>);
+            //     if (val != null && val.Count > 0)
+            //     {
+            //         foreach (var item in val)
+            //         {
+            //             await repo.SaveSearchedFramework(item);
+            //         }
+            //     }
+            // }
+
+            return ReturnValue;
+        }
+
+
     }
     public void AssessmentActionComplete(ActionEventArgs<TrainingAssessmentSurveyDeadline> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
         {
-            AssessmentDeadlineGrid.PreventRender(false);
+            DataGrid.PreventRender(false);
         }
     }
 
@@ -436,13 +488,13 @@
         {
             if (Args.Data.DeadlineDate == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning( "Please provide a date!");
                 Args.Cancel = true;
             }
             
             else
             {
-                string? AccessToken = _SystemSettings.AccessToken;
                 string? BaseUrl = _ApiConfig.BaseUrl;
                 string Date = string.Empty;
 
@@ -458,7 +510,8 @@
                     var content = await response.Content.ReadAsStringAsync();
                     if (response.IsSuccessStatusCode)
                     {
-                         toastService.ShowWarning( "This Date ( " + Date + " ) Arleady Exists! Record will not be saved");  
+                        toastService.ClearAll();
+                        toastService.ShowWarning( "This Date ( " + Date + " ) Arleady Exists! Record will not be saved");  
                         Args.Cancel = true;
                     }                    
                 }
@@ -469,6 +522,61 @@
             }
         }
     }
+
+
+    private async Task CellSavedHandler(CellSaveArgs<TrainingAssessmentSurveyDeadline> args)
+    {
+        try
+        {
+            await DataGrid.EndEditAsync();
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message);
+        }
+        finally
+        {
+
+        }
+    }
+
+    //Enable cell edit on single click
+    public async Task CellSelectHandler(CellSelectEventArgs<TrainingAssessmentSurveyDeadline> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await DataGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await DataGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await DataGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
+    public async void DataBound()
+    {
+        //Check if there are records arleady and only allow editing
+        if (DataGrid != null && DataGrid.CurrentViewData.Count() > 0)
+        {
+            ToolbarMenu = new List<object>()
+            {
+                //new ItemModel(){ Text = "Edit Date", PrefixIcon= "e-edit", Id="Grid_edit"}
+            };
+        }
+    }
+
+
+
 
     public string GetAssessmentHeader(TrainingAssessmentSurveyDeadline Value)
     {

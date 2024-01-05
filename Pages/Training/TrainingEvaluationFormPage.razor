@@ -1,0 +1,1002 @@
+﻿@page "/TrainingEvaluationFormPage"
+@using HCMIS.Interface
+@using HCMIS.Model
+
+@using HCMIS.Pages.Training.PartialViews
+@using HCMIS.SHARED.Data
+@using HCMIS.ViewModel
+@using System.Text.Json
+@using System.Text.RegularExpressions
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject AppState AppState
+@inject NavigationManager navManager
+@using System.Collections;
+
+@inject IToastService toastService;
+@inject IAuthenticationService AuthService;
+
+<style>
+
+    h6 {
+        color: ghostwhite;
+        background-color: blue;
+        padding: 10px;
+        width: 100%;
+        font-size: 10px;
+    }
+
+    h4 {
+        color: black;
+        background-color: deepskyblue;
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+
+    h3 {
+        color: black;
+        /*background-color: darkorange;*/
+        padding: 10px;
+        width: 100%;
+        font-size: 15px;
+    }
+
+
+    /**/
+    #container {
+        position: relative;
+        height: 550px;
+    }
+
+    /*Change Grid Header Color */
+    .e-headercell.e-attr1 {
+        background: #964B00;
+        color: white;
+    }
+</style>
+
+<center>
+    <h5>
+        <strong>TRAINING EVALUATION FORM</strong>
+    </h5>
+</center>
+
+<div class="row">     
+    
+    <SfGrid ID="Grid" @ref="EvaluationGrid" TValue="TrainingEvaluationForm"
+            Toolbar="@ToolbarMenu" AllowGrouping="false" ShowColumnChooser="false" AllowTextWrap="true"
+            AllowPaging="true" AllowFiltering="false" GridLines="GridLine.Both" AllowSelection="true">
+        <SfDataManager AdaptorInstance="@typeof(EvaluationAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+        <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+        <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+        <GridEvents OnActionComplete="EvaluationActionComplete" OnActionBegin="EvaluationActionBegin" TValue="TrainingEvaluationForm"></GridEvents>
+        <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
+            <HeaderTemplate>
+                @{
+                    var text = GetEvaluationHeader((context as TrainingEvaluationForm));
+                    <div class="headerbandimg" />
+                    <span>@text</span>
+                }
+            </HeaderTemplate>
+            <Template>
+                @{
+                    <center>
+                        <h5>
+                            <strong>NH/TRN/FORM/001</strong>
+                        </h5>
+                    </center>
+                    EvaluationData = (context as TrainingEvaluationForm);
+                    <SfAccordion ExpandMode="@ExpandMode.Single">
+                        <AccordionItems>
+                            <AccordionItem Expanded="true">
+                                <HeaderTemplate>Header Details</HeaderTemplate>
+                                    <ContentTemplate>
+                                        <div>
+                                            <div class="row">
+                                                <div class="col-md-6" hidden="hidden">
+                                                    <SfNumericTextBox ID="EvaluationId" @bind-Value="@(EvaluationData.EvaluationId)" Placeholder="Evaluation Id" Enabled="false" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <p>Employee<span style="color:red;">*</span></p>
+                                                    <SfDropDownList @bind-Value="@(EvaluationData.Employeeid)" Enabled="false" TItem="ViewEmployeeDropDown" TValue="int?" DataSource="@EmployeeData" Placeholder="Choose Employee" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                        <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
+                                                    </SfDropDownList>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <p>Training Topic:<span style="color:red;">*</span></p>
+                                                    <SfDropDownList @bind-Value="@(EvaluationData.TrainingTopicId)" Enabled="Onsubmitenabledbool" TItem="ATrainingTopic" TValue="int?" DataSource="@TopicData" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                        <DropDownListFieldSettings Value="@nameof(ATrainingTopic.TrainingTopicId)" Text="@nameof(ATrainingTopic.TrainingTopicDescription)"></DropDownListFieldSettings>
+                                                        <DropDownListEvents TValue="int?" TItem="ATrainingTopic" ValueChange="OnTrainingTopicChange"></DropDownListEvents>
+                                                    </SfDropDownList>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <p>Training Date:<span style="color:red;">*</span></p>
+                                                    <SfDatePicker @bind-Value="@(EvaluationData.TrainingDate)" Enabled="Onsubmitenabledbool" Placeholder="Please Select" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never" Max='@MaxDate'></SfDatePicker>
+                                                </div>                                                
+                                                <div class="col-md-6">
+                                                    <p>Location of Event:</p>
+                                                    <SfTextBox Multiline="true" ID="Location" Enabled="Onsubmitenabledbool" @bind-Value="@(EvaluationData.TrainingLocation)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <p>Trainers/Facilitator:</p>
+                                                    <SfTextBox Multiline="true" Enabled="Onsubmitenabledbool" ID="TrainersFacilitator" @bind-Value="@(EvaluationData.TrainersFacilitator)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                                                </div>                                                
+                                            </div>
+                                        </div>
+                                    </ContentTemplate>
+                            </AccordionItem>
+
+                            <AccordionItem Expanded="true">
+                                <HeaderTemplate>Instructions: Please choose your level of agreement with the statements from the dropdown</HeaderTemplate>
+                                <ContentTemplate>
+                                    <div>
+                                        <div class="row">
+                                             <div class="form-group col-md-12">
+                                                <HCMIS.Pages.Training.PartialViews.TrainingEvaluationInstructionsPage 
+                                                                                                                      AgreementLevelData="@AgreementLevelData"
+                                                                                                                      behaviourdata="@EvaluationData.TrainingEvaluationInstructions.ToList()"
+                                                                                                                      EvaluationId="@EvaluationData.EvaluationId"
+                                                                                                                      onscorecardtoggle="@ToggleBalanceScoreCardBehaviour" 
+                                                                                                                      StatementsData="@StatementsData" @ref="traininginstructionsref"  
+                                                                                                                      instructionseditbool="@instructionseditbool">
+                                                </HCMIS.Pages.Training.PartialViews.TrainingEvaluationInstructionsPage>
+                                                </div>
+                                        </div>
+                                    </div>
+                                </ContentTemplate>
+                            </AccordionItem>
+
+                            <AccordionItem Expanded="false">
+                                <HeaderTemplate>No.8</HeaderTemplate>
+                                    <ContentTemplate>
+                                        <div>
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <p>What was most useful?<span style="color:red;">*</span></p>
+                                                    <SfTextBox Multiline="true" Enabled="Onsubmitenabledbool" ID="MostUseful" @bind-Value="@(EvaluationData.MostUseful)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </ContentTemplate>
+                            </AccordionItem>
+
+                            <AccordionItem Expanded="false">
+                                <HeaderTemplate>No.9</HeaderTemplate>
+                                    <ContentTemplate>
+                                        <div>
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                <p>What was least useful?<span style="color:red;">*</span></p>
+                                                <SfTextBox Multiline="true" Enabled="Onsubmitenabledbool" ID="LeastUseful" @bind-Value="@(EvaluationData.LeastUseful)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </ContentTemplate>
+                            </AccordionItem>
+
+                            <AccordionItem Expanded="false">
+                                <HeaderTemplate>No.10</HeaderTemplate>
+                                    <ContentTemplate>
+                                        <div>
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <p>What else would you like to see included in future trainings? Are there any other topics that you would like to be offered training sessions in?</p>
+                                                    <SfTextBox Multiline="true" Enabled="Onsubmitenabledbool" ID="FutureTrainings" @bind-Value="@(EvaluationData.FutureTrainings)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </ContentTemplate>
+                            </AccordionItem>
+
+                            <AccordionItem Expanded="false">
+                                <HeaderTemplate>No.11</HeaderTemplate>
+                                    <ContentTemplate>
+                                        <div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                <p>Would you recommend this training Topic  to colleagues?</p>
+                                                <SfRadioButton Disabled="OnRadioButtonSubmitbool" Label="Yes" Name="options" Value="true" TChecked="bool?" ValueChange="OnValueChange" @bind-Checked="@(EvaluationData.RecommendTraining)"></SfRadioButton>
+                                                <SfRadioButton Disabled="OnRadioButtonSubmitbool" Label="No" Name="options" Value="false" TChecked="bool?" ValueChange="OnValueChange" @bind-Checked="@(EvaluationData.RecommendTraining)"></SfRadioButton>
+                                                </div>
+                                                <div class="col-md-6">
+                                                <p>Reason Why</p>
+                                                <SfTextBox Multiline="true" Enabled="Onsubmitenabledbool" ID="RecommendationReason" @bind-Value="@(EvaluationData.RecommendationReason)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </ContentTemplate>
+                            </AccordionItem>
+
+                            <AccordionItem Expanded="false">
+                                <HeaderTemplate>No.12</HeaderTemplate>
+                                    <ContentTemplate>
+                                        <div>
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                <p>Any other comments?</p>
+                                                    <SfTextBox Multiline="true" Enabled="Onsubmitenabledbool" ID="OtherComments" @bind-Value="@(EvaluationData.OtherComments)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </ContentTemplate>
+                            </AccordionItem>
+                        </AccordionItems>
+                    </SfAccordion>
+                    <center>
+                        <h7>
+                            <strong>Thank you for completing this evaluation form. Feedback received will be used to provide improvements to future Trainings/Events.</strong>
+                        </h7>
+                    </center>
+                }
+            </Template>
+            <FooterTemplate>
+                <button @onclick="@onSubmitForm"  disabled=@IsSubmitDisabled hidden=@IsSubmitHidden class="btn btn-success" data-ripple="true" style="margin-right:10px;">Submit Form</button>
+                <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Close Form</button>
+               </FooterTemplate>
+        </GridEditSettings>
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+        <GridPageSettings PageSize="20"></GridPageSettings>
+        <GridColumns>
+            @* <GridColumn Type="ColumnType.CheckBox" Width="20"></GridColumn> *@
+            <GridColumn HeaderText="Manage"
+                        Width="40"
+                        CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"
+                        TextAlign="TextAlign.Left">
+                <GridCommandColumns>
+                    <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})"></GridCommandColumn>
+                </GridCommandColumns>
+            </GridColumn>
+            <GridColumn Field=@nameof(EvaluationData.EvaluationId) HeaderText="Evaluation Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="50"></GridColumn>
+            <GridForeignColumn Field=@nameof(EmployeeLeaveHeader.Employeeid)
+                               HeaderText="Employee"
+                               Width="100"
+                               AllowEditing="true"
+                               ForeignKeyField="@(nameof(ViewEmployeeDropDown.Employeeid))"
+                               ForeignKeyValue="@(nameof(ViewEmployeeDropDown.EmployeeDetails))"
+                               ForeignDataSource="@EmployeeData" AllowFiltering="false"
+                               CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})">
+            </GridForeignColumn>
+            <GridForeignColumn Field=@nameof(EvaluationData.TrainingTopicId)
+                               HeaderText="Training Topic"
+                               Width="100"
+                               AllowEditing="true"
+                               ForeignKeyField="@(nameof(ATrainingTopic.TrainingTopicId))"
+                               ForeignKeyValue="@(nameof(ATrainingTopic.TrainingTopicDescription))"
+                               ForeignDataSource="@TopicData"
+                               AllowFiltering="true"
+                               IsFrozen="false"
+                               CustomAttributes="@(new Dictionary<string,
+                               object>(){ { "class", "e-attr1" }})">
+            </GridForeignColumn>
+            <GridColumn Field=@nameof(EvaluationData.TrainingDate) HeaderText="Training Date" Format="dd/MMMM/yyyy" TextAlign="TextAlign.Justify" Width="100" ClipMode="ClipMode.EllipsisWithTooltip" Type="ColumnType.Date"
+            CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"></GridColumn>
+            <GridColumn Field=@nameof(EvaluationData.TrainingLocation) HeaderText="Location" TextAlign="TextAlign.Left" Width="100"
+            CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"></GridColumn>
+            @* <GridColumn Field=@nameof(EvaluationData.TrainersFacilitator) HeaderText="Trainers / Facilitator" TextAlign="TextAlign.Left" Width="100"
+            CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"></GridColumn> *@
+        </GridColumns>
+    </SfGrid>
+</div>
+
+@*Confirm Submission*@
+<div class="form-group col-md-12">
+    <SfDialog @ref="@ConfirmationSubmitDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @((MarkupString)@ConfirmationText)
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationSubmitYes" />
+            <DialogButton Content="No" OnClick="@ComfirmationSubmitNo" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+
+
+@*Confirm Arleady Evaluated*@
+<div class="form-group col-md-12">
+    <SfDialog @ref="@ArleadyEvaluatedDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @((MarkupString)@ConfirmationText)
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>            
+            <DialogButton Content="Close" OnClick="@ComfirmationArleadyEvaluatedNo" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+
+<div>
+    <SfDialog @ref="@LoadingDialogue"
+              ID="LoadingDialog"
+              Height="auto"
+              Width="40%"
+              AllowDragging="true"
+              Target=".mainbody"
+              ShowCloseIcon="false"
+              IsModal=true
+              Visible="false">
+        <DialogTemplates>
+            <Content>
+                <div style="padding:25px">
+                    <div class="loader">
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader-Saving-text"></div>
+                    </div>
+                </div>
+            </Content>
+            <FooterTemplate>
+
+            </FooterTemplate>
+        </DialogTemplates>
+    </SfDialog>
+</div>
+
+@code {
+    #region Toasters
+    public static string ToastContent { get; set; }
+    SfToast? ToastObj;
+    SfToast DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+        {
+            new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+            new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+            new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+            new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+        };
+    #endregion Toasters
+
+    private SfGrid<TrainingEvaluationForm>? EvaluationGrid;
+    private SfGrid<TrainingEvaluationInstructions>? InstructionsGrid;
+    private static TrainingEvaluationForm? EvaluationData { get; set; }
+    private TrainingEvaluationForm? evaluationentity { get; set; } = new();
+    List<ATrainingStatements>? StatementsData { get; set; }
+    List<ATrainingTopic>? TopicData { get; set; }
+    List<TrainingEvaluationInstructions>? InstructionsData { get; set; }
+    List<TrainingEvaluationForm>? TrainingEvaluationFormData { get; set; }
+    List<AGender>? GenderData { get; set; }
+    List<AAgreementLevel>? AgreementLevelData { get; set; }
+    List<ViewEmployeeDropDown>? EmployeeData { get; set; }
+    private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    LoginResultModel? Credentials { get; set; }
+
+    public bool? radiovalue;
+    Syncfusion.Blazor.Grids.Action _previous { get; set; }
+    public DateTime MaxDate { get; set; } = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day); 
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "98%" };
+    SfDialog ConfirmationSubmitDialogue;
+    SfDialog ArleadyEvaluatedDialogue;
+    string ConfirmationText { get; set; }
+    SfDialog? LoadingDialogue;
+    TrainingEvaluationInstructionsPage traininginstructionsref;
+    bool IsSubmitDisabled;
+    bool IsSubmitHidden;
+    bool Onsubmitenabledbool;
+    bool OnRadioButtonSubmitbool;
+    bool instructionseditbool;
+
+    //GridClass
+    public class  TrainingStatements
+    {
+        public int EvaluationId { get; set; }
+        public int? TrainingTopicId { get; set; }
+        public DateTime? TrainingDate { get; set; }
+        public string? TrainingLocation { get; set; }
+        public string? TrainersFacilitator { get; set; }
+        public int? StatementId { get; set; }
+        public bool? StronglyAgree { get; set; }
+        public bool? Agree { get; set; }
+        public bool? Neutral { get; set; }
+        public bool? Disagree { get; set; }
+        public bool? StronglyDisagree { get; set; }
+        public string? MostUseful { get; set; }
+        public string? LeastUseful { get; set; }
+        public string? FutureTrainings { get; set; }
+        public bool? RecommendTraining { get; set; }
+        public string? RecommendationReason { get; set; }
+        public string? OtherComments { get; set; }
+        public string? StatementDescription { get; set; }
+    }
+
+    private List<object> ToolbarMenu = new List<object>() 
+    {
+        new ItemModel() { Text = "Capture Evaluation", PrefixIcon = "e-add", Id = "Grid_add"}
+        // ,new ItemModel(){ Text = "Edit Evaluation", PrefixIcon= "e-edit", Id="Grid_edit"}
+        // new ItemModel(){ Text = "Delete Evaluation", PrefixIcon= "e-delete", Id="Grid_delete"},
+        // new ItemModel(){ Text = "Update Evaluation", PrefixIcon= "e-update", Id="Grid_update"},
+        // new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
+    };
+
+    @*https://www.syncfusion.com/forums/175772/checked-value*@
+
+    private void OnValueChange(ChangeArgs<bool?> args)
+    {
+        radiovalue = args.Value;
+    }
+
+    private void ToggleBalanceScoreCardBehaviour(List<TrainingEvaluationInstructions>? BehaviourChange)
+    {
+        if (EvaluationData != null && BehaviourChange != null)
+        {
+            if (EvaluationData.TrainingEvaluationInstructions == null)
+            {
+                EvaluationData.TrainingEvaluationInstructions = new List<TrainingEvaluationInstructions>();
+            }
+            EvaluationData.TrainingEvaluationInstructions = BehaviourChange;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await base.OnInitializedAsync();
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
+            {
+                navManager.NavigateTo("/LoginPage", true);
+            }
+            else
+            {
+                Credentials = await AuthService.GetUserCredentials();
+
+                JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                List<Task> t = new List<Task>();
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responseagreementlevel = await Http.GetAsync($"Utilities/GetAgreementLevel");
+                    if (responseagreementlevel.IsSuccessStatusCode)
+                    {
+                        var contentagreementlevel = await responseagreementlevel.Content.ReadAsStringAsync();
+                        AgreementLevelData = JsonSerializer.Deserialize<List<AAgreementLevel>>(contentagreementlevel, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responsetopic = await Http.GetAsync($"TrainingTopic/GetTrainingTopic");
+                    if (responsetopic.IsSuccessStatusCode)
+                    {
+                        var contenttopic = await responsetopic.Content.ReadAsStringAsync();
+                        TopicData = JsonSerializer.Deserialize<List<ATrainingTopic>>(contenttopic, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responsestatement = await Http.GetAsync($"TrainingStatements/GetTrainingStatements");
+                    if (responsestatement.IsSuccessStatusCode)
+                    {
+                        var contentstatement = await responsestatement.Content.ReadAsStringAsync();
+                        StatementsData = JsonSerializer.Deserialize<List<ATrainingStatements>>(contentstatement, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responseInstruction = await Http.GetAsync($"TrainingEvaluationInstructions/GetTrainingEvaluationInstructions");
+                    if (responseInstruction.IsSuccessStatusCode)
+                    {
+                        var contentinstruction = await responseInstruction.Content.ReadAsStringAsync();
+                        InstructionsData = JsonSerializer.Deserialize<List<TrainingEvaluationInstructions>>(contentinstruction, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responseGender = await Http.GetAsync($"Utilities/GetGender");
+                    if (responseGender.IsSuccessStatusCode)
+                    {
+                        var contentGender = await responseGender.Content.ReadAsStringAsync();
+                        GenderData = JsonSerializer.Deserialize<List<AGender>>(contentGender, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetEmployeeDD");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(content, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"TrainingEvaluation/GetTrainingEvaluationAllData");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        TrainingEvaluationFormData = JsonSerializer.Deserialize<List<TrainingEvaluationForm>>(content, _options);
+                    }
+                }));
+
+                Task _t = Task.WhenAll(t);
+                await _t;
+            }
+        }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+
+        }        
+    }
+
+    public async void OnTrainingTopicChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ATrainingTopic> args)
+    {
+        if (TrainingEvaluationFormData != null && (Credentials != null && Credentials.StaffId > 0))
+        {
+            var _topic = TrainingEvaluationFormData.FirstOrDefault(o => o.TrainingTopicId == args.Value && o.Employeeid == Credentials.StaffId);
+            if(_topic != null)
+            {
+                IsSubmitHidden = true;
+                ConfirmationText = "<p style='color:red;font-family: cursive;'>Please note that you have arleady provided an evaluation for this topic. You can only evaluate once so you will not be able to save the record.</p>";
+                await this.ArleadyEvaluatedDialogue.ShowAsync();
+            }
+            else
+            {
+                IsSubmitHidden = false;
+            }
+        }        
+    }
+
+    private void ComfirmationArleadyEvaluatedNo()
+    {
+        this.ArleadyEvaluatedDialogue.HideAsync();
+    }
+
+    public async Task onSubmitForm()
+    {
+        try
+        {
+            //Enable expansion of instructions sfaccordion to activate the grid
+
+            if (EvaluationData.Employeeid == null)
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please select the employee in the header details");
+            }
+
+            else if (EvaluationData.TrainingTopicId == null)
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please select the training topic in the header details");
+            }
+            else if (EvaluationData.TrainingDate == null)
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please enter the training date in the header details");
+            }
+            else if (string.IsNullOrEmpty(EvaluationData.MostUseful))
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please provide answer to Question 8");
+            }
+
+            // else if (traininginstructionsref != null && traininginstructionsref.InstructionsGrid != null)
+            // {
+            //     //await traininginstructionsref.InstructionsGrid.EndEditAsync();
+            //     var RowsData = traininginstructionsref.InstructionsGrid.CurrentViewData;
+            //     foreach (TrainingEvaluationInstructions n in RowsData)
+            //     {
+            //         if (n.AgreementLevelId == null)
+            //         {
+            //             toastService.ClearAll();
+            //             toastService.ShowWarning("Please provide answers to all instructions in the instructions section");
+            //         }
+            //     }
+
+            // }
+
+            else if (string.IsNullOrEmpty(EvaluationData.LeastUseful))
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please provide answer to Question 9");
+            }
+
+            else
+            {
+                ConfirmationText = "<p>Are you sure you want to submit this record.</p><p style='color:red;font-family: cursive;'> Please note that you wont be able to make any further changes after submission! </ p > ";
+                await this.ConfirmationSubmitDialogue.ShowAsync();
+            }            
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    public async Task ComfirmationSubmitYes()
+    {
+        try
+        {
+            if (EvaluationGrid != null)
+            {
+                await LoadingDialogue.ShowAsync();
+                if (traininginstructionsref != null && traininginstructionsref.InstructionsGrid != null)
+                {
+                    await traininginstructionsref.InstructionsGrid.EndEditAsync();
+                }
+                await EvaluationGrid.EndEditAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await LoadingDialogue.HideAsync();
+            await this.ConfirmationSubmitDialogue.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void ComfirmationSubmitNo()
+    {
+        this.ConfirmationSubmitDialogue.HideAsync();
+    }
+
+    public async void DialogCancelBtnclicked()
+    {
+        if (EvaluationGrid != null)
+        {
+            if (traininginstructionsref != null && traininginstructionsref.InstructionsGrid != null)
+            {
+                await traininginstructionsref.InstructionsGrid.EndEditAsync();
+            }
+            await EvaluationGrid.CloseEditAsync();
+        }
+    }
+
+
+
+    #region EvaluationAdapter Adapter
+    public class EvaluationAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        ApiConfig _ApiConfig;
+        public IToastService toastService;
+        private readonly NavigationManager Navigation;
+
+        public EvaluationAdapter(HttpClient _http, IToastService ts, NavigationManager _Navigation, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            Navigation = _Navigation;
+            _ApiConfig = apiConfig;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+
+            var data = new List<TrainingEvaluationForm>();
+
+            string? BaseUrl = _ApiConfig.BaseUrl;
+
+            try
+            {
+
+                var response = await Http.GetAsync($"TrainingEvaluation/GetTrainingEvaluation");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    data = JsonSerializer.Deserialize<List<TrainingEvaluationForm>>(content, _options);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<TrainingEvaluationForm>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+                string? _baseurl = Navigation.BaseUri;
+                var val = (value as TrainingEvaluationForm);
+                if (val != null)
+                {
+                    if (val.EvaluationId == 0)
+                    {
+
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"TrainingEvaluation/CreateTrainingEvaluation?_baseurl={_baseurl}", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"TrainingEvaluation/CreateTrainingEvaluation", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+
+                var val = (value as TrainingEvaluationForm);
+                if (val != null)
+                {
+                    if (val.EvaluationId == 0)
+                    {
+
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"TrainingEvaluation/CreateTrainingEvaluation", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"TrainingEvaluation/UpdateTrainingEvaluation", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }    
+    }
+    public async void EvaluationActionComplete(ActionEventArgs<TrainingEvaluationForm> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            EvaluationGrid.PreventRender(false);
+        }
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+        {
+            List<Task> t = new List<Task>();
+            t.Add(Task.Run(async () =>
+            {
+                var response = await Http.GetAsync($"TrainingEvaluation/GetTrainingEvaluationAllData");
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    TrainingEvaluationFormData = JsonSerializer.Deserialize<List<TrainingEvaluationForm>>(content, _options);
+                }
+            }));
+
+            Task _t = Task.WhenAll(t);
+            await _t;
+            
+        }
+    }
+
+    public async void EvaluationActionBegin(ActionEventArgs<TrainingEvaluationForm> Args)
+    {
+        var data = Args.Data;
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+        {
+            if (Args.Data.TrainingTopicId == null)
+            {
+                toastService.ShowWarning("Please choose a topic.");
+                Args.Cancel = true;
+            }
+            else if (Args.Data.TrainingDate == null)
+            {
+                toastService.ShowWarning("Please enter the training date.");
+                Args.Cancel = true;
+            }
+
+            else
+            {
+                Args.Data.RecommendTraining = radiovalue;
+            }
+        }
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+        {
+            //Disable fields
+            Onsubmitenabledbool = false;
+            OnRadioButtonSubmitbool = true;
+            instructionseditbool = false;
+            IsSubmitHidden = true;
+
+            _previous = Args.RequestType;
+        }
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+        {
+            if (Credentials.StaffId > 0)
+            {
+                Args.Data.Employeeid = Credentials.StaffId;
+            }
+
+            //Enable fields
+            Onsubmitenabledbool = true;
+            OnRadioButtonSubmitbool = false;
+            instructionseditbool = true;
+        }
+    }
+
+    public string GetEvaluationHeader(TrainingEvaluationForm Value)
+    {
+        if (Value.EvaluationId == 0)
+        {
+            return "Add a new Training Evaluation";
+        }
+        else
+        {
+            return "Edit Information";
+        }
+    }
+
+    //Enable cell edit on single click
+    public async Task CellSelectHandler(CellSelectEventArgs<TrainingEvaluationInstructions> args)
+    {
+        //get selected cell index
+        var CellIndexes = await InstructionsGrid.GetSelectedRowCellIndexes();
+
+        //get the row and cell index
+        var CurrentEditRowIndex = CellIndexes[0].Item1;
+        var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+        //get the available fields
+        var fields = await InstructionsGrid.GetColumnFieldNames();
+        // edit the selected cell using the cell index and column name
+        await InstructionsGrid.EditCell(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+    }
+
+    
+    #endregion EvaluationAdapter
+}

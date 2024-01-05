@@ -10,6 +10,7 @@
 @using Microsoft.AspNetCore.Authorization
 @inject NavigationManager navigation;
 @inject SystemSettings _SystemSettings;
+@inject IJSRuntime JSRuntime;
 
 @using HCMIS.ViewModel;
 @inject IToastService toastService;
@@ -57,7 +58,7 @@
     </h5>
 </center>
 
-<SfGrid @ref="@DataGrid" TValue="ASubCounty" ID="Grid1" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Delete", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
+<SfGrid @ref="@DataGrid" TValue="ASubCounty" ID="Grid1" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add","ExcelExport","PdfExport","CsvExport", "Search"})">
     <GridGroupSettings Columns="@Div" ShowDropArea="false">
         <CaptionTemplate>
             @{
@@ -95,13 +96,15 @@
                         </div>
                         <div class="form-group col-md-12">
                             <p>District<span style="color:red;">*</span></p>
-                            <SfDropDownList ID="DistrictId" @bind-Value="@(KpiData.DistrictId)" TItem="ADistrict" AllowFiltering="true" TValue="int?" DataSource="@DistrictData" FloatLabelType="FloatLabelType.Always">
+                            <SfDropDownList @ref="DistrictIdObj" ID="DistrictId" CssClass="requiredfield" @bind-Value="@(KpiData.DistrictId)" TItem="ADistrict" AllowFiltering="true" TValue="int?" DataSource="@DistrictData" FloatLabelType="FloatLabelType.Always"  @onclick="@((args) => OnClick(DistrictIdObj.ID))">
                                 <DropDownListFieldSettings Value="@nameof(ADistrict.DistrictId)" Text="@nameof(ADistrict.DistrictDescription)"></DropDownListFieldSettings>
+                                <DropDownListEvents TItem="ADistrict" TValue="int?" OnOpen="@((e)=>OnOpenHandler(DistrictIdObj.ID))"></DropDownListEvents>
+                                @*<DropDownListEvents TItem="ADistrict" TValue="int?" OnOpen="@OnOpenHandler"></DropDownListEvents>*@
                             </SfDropDownList>
                         </div>
                         <div class="col-md-12">
                             <p>Subcounty<span style="color:red;">*</span></p>
-                            <SfTextBox Multiline=false @bind-Value="@(KpiData.SubCountyDescription)" Width="100%" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                            <SfTextBox @ref="SubcountyObj" ID="Subcounty" CssClass="requiredfield" Multiline=false @bind-Value="@(KpiData.SubCountyDescription)" Width="100%" FloatLabelType="FloatLabelType.Never" @onclick="@((args) => OnClick(SubcountyObj.ID))"></SfTextBox>
                         </div>
                     </div>
                 }
@@ -116,10 +119,19 @@
     <GridEvents OnToolbarClick="@GridToolbarClick"
                 OnActionBegin="@OnSubcountyActionBegin"
                 OnActionComplete="@OnSubcountyActionComplete"
+                CommandClicked="OnCommandClicked"
                 TValue="ASubCounty">
     </GridEvents>
     <GridColumns>
-        <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+       @* <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>*@
+        <GridColumn HeaderText="Manage"
+                    Width="40"
+                    TextAlign="TextAlign.Left">
+            <GridCommandColumns>
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})"></GridCommandColumn>
+                <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-delete", CssClass = "e-flat"})" ID="Delete"></GridCommandColumn>
+            </GridCommandColumns>
+        </GridColumn>
         <GridColumn Field=@nameof(ASubCounty.SubCountyId) HeaderText="SubCounty Id" AllowEditing="false" IsPrimaryKey="true" Width="150" Visible="false"></GridColumn>
         <GridForeignColumn Field=@nameof(ASubCounty.DistrictId)
                            HeaderText="District"
@@ -136,11 +148,58 @@
     </GridColumns>
 </SfGrid>
 
+@*Confirm Deletion*@
 
+<div class="form-group col-md-12">
+    <SfDialog @ref="@ConfirmationDeleteDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @((MarkupString)@ConfirmationText)
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationApproveYes" />
+            <DialogButton Content="No" OnClick="@ComfirmationApproveNo" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+@*Saving Dialogue*@
+
+@*Saving Dialogue*@
+<div class="form-group col-md-12">
+    <SfDialog Width="80%" Height="20vh" AllowDragging=true EnableResize=true
+              CloseOnEscape=false IsModal=true ShowCloseIcon=false
+              Target=".mainbody" @ref=@SavingDialog Visible=false>
+        <DialogTemplates>
+            <Content>
+                <div class="dialogContent">
+                    <div class="loader">
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader-Saving-text"></div>
+                    </div>
+                    @*<p>Saving Record please wait......</p>*@
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+</div>
 @code {
     SfGrid<ASubCounty>? DataGrid { get; set; }
     List<ADistrict>? DistrictData { get; set; }
     List<ASubCounty>? SubCountyData { get; set; }
+    SfDropDownList<int?, ADistrict> DistrictIdObj { get; set; }
+    SfTextBox SubcountyObj;
+    SfDialog ConfirmationDeleteDialogue;
+    string ConfirmationText { get; set; }
+    ASubCounty selectedemployee { get; set; }
+    SfDialog SavingDialog { get; set; }
+
+
     /// <summary>
     /// Event for Toolbar click for Grid Exporting
     /// </summary>
@@ -162,8 +221,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        
-        
+
+
 
         var responsedistrict = await Http.GetAsync($"Utilities/GetDistrict");
         var contentdistrict = await responsedistrict.Content.ReadAsStringAsync();
@@ -182,6 +241,104 @@
             SubCountyData = await Http.GetFromJsonAsync<List<ASubCounty>>
             ($"Utilities/GetSubcounty");
         }
+    }
+
+    private async void OnOpenHandler(string clickedid)
+    {
+        await JSRuntime.InvokeVoidAsync("RequiredFieldClearFunction", clickedid);
+    }
+
+    public async void OnClick(string clickedid)
+    {
+        await JSRuntime.InvokeVoidAsync("RequiredFieldClearFunction", clickedid);
+        //Console.WriteLine(clickedid);
+    }
+
+    public async Task OnCommandClicked(CommandClickEventArgs<ASubCounty> args)
+    {
+
+        if (args.CommandColumn.ID == "Delete")
+        {
+            try
+            {
+                selectedemployee = args.RowData;
+                ConfirmationText = "<p>Are you sure you want to delete this record? </p>";
+                await this.ConfirmationDeleteDialogue.ShowAsync();
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            finally
+            {
+                StateHasChanged();
+            }
+
+        }
+    }
+
+    private async void ComfirmationApproveYes()
+    {
+        try
+        {
+            await this.ConfirmationDeleteDialogue.HideAsync();
+
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(selectedemployee);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            if (selectedemployee.SubCountyId != 0)
+            {
+                await SavingDialog.ShowAsync();
+                var result = await Http.PostAsync($"Utilities/DeleteSubcounty?qualificationid={selectedemployee.SubCountyId}", httpContent);
+
+                if (result.IsSuccessStatusCode)
+                {
+                    try
+                    {
+                        if (DataGrid != null)
+                        {
+                            await DataGrid.Refresh();
+                        }
+                        toastService.ClearAll();
+                        toastService.ShowSuccess("Record Successfully Deleted");
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                    finally
+                    {
+                        await SavingDialog.HideAsync();
+                    }
+
+                }
+                else
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Record cannot be deleted because it is arleady used else where in the system");
+                }
+            }
+
+            else
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("This record is not yet saved in the database. There is nothing to be deleted.");
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await SavingDialog.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void ComfirmationApproveNo()
+    {
+        this.ConfirmationDeleteDialogue.HideAsync();
     }
 
     #region Subcounty Region
@@ -296,8 +453,8 @@
             try
             {
                 var val = (value as ASubCounty);
-                
-                
+
+
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
                 var result = await Http.PutAsync($"Utilities/UpdateSubcounty", httpContent);
@@ -369,14 +526,18 @@
             {
                 if (args.Data.DistrictId == null)
                 {
+                    toastService.ClearAll();
                     toastService.ShowWarning("Please choose a District");
                     args.Cancel = true;
+                    await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
                 }
 
                 else if (string.IsNullOrEmpty(args.Data.SubCountyDescription))
                 {
+                    toastService.ClearAll();
                     toastService.ShowWarning("Please enter the subcounty.");
                     args.Cancel = true;
+                    await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
                 }
 
                 else
