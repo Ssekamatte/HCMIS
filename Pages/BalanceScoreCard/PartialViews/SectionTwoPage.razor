@@ -130,33 +130,21 @@
 
     <div class="col-md-12" style="margin-top:5px;">
 
-        <SfGrid @ref="@TargetsettingGrid" DataSource="@datasource" GridLines="GridLine.Both"
-                TValue="BalanceScoreCardTargetSetting" ID="Grid1" AllowTextWrap="true" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true">
-            <GridEditSettings AllowAdding="false" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
-            <GridGroupSettings Columns="@Div" ShowDropArea="false">
-                <CaptionTemplate Context="HeaderCaptionTemplateContext">
-                    @{
-                        var dvn = (HeaderCaptionTemplateContext as CaptionTemplateContext);
 
-                        string text = string.Empty;
-                        if (dvn.Field == "BscPerspectiveTypeId" && BscPerspectiveTypeData != null)
-                        {
-                            var data = BscPerspectiveTypeData.FirstOrDefault(o => o.BscPerspectiveTypeId.ToString() == dvn.Key);
-                            if (data != null)
-                            {
-                                text = data.BscPerspectiveTypeDescription;
-                            }
-                        }
-                        //if (dvn.Field == "PerspectiveTotalWeight")
-                        //{
-                        //    text = "Perspective Total Weight: " + dvn.Key;
-                        //}
-                        <div><p class="pp"><strong>@text</strong></p></div>
-                    }
-                </CaptionTemplate>
-            </GridGroupSettings>
+        <SfGrid @ref="TargetsettingGrid" ID="Grid" TValue="BalanceScoreCardTargetSetting" DataSource="@datasource"
+                AllowGrouping="true" ShowColumnChooser="true" AllowTextWrap="true"
+                AllowPaging="false" AllowFiltering="false" GridLines="GridLine.Both" AllowSelection="true">
+            <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+            <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+            <GridEvents CellSelected="CellSelectHandler"
+                        CellSaved="CellSavedHandler"
+                        OnCellSave="CellSaveHandler"
+                        QueryCellInfo="QueryCellInfoHandlerTargets"
+                        OnCellEdit="CellEditHandlerTargets"
+                        TValue="BalanceScoreCardTargetSetting">
+            </GridEvents>
             <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
-            <GridPageSettings PageSizes="true"></GridPageSettings>
+            <GridPageSettings PageSize="20"></GridPageSettings>
             <GridAggregates>
                 <GridAggregate>
                     <GridAggregateColumns>
@@ -223,15 +211,31 @@
 
                 </GridAggregate>
             </GridAggregates>
-            <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
-            <GridEvents CellSelected="CellSelectHandler"
-                        CellSaved="CellSavedHandler"
-                        OnCellSave="CellSaveHandler"
-                        QueryCellInfo="QueryCellInfoHandlerTargets"
-                        OnCellEdit="CellEditHandlerTargets"
-                        TValue="BalanceScoreCardTargetSetting">
-            </GridEvents>
+            <GridEditSettings AllowAdding="false" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Batch" ShowConfirmDialog=false>
 
+            </GridEditSettings>
+            <GridGroupSettings Columns="@Div" ShowDropArea="false">
+                <CaptionTemplate Context="HeaderCaptionTemplateContext">
+                    @{
+                        var dvn = (HeaderCaptionTemplateContext as CaptionTemplateContext);
+
+                        string text = string.Empty;
+                        if (dvn.Field == "BscPerspectiveTypeId" && BscPerspectiveTypeData != null)
+                        {
+                            var data = BscPerspectiveTypeData.FirstOrDefault(o => o.BscPerspectiveTypeId.ToString() == dvn.Key);
+                            if (data != null)
+                            {
+                                text = data.BscPerspectiveTypeDescription;
+                            }
+                        }
+                        //if (dvn.Field == "PerspectiveTotalWeight")
+                        //{
+                        //    text = "Perspective Total Weight: " + dvn.Key;
+                        //}
+                        <div><p class="pp"><strong>@text</strong></p></div>
+                    }
+                </CaptionTemplate>
+            </GridGroupSettings>
             <GridColumns>
                 <GridColumn Type="ColumnType.CheckBox" Width="50" Visible=false></GridColumn>
                 <GridColumn Field=@nameof(BalanceScoreCardTargetSetting.TargetSettingId) HeaderText="TargetSettingId" Visible=false IsPrimaryKey="true" Width="150"></GridColumn>
@@ -360,6 +364,7 @@
                 </GridColumn>
 
             </GridColumns>
+
         </SfGrid>
 
     </div>
@@ -496,9 +501,10 @@ else
                 {
                     supervisorassesstarget = args.Data.SupervisorAssessTgt.Value;
                 }
-
-                //targetobjectivescore = (((double)individualtargetweight) * ((double)supervisorassesstarget));
-                targetobjectivescore = ((((double)individualtargetweight) / 100 * ((double)supervisorassesstarget) / 100) * 100);
+                
+                //targetobjectivescore = ((((double)individualtargetweight) / 100 * ((double)supervisorassesstarget) / 100) * 100);
+                //Individual Target Weight * Supervisor Assesment Percentage Divide By 100%
+                targetobjectivescore = ((((double)individualtargetweight) * ((double)supervisorassesstarget))/100);
                 await TargetsettingGrid.UpdateCellAsync(index, nameof(BalanceScoreCardTargetSetting.IndividualTargetObjectiveScore), targetobjectivescore);
             }
 

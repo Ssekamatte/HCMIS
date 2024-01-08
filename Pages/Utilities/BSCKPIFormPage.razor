@@ -188,19 +188,21 @@
     @*Render custom spinner component.*@
 </SfSpinner>
 
+
 <SfGrid @ref="@ObjectivesGrid" ID="Grid" TValue="ABscKpi" @attributes="@GridAttributes" Query="@ChildQuery" AllowPaging="true"
         AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
         AllowTextWrap="true" AllowSorting="true" Toolbar="@ToolbarMenu">
 
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
-    <GridPageSettings PageSizes="true"></GridPageSettings>
-    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+    <GridPageSettings PageSizes="false"></GridPageSettings>
+    <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
     <SfDataManager AdaptorInstance="@typeof(ObjectivesAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
     <GridEvents OnActionComplete="@OnPerspectiveActionComplete"
                 OnActionBegin="@OnPerspectivesActionBegin"
                 RowSelecting="RowSelectingHandler"
                 OnLoad="LoadHandler"
                 DataBound="DataBound"
+                CellSelected="CellSelectHandler"
                 TValue="ABscKpi">
     </GridEvents>
 
@@ -1091,6 +1093,30 @@
             await _t;
         }
     }
+
+    //Enable cell edit on single click
+    public async Task CellSelectHandler(CellSelectEventArgs<ABscKpi> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await ObjectivesGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await ObjectivesGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await ObjectivesGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
 
     public async void LoadHandler()
     {

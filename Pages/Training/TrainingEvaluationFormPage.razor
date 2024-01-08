@@ -106,16 +106,32 @@
                                                 </div>
                                                 <div class="col-md-6">
                                                     <p>Training Topic:<span style="color:red;">*</span></p>
-                                                    <SfDropDownList @bind-Value="@(EvaluationData.TrainingTopicId)" Enabled="Onsubmitenabledbool" TItem="ATrainingTopic" TValue="int?" DataSource="@TopicData" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                                        <DropDownListFieldSettings Value="@nameof(ATrainingTopic.TrainingTopicId)" Text="@nameof(ATrainingTopic.TrainingTopicDescription)"></DropDownListFieldSettings>
-                                                        <DropDownListEvents TValue="int?" TItem="ATrainingTopic" ValueChange="OnTrainingTopicChange"></DropDownListEvents>
+                                                    <SfDropDownList @bind-Value="@(EvaluationData.TrainingTopicId)" Enabled="Onsubmitenabledbool" TItem="TrainingGeneralInternal" TValue="int?" DataSource="@TopicData" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                        <DropDownListFieldSettings Value="@nameof(TrainingGeneralInternal.GeneralInternalId)" Text="@nameof(TrainingGeneralInternal.TrainingDescription)"></DropDownListFieldSettings>
+                                                        <DropDownListEvents TValue="int?" TItem="TrainingGeneralInternal" ValueChange="OnTrainingTopicChange"></DropDownListEvents>
                                                     </SfDropDownList>
                                                 </div>
                                                 <div class="col-md-6">
-                                                    <p>Training Date:<span style="color:red;">*</span></p>
-                                                    <SfDatePicker @bind-Value="@(EvaluationData.TrainingDate)" Enabled="Onsubmitenabledbool" Placeholder="Please Select" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never" Max='@MaxDate'></SfDatePicker>
-                                                </div>                                                
-                                                <div class="col-md-6">
+                                                    <p>Training Start Date:<span style="color:red;">*</span></p>
+                                                    <SfDatePicker @bind-Value="@(EvaluationData.TrainingDate)" Enabled="false" Placeholder="Please Select" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never" Max='@MaxDate'></SfDatePicker>
+                                                </div>
+                                            <div class="col-md-6">
+                                                <p>Training End Date:<span style="color:red;">*</span></p>
+                                                @if (_generalinternal != null)
+                                                {
+                                                    if(_generalinternal.EndDate != null)
+                                                    {
+                                                        <SfDatePicker Value="@_generalinternal.EndDate" Enabled="false" Placeholder="Please Select" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                                                        // <p>@_generalinternal.EndDate.Value.ToString("dd/MM/yyyy")</p>
+                                                    }
+                                                    else
+                                                    {
+                                                        <SfDatePicker TValue="DateTime?" Enabled="false" Placeholder="Please Select" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                                                    }
+                                                }
+                                                                                                
+                                            </div>
+                                            <div class="col-md-6">
                                                     <p>Location of Event:</p>
                                                     <SfTextBox Multiline="true" ID="Location" Enabled="Onsubmitenabledbool" @bind-Value="@(EvaluationData.TrainingLocation)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
                                                 </div>
@@ -262,8 +278,8 @@
                                HeaderText="Training Topic"
                                Width="100"
                                AllowEditing="true"
-                               ForeignKeyField="@(nameof(ATrainingTopic.TrainingTopicId))"
-                               ForeignKeyValue="@(nameof(ATrainingTopic.TrainingTopicDescription))"
+                               ForeignKeyField="@(nameof(TrainingGeneralInternal.GeneralInternalId))"
+                               ForeignKeyValue="@(nameof(TrainingGeneralInternal.TrainingDescription))"
                                ForeignDataSource="@TopicData"
                                AllowFiltering="true"
                                IsFrozen="false"
@@ -362,12 +378,13 @@
     private static TrainingEvaluationForm? EvaluationData { get; set; }
     private TrainingEvaluationForm? evaluationentity { get; set; } = new();
     List<ATrainingStatements>? StatementsData { get; set; }
-    List<ATrainingTopic>? TopicData { get; set; }
+    List<TrainingGeneralInternal>? TopicData { get; set; }
     List<TrainingEvaluationInstructions>? InstructionsData { get; set; }
     List<TrainingEvaluationForm>? TrainingEvaluationFormData { get; set; }
     List<AGender>? GenderData { get; set; }
     List<AAgreementLevel>? AgreementLevelData { get; set; }
     List<ViewEmployeeDropDown>? EmployeeData { get; set; }
+    List<AFinancialYear>? FinancialYearData { get; set; }
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     LoginResultModel? Credentials { get; set; }
 
@@ -385,6 +402,9 @@
     bool Onsubmitenabledbool;
     bool OnRadioButtonSubmitbool;
     bool instructionseditbool;
+    string? financialyeardesc = null;
+    public int? finyearid { get; set; }
+    private static TrainingGeneralInternal _generalinternal { get; set; }
 
     //GridClass
     public class  TrainingStatements
@@ -442,6 +462,7 @@
         try
         {
             await base.OnInitializedAsync();
+            _generalinternal = new();
             var isAuthenticated = await AuthService.CheckAuthenticationStatus();
             if (isAuthenticated == false)
             {
@@ -464,15 +485,6 @@
                     }
                 }));
 
-                t.Add(Task.Run(async () =>
-                {
-                    var responsetopic = await Http.GetAsync($"TrainingTopic/GetTrainingTopic");
-                    if (responsetopic.IsSuccessStatusCode)
-                    {
-                        var contenttopic = await responsetopic.Content.ReadAsStringAsync();
-                        TopicData = JsonSerializer.Deserialize<List<ATrainingTopic>>(contenttopic, _options);
-                    }
-                }));
 
                 t.Add(Task.Run(async () =>
                 {
@@ -524,6 +536,44 @@
                     }
                 }));
 
+                t.Add(Task.Run(async () =>
+                {
+                    var responsefinyear = await Http.GetAsync($"FinancialYear/list");
+                    if (responsefinyear.IsSuccessStatusCode)
+                    {
+                        var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
+                        FinancialYearData = JsonSerializer.Deserialize<List<AFinancialYear>>(contentfinyear, _options);
+
+                        DateTime currentdate = DateTime.Now;
+                        if (currentdate.Month >= 6)
+                        {
+                            financialyeardesc = $"{currentdate.Year}/{(currentdate.Year + 1)}";
+                        }
+                        else if (currentdate.Month < 6)
+                        {
+                            financialyeardesc = $"{(currentdate.Year - 1)}/{currentdate.Year}";
+                        }
+
+                        var b = FinancialYearData.FirstOrDefault(o => o.FinancialYear.Trim() == financialyeardesc.Trim());
+                        if (b != null)
+                        {
+                            finyearid = b.Id;
+                            List<int?> _finyearid = new List<int?>();
+                            _finyearid.Add(finyearid);
+                            // searchpanel.FinancialYearId = _finyearid.ToArray();
+                            // MainQuery = new Query().AddParams("FinancialYearId", string.Join(",", searchpanel.FinancialYearId));
+
+                            var responsetopic = await Http.GetAsync($"GeneralInternal/GetGeneralInternalList?finyearid={finyearid}");
+                            if (responsetopic.IsSuccessStatusCode)
+                            {
+                                var contenttopic = await responsetopic.Content.ReadAsStringAsync();
+                                TopicData = JsonSerializer.Deserialize<List<TrainingGeneralInternal>>(contenttopic, _options);
+                            }
+                        }
+
+                    }
+                }));
+
                 Task _t = Task.WhenAll(t);
                 await _t;
             }
@@ -538,8 +588,10 @@
         }        
     }
 
-    public async void OnTrainingTopicChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ATrainingTopic> args)
+    public async void OnTrainingTopicChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, TrainingGeneralInternal> args)
     {
+        _generalinternal = args.ItemData;
+        EvaluationData.TrainingDate = args.ItemData.StartDate;
         if (TrainingEvaluationFormData != null && (Credentials != null && Credentials.StaffId > 0))
         {
             var _topic = TrainingEvaluationFormData.FirstOrDefault(o => o.TrainingTopicId == args.Value && o.Employeeid == Credentials.StaffId);
@@ -954,9 +1006,11 @@
             IsSubmitHidden = true;
 
             _previous = Args.RequestType;
+            _generalinternal = TopicData.FirstOrDefault(o => o.GeneralInternalId == Args.RowData.TrainingTopicId);
         }
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
         {
+            _generalinternal = new();
             if (Credentials.StaffId > 0)
             {
                 Args.Data.Employeeid = Credentials.StaffId;

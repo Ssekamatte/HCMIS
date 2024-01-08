@@ -1,5 +1,7 @@
 ﻿@page "/CPDPage"
+@using HCMIS.Interface
 @using HCMIS.Model
+@using HCMIS.SHARED.Data
 @using HCMIS.SHARED.Models;
 @using HCMIS.ViewModel
 @using System.Text.Json
@@ -7,20 +9,20 @@
 @inject ApiConfig _ApiConfig;
 @inject HttpClient Http
 @inject AppState AppState
-@inject NavigationManager Navigation
-@inject SystemSettings _SystemSettings
+@inject NavigationManager navManager
 @using System.Collections;
+@inject IAuthenticationService AuthService;
 
 @inject IToastService toastService;
 
 
 <style>
-    .e-edit-dialog {
+   /*  .e-edit-dialog {
         max-height: 98%;
         max-width: 98%;
         min-width: 98%;
         min-height: 98%;
-    }
+    } */
 
     h6 {
         color: ghostwhite;
@@ -52,13 +54,9 @@
     }
 </style>
 
-<div class="row">
-    <div class="col-lg-12 control-section">
-        <SfToast @ref="ToastObj" ID="toast_type">
-            <ToastPosition X="@ToastPosition" Y="Bottom"></ToastPosition>
-        </SfToast>
-    </div>
-</div>
+@{
+    var Div = (new string[] { "Employeeid" });
+}
 
 <center>
     <h5>
@@ -66,109 +64,217 @@
     </h5>
 </center>
 
-<SfGrid @ref="@DataGrid" TValue="ViewCpd" 
-    ID="Grid" AllowPaging="true" AllowFiltering="false" AllowReordering="true" AllowResizing="true" 
-    AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" 
-    AllowSorting="true" AllowTextWrap="true" Toolbar="@ToolbarMenu">
-    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="@EditMode.Dialog">
-        <HeaderTemplate>
-            @{
-                var text = GetCPDHeader((context as ViewCpd));
-                <div class="headerbandimg" />
-                <span>@text</span>
-            }
-        </HeaderTemplate>
-        <Template>
-        @{
-            <center>
-            <h5>
-            <strong>Continous Proffessional Development (CPD)</strong>
-            </h5>
-            </center>
-                CPDData = (context as ViewCpd);
-            <div>
-            <div class="row">
-            <div class="col-md-4" hidden="hidden">
-                 <SfNumericTextBox ID="Id" @bind-Value="@(CPDData.Id)" Placeholder="CPD Id" Enabled="false" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
-            </div>
-            <div class="col-md-4">
-            <p><h3>Module<span style="color:red;">*</span></h3></p>
-                  <SfTextBox Multiline="false" ID="Module" @bind-Value="@(CPDData.Module)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
-            </div>
-            <div class="col-md-4">
-            <p><h3>Start Date<span style="color:red;">*</span></h3></p>
-                   <SfDatePicker @bind-Value="@(CPDData.StartDate)" Enabled="true" Placeholder="Start Date" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
-            </div>
-            <div class="col-md-4">
-            <p><h3>End Date<span style="color:red;">*</span></h3></p>
-                   <SfDatePicker @bind-Value="@(CPDData.EndDate)" Enabled="true" Placeholder="End Date" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
-            </div>
-            <div class="col-md-4">
-                <p><h3>National/International<span style="color:red;">*</span></h3></p>
-                            <SfDropDownList @bind-Value="@(CPDData.LocalityId)" Enabled="true" TItem="ATrainingLocality" TValue="int?" DataSource="@LocalityData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                <DropDownListFieldSettings Value="@nameof(ATrainingLocality.LocalityId)" Text="@nameof(ATrainingLocality.LocalityDesc)"></DropDownListFieldSettings>
-                            </SfDropDownList>
-            </div>
-            <div class="col-md-4">
-            <p><h3>Location</h3></p>
-                   <SfTextBox Multiline="false" ID="Location" @bind-Value="@(CPDData.Location)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
-            </div>
-            <div class="col-md-4">
-            <p><h3>Target Group/Officer</h3></p>
-                   <SfTextBox Multiline="false" ID="Officers" @bind-Value="@(CPDData.Officers)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
-            </div>
-            <div class="col-md-4">
-            <p><h3>Amount</h3></p>
-                   <SfNumericTextBox ID="Id" @bind-Value="@(CPDData.Amount)" Enabled="true" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
-            </div>
-            <div class="col-md-4">
-            <p><h3>Trainer</h3></p>
-                    <SfTextBox Multiline="false" ID="Trainer" @bind-Value="@(CPDData.Trainer)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
-            </div>
-            <div class="col-md-4">
-            <p><h3>Department(s)<span style="color:red;">*</span></h3></p>
-                <SfMultiSelect @ref="@DepartmentsDatasourceObj" TValue="int[]" TItem="ADepartment" AllowFiltering="true" Mode="@VisualMode.CheckBox" DataSource="@DepartmentData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Departments" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
-                    <MultiSelectFieldSettings Value="@nameof(ADepartment.DepartmentId)" Text="@nameof(ADepartment.DepartmentDescription)"></MultiSelectFieldSettings>
-                    <MultiSelectEvents TValue="int[]" TItem="ADepartment" ValueChange="OnDepartmentDatasourceChange" DataBound="OnDepartmentDatasourceBound"></MultiSelectEvents>
-                </SfMultiSelect>
-            </div>
-            </div>
-            </div>
-        }
-        </Template>
 
-    </GridEditSettings>
-    <GridPageSettings PageSizes="true"></GridPageSettings>
+<div class="row">
+    <SfGrid @ref="@DataGrid" TValue="TrainingCpd"
+            ID="Grid" AllowPaging="false" AllowFiltering="false" AllowReordering="true" AllowResizing="true"
+            AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
+            AllowSorting="true" AllowTextWrap="true" Toolbar="@ToolbarMenu">
+        <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="@EditMode.Dialog" Dialog="DialogParams">
+            <HeaderTemplate>
+                @{
+                    var text = GetCPDHeader((context as TrainingCpd));
+                    <div class="headerbandimg" />
+                    <span>@text</span>
+                }
+            </HeaderTemplate>
+            <Template>
+                @{
+                    <center>
+                        <h5>
+                            <strong>Continous Professional Development (CPD)</strong>
+                        </h5>
+                    </center>
+                    CPDData = (context as TrainingCpd);
+                    <div>
+                        <div class="row">
+                            <div class="col-md-4" hidden="hidden">
+                                <SfNumericTextBox ID="Id" @bind-Value="@(CPDData.CpdId)" Placeholder="CPD Id" Enabled="false" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                            </div>
+                            <div class="col-md-4">
+                                <p>Employee<span style="color:red;">*</span></p>
+                                <SfDropDownList @bind-Value="@(CPDData.Employeeid)" Enabled="false" TItem="ViewEmployeeDropDown" TValue="int?" DataSource="@EmployeeData" Placeholder="Choose Employee" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                    <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
+                                </SfDropDownList>
+                            </div>
+                            <div class="col-md-4">
+                                <p>Module<span style="color:red;">*</span></p>
+                                <SfTextBox Multiline="false" ID="Module" @bind-Value="@(CPDData.Module)" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                            </div>
+                            <div class="col-md-4">
+                                <p>Start Date<span style="color:red;">*</span></p>
+                                <SfDatePicker @bind-Value="@(CPDData.StartDate)" Enabled="true" Placeholder="Start Date" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                            </div>
+                            <div class="col-md-4">
+                                <p>End Date<span style="color:red;">*</span></p>
+                                <SfDatePicker @bind-Value="@(CPDData.EndDate)" Enabled="true" Placeholder="End Date" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                            </div>
+                            <div class="col-md-4">
+                                <p>CPD Location Type<span style="color:red;">*</span></p>
+                                <SfDropDownList @bind-Value="@(CPDData.LocalityId)" Enabled="true" TItem="ATrainingLocality" TValue="int?" DataSource="@LocalityData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                    <DropDownListFieldSettings Value="@nameof(ATrainingLocality.LocalityId)" Text="@nameof(ATrainingLocality.LocalityDesc)"></DropDownListFieldSettings>
+                                </SfDropDownList>
+                            </div>
+                            <div class="col-md-4">
+                                <p>CPD Event Type<span style="color:red;">*</span></p>
+                                <SfDropDownList @bind-Value="@(CPDData.CpdeventTypeId)" Enabled="true" TItem="ACpdeventType" TValue="int?" DataSource="@CPDEventTypeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                    <DropDownListFieldSettings Value="@nameof(ACpdeventType.CpdeventTypeId)" Text="@nameof(ACpdeventType.CpdeventTypeDesc)"></DropDownListFieldSettings>
+                                </SfDropDownList>
+                            </div>
+                            <div class="col-md-4">
+                                <p>Location</p>
+                                <SfTextBox Multiline="false" ID="Location" @bind-Value="@(CPDData.Location)" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                            </div>
+                            <div class="col-md-4">
+                                <p>Target Group/Officer</p>
+                                <SfTextBox Multiline="false" ID="Officers" @bind-Value="@(CPDData.Officers)" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                            </div>
+                            <div class="col-md-4">
+                                <p>Amount</p>
+                                <SfNumericTextBox ID="Id" @bind-Value="@(CPDData.Amount)" Enabled="true" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                            </div>
+                            <div class="col-md-4">
+                                <p>Currency</p>
+                                <SfDropDownList @bind-Value="@(CPDData.CurrencyId)" Enabled="true" TItem="ACurrency" TValue="int?" DataSource="@CurrencyData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                    <DropDownListFieldSettings Value="@nameof(ACurrency.CurrencyId)" Text="@nameof(ACurrency.Currency)"></DropDownListFieldSettings>
+                                </SfDropDownList>
+                            </div>
+                            <div class="col-md-4">
+                                <p>Trainer(s)</p>
+                                <SfTextBox Multiline="true" ID="Trainer" rows="4" @bind-Value="@(CPDData.Trainer)" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                            </div>
+                            <div class="col-md-4">
+                                <p>Department(s)<span style="color:red;">*</span></p>
+                                <SfMultiSelect @ref="@DepartmentsDatasourceObj" TValue="int[]" TItem="ADepartment" AllowFiltering="true" Mode="@VisualMode.CheckBox" DataSource="@DepartmentData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Departments" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+                                    <MultiSelectFieldSettings Value="@nameof(ADepartment.DepartmentId)" Text="@nameof(ADepartment.DepartmentDescription)"></MultiSelectFieldSettings>
+                                    <MultiSelectEvents TValue="int[]" TItem="ADepartment" ValueChange="OnDepartmentDatasourceChange" DataBound="OnDepartmentDatasourceBound"></MultiSelectEvents>
+                                </SfMultiSelect>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </Template>
+
+        </GridEditSettings>
+
+        <GridGroupSettings Columns="@Div" ShowDropArea="false">
+            <CaptionTemplate Context="HeaderCaptionTemplateContext">
+                @{
+                    var dvn = (HeaderCaptionTemplateContext as CaptionTemplateContext);
+
+                    string text = string.Empty;
+                    if (dvn.Field == "Employeeid" && EmployeeData != null)
+                    {
+                        var data = EmployeeData.FirstOrDefault(o => o.Employeeid.ToString() == dvn.Key);
+                        if (data != null)
+                        {
+                            text = data.EmployeeDetails;
+                        }
+                    }
+                    <div><p class="pp"><strong>@text</strong></p></div>
+                }
+            </CaptionTemplate>
+        </GridGroupSettings>
+
+        <GridPageSettings PageSizes="true"></GridPageSettings>
         <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple"></GridSelectionSettings>
         <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
-    <GridEvents OnToolbarClick="@GridToolbarClick" OnActionBegin="CPDActionBegin" OnActionComplete="CPDActionComplete" TValue="ViewCpd"></GridEvents>
-    <SfDataManager AdaptorInstance="@typeof(CPDAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-    <GridColumns>
-        <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
-    	<GridColumn Field=@nameof(ViewCpd.Id) HeaderText="Id" AllowEditing="false" IsPrimaryKey="true" Visible="false" Width="150"></GridColumn>
-        <GridColumn Field=@nameof(ViewCpd.Module) HeaderText="Module" Width="120" CustomAttributes="@(new Dictionary<string,
+        <GridEvents OnToolbarClick="@GridToolbarClick" OnActionBegin="CPDActionBegin" OnActionComplete="CPDActionComplete" TValue="TrainingCpd"></GridEvents>
+        <SfDataManager AdaptorInstance="@typeof(CPDAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+        <GridColumns>
+            @* <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn> *@
+            <GridColumn HeaderText="Manage"
+                        Width="40"
+                        CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"
+                        TextAlign="TextAlign.Left">
+                <GridCommandColumns>
+                    <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})"></GridCommandColumn>
+                </GridCommandColumns>
+            </GridColumn>
+            <GridForeignColumn Field=@nameof(TrainingCpd.Employeeid)
+                               HeaderText="Employee"
+                               Width="100"
+                               AllowEditing="true"
+                               ForeignKeyField="@(nameof(ViewEmployeeDropDown.Employeeid))"
+                               ForeignKeyValue="@(nameof(ViewEmployeeDropDown.EmployeeDetails))"
+                               ForeignDataSource="@EmployeeData" AllowFiltering="false"
+                               CustomAttributes="@(new Dictionary<string,
+                    object>(){ { "class", "e-attr1" }})">
+            </GridForeignColumn>
+            <GridColumn Field=@nameof(TrainingCpd.CpdId) HeaderText="Id" AllowEditing="false" IsPrimaryKey="true" Visible="false" Width="150"></GridColumn>
+            <GridColumn Field=@nameof(TrainingCpd.Module) HeaderText="Module" Width="120" CustomAttributes="@(new Dictionary<string,
         object>(){ { "class", "e-attr1" }})"></GridColumn>
-        <GridColumn Field=@nameof(ViewCpd.StartDate) HeaderText="Start Date" Format="dd/MMMM/yyyy" TextAlign="TextAlign.Justify" Width="100" 
-        ClipMode="ClipMode.EllipsisWithTooltip" Type="ColumnType.Date" CustomAttributes="@(new Dictionary<string,
+            <GridColumn Field=@nameof(TrainingCpd.StartDate) HeaderText="Start Date" Format="dd/MMMM/yyyy" TextAlign="TextAlign.Justify" Width="100"
+                        ClipMode="ClipMode.EllipsisWithTooltip" Type="ColumnType.Date" CustomAttributes="@(new Dictionary<string,
         object>(){ { "class", "e-attr1" }})"></GridColumn>
-        <GridColumn Field=@nameof(ViewCpd.EndDate) HeaderText="End Date" Format="dd/MMMM/yyyy" TextAlign="TextAlign.Justify" Width="100"
-        ClipMode="ClipMode.EllipsisWithTooltip" Type="ColumnType.Date" CustomAttributes="@(new Dictionary<string,
+            <GridColumn Field=@nameof(TrainingCpd.EndDate) HeaderText="End Date" Format="dd/MMMM/yyyy" TextAlign="TextAlign.Justify" Width="100"
+                        ClipMode="ClipMode.EllipsisWithTooltip" Type="ColumnType.Date" CustomAttributes="@(new Dictionary<string,
         object>(){ { "class", "e-attr1" }})"></GridColumn>
-        <GridColumn Field=@nameof(ViewCpd.Location) HeaderText="Location"  Width="90" CustomAttributes="@(new Dictionary<string,
+        @*     <GridColumn Field=@nameof(TrainingCpd.Location) HeaderText="Location" Width="90" CustomAttributes="@(new Dictionary<string,
         object>(){ { "class", "e-attr1" }})"></GridColumn>
-        <GridColumn Field=@nameof(ViewCpd.Officers) HeaderText="Officers"  Width="90" CustomAttributes="@(new Dictionary<string,
-        object>(){ { "class", "e-attr1" }})"></GridColumn>
-        <GridColumn Field=@nameof(ViewCpd.Amount) HeaderText="Amount"  Width="90" CustomAttributes="@(new Dictionary<string,
-        object>(){ { "class", "e-attr1" }})"></GridColumn>
-    </GridColumns>
-</SfGrid>
+            <GridColumn Field=@nameof(TrainingCpd.Officers) HeaderText="Officers" Width="90" CustomAttributes="@(new Dictionary<string,
+        object>(){ { "class", "e-attr1" }})"></GridColumn> *@
+            <GridColumn Field=@nameof(TrainingCpd.Amount) HeaderText="Amount" Width="90" Format="#,#.#" CustomAttributes="@(new Dictionary<string,
+        object>(){ { "class", "e-attr1" }})">
+            <GridForeignColumn Field="@nameof(TrainingCpd.CurrencyId)"
+                                   Visible="true"
+                                   HeaderText="Currency"
+                                   Width="100"
+                                   ForeignKeyField="@nameof(ACurrency.CurrencyId)"
+                                   ForeignKeyValue="@nameof(ACurrency.Currency)"
+                                   ForeignDataSource="@CurrencyData"
+                                   CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})">
+            </GridForeignColumn>
+    </GridColumn>
+        </GridColumns>
+    </SfGrid>
+
+</div>
+
+<div>
+    <SfDialog @ref="@LoadingDialogue"
+              ID="LoadingDialog"
+              Height="auto"
+              Width="40%"
+              AllowDragging="true"
+              Target=".mainbody"
+              ShowCloseIcon="false"
+              IsModal=true
+              Visible="false">
+        <DialogTemplates>
+            <Content>
+                <div style="padding:25px">
+                    <div class="loader">
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader-Saving-text"></div>
+                    </div>
+                </div>
+            </Content>
+            <FooterTemplate>
+
+            </FooterTemplate>
+        </DialogTemplates>
+    </SfDialog>
+</div>
 
 @code {
-    SfGrid<ViewCpd>? DataGrid { get; set; }
-    private static ViewCpd? CPDData { get; set; }
+    SfGrid<TrainingCpd>? DataGrid { get; set; }
+    private static TrainingCpd? CPDData { get; set; }
     List<ADepartment>? DepartmentData { get; set; }
+    List<ACurrency>? CurrencyData { get; set; }
     List<ATrainingLocality>? LocalityData { get; set; }
+    List<ViewEmployeeDropDown>? EmployeeData { get; set; }
+    List<ACpdeventType>? CPDEventTypeData { get; set; }
     private SfMultiSelect<int[],ADepartment>? DepartmentsDatasourceObj;
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "98%" };
+    LoginResultModel? Credentials { get; set; }
+    SfDialog? LoadingDialogue;
 
     #region Toasters
     public static string ToastContent { get; set; }
@@ -187,11 +293,11 @@
 
     private List<object> ToolbarMenu = new List<object>() 
     {
-        new ItemModel() { Text = "Capture CPD", PrefixIcon = "e-add", Id = "Grid_add"},
-        new ItemModel(){ Text = "Edit CPD", PrefixIcon= "e-edit", Id="Grid_edit"},
-        new ItemModel(){ Text = "Delete CPD", PrefixIcon= "e-delete", Id="Grid_delete"},
-        new ItemModel(){ Text = "Update CPD", PrefixIcon= "e-update", Id="Grid_update"},
-        new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
+        new ItemModel() { Text = "Capture CPD", PrefixIcon = "e-add", Id = "Grid_add"}
+        // ,new ItemModel(){ Text = "Edit CPD", PrefixIcon= "e-edit", Id="Grid_edit"},
+        // new ItemModel(){ Text = "Delete CPD", PrefixIcon= "e-delete", Id="Grid_delete"},
+        // new ItemModel(){ Text = "Update CPD", PrefixIcon= "e-update", Id="Grid_update"},
+        // new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
     };
 
     public void GridToolbarClick(Syncfusion.Blazor.Navigations.ClickEventArgs args)
@@ -212,22 +318,72 @@
 
     protected override async Task OnInitializedAsync()
     {      
-        var response = await Http.GetAsync($"TrainingTopic/GetTrainingTopic");
-        var content = await response.Content.ReadAsStringAsync();
 
-        if (response.IsSuccessStatusCode)
+        await base.OnInitializedAsync();
+        var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+        if (isAuthenticated == false)
         {
-            DepartmentData = await Http.GetFromJsonAsync<List<ADepartment>>
-            ($"Utilities/GetDepartment");
+            navManager.NavigateTo("/LoginPage", true);
         }
-
-        var responselocality = await Http.GetAsync($"Utilities/GetLocality");
-        var contentlocality = await responselocality.Content.ReadAsStringAsync();
-
-        if (responselocality.IsSuccessStatusCode)
+        else
         {
-            LocalityData = await Http.GetFromJsonAsync<List<ATrainingLocality>>
-            ($"Utilities/GetLocality");
+            Credentials = await AuthService.GetUserCredentials();
+            List<Task> t = new List<Task>();
+
+            t.Add(Task.Run(async () =>
+                {
+                    var responseemployee = await Http.GetAsync($"BalanceScoreCard/GetEmployeeData");
+                    if (responseemployee.IsSuccessStatusCode)
+                    {
+                        var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+                        EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(contentemployee, _options);
+                    }
+                }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var response = await Http.GetAsync($"Utilities/GetLocality");
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    LocalityData = JsonSerializer.Deserialize<List<ATrainingLocality>>(content, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var response = await Http.GetAsync($"Utilities/GetCpdeventType");
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    CPDEventTypeData = JsonSerializer.Deserialize<List<ACpdeventType>>(content, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+
+                var response = await Http.GetAsync($"Utilities/GetDepartment");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+
+                var response = await Http.GetAsync($"Utilities/GetCurrency");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    CurrencyData = JsonSerializer.Deserialize<List<ACurrency>>(content, _options);
+                }
+            }));
+
+            Task _t = Task.WhenAll(t);
+            await _t;
         }
     }
 
@@ -255,21 +411,21 @@
 
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         {
-            
 
-            var data = new List<ViewCpd>();
+
+            var data = new List<TrainingCpd>();
 
             string? AccessToken = _SystemSettings.AccessToken;
             string? BaseUrl = _ApiConfig.BaseUrl;
 
             try
             {
-                 
+
                 var response = await Http.GetAsync($"CPD/GetCPD");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    data = JsonSerializer.Deserialize<List<ViewCpd>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<TrainingCpd>>(content, _options);
                 }
             }
             catch (Exception ex)
@@ -310,7 +466,7 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<ViewCpd>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<TrainingCpd>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
@@ -320,13 +476,13 @@
         {
             try
             {
-                
-                var val = (value as ViewCpd);
+
+                var val = (value as TrainingCpd);
                 if (val != null)
                 {
-                    if (val.Id == 0)
+                    if (val.CpdId == 0)
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -355,7 +511,7 @@
                     }
                     else
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -394,13 +550,13 @@
         {
             try
             {
-                
-                var val = (value as ViewCpd);
+
+                var val = (value as TrainingCpd);
                 if (val != null)
                 {
-                    if (val.Id == 0)
+                    if (val.CpdId == 0)
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -429,7 +585,7 @@
                     }
                     else
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -466,49 +622,101 @@
         }
     }
 
-    public void CPDActionComplete(ActionEventArgs<ViewCpd> args)
+    public async void CPDActionComplete(ActionEventArgs<TrainingCpd> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
         {
             DataGrid.PreventRender(false);
         }
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+        {
+            await LoadingDialogue.HideAsync();            
+        }
     }
 
-    public async void CPDActionBegin(ActionEventArgs<ViewCpd> Args)
+    public async void CPDActionBegin(ActionEventArgs<TrainingCpd> Args)
     {
         var data = Args.Data;
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
         {
-            if (Args.Data.Module == null)
+            try
             {
-                toastService.ShowWarning("Please enter a module.!");
-                Args.Cancel = true;
-            }
-            else if (Args.Data.StartDate == null)
-            {
-                toastService.ShowWarning("Please enter the training start date.!");
-                Args.Cancel = true;
-            }
-            else if (Args.Data.EndDate == null)
-            {
-                toastService.ShowWarning("Please enter the training end date.!");
-                Args.Cancel = true;
-            }
-            else if (Args.Data.StartDate > Args.Data.EndDate)
-            {
-                toastService.ShowWarning("The training end date cannot be before the training start date.!");
-                Args.Cancel = true;
-            }
-            else if (Args.Data.LocalityId == null)
-            {
-                toastService.ShowWarning("Please choose whether this is a local or international training!");
-                Args.Cancel = true;
-            }
+                if (Args.Data.Employeeid == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the employee!");
+                    Args.Cancel = true;
+                }
+                else if (Args.Data.Module == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please enter a module.!");
+                    Args.Cancel = true;
+                }
+                else if (Args.Data.StartDate == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please enter the training start date.!");
+                    Args.Cancel = true;
+                }
+                else if (Args.Data.EndDate == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please enter the training end date.!");
+                    Args.Cancel = true;
+                }
 
-            else if (Args.Data.Departments == null)
+                else if (Args.Data.StartDate > Args.Data.EndDate)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("The training end date cannot be before the training start date.!");
+                    Args.Cancel = true;
+                }
+                else if (Args.Data.LocalityId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the CPD Location Type!");
+                    Args.Cancel = true;
+                }
+                else if (Args.Data.CpdeventTypeId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the CPD Event Type!");
+                    Args.Cancel = true;
+                }
+                else if (Args.Data.Amount != null && Args.Data.CurrencyId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the currency!");
+                    Args.Cancel = true;
+                }
+
+                else if (Args.Data.Departments == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please choose the department(s).!");
+                    Args.Cancel = true;
+                }
+                else
+                {
+                    await LoadingDialogue.ShowAsync();
+                }
+            }
+            catch(Exception ex)
             {
-                toastService.ShowWarning("Please choose the department(s).!");
-                Args.Cancel = true;
+                throw ex;
+            }
+            finally
+            {
+                // await LoadingDialogue.HideAsync();
+            }            
+        }
+
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+        {
+            if (Credentials != null && Credentials.StaffId > 0)
+            {
+                Args.Data.Employeeid = Credentials.StaffId;
             }
         }
     }
@@ -538,9 +746,9 @@
             CPDData.Departments = null;
         }
     }
-    public string GetCPDHeader(ViewCpd Value)
+    public string GetCPDHeader(TrainingCpd Value)
     {
-        if (Value.Id == 0)
+        if (Value.CpdId == 0)
         {
             return "Add a new CPD";
         }

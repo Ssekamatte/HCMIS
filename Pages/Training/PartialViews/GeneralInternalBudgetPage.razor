@@ -15,19 +15,23 @@
 @inject IToastService toastService;
 @inject IAuthenticationService AuthService;
 
-<SfGrid @ref="@BudgetGrid" DataSource="@datasource" GridLines="GridLine.Both"
-        TValue="TrainingGeneralInternalBudget" ID="Grid1" AllowTextWrap="true" AllowPaging="false" AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="false" AllowSorting="false">
-    <GridEditSettings AllowAdding="false" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
-    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
-    <GridPageSettings PageSizes="true"></GridPageSettings>
-
-    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
-    <GridEvents CellSelected="CellSelectHandler"
+<SfGrid @ref="BudgetGrid" ID="Grid" TValue="TrainingGeneralInternalBudget" DataSource="@datasource"
+        AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+        AllowPaging="false" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true">
+    <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+    <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+    <GridEvents 
+                CellSelected="CellSelectHandler"
                 CellSaved="CellSavedHandler"
                 TValue="TrainingGeneralInternalBudget">
     </GridEvents>
-
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSize="20"></GridPageSettings>
+    <GridEditSettings AllowAdding="false" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Batch" ShowConfirmDialog=false>
+        
+    </GridEditSettings>
     <GridColumns>
+
         <GridColumn Field=@nameof(TrainingGeneralInternalBudget.GeneralInternalBudgetId) HeaderText="Id" AllowEditing="false" IsPrimaryKey="true" Visible="false" Width="150"></GridColumn>
         <GridColumn Field=@nameof(TrainingGeneralInternalBudget.GeneralInternalId) HeaderText="GeneralInternalId" Visible="false" Width="150"></GridColumn>
         <GridForeignColumn Field="@nameof(TrainingGeneralInternalBudget.FinancialYearId)"
@@ -42,7 +46,11 @@
                            CustomAttributes="@(new Dictionary<string,
                                                        object>(){ { "class", "e-attr1" }})">
         </GridForeignColumn>
+        @*Format="###.##"*@
         <GridColumn Field=@nameof(TrainingGeneralInternalBudget.Budget) HeaderText="Budget" Width="100"
+                    EditType="EditType.NumericEdit"
+                    Format="#,#.#"
+                    EditorSettings="@FreightEditParams"
                     CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})">
         </GridColumn>
     </GridColumns>
@@ -67,6 +75,8 @@
     int? previousGeneralInternalId { get; set; }
     [Parameter]
     public Syncfusion.Blazor.Grids.Action _previous { get; set; }
+
+    #region BehaviourMethods
 
     protected override async Task OnInitializedAsync()
     {
@@ -99,10 +109,13 @@
             }
         }
     }
+        
+    public IEditorSettings FreightEditParams = new NumericEditCellParams
+    {
+        Params = new NumericTextBoxModel<object>() { Decimals = 6, Format = "N6" }
+    };
 
-    #region BehaviourMethods
-
-    //For Behavioral Plan Grid
+  
     //Enable cell edit on single click
     public async Task CellSelectHandler(CellSelectEventArgs<TrainingGeneralInternalBudget> args)
     {
