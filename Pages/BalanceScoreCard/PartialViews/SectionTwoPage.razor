@@ -153,7 +153,7 @@
                                 @{
                                     aggregate = (GFTemplateContext as AggregateTemplateContext);
                                     <div>
-                                        <p span style="color:Purple;">Total: @aggregate.Sum</p>
+                                        <p span style="color:Purple;">Total: @aggregate.Sum %</p>
                                     </div>
                                 }
                             </GroupFooterTemplate>
@@ -175,20 +175,6 @@
                             </GroupFooterTemplate>
                         </GridAggregateColumn>
 
-                        <GridAggregateColumn Field=@nameof(BalanceScoreCardTargetSetting.SupervisorAssessTgt) Type="Syncfusion.Blazor.Grids.AggregateType.Sum">
-                            <FooterTemplate Context="FooterTemplateContext">
-                                @{
-                                    aggregate = (FooterTemplateContext as AggregateTemplateContext);
-                                    <div>
-                                        @if (@aggregate != null)
-                                        {
-                                            <p style="color:purple;">Target Score: @aggregate.Sum %</p>
-                                        }
-                                    </div>
-                                }
-                            </FooterTemplate>
-                        </GridAggregateColumn>
-
                         <GridAggregateColumn Field=@nameof(BalanceScoreCardTargetSetting.IndividualTargetObjectiveScore)
                                              Type="Syncfusion.Blazor.Grids.AggregateType.Sum"
                                              Format="N1">
@@ -198,7 +184,7 @@
                                     <div>
                                         @if (@aggregate != null)
                                         {
-                                            <p style="color:purple;">Individual Score: @aggregate.Sum %</p>
+                                            <p style="color:purple;">Target Score: @aggregate.Sum %</p>
                                         }
                                     </div>
                                 }
@@ -294,10 +280,11 @@
                                     HeaderText="Individual Target Weight (%)"
                                     TextAlign="TextAlign.Justify"
                                     AllowEditing="false"
-                                    ValidationRules="@(new ValidationRules { Required = false })"
                                     EditType="EditType.NumericEdit"
                                     Format="###.##"
                                     Width="50"
+                                    EditorSettings="@(new NumericEditCellParams() {Params = new Syncfusion.Blazor.Inputs.NumericTextBoxModel<object>(){ShowSpinButton=false}})"
+                                    ValidationRules="@(new ValidationRules { Required = true, Min = 1 , Max=100 })"
                                     IsFrozen="false"
                                     ClipMode="ClipMode.EllipsisWithTooltip"
                                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
@@ -316,10 +303,11 @@
                                     HeaderText="Employee Self Assessment % Target Achievement"
                                     TextAlign="TextAlign.Justify"
                                     AllowEditing="@IsEmployeeEnabledColumn"
-                                    ValidationRules="@(new ValidationRules { Required = false })"
                                     EditType="EditType.NumericEdit"
                                     Format="###.##"
                                     Width="70"
+                                    EditorSettings="@(new NumericEditCellParams() {Params = new Syncfusion.Blazor.Inputs.NumericTextBoxModel<object>(){ShowSpinButton=false}})"
+                                    ValidationRules="@(new ValidationRules { Required = true, Min = 1 , Max=100 })"
                                     ClipMode="ClipMode.EllipsisWithTooltip"
                                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
                         </GridColumn>
@@ -334,10 +322,11 @@
                                     HeaderText="Supervisor Assessment % Target Achievement"
                                     TextAlign="TextAlign.Justify"
                                     AllowEditing="@IsSupervisorEnabledColumn"
-                                    ValidationRules="@(new ValidationRules { Required = false })"
                                     EditType="EditType.NumericEdit"
                                     Format="###.##"
                                     Width="70"
+                                    EditorSettings="@(new NumericEditCellParams() {Params = new Syncfusion.Blazor.Inputs.NumericTextBoxModel<object>(){ShowSpinButton=false}})"
+                                    ValidationRules="@(new ValidationRules { Required = true, Min = 1 , Max=100 })"
                                     ClipMode="ClipMode.EllipsisWithTooltip"
                                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
                         </GridColumn>
@@ -532,6 +521,7 @@ else
                 toastService.ShowWarning("You cannot enter a % greater than 100 %");
                 args.Cancel = true;
             }
+
             // else if (args.Data.EmployeeSelfAssessTgt > args.Data.IndividualTargetWeight)
             // {
             //     toastService.ClearAll();
@@ -543,32 +533,32 @@ else
             // https://www.syncfusion.com/forums/180016/change-cell-background-color-when-another-cell-is-modified
             //https://support.syncfusion.com/support/tickets/534347 -- ticket link
 
-            else if (args.Data.EmployeeSelfAssessTgt > args.Data.IndividualTargetWeight)
-            {
-                if (args.Column.Field == "EmployeeSelfAssessTgt")
-                {
-                    args.CellInfo.AddStyle(new string[] { "background-color: red", "color:white" });
-                    toastService.ClearAll();
-                    toastService.ShowWarning("The employee self assessment % target achievement value should not exceed the Individual target weight. Input will not be captured");
+            // else if (args.Data.EmployeeSelfAssessTgt > args.Data.IndividualTargetWeight)
+            // {
+            //     if (args.Column.Field == "EmployeeSelfAssessTgt")
+            //     {
+            //         args.CellInfo.AddStyle(new string[] { "background-color: red", "color:white" });
+            //         toastService.ClearAll();
+            //         toastService.ShowWarning("The employee self assessment % target achievement value should not exceed the Individual target weight. Input will not be captured");
 
-                    args.Cancel = true;
-                }
+            //         args.Cancel = true;
+            //     }
 
-                // if(TargetsettingGrid != null)
-                // {
-                //     var ColumnIndex = await TargetsettingGrid.GetColumnIndexByFieldAsync(args.ColumnName);
-                //     var rowindex = await TargetsettingGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.TargetSettingId);
-                //     var index = args.Column.Index + 1;
-                //     await JSRuntime.InvokeVoidAsync("highlightHeader", index, rowindex);
-                // }                
-            }
+            //     // if(TargetsettingGrid != null)
+            //     // {
+            //     //     var ColumnIndex = await TargetsettingGrid.GetColumnIndexByFieldAsync(args.ColumnName);
+            //     //     var rowindex = await TargetsettingGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.TargetSettingId);
+            //     //     var index = args.Column.Index + 1;
+            //     //     await JSRuntime.InvokeVoidAsync("highlightHeader", index, rowindex);
+            //     // }                
+            // }
             
-            else if (args.Data.SupervisorAssessTgt > args.Data.IndividualTargetWeight)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("The supervisor assessment % target achievement value should not exceed the Individual target weight. Input will not be captured");
-                args.Cancel = true;
-            }
+            // else if (args.Data.SupervisorAssessTgt > args.Data.IndividualTargetWeight)
+            // {
+            //     toastService.ClearAll();
+            //     toastService.ShowWarning("The supervisor assessment % target achievement value should not exceed the Individual target weight. Input will not be captured");
+            //     args.Cancel = true;
+            // }
             else
             {
                 args.Cancel = false;

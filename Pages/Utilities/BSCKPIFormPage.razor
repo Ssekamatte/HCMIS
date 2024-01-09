@@ -10,7 +10,7 @@
 @using HCMIS.SHARED.Data;
 @using HCMIS.SHARED.Models;
 @using Microsoft.AspNetCore.Authorization
-@inject NavigationManager navigation;
+@inject NavigationManager navManager;
 @using HCMIS.ViewModel;
 @inject IToastService toastService;
 @using HCMIS.Interface;
@@ -189,8 +189,8 @@
 </SfSpinner>
 
 
-<SfGrid @ref="@ObjectivesGrid" ID="Grid" TValue="ABscKpi" @attributes="@GridAttributes" Query="@ChildQuery" AllowPaging="true"
-        AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
+<SfGrid @ref="@ObjectivesGrid" ID="Grid" TValue="ABscKpi" @attributes="@GridAttributes" Query="@ChildQuery" AllowPaging="false"
+        AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
         AllowTextWrap="true" AllowSorting="true" Toolbar="@ToolbarMenu">
 
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
@@ -202,7 +202,7 @@
                 RowSelecting="RowSelectingHandler"
                 OnLoad="LoadHandler"
                 DataBound="DataBound"
-                CellSelected="CellSelectHandler"
+                CellSelected="CellSelectHandler"   
                 TValue="ABscKpi">
     </GridEvents>
 
@@ -219,7 +219,7 @@
                     TValue="ABscKpidetails" 
                     ID="DetailsGrid" 
                     Query=@(new Query().Where(new WhereFilter() { Field = "Bsckpiid", Operator = "equal", value = KpiData.Bsckpiid, IgnoreCase = false, IgnoreAccent = false })) 
-                    AllowPaging="true" 
+                    AllowPaging="false" 
                     AllowFiltering="false"
                         AllowReordering="false" 
                         AllowResizing="true" 
@@ -257,7 +257,7 @@
                         <GridEvents OnToolbarClick="@GridToolbarClick" TValue="ABscKpidetails"></GridEvents>
                         <SfDataManager AdaptorInstance="@typeof(ObjectivesDetailsAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
                         <GridColumns>
-                            <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
+                            @*<GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>*@
                         	<GridColumn Field=@nameof(ABscKpidetails.BsckpidetailsId) Visible="false" HeaderText="BsckpidetailsId" IsPrimaryKey="true" Width="150"></GridColumn>
                             <GridColumn Field=@nameof(ABscKpidetails.Bsckpiid) Visible="false" HeaderText="Bsckpiid" TextAlign="TextAlign.Right" Width="110"> </GridColumn>
                             <GridForeignColumn Field=@nameof(ABscKpidetails.BscPerspectiveTypeId)
@@ -272,7 +272,9 @@
                                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
                             </GridForeignColumn>
                             <GridColumn Field=@nameof(ABscKpidetails.Objective) HeaderText="Objective" Width="150" CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})"></GridColumn>
-                            <GridColumn Field=@nameof(ABscKpidetails.IndividualTargetWeight) HeaderText="Individual Target Weight"  Width="60" CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})"></GridColumn>
+                            <GridColumn Field=@nameof(ABscKpidetails.IndividualTargetWeight) HeaderText="Individual Target Weight"  Width="60" CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})"
+                                        EditorSettings="@(new NumericEditCellParams() {Params = new Syncfusion.Blazor.Inputs.NumericTextBoxModel<object>(){ShowSpinButton=false}})">
+                            </GridColumn>
 
                             <GridForeignColumn Field=@nameof(ABscKpidetails.MeasurementMetricId)
                                                HeaderText="Basic Unit"
@@ -419,7 +421,7 @@
 
     </GridEditSettings>
     <GridColumns>
-        <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn>
+        @* <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn> *@
 
         <GridColumn HeaderText="Manage Record"
                     Width="30"
@@ -563,122 +565,132 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Credentials = await AuthService.GetUserCredentials();
-
-        employeeno = null;
-        perspweightsfinancial = null;
-        perspweightsinternal = null;
-        perspweightscustomer = null;
-        perspweightslearning = null;
-
-        List<Task> t = new List<Task>();
-        t.Add(Task.Run(async () =>
+        await base.OnInitializedAsync();
+        var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+        if (isAuthenticated == false)
         {
-            var responsebscperspective = await Http.GetAsync($"BscPerspectives/GetBscPerspectives");
-            if (responsebscperspective.IsSuccessStatusCode)
-            {
-                var contentbscperspective = await responsebscperspective.Content.ReadAsStringAsync();
-                BscPerspectiveData = JsonSerializer.Deserialize<List<ABscPerspectives>>(contentbscperspective, _options);
-            }
-        }));
-
-        t.Add(Task.Run(async () =>
+            navManager.NavigateTo("/LoginPage", true);
+        }
+        else
         {
-            var responsebscperspectivedetail = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicator");
-            if (responsebscperspectivedetail.IsSuccessStatusCode)
-            {
-                var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
-                BscKpiDetailData = JsonSerializer.Deserialize<List<ABscKpidetails>>(contentbscperspectivedetail, _options);
-            }
-        }));
 
-        t.Add(Task.Run(async () =>
-        {
-            var responsefinyear = await Http.GetAsync($"FinancialYear/list");
-            if (responsefinyear.IsSuccessStatusCode)
-            {
-                var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
-                FinancialYearData = JsonSerializer.Deserialize<List<AFinancialYear>>(contentfinyear, _options);
+            Credentials = await AuthService.GetUserCredentials();
 
-                DateTime currentdate = DateTime.Now;
-                string? financialyeardesc = null;
-                if (currentdate.Month >= 6)
+            employeeno = null;
+            perspweightsfinancial = null;
+            perspweightsinternal = null;
+            perspweightscustomer = null;
+            perspweightslearning = null;
+
+            List<Task> t = new List<Task>();
+            t.Add(Task.Run(async () =>
+            {
+                var responsebscperspective = await Http.GetAsync($"BscPerspectives/GetBscPerspectives");
+                if (responsebscperspective.IsSuccessStatusCode)
                 {
-                    financialyeardesc = $"{currentdate.Year}/{(currentdate.Year + 1)}";
+                    var contentbscperspective = await responsebscperspective.Content.ReadAsStringAsync();
+                    BscPerspectiveData = JsonSerializer.Deserialize<List<ABscPerspectives>>(contentbscperspective, _options);
                 }
-                else if (currentdate.Month < 6)
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var responsebscperspectivedetail = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicator");
+                if (responsebscperspectivedetail.IsSuccessStatusCode)
                 {
-                    financialyeardesc = $"{(currentdate.Year - 1)}/{currentdate.Year}";
+                    var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
+                    BscKpiDetailData = JsonSerializer.Deserialize<List<ABscKpidetails>>(contentbscperspectivedetail, _options);
                 }
+            }));
 
-                var b = FinancialYearData.FirstOrDefault(o => o.FinancialYear.Trim() == financialyeardesc.Trim());
-                if (b != null)
+            t.Add(Task.Run(async () =>
+            {
+                var responsefinyear = await Http.GetAsync($"FinancialYear/list");
+                if (responsefinyear.IsSuccessStatusCode)
                 {
-                    finyearid = b.Id;
+                    var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
+                    FinancialYearData = JsonSerializer.Deserialize<List<AFinancialYear>>(contentfinyear, _options);
 
-                    //Load ABscPerspectivesDetail Data after getting current Financial Year ID
-                    var responsebscperspectivedetail = await Http.GetAsync($"BscPerspectives/GetBscPerspectivesDetail?YearId={finyearid}");
-                    if (responsebscperspectivedetail.IsSuccessStatusCode)
+                    DateTime currentdate = DateTime.Now;
+                    string? financialyeardesc = null;
+                    if (currentdate.Month >= 6)
                     {
-                        var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
-                        PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscPerspectivesDetail>>(contentbscperspectivedetail, _options);
+                        financialyeardesc = $"{currentdate.Year}/{(currentdate.Year + 1)}";
+                    }
+                    else if (currentdate.Month < 6)
+                    {
+                        financialyeardesc = $"{(currentdate.Year - 1)}/{currentdate.Year}";
+                    }
+
+                    var b = FinancialYearData.FirstOrDefault(o => o.FinancialYear.Trim() == financialyeardesc.Trim());
+                    if (b != null)
+                    {
+                        finyearid = b.Id;
+
+                        //Load ABscPerspectivesDetail Data after getting current Financial Year ID
+                        var responsebscperspectivedetail = await Http.GetAsync($"BscPerspectives/GetBscPerspectivesDetail?YearId={finyearid}&EmployeeId={Credentials.StaffId}");
+                        if (responsebscperspectivedetail.IsSuccessStatusCode)
+                        {
+                            var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
+                            PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscPerspectivesDetail>>(contentbscperspectivedetail, _options);
+                        }
                     }
                 }
-            }
-        }));
+            }));
 
-        t.Add(Task.Run(async () =>
-        {
-            var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
-            if (responsebscperspectivetype.IsSuccessStatusCode)
+            t.Add(Task.Run(async () =>
             {
-                var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
-                BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesType>>(contentbscperspectivetype, _options);
-            }
-        }));
+                var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
+                if (responsebscperspectivetype.IsSuccessStatusCode)
+                {
+                    var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
+                    BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesType>>(contentbscperspectivetype, _options);
+                }
+            }));
 
-        t.Add(Task.Run(async () =>
-        {
-            var responsedepartment = await Http.GetAsync($"Utilities/GetDepartment");
-            if (responsedepartment.IsSuccessStatusCode)
+            t.Add(Task.Run(async () =>
             {
-                var contentdepartment = await responsedepartment.Content.ReadAsStringAsync();
-                DepartmentsData = JsonSerializer.Deserialize<List<ADepartment>>(contentdepartment, _options);
-            }
-        }));
+                var responsedepartment = await Http.GetAsync($"Utilities/GetDepartment");
+                if (responsedepartment.IsSuccessStatusCode)
+                {
+                    var contentdepartment = await responsedepartment.Content.ReadAsStringAsync();
+                    DepartmentsData = JsonSerializer.Deserialize<List<ADepartment>>(contentdepartment, _options);
+                }
+            }));
 
-        t.Add(Task.Run(async () =>
-        {
-            var responsemetric = await Http.GetAsync($"Utilities/GetMeasurementMetric");
-            if (responsemetric.IsSuccessStatusCode)
+            t.Add(Task.Run(async () =>
             {
-                var contentmetric = await responsemetric.Content.ReadAsStringAsync();
-                MeasurementUnitData = JsonSerializer.Deserialize<List<AMeasurementMetric>>(contentmetric, _options);
-            }
-        }));
+                var responsemetric = await Http.GetAsync($"Utilities/GetMeasurementMetric");
+                if (responsemetric.IsSuccessStatusCode)
+                {
+                    var contentmetric = await responsemetric.Content.ReadAsStringAsync();
+                    MeasurementUnitData = JsonSerializer.Deserialize<List<AMeasurementMetric>>(contentmetric, _options);
+                }
+            }));
 
-        t.Add(Task.Run(async () =>
-        {
-            var responseemployee = await Http.GetAsync($"Utilities/GetEmployeeDD");
-            if (responseemployee.IsSuccessStatusCode)
+            t.Add(Task.Run(async () =>
             {
-                var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-                EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(contentemployee, _options);
-            }
-        }));
+                var responseemployee = await Http.GetAsync($"Utilities/GetEmployeeDD");
+                if (responseemployee.IsSuccessStatusCode)
+                {
+                    var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+                    EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(contentemployee, _options);
+                }
+            }));
 
-        t.Add(Task.Run(async () =>
-        {
-            var responsebscperspectivetyperepeated = await Http.GetAsync($"Utilities/BSCPerspectiveTypeRepeat");
-            if (responsebscperspectivetyperepeated.IsSuccessStatusCode)
+            t.Add(Task.Run(async () =>
             {
-                var contentbscperspectivetyperepeated = await responsebscperspectivetyperepeated.Content.ReadAsStringAsync();
-                BscPerspectiveTypeDataRepeated = JsonSerializer.Deserialize<List<ABscPerspectivesType>>(contentbscperspectivetyperepeated, _options);
-            }
-        }));
+                var responsebscperspectivetyperepeated = await Http.GetAsync($"Utilities/BSCPerspectiveTypeRepeat");
+                if (responsebscperspectivetyperepeated.IsSuccessStatusCode)
+                {
+                    var contentbscperspectivetyperepeated = await responsebscperspectivetyperepeated.Content.ReadAsStringAsync();
+                    BscPerspectiveTypeDataRepeated = JsonSerializer.Deserialize<List<ABscPerspectivesType>>(contentbscperspectivetyperepeated, _options);
+                }
+            }));
 
-        Task _t = Task.WhenAll(t);
-        await _t;
+            Task _t = Task.WhenAll(t);
+            await _t;
+        }
     }
 
     private void ToggleKpidetails(List<ABscKpidetails>? TargetChange)
@@ -1134,7 +1146,7 @@
         {
             ToolbarMenu = new List<object>()
             {
-                new ItemModel(){ Text = "Edit Objective", PrefixIcon= "e-edit", Id="Grid_edit"}
+                //new ItemModel(){ Text = "Edit Objective", PrefixIcon= "e-edit", Id="Grid_edit"}
             };
         }
     }

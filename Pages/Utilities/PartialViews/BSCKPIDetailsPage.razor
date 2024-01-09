@@ -72,6 +72,8 @@
                 QueryCellInfo="QueryCellInfoHandlerChild"
                 OnActionComplete="DetailActionComplete"
                 CellSaved="OnCellSaved"
+                OnCellSave="CellSaveHandler"
+                OnBatchSave="BatchSave"
                 TValue="ABscKpidetails">
     </GridEvents>
 
@@ -115,6 +117,7 @@
                     EditType="EditType.NumericEdit"
                     Format="###.##"
                     Width="50"
+                    EditorSettings="@(new NumericEditCellParams() {Params = new Syncfusion.Blazor.Inputs.NumericTextBoxModel<object>(){ShowSpinButton=false}})"
                     ClipMode="ClipMode.EllipsisWithTooltip"
                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
         </GridColumn>
@@ -212,6 +215,7 @@
         }
     }
 
+
     //For Child Grid
     //Enable cell edit on single click
     public async Task PerspectiveCellSelectHandler(CellSelectEventArgs<ABscKpidetails> args)
@@ -237,11 +241,26 @@
     }
 
 
-    public void CellSaveHandler(CellSaveArgs<ABscKpidetails> args)
+    public async void CellSaveHandler(CellSaveArgs<ABscKpidetails> args)
     {
-        ChildDataGrid.EndEditAsync();
-        //var datainfo = ChildDataGrid.CurrentViewData;
+        if (!object.Equals(args.Value, args.PreviousValue))
+        {
+            await ChildDataGrid.EndEditAsync();
+            // get the row index using the primarykey value
+            // var RowIndex = await GridInstance.GetRowIndexByPrimaryKey(e.RowData.OrderID);
+            // // edit the selected cell using the cell index and column name
+            // await GridInstance.EditCell(RowIndex + 1, e.ColumnName);
+         }
 
+        //Original Data
+        //ChildDataGrid.EndEditAsync();
+        ////var datainfo = ChildDataGrid.CurrentViewData;
+
+    }
+
+    public async void BatchSave(BeforeBatchSaveArgs<ABscKpidetails> Args)    
+    {        
+        // update your database here    
     }
 
     public async void QueryCellInfoHandlerChild(QueryCellInfoEventArgs<ABscKpidetails> Args)
