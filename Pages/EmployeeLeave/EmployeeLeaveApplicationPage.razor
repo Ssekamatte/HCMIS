@@ -783,7 +783,7 @@
         </GridEvents>
         <SfDataManager AdaptorInstance="@typeof(LeaveApplicationAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
         <GridColumns>            
-            <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn>
+            @* <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn> *@
             <GridColumn 
                 HeaderText="Manage" 
                 Width="40" 
@@ -1147,6 +1147,7 @@
     bool LeaveComputation = false;
     bool RejectionCommentsSection = false;
     private DialogSettings AttachmentDialog = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "95%" };
+    int _recallnewtotaldays = 0;
 
     private List<object> ToolbarMenu = new List<object>()
     {
@@ -1776,6 +1777,7 @@
                 LeaveData.LeaveApprovalStatusId = 13;
                 LeaveData.EndDate = LeaveData.RecallDate.Value.AddDays(-1);// Subtract one from the entered recall date to get the last leave day
                 LeaveData.NoDaysAppliedFor = LeaveData.RecallDaysTaken;
+                LeaveData.TotalDays = (LeaveData.TotalDays-_recallnewtotaldays);            
 
                 await DataGrid.EndEditAsync();
                 await this.ConfirmationRecallDialogue.HideAsync();
@@ -2054,6 +2056,9 @@
 
         LeaveData.RecallDaysTaken = RecallLeaveDays;
 
+        //Get New Total
+        _recallnewtotaldays = Convert.ToInt32(LeaveData.TotalDays - RecallLeaveDays);
+
         StateHasChanged();
     }
 
@@ -2110,7 +2115,7 @@
                     employeenosupervisor = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
                     employeenohodchange = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
                     employeeactingofficer = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
-                    
+
                     //Assign the CHRO
                     var _data = EmployeeData.FirstOrDefault(o => o.JibTitleId == 44);
 
@@ -2129,7 +2134,7 @@
 
 
                 }
-                                
+
                 Args.RowData.EmployeeLeaveDetails = new List<EmployeeLeaveDetails>();
                 Args.RowData.EmployeeLeaveHeaderAttachment = new List<EmployeeLeaveHeaderAttachment>();
             }
@@ -2137,6 +2142,7 @@
             if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
             {
                 _previous = Args.RequestType;
+                var _employeedetail = EmployeeData.FirstOrDefault(o=>o.Employeeid == Credentials.StaffId);
 
                 //Load the current data here
 
@@ -2460,9 +2466,7 @@
                     IsHiddenPersonSubmit = true;
                     IsHiddenApprove = true;
                     IsHiddenRejected = true;
-
-                    var _employeedetail = EmployeeData.FirstOrDefault(o=>o.Employeeid == Credentials.StaffId);
-                    
+                                        
                     //Show recall button for CHRO and HOD for a particular application
                     if ((_employeedetail != null && _employeedetail.JibTitleId == 44 ) || Args.RowData.Hod == Credentials.StaffId)
                     {
@@ -2516,6 +2520,17 @@
                     IsHiddenPersonSubmit = true;
                     IsHiddenApprove = true;
                     IsHiddenRejected = true;
+
+                    //Show Leave computation for CHRO
+                    if ((_employeedetail != null && _employeedetail.JibTitleId == 44 ) || Args.RowData.Hod == Credentials.StaffId)
+                    {
+                        LeaveComputation = true;
+                    }
+                    else
+                    {
+                        LeaveComputation = false;
+                    }
+                                        
                 }
 
                 StateHasChanged();

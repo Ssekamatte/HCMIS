@@ -46,7 +46,7 @@
     </li>
 </ol>
 
-<SfGrid @ref="@BasicUnitGrid" ID="Grid" TValue="AMeasurementMetric" AllowPaging="true"
+<SfGrid @ref="@BasicUnitGrid" ID="Grid" TValue="AMeasurementMetric" AllowPaging="false"
         AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
         AllowSorting="true" Toolbar="@ToolbarMenu">
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
@@ -70,13 +70,19 @@
                 {
                     <div class="row">
                         <div class="col-md-12" hidden>
-                            <SfNumericTextBox @bind-Value="@(MetricData.MeasurementMetricId)" Enabled="false" Placeholder="Measurement Metric Id" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                            <SfNumericTextBox @bind-Value="@(MetricData.MeasurementMetricId)" Enabled="false" Placeholder="Measurement Metric Id" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
                         </div>
 
 
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <p>Measurement Metric:<span style="color:red;">*</span></p>
-                            <SfTextBox Multiline="false" @bind-Value="@(MetricData.MeasurementMetricDesc)" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                            <SfTextBox Multiline="false" @bind-Value="@(MetricData.MeasurementMetricDesc)" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                        </div>
+
+                        <div class="col-md-6">
+                            <p>Is Hidden?<span style="color:red;">*</span></p>
+                            <SfRadioButton Label="Yes" Name="options" Value="true" TChecked="bool?" ValueChange="OnValueChange" @bind-Checked="@(MetricData.ArchivedRecord)"></SfRadioButton>
+                            <SfRadioButton Label="No" Name="options" Value="false" TChecked="bool?" ValueChange="OnValueChange" @bind-Checked="@(MetricData.ArchivedRecord)"></SfRadioButton>
                         </div>
                     </div>
                 }
@@ -84,7 +90,15 @@
         </Template>
     </GridEditSettings>
     <GridColumns>
-        <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn>
+        @* <GridColumn Type="ColumnType.CheckBox" Width="30"></GridColumn> *@
+        <GridColumn HeaderText="Manage"
+                    Width="40"
+                    CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"
+                    TextAlign="TextAlign.Left">
+            <GridCommandColumns>
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit/View"></GridCommandColumn>
+            </GridCommandColumns>
+        </GridColumn>
         <GridColumn 
             Field=@nameof(AMeasurementMetric.MeasurementMetricId) 
             Visible=false 
@@ -113,7 +127,7 @@
     private List<object> ToolbarMenu = new List<object>()
     {
         new ItemModel() { Text = "Add Unit", PrefixIcon = "e-add", Id = "Grid_add"},
-        new ItemModel(){ Text = "Edit Unit", PrefixIcon= "e-edit", Id="Grid_edit"},
+        //new ItemModel(){ Text = "Edit Unit", PrefixIcon= "e-edit", Id="Grid_edit"},
         //new ItemModel(){ Text = "Delete Training Plan", PrefixIcon= "e-delete", Id="Grid_delete"},
         new ItemModel(){ Text = "Update Unit", PrefixIcon= "e-update", Id="Grid_update"},
         new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
@@ -129,6 +143,11 @@
             MeasurementMetricData = await Http.GetFromJsonAsync<List<AMeasurementMetric>>
             ($"Utilities/GetMeasurementMetric");
         }
+    }
+
+    private void OnValueChange(ChangeArgs<bool?> args)
+    {
+        radiovalue = args.Value;
     }
 
     #region BasicUnitAdapter
@@ -157,7 +176,7 @@
             var data = new List<AMeasurementMetric>();
             try
             {
-                var response = await Http.GetAsync($"Utilities/GetMeasurementMetric");
+                var response = await Http.GetAsync($"Utilities/GetMeasurementMetricUtilities");
                 var content = await response.Content.ReadAsStringAsync();
                 if (!response.IsSuccessStatusCode)
                 {
@@ -308,11 +327,22 @@
         {
             if (Args.Data.MeasurementMetricDesc == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please enter the Basic Unit !");
                 Args.Cancel = true;
             }
+
+            else if (Args.Data.ArchivedRecord == null)
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please select whether the unit is hidden or not.");
+                Args.Cancel = true;
+            }
+
             else
             {
+                Args.Data.ArchivedRecord = radiovalue;
+
                 var countdata = MeasurementMetricData?
                 .FirstOrDefault(o => o.MeasurementMetricDesc?.Trim().ToLower()
                 == Args.Data.MeasurementMetricDesc.Trim().ToLower());

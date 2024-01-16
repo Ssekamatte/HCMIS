@@ -43,10 +43,10 @@
                             {
                                 <div class="form-group col-md-12">
                                     <p>Attachment Name <span style="color:red;">*</span></p>
-                                    <SfTextBox Multiline="true" @bind-Value="@(AttachmentData.AttachmentName)" Enabled="@OnSubmitButtonsBool" Placeholder="Attachment Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                    <SfTextBox Multiline="true" @bind-Value="@(AttachmentData.AttachmentName)" Enabled="@OnSubmitButtonsBool" Placeholder="Attachment Name" FloatLabelType="FloatLabelType.Never"  Input="@InputHandler"></SfTextBox>
                                 </div>
 
-                                @if (!string.IsNullOrEmpty(AttachmentData.AttachmentName))
+                                @if (attachmentnamebool == true)
                                 {
                                     <div class="form-group col-md-12">
                                         <p class="alert-info" style="padding:10px;">Ensure that the document does not exceed 5 Mega Bytes (MB) and is of the following formats (Microsoft Word, PDF or an Image (png,gif,jpeg and jpg))</p>
@@ -84,8 +84,8 @@
             <FooterTemplate Context="AttachmentFooterContext">
                 @if (IsSaveDisabled == false)
                 {
-                    <SfButton IsPrimary="true" Disabled="@IsSaveDisabled" OnClick="@OnSaveDocumentClick">Save Document</SfButton>
-                    <SfButton IsPrimary="false" Disabled="@IsSaveDisabled" OnClick="@OnCloseDocumentClick">Close</SfButton>
+                    <SfButton CssClass="e-success" Disabled="@IsSaveDisabled" OnClick="@OnSaveDocumentClick">Save Document</SfButton>
+                    <SfButton CssClass="e-danger" Disabled="@IsSaveDisabled" OnClick="@OnCloseDocumentClick">Close</SfButton>
                 }
 
             </FooterTemplate>
@@ -141,6 +141,8 @@
     string fileName = string.Empty;
     int random = -9999;
     private DialogSettings AttachmentDialog = new DialogSettings { Height = "auto", MinHeight = "5vh", Width = "80%" };
+    bool attachmentnamebool = false;
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -160,6 +162,18 @@
         catch (Exception ex)
         {
 
+        }
+    }
+
+    private void InputHandler(InputEventArgs args)
+    {
+        if (string.IsNullOrEmpty(args.Value))
+        {
+            attachmentnamebool = false;
+        }
+        else
+        {
+            attachmentnamebool = true;
         }
     }
 
@@ -186,6 +200,7 @@
         }
         if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
         {
+            attachmentnamebool = false;
             args.Data.AttachmentId = random;
             random++;
         }
@@ -233,93 +248,29 @@
     {
         try
         {
-            IsSaveDisabled = true;
+            // IsSaveDisabled = true;
             await UploadAttachmentSpinner.ShowAsync();
             MemoryStream ms = new MemoryStream();
-            await e.File.OpenReadStream(maxFileSize).CopyToAsync(ms);
+            //await e.File.OpenReadStream(maxFileSize).CopyToAsync(ms);
 
-            ms.Position = 0;
-
-            System.IO.FileInfo info = new System.IO.FileInfo(e.File.Name);
-            if (info.Extension.ToLower().Contains("png") || info.Extension.ToLower().Contains("gif") || info.Extension.ToLower().Contains("jpeg") || info.Extension.ToLower().Contains("jpg"))
+            if (e.File.Size <= maxFileSize)
             {
-                var passextension = info.Extension.Split("/");
-                fileName = "EmployeeLeave_" + AttachmentData.AttachmentName + "." + passextension[1].Trim();
-                byte[] bytes = ms.ToArray();
-                //byte[] bytes = file.Stream.ToArray();
-                string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
-                DocumentBytes m = new DocumentBytes()
-                    {
-                        DocumentName = fileName,
-                        DocumentExt = info.Extension.Trim(),
-                        DocumentByte = bytes,
-                        DocumentFolder = "EmployeeLeave"
-                    };
+                IsSaveDisabled = false;
+                await e.File.OpenReadStream(maxFileSize).CopyToAsync(ms);
 
-                await _DocumentUploadModel.UploadDocument(m);
-                var result = "data:application/pdf;base64," + base64;
-                AttachmentData.AttachmentUrl = fileName;
-                AttachmentData.AttachmentExt = info.Extension.Trim();
-                ImageString = result;
-                bytes = null;
+                ms.Position = 0;
 
-            }
-
-            else if (info.Extension.ToLower().Contains("pdf") || info.Extension.ToLower().Contains("doc"))
-            {
-                string fileName = string.Empty;
-                if (info.Extension.ToLower().Contains("doc"))
+                System.IO.FileInfo info = new System.IO.FileInfo(e.File.Name);
+                if (info.Extension.ToLower().Contains("png") || info.Extension.ToLower().Contains("gif") || info.Extension.ToLower().Contains("jpeg") || info.Extension.ToLower().Contains("jpg"))
                 {
-                    ms.Position = 0;
-                    fileName = "EmployeeLeave_" + AttachmentData.AttachmentName + ".pdf";
-                    //Create a new document
-                    Syncfusion.DocIO.DLS.WordDocument document;
-                    if (info.Extension.Contains("doc") && !info.Extension.Contains("docx"))
-                    {
-                        document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Doc);
-                    }
-                    else
-                    {
-                        document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Docx);
-                    }
-                    //Creates an instance of the DocToPDFConverter
-                    DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
-                    PdfDocument pdfDocument = render.ConvertToPDF(document);
-
-                    MemoryStream _ms = new MemoryStream();
-                    pdfDocument.Save(_ms);
-                    _ms.Position = 0;
-
-
-                    DocumentBytes m = new DocumentBytes();
-                    m.DocumentName = fileName;
-                    m.DocumentFolder = "EmployeeLeave";
-                    m.DocumentByte = _ms.ToArray();
-                    m.DocumentExt = "pdf";
-
-                    await _DocumentUploadModel.UploadDocument(m);
-                    _ms.Position = 0;
-                    byte[] _bytes = _ms.ToArray();
-                    string base64 = Convert.ToBase64String(_bytes, 0, _bytes.Length);
-
-                    var result = "data:application/pdf;base64," + base64;
-                    AttachmentData.AttachmentUrl = fileName;
-                    AttachmentData.AttachmentExt = "pdf";
-                    ImageString = result;
-                }
-
-                else
-                {
-                    fileName = "EmployeeLeave_" + AttachmentData.AttachmentName + ".pdf";
-
-                    ms.Position = 0;
+                    fileName = "EmployeeLeave_" + AttachmentData.AttachmentName + info.Extension.Trim();
                     byte[] bytes = ms.ToArray();
+                    //byte[] bytes = file.Stream.ToArray();
                     string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
-
                     DocumentBytes m = new DocumentBytes()
                         {
                             DocumentName = fileName,
-                            DocumentExt = info.Extension.Trim(),
+                            DocumentExt = info.Extension.Trim().Replace(".", ""),
                             DocumentByte = bytes,
                             DocumentFolder = "EmployeeLeave"
                         };
@@ -327,26 +278,102 @@
                     await _DocumentUploadModel.UploadDocument(m);
                     var result = "data:application/pdf;base64," + base64;
                     AttachmentData.AttachmentUrl = fileName;
-                    AttachmentData.AttachmentExt = info.Extension.Trim();
+                    AttachmentData.AttachmentExt = info.Extension.Trim().Replace(".", "");
                     ImageString = result;
                     bytes = null;
+
+                }
+
+                else if (info.Extension.ToLower().Contains("pdf") || info.Extension.ToLower().Contains("doc"))
+                {
+                    string fileName = string.Empty;
+                    if (info.Extension.ToLower().Contains("doc"))
+                    {
+                        ms.Position = 0;
+                        fileName = "EmployeeLeave_" + AttachmentData.AttachmentName + ".pdf";
+                        //Create a new document
+                        Syncfusion.DocIO.DLS.WordDocument document;
+                        if (info.Extension.Contains("doc") && !info.Extension.Contains("docx"))
+                        {
+                            document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Doc);
+                        }
+                        else
+                        {
+                            document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Docx);
+                        }
+                        //Creates an instance of the DocToPDFConverter
+                        DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
+                        PdfDocument pdfDocument = render.ConvertToPDF(document);
+
+                        MemoryStream _ms = new MemoryStream();
+                        pdfDocument.Save(_ms);
+                        _ms.Position = 0;
+
+
+                        DocumentBytes m = new DocumentBytes();
+                        m.DocumentName = fileName;
+                        m.DocumentFolder = "EmployeeLeave";
+                        m.DocumentByte = _ms.ToArray();
+                        m.DocumentExt = "pdf";
+
+                        await _DocumentUploadModel.UploadDocument(m);
+                        _ms.Position = 0;
+                        byte[] _bytes = _ms.ToArray();
+                        string base64 = Convert.ToBase64String(_bytes, 0, _bytes.Length);
+
+                        var result = "data:application/pdf;base64," + base64;
+                        AttachmentData.AttachmentUrl = fileName;
+                        AttachmentData.AttachmentExt = "pdf";
+                        ImageString = result;
+                    }
+
+                    else
+                    {
+                        fileName = "EmployeeLeave_" + AttachmentData.AttachmentName + ".pdf";
+
+                        ms.Position = 0;
+                        byte[] bytes = ms.ToArray();
+                        string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+
+                        DocumentBytes m = new DocumentBytes()
+                            {
+                                DocumentName = fileName,
+                                DocumentExt = info.Extension.Trim().Replace(".", ""),
+                                DocumentByte = bytes,
+                                DocumentFolder = "EmployeeLeave"
+                            };
+
+                        await _DocumentUploadModel.UploadDocument(m);
+                        var result = "data:application/pdf;base64," + base64;
+                        AttachmentData.AttachmentUrl = fileName;
+                        AttachmentData.AttachmentExt = info.Extension.Trim().Replace(".", "");
+                        ImageString = result;
+                        bytes = null;
+                    }
+
+                }
+                else
+                {
+                    toasterservice.ShowWarning("Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg) or pdf or word document (doc,docx).");
                 }
 
             }
             else
             {
-                toasterservice.ShowWarning("Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg) or pdf or word document (doc,docx).");
+                IsSaveDisabled = true;
+                toasterservice.ClearAll();
+                toasterservice.ShowWarning("File Too Large (Maximum Size 1 MB)");
             }
+
         }
         catch (Exception ex)
-
         {
             throw ex;
         }
 
         finally
         {
-            IsSaveDisabled = false;
+            //IsSaveDisabled = false;
             await UploadAttachmentSpinner.HideAsync();
             StateHasChanged();
         }
@@ -362,7 +389,7 @@
             {
                 var a = await _DocumentUploadModel.GetDocument(imageUrl, DocumentFolder);
 
-                if (a != null)
+                if (a != null && !string.IsNullOrEmpty(a.DocumentExt))
                 {
                     if (a.DocumentExt.Contains("pdf"))
                     {
@@ -376,10 +403,15 @@
                     }
 
                 }
+                else
+                {
+                    toasterservice.ShowError("Attachment Not Found");
+                }
             }
         }
         catch (Exception ex)
         {
+            toasterservice.ClearAll();
             toasterservice.ShowError(ex.Message.ToString());
         }
         return result;
