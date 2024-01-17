@@ -399,9 +399,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<ViewEmployeeLeaveRoasterReportPivotedNew>> GetAnnualLeaveRoaster(UtilitiesSearchPanel SearchModel)
+        public async Task<List<ViewEmployeeLeaveRoasterReportPivoted>> GetAnnualLeaveRoaster(UtilitiesSearchPanel SearchModel)
         {
-            List<ViewEmployeeLeaveRoasterReportPivotedNew>? data = new List<ViewEmployeeLeaveRoasterReportPivotedNew>();
+            List<ViewEmployeeLeaveRoasterReportPivoted>? data = new List<ViewEmployeeLeaveRoasterReportPivoted>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -411,7 +411,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveRoasterReportPivotedNew>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveRoasterReportPivoted>>(content, _options);
                 }
                 else
                 {
@@ -425,9 +425,9 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task<List<ViewEmployeeLeaveRoasterReportNew>> GetAnnualLeaveRoasterMonthDays(UtilitiesSearchPanel SearchModel)
+        public async Task<List<EmployeeLeaveRoster>> GetAnnualLeaveRoasterMonthDays(UtilitiesSearchPanel SearchModel)
         {
-            List<ViewEmployeeLeaveRoasterReportNew>? data = new List<ViewEmployeeLeaveRoasterReportNew>();
+            List<EmployeeLeaveRoster>? data = new List<EmployeeLeaveRoster>();
             try
             {
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
@@ -437,7 +437,7 @@ namespace HCMIS.Repository
                 if (result.IsSuccessStatusCode)
                 {
                     var content = await result.Content.ReadAsStringAsync();
-                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveRoasterReportNew>>(content, _options);
+                    data = JsonSerializer.Deserialize<List<EmployeeLeaveRoster>>(content, _options);
                 }
                 else
                 {

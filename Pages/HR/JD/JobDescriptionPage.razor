@@ -1,4 +1,6 @@
-﻿@using HCMIS.Data
+﻿@page "/JobDescriptionPage"
+
+@using HCMIS.Data
 @using HCMIS.Model
 @using System.Text.Json
 @using HCMIS.SHARED.Data;
@@ -10,17 +12,18 @@
 @inject ApiConfig _ApiConfig;
 @inject NavigationManager Navigation
 @inject DocumentUploadModel _DocumentUploadModel;
-@inject SystemSettings _SystemSettings
-@*<h3>JobDescriptionPage</h3>*@
-<div class="row">
-    <div class="col-lg-12 control-section">
-        <SfToast @ref="ToastObj" ID="toast_type">
-            <ToastPosition X="@ToastPosition"></ToastPosition>
-        </SfToast>
-    </div>
-</div>
+@inject IToastService toastService;
+@inject IJSRuntime JSRuntime;
 
-<SfGrid @ref="@JobDescriptionGrid" TValue="JobDescription" ID="Grid1" AllowPaging="true" AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Delete", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="color: brown;">
+        <strong>
+            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
+        </strong>| JOB DESCRIPTION DETAILS
+    </li>
+</ol>
+
+<SfGrid @ref="@JobDescriptionGrid" TValue="JobDescription" ID="Grid1" AllowPaging="true" AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
     <GridPageSettings PageSizes="true"></GridPageSettings>
         <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
@@ -51,74 +54,88 @@
                                                 <div class="row">
                                                 <div class="col-md-12" hidden>
                                                 <SfNumericTextBox @ref="@JobDescriptionIdTxt" @bind-Value="@(JobDescriptionReviewData.JobDescriptionId)" ID="JobDescriptionId" TValue="int" Width="100%" Format="N0" Placeholder="Job Description Id" Step="1" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
-                                                    </div>
+                                                    </div>                                                    
+
                                                     <div class="col-md-6">
-                                                <p>Department</p>
-                                                <SfDropDownList @bind-Value="@(JobDescriptionReviewData.DepartmentId)" TItem="ADepartment" TValue="int?" Width="100%" PopupHeight="230px" AllowFiltering=true IgnoreAccent=true DataSource="@DepartmentData">
-                                                    <DropDownListFieldSettings Text="DepartmentDescription" Value="DepartmentId"></DropDownListFieldSettings>
-                                                    <DropDownListEvents TItem="ADepartment" TValue="int?" ValueChange="@DepartmentValueChangeHandler" ></DropDownListEvents>
-                                                </SfDropDownList>
+                                                         <p>Job Title<span style="color:red;">*</span></p>
+                                                          @*Query="@(JobTitleChildQuery)" *@
+                                                        <SfDropDownList @ref="JobTitleObj" @bind-Value="@(JobDescriptionReviewData.JibTitleId)"TItem="AJobTitle" TValue="int?" Width="100%" PopupHeight="230px" AllowFiltering=true IgnoreAccent=true DataSource="@JobTitleData"  Placeholder="Please Select" @onclick="@((args) => OnClick(JobTitleObj.ID))">
+                                                            <DropDownListFieldSettings Value="JobTitleId" Text="@(nameof(AJobTitle.JobTitleDescription))"></DropDownListFieldSettings>
+                                                            <DropDownListEvents TItem="AJobTitle" TValue="int?" ValueChange="@JobTitleValueChangeHandler" OnOpen="@((e)=>OnOpenHandler(JobTitleObj.ID))" ></DropDownListEvents>
+                                                        </SfDropDownList>
                                                     </div>
+
                                                     <div class="col-md-6">
-                                                 <p>Job Title</p>
-                                                <SfDropDownList @bind-Value="@(JobDescriptionReviewData.JibTitleId)" Query="@(JobTitleChildQuery)" TItem="AJobTitle" TValue="int?" Width="100%" PopupHeight="230px" AllowFiltering=true IgnoreAccent=true DataSource="@JobTitleData">
-                                                    <DropDownListFieldSettings Value="JobTitleId" Text="@(nameof(AJobTitle.JobTitleDescription))"></DropDownListFieldSettings>
-                                                </SfDropDownList>
+                                                        <p>Department<span style="color:red;">*</span></p>
+                                                        <SfDropDownList @bind-Value="@(JobDescriptionReviewData.DepartmentId)" TItem="ADepartment" Enabled="false" TValue="int?" Width="100%" PopupHeight="230px" AllowFiltering=true IgnoreAccent=true DataSource="@DepartmentData"  Placeholder="Please Select">
+                                                            <DropDownListFieldSettings Text="DepartmentDescription" Value="DepartmentId"></DropDownListFieldSettings>
+                                                            @*<DropDownListEvents TItem="ADepartment" TValue="int?" ValueChange="@DepartmentValueChangeHandler" ></DropDownListEvents>*@
+                                                        </SfDropDownList>
                                                     </div>
+
                                                     <div class="col-md-6">
-                                                 <p>SalaryScale</p>
-                                                <SfDropDownList @bind-Value="@(JobDescriptionReviewData.SalaryScaleId)" TItem="ASalaryScale" TValue="int?" Width="100%" PopupHeight="230px" DataSource="@SalaryScaleData">
-                                                    <DropDownListFieldSettings Text="SalaryScaleDescription" Value="SalaryScaleId"></DropDownListFieldSettings>
-                                                </SfDropDownList>
+
+                                                        <p>Job Type<span style="color:red;">*</span></p>
+                                                        <SfDropDownList @bind-Value="@(JobDescriptionReviewData.JobTypeId)" TItem="AJobType" TValue="int?" Width="100%" PopupHeight="230px" DataSource="@JobTypeData"  Placeholder="Please Select">
+                                                            <DropDownListFieldSettings Text="TypeDescription" Value="JobTypeId"></DropDownListFieldSettings>
+                                                        </SfDropDownList>
                                                     </div>
+
+
+                                                     <div class="col-md-6">
+                                                         <p>Salary Scale</p>
+                                                        <SfDropDownList @bind-Value="@(JobDescriptionReviewData.SalaryScaleId)" TItem="ASalaryScale" TValue="int?" Width="100%" PopupHeight="230px" DataSource="@SalaryScaleData"  Placeholder="Please Select">
+                                                            <DropDownListFieldSettings Text="SalaryScaleDescription" Value="SalaryScaleId"></DropDownListFieldSettings>
+                                                        </SfDropDownList>
+                                                     </div>                                                    
+
                                                     <div class="col-md-6">
-                                                 <p>Job Type</p>
-                                                <SfDropDownList @bind-Value="@(JobDescriptionReviewData.JobTypeId)" TItem="AJobType" TValue="int?" Width="100%" PopupHeight="230px" DataSource="@JobTypeData">
-                                                    <DropDownListFieldSettings Text="TypeDescription" Value="JobTypeId"></DropDownListFieldSettings>
-                                                </SfDropDownList>
+                                                        <p>Minimum Level of Education<span style="color:red;">*</span></p>
+                                                        <SfDropDownList @bind-Value="@(JobDescriptionReviewData.MinimumLevelOfEducationId)" TItem="ALevelofEducation" TValue="int?" Width="100%" PopupHeight="230px" DataSource="@LevelofEducationData" Placeholder="Please Select">
+                                                            <DropDownListFieldSettings Text="LevelofEducationDesc" Value="LevelofEducationId"></DropDownListFieldSettings>
+                                                        </SfDropDownList>
                                                     </div>
-                                                    <div class="col-md-12">
-                                                        <p>Job Overview</p>
-                                                        <SfRichTextEditor Height="400px" ShowCharCount="true" @bind-Value="@(JobDescriptionReviewData.JobDescription1)" Placeholder="Type something..." EnableResize=true EditorMode="EditorMode.HTML">
-                                                            <RichTextEditorQuickToolbarSettings Link="@Link" />
-                                                            <RichTextEditorToolbarSettings Type="@Tooltype" Items="@Tools" Enable=true   EnableFloating="true" />
-                                                        </SfRichTextEditor>
-                                                    </div>
+
                                                     <div class="col-md-6">
-                                                <p>No of Vaccancies</p>
-                                                <SfNumericTextBox @bind-Value="@(JobDescriptionReviewData.Vacancies)" TValue="int?" Width="100%" Format="N0" Placeholder="Contract Length" Step="1" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                 <p>Minimum Level of Education</p>
-                                                <SfDropDownList @bind-Value="@(JobDescriptionReviewData.MinimumLevelOfEducationId)" TItem="ALevelofEducation" TValue="int?" Width="100%" PopupHeight="230px" DataSource="@LevelofEducationData">
-                                                    <DropDownListFieldSettings Text="LevelofEducationDesc" Value="LevelofEducationId"></DropDownListFieldSettings>
-                                                </SfDropDownList>
-                                                    </div>
-                                                    @if(JobDescriptionReviewData.JobTypeId==3){
-                                                <div class="col-md-12">
-                                                    <h3>Contract Details</h3>
-                                                </div>
-                                                <div class="col-md-6">
-                                                     <p>Contract Length</p>
-                                                    <SfNumericTextBox @bind-Value="@(JobDescriptionReviewData.ContractLength)" TValue="int?" Width="100%" Format="N0" Placeholder="Contract Length" Step="1" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <p>Contract Length Type</p>
-                                                    <SfDropDownList @bind-Value="@(JobDescriptionReviewData.ContractLengthTypeId)" TItem="AContractLengthType" TValue="int?" Width="100%" PopupHeight="230px" DataSource="@ContractLengthTypeData">
-                                                        <DropDownListFieldSettings Text="ContractLengthTypeDesc" Value="ContractLengthTypeId"></DropDownListFieldSettings>
-                                                    </SfDropDownList>
-                                                </div>
-                                                <div class="col-md-6">
-                                                     <p>Contract Start Date</p>
-                                                    <SfDatePicker @bind-Value="@(JobDescriptionReviewData.ContractStartDate)" TValue="DateTime?" Placeholder="Choose a Date" Format="dd/MMM/yyyy" >
-                                                    </SfDatePicker>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <p>Contract End Date</p>
-                                                    <SfDatePicker @bind-Value="@(JobDescriptionReviewData.ContractEnddate)" TValue="DateTime?" Placeholder="Choose a Date" Format="dd/MMM/yyyy" >
-                                                    </SfDatePicker>
-                                                </div>
-                                            }
+                                                        <p>No of Vacancies<span style="color:red;">*</span></p>
+                                                        <SfNumericTextBox @bind-Value="@(JobDescriptionReviewData.Vacancies)" TValue="int?" Width="100%" Format="N0" Placeholder="Enter Number" Step="1" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                                    </div>  
+                                                            
+                                                            <div class="col-md-12">
+                                                                <h6 style="background-color:#268cff; color:ghostwhite;font-weight:bolder;font-size:large; text-align:center;margin-top: 10px;height: 30px;vertical-align: middle;">Job Overview</h6>
+
+                                                                <SfRichTextEditor Height="400px" ShowCharCount="true" @bind-Value="@(JobDescriptionReviewData.JobDescription1)" Placeholder="Type something..." EnableResize=true EditorMode="EditorMode.HTML">
+                                                                    <RichTextEditorQuickToolbarSettings Link="@Link" />
+                                                                    <RichTextEditorToolbarSettings Type="@Tooltype" Items="@Tools" Enable=true EnableFloating="true" />
+                                                                </SfRichTextEditor>
+                                                            </div>
+
+                                                            
+                                                            @if(JobDescriptionReviewData.JobTypeId==3){
+                                                        <div class="col-md-12">
+                                                            <h3>Contract Details</h3>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                             <p>Contract Length</p>
+                                                            <SfNumericTextBox @bind-Value="@(JobDescriptionReviewData.ContractLength)" TValue="int?" Width="100%" Format="N0" Placeholder="Contract Length" Step="1" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <p>Contract Length Type</p>
+                                                            <SfDropDownList @bind-Value="@(JobDescriptionReviewData.ContractLengthTypeId)" TItem="AContractLengthType" TValue="int?" Width="100%" PopupHeight="230px" DataSource="@ContractLengthTypeData">
+                                                                <DropDownListFieldSettings Text="ContractLengthTypeDesc" Value="ContractLengthTypeId"></DropDownListFieldSettings>
+                                                            </SfDropDownList>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                             <p>Contract Start Date</p>
+                                                            <SfDatePicker @bind-Value="@(JobDescriptionReviewData.ContractStartDate)" TValue="DateTime?" Placeholder="Choose a Date" Format="dd/MMM/yyyy" >
+                                                            </SfDatePicker>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <p>Contract End Date</p>
+                                                            <SfDatePicker @bind-Value="@(JobDescriptionReviewData.ContractEnddate)" TValue="DateTime?" Placeholder="Choose a Date" Format="dd/MMM/yyyy" >
+                                                            </SfDatePicker>
+                                                        </div>
+                                                    }
                                                     
                                                     <div class="col-md-4">
 
@@ -189,7 +206,14 @@
                                                     </Template>
                                                     </GridEditSettings>
                                                     <GridColumns>
-                                                        <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                                                        <GridColumn HeaderText="Manage"
+                                                                    Width="40"
+                                                                    TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left">
+                                                            <GridCommandColumns>
+                                                                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit/View"></GridCommandColumn>
+                                                            </GridCommandColumns>
+                                                        </GridColumn>
+                                                        @*<GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>*@
                                                         <GridColumn Field=@nameof(JobDescriptionKnowledge.KnowledgeId) Visible=false HeaderText="KnowledgeId" AllowEditing="false" IsPrimaryKey="true" Width="150"></GridColumn>
                                                         <GridColumn Field=@nameof(JobDescriptionKnowledge.JobDescriptionId) Visible=false HeaderText="JobDescriptionId" AllowEditing="false"  Width="150"></GridColumn>
                                                         <GridForeignColumn Field=@nameof(JobDescriptionKnowledge.LevelofEducationId) HeaderText="Level of Education" AllowEditing="false" Width="150" ForeignKeyField="@(nameof(ALevelofEducation.LevelofEducationId))" ForeignKeyValue="@(nameof(ALevelofEducation.LevelofEducationDesc))" ForeignDataSource="@LevelofEducationData"></GridForeignColumn>
@@ -207,7 +231,7 @@
                                         </ChildContent>
                                         <ContentTemplate>
                                             <div style="margin:10px;">
-                                        <SfGrid @ref="@JobDescriptionResponsibilityDataGrid" Query="@ChildQuery" TValue="JobDescriptionResponsibility" ID="Grid3" AllowPaging="true" AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Delete", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
+                                        <SfGrid @ref="@JobDescriptionResponsibilityDataGrid" Query="@ChildQuery" TValue="JobDescriptionResponsibility" ID="Grid3" AllowPaging="true" AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
                                                      <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
                                                     <GridPageSettings PageSizes="true"></GridPageSettings>
                                                                                                         <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
@@ -242,7 +266,14 @@
                                                     </Template>
                                             </GridEditSettings>
                                             <GridColumns>
-                                                      <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                                                <GridColumn HeaderText="Manage"
+                                                            Width="40"
+                                                            TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left">
+                                                    <GridCommandColumns>
+                                                        <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit/View"></GridCommandColumn>
+                                                    </GridCommandColumns>
+                                                </GridColumn>
+                                                      @*<GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>*@
                                                     	<GridColumn Field=@nameof(JobDescriptionResponsibility.ResponsibiltyId) Visible=false HeaderText="ResponsibiltyId" AllowEditing="false" IsPrimaryKey="true" Width="150"></GridColumn>
                                                         <GridColumn Field=@nameof(JobDescriptionResponsibility.JobDescriptionId) Visible=false HeaderText="JobDescriptionId" AllowEditing="false"  Width="150"></GridColumn>
                                                         <GridColumn Field=@nameof(JobDescriptionResponsibility.ResponsibilityDesc) HeaderText="Responsibility" AllowEditing="false"  Width="150"></GridColumn>
@@ -257,7 +288,7 @@
                                         </ChildContent>
                                         <ContentTemplate>
                                             <div style="margin:10px;">
-                                        <SfGrid @ref="@JobDescriptionWorkExperienceRequirementGrid" Query="@ChildQuery" TValue="JobDescriptionWorkExperienceRequirement" ID="Grid4" AllowPaging="true" AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Delete", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
+                                        <SfGrid @ref="@JobDescriptionWorkExperienceRequirementGrid" Query="@ChildQuery" TValue="JobDescriptionWorkExperienceRequirement" ID="Grid4" AllowPaging="true" AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
                                                     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
                                                     <GridPageSettings PageSizes="true"></GridPageSettings>
                                                                                                         <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
@@ -291,7 +322,14 @@
                                                 </Template>
                                             </GridEditSettings>
                                             <GridColumns>
-                                                      <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                                                <GridColumn HeaderText="Manage"
+                                                            Width="40"
+                                                            TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left">
+                                                    <GridCommandColumns>
+                                                        <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit/View"></GridCommandColumn>
+                                                    </GridCommandColumns>
+                                                </GridColumn>
+                                                      @*<GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>*@
                                                     	<GridColumn Field=@nameof(JobDescriptionWorkExperienceRequirement.ExperienceId) Visible=false HeaderText="ExperienceId" AllowEditing="false" IsPrimaryKey="true" Width="150"></GridColumn>
                                                         <GridColumn Field=@nameof(JobDescriptionWorkExperienceRequirement.JobDescriptionId) Visible=false HeaderText="JobDescriptionId" AllowEditing="false"  Width="150"></GridColumn>
                                                         <GridColumn Field=@nameof(JobDescriptionWorkExperienceRequirement.ExperienceDesc) HeaderText="Required work Experience" AllowEditing="false"  Width="150"></GridColumn>
@@ -340,7 +378,14 @@
                                                 </Template>
                                             </GridEditSettings>
                                                 <GridColumns>
-                                                  <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                                                <GridColumn HeaderText="Manage"
+                                                            Width="40"
+                                                            TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left">
+                                                    <GridCommandColumns>
+                                                        <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit/View"></GridCommandColumn>
+                                                    </GridCommandColumns>
+                                                </GridColumn>
+                                                  @*<GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>*@
                                                 	<GridColumn Field=@nameof(JobDescriptionBenefit.BenefitId) HeaderText="BenefitId" Visible=false AllowEditing="false" IsPrimaryKey="true" Width="150"></GridColumn>
                                                 <GridColumn Field=@nameof(JobDescriptionBenefit.JobDescriptionId) HeaderText="JobDescriptionId" Visible=false AllowEditing="false" Width="150"></GridColumn>
                                                     <GridColumn Field=@nameof(JobDescriptionBenefit.BenefitDescription) HeaderText="Benefits" AllowEditing="false"  Width="150"></GridColumn>
@@ -356,7 +401,14 @@
         </Template>
     </GridEditSettings>
     <GridColumns>
-      <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+        <GridColumn HeaderText="Manage"
+                    Width="40"
+                    TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left">
+            <GridCommandColumns>
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit/View"></GridCommandColumn>
+            </GridCommandColumns>
+        </GridColumn>
+      @*<GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>*@
     	<GridColumn Field=@nameof(JobDescription.JobDescriptionId) Visible=false HeaderText="JobDescriptionId" AllowEditing="false" IsPrimaryKey="true" Width="150"></GridColumn>
         <GridForeignColumn Field=@nameof(JobDescription.JibTitleId) HeaderText="Job Title"  Width="150" ForeignKeyField="@(nameof(AJobTitle.JobTitleId))" ForeignKeyValue="@(nameof(AJobTitle.JobTitleDescription))" ForeignDataSource="@JobTitleData"></GridForeignColumn>
         <GridForeignColumn Field=@nameof(JobDescription.DepartmentId) HeaderText="Department" Width="150" ForeignKeyField="@(nameof(ADepartment.DepartmentId))" ForeignKeyValue="@(nameof(ADepartment.DepartmentDescription))" ForeignDataSource="@DepartmentData"></GridForeignColumn>
@@ -373,6 +425,31 @@
         <GridForeignColumn Field=@nameof(JobDescription.JobStatusId) HeaderText="Job Status" Width="150" ForeignKeyField="@(nameof(AJobStatus.JobStatusId))" ForeignKeyValue="@(nameof(AJobStatus.JobStatusDesc))" ForeignDataSource="@JobStatusData"></GridForeignColumn>
     </GridColumns>
 </SfGrid>
+
+
+@*Saving Dialogue*@
+<div class="form-group col-md-12">
+    <SfDialog Width="80%" Height="20vh" AllowDragging=true EnableResize=true
+              CloseOnEscape=false IsModal=true ShowCloseIcon=false
+              Target=".mainbody" @ref=@SavingDialog Visible=false>
+        <DialogTemplates>
+            <Content>
+                <div class="dialogContent">
+                    <div class="loader">
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader-Saving-text"></div>
+                    </div>
+                    @*<p>Saving Record please wait......</p>*@
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+</div>
 
 @code {
 
@@ -409,6 +486,8 @@
     string? ErrorMessage { get; set; } = null;
     Query ChildQuery { get; set; } = new Query();
     Query JobTitleChildQuery { get; set; } = new Query();
+    SfDropDownList<int?, AJobTitle> JobTitleObj { get; set; }
+    SfDialog SavingDialog { get; set; }
 
     private ToolbarType Tooltype = ToolbarType.MultiRow;
     private List<ToolbarItemModel> Tools = new List<ToolbarItemModel>()
@@ -454,6 +533,26 @@
             JobTitleChildQuery= new Query().Where(new WhereFilter() { Field = "DepartmentId", Operator = "equal", value = args.ItemData.DepartmentId, IgnoreCase = false, IgnoreAccent = false });
         }
     }
+
+    private void JobTitleValueChangeHandler(ChangeEventArgs<int?, AJobTitle> args)
+    {
+        if(args.ItemData != null)
+        {
+            JobDescriptionReviewData.DepartmentId = args.ItemData.DepartmentId;
+        }
+    }
+
+    public async void OnClick(string clickedid)
+    {
+        await JSRuntime.InvokeVoidAsync("RequiredFieldClearFunction", clickedid);
+        //Console.WriteLine(clickedid);
+    }
+
+    private async void OnOpenHandler(string clickedid)
+    {
+        await JSRuntime.InvokeVoidAsync("RequiredFieldClearFunction", clickedid);
+    }
+
     /// <summary>
     /// Event for Toolbar click for Grid Exporting
     /// </summary>
@@ -634,9 +733,6 @@
             var data = new List<JobDescription>();
             try
             {
-                
-
-                
                 var response = await Http.GetAsync($"HumanResource/GetJobDescription");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
@@ -692,13 +788,13 @@
         {
             try
             {
-                
+
                 var val = (value as JobDescription);
                 if(val != null)
                 {
                     if (val.JobDescriptionId == 0)
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -727,7 +823,7 @@
                     }
                     else
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -788,13 +884,13 @@
         {
             try
             {
-                
+
                 var val = (value as JobDescription);
                 if(val != null)
                 {
                     if (val.JobDescriptionId == 0)
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -823,7 +919,7 @@
                     }
                     else
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -863,7 +959,7 @@
             object? products = null;
             try
             {
-                
+
                 if (Changed != null)
                 {
                     products = Changed;
@@ -873,7 +969,7 @@
                         {
                             if (val.JobDescriptionId == 0)
                             {
-                                
+
                                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -902,7 +998,7 @@
                             }
                             else
                             {
-                                
+
                                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -941,7 +1037,7 @@
                         {
                             if (val.JobDescriptionId == 0)
                             {
-                                
+
                                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -970,7 +1066,7 @@
                             }
                             else
                             {
-                                
+
                                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -1027,9 +1123,49 @@
                 ChildQuery.AddParams("JobDescriptionId", args.RowData.JobDescriptionId);
                 //JobDescriptionGrid.PreventRender(false);
             }
-            else if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
-            {
+            if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+            {                
+                if (args.Data.JibTitleId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the Job Title !");
+                    args.Cancel = true;
+                    await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
+                }
+                else if (args.Data.DepartmentId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the department !");
+                    args.Cancel = true;
+                    await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
+                }
+                else if (args.Data.JobTypeId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the job type !");
+                    args.Cancel = true;
+                    await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
+                }
 
+                else if (args.Data.MinimumLevelOfEducationId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the minimum education level required !");
+                    args.Cancel = true;
+                    await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
+                }
+
+                else if (args.Data.Vacancies == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please enter the number of vacancies !");
+                    args.Cancel = true;
+                    await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
+                }
+                else
+                {
+                    
+                }
             }
         }
         catch (Exception ex)
@@ -1048,7 +1184,7 @@
             }
             else if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
             {
-
+                SavingDialog.HideAsync();
             }
         }
         catch(Exception ex)
@@ -1542,8 +1678,10 @@
                 
             }
             else if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
-            {
-                if(JobDescriptionReviewData != null && JobDescriptionReviewData.JobDescriptionId==0){
+            {                
+
+                if(JobDescriptionReviewData != null && JobDescriptionReviewData.JobDescriptionId==0)
+                {
                     
                     string json = Newtonsoft.Json.JsonConvert.SerializeObject(JobDescriptionReviewData);
                     StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");

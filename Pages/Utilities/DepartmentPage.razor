@@ -1,4 +1,5 @@
-﻿@*@page "/ADepartmentPage"*@
+﻿@*@page "/DepartmentPage"*@
+@using HCMIS.Interface
 @using HCMIS.SHARED.Data;
 @using HCMIS.SHARED.Models;
 @using Syncfusion.Blazor.Diagram
@@ -10,176 +11,188 @@
 @inject HttpClient Http
 @inject AppState AppState
 @inject ApiConfig _ApiConfig;
-@inject NavigationManager Navigation
+@inject NavigationManager navManager
 @inject DocumentUploadModel _DocumentUploadModel;
-@inject SystemSettings _SystemSettings
+@inject IAuthenticationService AuthService;
+@inject IToastService toastService;
+
 <style>
-    .e-orgchart-template-div-style{
+    .e-orgchart-template-div-style {
         background-color: darkslategray;
         color: ghostwhite;
         padding: 10px;
         vertical-align: middle;
-        border-radius:5px;
-            height: 100%;
+        border-radius: 5px;
+        height: 100%;
     }
 </style>
-<div class="row">
-    <div class="col-lg-12 control-section">
-        <SfToast @ref="ToastObj" ID="toast_type">
-            <ToastPosition X="@ToastPosition"></ToastPosition>
-        </SfToast>
-    </div>
-</div>
-@*<ol class="breadcrumb" style="margin-top:5px;">
-   <li class="breadcrumb-item active" style="width: 100%; background-color: bisque; color: brown; font-family: Cambria; padding: 10px; font: bolder;"> <strong> Department </strong></li>
-</ol>*@
+
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="color: brown;">
+        <strong>
+            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
+        </strong>| DEPARTMENTS
+    </li>
+</ol>
 
 <div class="row">
-    <div  class="col-md-12">
+    @* <div class="col-md-12">
         <h3>Department <SfButton CssClass="e-primary" OnClick="@OnBtnClick" Content="View Department Structure" style="float:right;"></SfButton></h3>
-    </div>
+    </div> *@
     <div class="col-md-12">
         <SfGrid @ref="DepartmentGrid" TValue="ADepartment"
-                                    Toolbar="@(new string[] {"Add","Edit","Delete","Update","Cancel","ColumnChooser"})" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
-                                    AllowPaging="true" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" GridLines="GridLine.Both" AllowSelection="true">
-                                @*<GridGroupSettings Columns="@GroupedColumns"></GridGroupSettings>*@
-                                <SfDataManager AdaptorInstance="@typeof(ADepartmentAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-                                <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
-                                <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
-                               @* OnActionBegin="OnDepartmentActionBegin"*@
-                                <GridEvents  OnActionComplete="@OnDepartmentActionComplete" TValue="ADepartment"></GridEvents>
-                                <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
+                Toolbar="@(new string[] {"Add","Update","Cancel","ColumnChooser"})" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+                AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true">
+            @*<GridGroupSettings Columns="@GroupedColumns"></GridGroupSettings>*@
+            <SfDataManager AdaptorInstance="@typeof(ADepartmentAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+            <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+            <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+            
+            <GridEvents OnActionBegin="OnDepartmentActionBegin" OnActionComplete="@OnDepartmentActionComplete" TValue="ADepartment"></GridEvents>
+            <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
 
-                                    <HeaderTemplate>
-                                        @{
-                                            var text = GetDepartmentHeader((context as ADepartment));
-                                                                        <div class="headerbandimg" /><span>@text</span>
-                                        }
-                                    </HeaderTemplate>
-                                    <Template Context="DepartmentContext">
-                                        @{
-                                            DepartmentReviewData = (DepartmentContext as ADepartment);
-                                            if(DepartmentReviewData != null)
-                                            {
-                                                                            <div style="padding:15px;">
-                                                                                <div class="row">
-                                                                                    <div class="col-md-12" hidden>
-                                                                                        <SfNumericTextBox @bind-Value="@(DepartmentReviewData.DepartmentId)" Enabled="false" Placeholder="BranchId" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
-                                                                                    </div>
-                                                                                    <div class="col-md-12">
-                                                                                         <p>Department</p>
-                                                                                        <SfTextBox Multiline="false" @bind-Value="@(DepartmentReviewData.DepartmentDescription)" Enabled="true" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                                                                                    </div>
-                                                                                   <div class="col-md-12">
-                                                                                        <p>Reports To</p>
-                                                                                         <SfMultiSelect @ref="DepartmentObj" TValue="int[]" TItem="ADepartment" AllowFiltering="true" Placeholder="Please select" Mode="@VisualMode.CheckBox" DataSource="@DepartmentData"
-                                                                     ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="--- Please select---" FloatLabelType="FloatLabelType.Never"
-                                                                     PopupHeight="350px" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                                                                            <MultiSelectFieldSettings Value="@nameof(ADepartment.DepartmentId)" Text="@nameof(ADepartment.DepartmentDescription)"></MultiSelectFieldSettings>
-                                                                                            <MultiSelectEvents TValue="int[]" TItem="ADepartment" ValueChange="OnDepartmentChange" DataBound="OnDepartmentBound"></MultiSelectEvents>
-                                                                                         </SfMultiSelect>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                            }
-                                           
-                                        }
-                                    </Template>
-                                </GridEditSettings>
-                                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
-                                <GridPageSettings PageSize="20"></GridPageSettings>
-                                <GridColumns>
-                                    <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
-                                    <GridColumn Field=@nameof(ADepartment.DepartmentId) HeaderText="PatientId" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
-                                    <GridColumn Field=@nameof(ADepartment.DepartmentDescription) HeaderText="Title Description" Width="150"></GridColumn>
-                                    @*<GridColumn Field=@nameof(ADepartment.ReportsTo) HeaderText="Reports To" Width="150"></GridColumn>*@
-                                    <GridColumn HeaderText="Reports To" Width="250">
-                                                                                                            <Template>
+                <HeaderTemplate>
+                    @{
+                        var text = GetDepartmentHeader((context as ADepartment));
+                        <div class="headerbandimg" />
+
+                        <span>@text</span>
+                    }
+                </HeaderTemplate>
+                <Template Context="DepartmentContext">
+                    @{
+                        DepartmentReviewData = (DepartmentContext as ADepartment);
+                        if (DepartmentReviewData != null)
+                        {
+                            <div style="padding:15px;">
+                                <div class="row">
+                                    <div class="col-md-12" hidden>
+                                        <SfNumericTextBox @bind-Value="@(DepartmentReviewData.DepartmentId)" Enabled="false" Placeholder="BranchId" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <p>Department<span style="color:red;">*</span></p>
+                                        <SfTextBox Multiline="false" @bind-Value="@(DepartmentReviewData.DepartmentDescription)" Enabled="true" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <p>Reports To</p>
+                                        <SfMultiSelect @ref="DepartmentObj" TValue="int[]" TItem="ADepartment" AllowFiltering="true" Placeholder="Please select" Mode="@VisualMode.CheckBox" DataSource="@DepartmentData"
+                                                       ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="--- Please select---" FloatLabelType="FloatLabelType.Never"
+                                                       PopupHeight="350px" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                            <MultiSelectFieldSettings Value="@nameof(ADepartment.DepartmentId)" Text="@nameof(ADepartment.DepartmentDescription)"></MultiSelectFieldSettings>
+                                            <MultiSelectEvents TValue="int[]" TItem="ADepartment" ValueChange="OnDepartmentChange" DataBound="OnDepartmentBound"></MultiSelectEvents>
+                                        </SfMultiSelect>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                    }
+                </Template>
+            </GridEditSettings>
+            <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+            <GridPageSettings PageSize="20"></GridPageSettings>
+            <GridColumns>
+                @* <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn> *@
+                <GridColumn HeaderText="Manage"
+                            Width="40"
+                            TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left">
+                    <GridCommandColumns>
+                        <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit/View"></GridCommandColumn>
+                    </GridCommandColumns>
+                </GridColumn>
+                <GridColumn Field=@nameof(ADepartment.DepartmentId) HeaderText="DepartmentId" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+                <GridColumn Field=@nameof(ADepartment.DepartmentDescription) HeaderText="Title Description" Width="150" FilterSettings="@(new FilterSettings{ Operator = Operator.Contains })">
+
+
+                </GridColumn>
+                @*<GridColumn Field=@nameof(ADepartment.ReportsTo) HeaderText="Reports To" Width="150"></GridColumn>*@
+                <GridColumn HeaderText="Reports To" Width="250">
+                    <Template>
                         @{
-                            if(DepartmentData != null)
+                            if (DepartmentData != null)
                             {
                                 var data = (context as ADepartment);
-                                                                                                                    if (data != null &&!string.IsNullOrEmpty(data.ReportsTo))
-                                                                                                                    {
-                                                                                                                        string result = string.Empty;
-                                                                                                                        var a = data.ReportsTo.Split(",");
-                                                                                                                        int count = 1;
-                                                                                                                        foreach (var n in a)
-                                                                                                                        {
-                                                                                                                            int b = Convert.ToInt32(n.Trim());
-                                                                                                                            var x = DepartmentData.FirstOrDefault(o => o.DepartmentId == b);
-                                                                                                                            if (x != null)
-                                                                                                                            {
-                                                                                                                                if (count != a.Length)
-                                                                                                                                {
-                                                                                                                                    result += x.DepartmentDescription + ", ";
-                                                                                                                                }
-                                                                                                                                else
-                                                                                                                                {
-                                                                                                                                    result += x.DepartmentDescription;
-                                                                                                                                }
-                                                                                                                            }
-                                                                                                                            count++;
-                                                                                                                        }
-                                                                                                                                            <p>@result</p>
-                                                                                                                    }
-                                                                                                                    else
-                                                                                                                    {
-                                                                                                                                            <p></p>
-                                                                                                                    }
+                                if (data != null && !string.IsNullOrEmpty(data.ReportsTo))
+                                {
+                                    string result = string.Empty;
+                                    var a = data.ReportsTo.Split(",");
+                                    int count = 1;
+                                    foreach (var n in a)
+                                    {
+                                        int b = Convert.ToInt32(n.Trim());
+                                        var x = DepartmentData.FirstOrDefault(o => o.DepartmentId == b);
+                                        if (x != null)
+                                        {
+                                            if (count != a.Length)
+                                            {
+                                                result += x.DepartmentDescription + ", ";
+                                            }
+                                            else
+                                            {
+                                                result += x.DepartmentDescription;
+                                            }
+                                        }
+                                        count++;
+                                    }
+                                    <p>@result</p>
+                                }
+                                else
+                                {
+                                    <p></p>
+                                }
                             }
-                            
-                                                                                                                }
-                                                                                                            </Template>
-                                                                                                        </GridColumn>
-                                </GridColumns>
-            </SfGrid>
+
+                        }
+                    </Template>
+                </GridColumn>
+            </GridColumns>
+        </SfGrid>
     </div>
     <div class="col-md-12">
-       @if (!string.IsNullOrEmpty(ErrorMessage))
+        @if (!string.IsNullOrEmpty(ErrorMessage))
         {
             <p class="alert-danger" style="padding:10px;">@ErrorMessage</p>
         }
     </div>
     <div class="col-md-12">
         <SfDialog Target=".page" Width="95%" Height="auto" ShowCloseIcon="true" @bind-Visible="Visibility">
-        <DialogTemplates>
-            <Header> Department Organisation Structure </Header>
-            <Content>
-                 <SfDiagramComponent @ref="@Diagram" Height="500px" NodeCreating="@OnNodeCreating" ConnectorCreating="@OnConnectorCreating" InteractionController="@DiagramInteractions.ZoomPan">
-                    <ScrollSettings @bind-ScrollLimit="@scrollLimit"></ScrollSettings>
-                    <DataSourceSettings ID="Id" ParentID="ReportingPerson" DataSource="DataSource"></DataSourceSettings>
-                    <Layout @bind-Type="@Type" @bind-HorizontalSpacing="@HorizontalSpacing" @bind-Orientation="@OrientationType" @bind-VerticalSpacing="@VerticalSpacing" @bind-HorizontalAlignment="@HorizontalAlignment" @bind-VerticalAlignment="@VerticalAlignment" GetLayoutInfo="GetLayoutInfo">
-                        <LayoutMargin @bind-Top="@Top" @bind-Bottom="@Bottom" @bind-Right="@Right" @bind-Left="@Left"></LayoutMargin>
-                    </Layout>
-                    <SnapSettings Constraints="SnapConstraints.None"></SnapSettings>
-                    <DiagramTemplates>
-                        <NodeTemplate>
-                            @{
-                                Node node1 = (context as Node);
-                                string Name = (node1.Data as HierarchicalDetails).Label;
-                                //string Role = (node1.Data as OrganizationalDetails).Role;
-                                //string Imageurl = (node1.Data as OrganizationalDetails).Imageurl;
-                                            <div class="e-orgchart-template-div-style">
-                                                <div>
-                                                    <p class="e-orgchart-template-name-style">@Name</p>
-                                                </div>
+            <DialogTemplates>
+                <Header> Department Organisation Structure </Header>
+                <Content>
+                    <SfDiagramComponent @ref="@Diagram" Height="500px" NodeCreating="@OnNodeCreating" ConnectorCreating="@OnConnectorCreating" InteractionController="@DiagramInteractions.ZoomPan">
+                        <ScrollSettings @bind-ScrollLimit="@scrollLimit"></ScrollSettings>
+                        <DataSourceSettings ID="Id" ParentID="ReportingPerson" DataSource="DataSource"></DataSourceSettings>
+                        <Layout @bind-Type="@Type" @bind-HorizontalSpacing="@HorizontalSpacing" @bind-Orientation="@OrientationType" @bind-VerticalSpacing="@VerticalSpacing" @bind-HorizontalAlignment="@HorizontalAlignment" @bind-VerticalAlignment="@VerticalAlignment" GetLayoutInfo="GetLayoutInfo">
+                            <LayoutMargin @bind-Top="@Top" @bind-Bottom="@Bottom" @bind-Right="@Right" @bind-Left="@Left"></LayoutMargin>
+                        </Layout>
+                        <SnapSettings Constraints="SnapConstraints.None"></SnapSettings>
+                        <DiagramTemplates>
+                            <NodeTemplate>
+                                @{
+                                        Node node1 = (context as Node);
+                                        string Name = (node1.Data as HierarchicalDetails).Label;
+                                        //string Role = (node1.Data as OrganizationalDetails).Role;
+                                        //string Imageurl = (node1.Data as OrganizationalDetails).Imageurl;
+                                        <div class="e-orgchart-template-div-style">
+                                            <div>
+                                                <p class="e-orgchart-template-name-style">@Name</p>
                                             </div>
-                            }
-                        </NodeTemplate>
-                    </DiagramTemplates>
-                </SfDiagramComponent>
-                
-            </Content>
-        </DialogTemplates>
-        @*<DialogEvents OnOpen="@DialogOpen" Closed="@DialogClose"></DialogEvents>*@
-        <DialogButtons>
-           @* <DialogButton IsPrimary="true" Content="<a id='newTab' href='https://www.syncfusion.com/company/about-us' target='_blank'>Learn More</a>" OnClick="@OnBtnClick" />*@
-                <DialogButton IsPrimary="true" Content="Close" OnClick="@OnBtnClick" />
-        </DialogButtons>
-    </SfDialog>
+                                        </div>
+                                    }
+                                </NodeTemplate>
+                            </DiagramTemplates>
+                        </SfDiagramComponent>
+
+                    </Content>
+                </DialogTemplates>
+                @*<DialogEvents OnOpen="@DialogOpen" Closed="@DialogClose"></DialogEvents>*@
+                <DialogButtons>
+                    @* <DialogButton IsPrimary="true" Content="<a id='newTab' href='https://www.syncfusion.com/company/about-us' target='_blank'>Learn More</a>" OnClick="@OnBtnClick" />*@
+                    <DialogButton IsPrimary="true" Content="Close" OnClick="@OnBtnClick" />
+                </DialogButtons>
+            </SfDialog>
+        </div>
     </div>
-</div>
 
     @code {
     #region Toasters
@@ -197,14 +210,15 @@
         };
     #endregion Toasters
     SfGrid<ADepartment>? DepartmentGrid;
-    private ADepartment? DepartmentReviewData{ get; set; }
-    public List<ADepartment> DepartmentData{ get; set; }
-    public List<ViewOrgStructureDepartment>OrgaStructureDepartmentData{ get; set; }
+    private ADepartment? DepartmentReviewData { get; set; }
+    public List<ADepartment>? DepartmentData { get; set; }
+
+    public List<ViewOrgStructureDepartment> OrgaStructureDepartmentData { get; set; }
 
     SfMultiSelect<int[], ADepartment> DepartmentObj;
     bool Visibility { get; set; } = false;
     string? ErrorMessage { get; set; } = null;
-    private DialogSettings DialogParams = new DialogSettings { Height="auto",MinHeight="50vh",Width="50%" };
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "50vh", Width = "50%" };
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
     ScrollLimitMode scrollLimit { get; set; } = ScrollLimitMode.Diagram;
@@ -240,6 +254,7 @@
     public double Left = 10;
     public int TopValue = 50;
     public int LeftValue = 10;
+    LoginResultModel? Credentials { get; set; }
 
     // Defines default values for Node object
     private void OnNodeCreating(IDiagramObject obj)
@@ -248,7 +263,7 @@
         node.Width = 150; node.Height = 100;
         //Initialize shape
         HierarchicalDetails hierarchicalDetails = node.Data as HierarchicalDetails;
-        node.Shape = new BasicShape() { Type =Syncfusion.Blazor.Diagram.NodeShapes.HTML, Shape = NodeBasicShapes.Rectangle, CornerRadius = 7 };
+        node.Shape = new BasicShape() { Type = Syncfusion.Blazor.Diagram.NodeShapes.HTML, Shape = NodeBasicShapes.Rectangle, CornerRadius = 7 };
         node.Style = new ShapeStyle() { Fill = hierarchicalDetails.FilllColor, StrokeWidth = 1, StrokeColor = hierarchicalDetails.Border };
     }
     // Defines default values for Connector object
@@ -258,9 +273,9 @@
         connector.Type = ConnectorSegmentType.Orthogonal;
         connector.CornerRadius = 7;
         connector.Style = new ShapeStyle()
-        {
-            StrokeColor= "#6d6d6d",
-        };
+            {
+                StrokeColor = "#6d6d6d",
+            };
         connector.TargetDecorator.Height = 7;
         connector.TargetDecorator.Width = 7;
     }
@@ -299,50 +314,50 @@
     {
         try
         {
-            var tasks = new List<Task>();
-            tasks.Add(Task.Run(async () =>
-           {
+            await base.OnInitializedAsync();
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
+            {
+                navManager.NavigateTo("/LoginPage", true);
+            }
+            else
+            {
+                Credentials = await AuthService.GetUserCredentials();
 
-               var response = await Http.GetAsync($"Utilities/GetDepartment");
-               var content = await response.Content.ReadAsStringAsync();
-               if (response.IsSuccessStatusCode)
+                var tasks = new List<Task>();
+                tasks.Add(Task.Run(async () =>
                {
-                   DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
-                   if (DepartmentData != null)
+
+                   var response = await Http.GetAsync($"Utilities/GetDepartment");
+                   var content = await response.Content.ReadAsStringAsync();
+                   if (response.IsSuccessStatusCode)
                    {
-                       DataSource = new List<HierarchicalDetails>();
-                       foreach (var n in DepartmentData)
+                       DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
+                       if (DepartmentData != null)
                        {
-                           if (string.IsNullOrEmpty(n.ReportsTo))
+                           DataSource = new List<HierarchicalDetails>();
+                           foreach (var n in DepartmentData)
                            {
-                               DataSource.Add(new HierarchicalDetails() { Id = n.DepartmentId.ToString(), Label = n.DepartmentDescription, FilllColor = "#e7704c", Border = "#c15433" });
-                           }
-                           else
-                           {
-                               DataSource.Add(new HierarchicalDetails() { Id = n.DepartmentId.ToString(), Label = n.DepartmentDescription, ReportingPerson = n.ReportsTo.Split(",").ToList(), FilllColor = "#f3904a", Border = "#d3722e" });
+                               if (string.IsNullOrEmpty(n.ReportsTo))
+                               {
+                                   DataSource.Add(new HierarchicalDetails() { Id = n.DepartmentId.ToString(), Label = n.DepartmentDescription, FilllColor = "#e7704c", Border = "#c15433" });
+                               }
+                               else
+                               {
+                                   DataSource.Add(new HierarchicalDetails() { Id = n.DepartmentId.ToString(), Label = n.DepartmentDescription, ReportingPerson = n.ReportsTo.Split(",").ToList(), FilllColor = "#f3904a", Border = "#d3722e" });
+                               }
                            }
                        }
                    }
-               }
-           }));
-            //tasks.Add(Task.Run(async () =>
-            //{
-            //
-            //    var response = await Http.GetAsync($"Utilities/GetOrgStructureDepartment");
-            //    var content = await response.Content.ReadAsStringAsync();
-            //    if (response.IsSuccessStatusCode)
-            //    {
-            //        OrgaStructureDepartmentData = JsonSerializer.Deserialize<List<ViewOrgStructureDepartment>>(content, _options);
+               }));
 
-            //    }
-            //}));
-            Task t = Task.WhenAll(tasks);
-            await t;
-
+                Task t = Task.WhenAll(tasks);
+                await t;
+            }
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            ErrorMessage=$"Error: {ex.Message}";
+            ErrorMessage = $"Error: {ex.Message}";
         }
         await base.OnInitializedAsync();
     }
@@ -350,7 +365,7 @@
     {
         if (Visibility)
         {
-            Visibility=false;
+            Visibility = false;
         }
         else
         {
@@ -367,7 +382,7 @@
         public IToastService toastService;
         //private UserManagement _userManagement;
         public ADepartmentAdapter(HttpClient _http, IToastService ts/*, UserManagement userManagement*/
-        ,SystemSettings systemSettings,ApiConfig apiConfig)
+        , SystemSettings systemSettings, ApiConfig apiConfig)
         {
             Http = _http;
             _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -382,9 +397,9 @@
             var data = new List<ADepartment>();
             try
             {
-                
 
-                
+
+
                 var response = await Http.GetAsync($"Utilities/GetDepartment");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
@@ -440,13 +455,13 @@
         {
             try
             {
-                
+
                 var val = (value as ADepartment);
-                if(val != null)
+                if (val != null)
                 {
                     if (val.DepartmentId == 0)
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -455,7 +470,7 @@
                         {
                             var content = await result.Content.ReadAsStringAsync();
                             var data = JsonSerializer.Deserialize<Response>(content, _options);
-                            if(data != null)
+                            if (data != null)
                             {
                                 if (data.IsSuccess)
                                 {
@@ -475,7 +490,7 @@
                     }
                     else
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -484,7 +499,7 @@
                         {
                             var content = await result.Content.ReadAsStringAsync();
                             var data = JsonSerializer.Deserialize<Response>(content, _options);
-                            if(data != null)
+                            if (data != null)
                             {
                                 if (data.IsSuccess)
                                 {
@@ -536,13 +551,13 @@
         {
             try
             {
-                
+
                 var val = (value as ADepartment);
-                if(val != null)
+                if (val != null)
                 {
                     if (val.DepartmentId == 0)
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -551,7 +566,7 @@
                         {
                             var content = await result.Content.ReadAsStringAsync();
                             var data = JsonSerializer.Deserialize<Response>(content, _options);
-                            if(data != null)
+                            if (data != null)
                             {
                                 if (data.IsSuccess)
                                 {
@@ -571,7 +586,7 @@
                     }
                     else
                     {
-                        
+
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -580,7 +595,7 @@
                         {
                             var content = await result.Content.ReadAsStringAsync();
                             var data = JsonSerializer.Deserialize<Response>(content, _options);
-                            if(data != null)
+                            if (data != null)
                             {
                                 if (data.IsSuccess)
                                 {
@@ -611,17 +626,17 @@
             object? products = null;
             try
             {
-                
+
                 if (Changed != null)
                 {
                     products = Changed;
                     foreach (var val in (List<ADepartment>)Changed)
                     {
-                        if(val != null)
+                        if (val != null)
                         {
                             if (val.DepartmentId == 0)
                             {
-                                
+
                                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -630,7 +645,7 @@
                                 {
                                     var content = await result.Content.ReadAsStringAsync();
                                     var data = JsonSerializer.Deserialize<Response>(content, _options);
-                                    if(data != null)
+                                    if (data != null)
                                     {
                                         if (data.IsSuccess)
                                         {
@@ -650,7 +665,7 @@
                             }
                             else
                             {
-                                
+
                                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -659,7 +674,7 @@
                                 {
                                     var content = await result.Content.ReadAsStringAsync();
                                     var data = JsonSerializer.Deserialize<Response>(content, _options);
-                                    if(data != null)
+                                    if (data != null)
                                     {
                                         if (data.IsSuccess)
                                         {
@@ -685,11 +700,11 @@
                     products = Added;
                     foreach (var val in (List<ADepartment>)Added)
                     {
-                        if(val != null)
+                        if (val != null)
                         {
                             if (val.DepartmentId == 0)
                             {
-                                
+
                                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -698,7 +713,7 @@
                                 {
                                     var content = await result.Content.ReadAsStringAsync();
                                     var data = JsonSerializer.Deserialize<Response>(content, _options);
-                                    if(data != null)
+                                    if (data != null)
                                     {
                                         if (data.IsSuccess)
                                         {
@@ -718,7 +733,7 @@
                             }
                             else
                             {
-                                
+
                                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -727,7 +742,7 @@
                                 {
                                     var content = await result.Content.ReadAsStringAsync();
                                     var data = JsonSerializer.Deserialize<Response>(content, _options);
-                                    if(data != null)
+                                    if (data != null)
                                     {
                                         if (data.IsSuccess)
                                         {
@@ -765,29 +780,65 @@
             return products;
         }
     }
+
+    public async void OnDepartmentActionBegin(ActionEventArgs<ADepartment> Args)
+    {
+        var data = Args.Data;
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+        {
+            if (Args.Data.DepartmentDescription == null)
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please enter the department !");
+                Args.Cancel = true;
+            }
+            else
+            {
+                var countdata = DepartmentData?
+                .FirstOrDefault(o => o.DepartmentDescription.Trim().ToLower() 
+                == Args.Data.DepartmentDescription.Trim().ToLower());
+
+                if (countdata != null)
+                {
+                    toastService.ShowWarning("This department has arleady been captured in the database as " + countdata.DepartmentDescription + ". Record Not Saved");
+                    Args.Cancel = true;
+                }
+            }
+        }
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+        {
+
+        }
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+        {
+
+        }
+    }
+
+
     public async Task OnDepartmentActionComplete(ActionEventArgs<ADepartment> args)
     {
         try
         {
             if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
-        {
-            DepartmentGrid.PreventRender(false);
-        }
-        else if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
-        {
-             var tasks = new List<Task>();
+            {
+                DepartmentGrid.PreventRender(false);
+            }
+            else if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+            {
+                var tasks = new List<Task>();
                 tasks.Add(Task.Run(async () =>
                {
-                   
+
                    var response = await Http.GetAsync($"Utilities/GetDepartment");
                    var content = await response.Content.ReadAsStringAsync();
                    if (response.IsSuccessStatusCode)
                    {
                        DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
-                       if(DepartmentData != null)
+                       if (DepartmentData != null)
                        {
                            DataSource = new List<HierarchicalDetails>();
-                           foreach(var n in DepartmentData)
+                           foreach (var n in DepartmentData)
                            {
                                if (string.IsNullOrEmpty(n.ReportsTo))
                                {
@@ -798,30 +849,32 @@
                                    DataSource.Add(new HierarchicalDetails() { Id = n.DepartmentId.ToString(), Label = n.DepartmentDescription, ReportingPerson = n.ReportsTo.Split(",").ToList(), FilllColor = "#f3904a", Border = "#d3722e" });
                                }
                            }
-                        }
+                       }
                    }
                }));
-               //tasks.Add(Task.Run(async () =>
-               //{
-               //    
-               //    var response = await Http.GetAsync($"Utilities/GetOrgStructureDepartment");
-               //    var content = await response.Content.ReadAsStringAsync();
-               //    if (response.IsSuccessStatusCode)
-               //    {
-               //        OrgaStructureDepartmentData = JsonSerializer.Deserialize<List<ViewOrgStructureDepartment>>(content, _options);
-               //    }
-               //}));
+                //tasks.Add(Task.Run(async () =>
+                //{
+                //
+                //    var response = await Http.GetAsync($"Utilities/GetOrgStructureDepartment");
+                //    var content = await response.Content.ReadAsStringAsync();
+                //    if (response.IsSuccessStatusCode)
+                //    {
+                //        OrgaStructureDepartmentData = JsonSerializer.Deserialize<List<ViewOrgStructureDepartment>>(content, _options);
+                //    }
+                //}));
 
                 Task t = Task.WhenAll(tasks);
                 await t;
+            }
         }
-        }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-             await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+            await ToastObj.ShowAsync(new ToastModel { Title = "Error!", Content = ex.Message.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
         }
-        
+
     }
+    
+    
     public string GetDepartmentHeader(ADepartment Value)
     {
         if (Value.DepartmentId == 0)
@@ -849,11 +902,11 @@
     }
     private void OnDepartmentChange(Syncfusion.Blazor.DropDowns.MultiSelectChangeEventArgs<int[]> args)
     {
-        if(args.Value != null)
+        if (args.Value != null)
         {
             DepartmentReviewData.ReportsTo = string.Join(",", args.Value);
         }
-        
+
     }
 }
 

@@ -15,8 +15,8 @@ namespace HCMIS.Interface
         Task<List<ViewEmployeeFamily>> GetEmployeeFamily(UtilitiesSearchPanel SearchModel);
         Task<List<ViewTargetSettingTotals>> GetAppraisalTarget(UtilitiesSearchPanel SearchModel);
         Task<List<ViewBehavioralTotals>> GetAppraisalBehavioral(UtilitiesSearchPanel SearchModel);
-        Task<List<ViewEmployeeLeaveRoasterReportPivotedNew>> GetAnnualLeaveRoaster(UtilitiesSearchPanel SearchModel);
-        Task<List<ViewEmployeeLeaveRoasterReportNew>> GetAnnualLeaveRoasterMonthDays(UtilitiesSearchPanel SearchModel);
+        Task<List<ViewEmployeeLeaveRoasterReportPivoted>> GetAnnualLeaveRoaster(UtilitiesSearchPanel SearchModel);
+        Task<List<EmployeeLeaveRoster>> GetAnnualLeaveRoasterMonthDays(UtilitiesSearchPanel SearchModel);
         Task<List<EmployeeLeaveRoster>> GetSelectedDates(UtilitiesSearchPanel SearchModel);
         Task<List<BalanceScoreCardTargetSetting>> GetAppraisalTargetGeneral(UtilitiesSearchPanel SearchModel);
         Task<List<BalanceScoreCardBehavioral>> GetAppraisalBehavioralGeneral(UtilitiesSearchPanel SearchModel);

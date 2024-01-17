@@ -1,4 +1,5 @@
 ﻿@*@page "/JobTitlePage"*@
+@using HCMIS.Interface
 @using HCMIS.SHARED.Data;
 @using HCMIS.SHARED.Models;
 @using Syncfusion.Blazor.Diagram
@@ -10,9 +11,10 @@
 @inject HttpClient Http
 @inject AppState AppState
 @inject ApiConfig _ApiConfig;
-@inject NavigationManager Navigation
+@inject NavigationManager navManager
 @inject DocumentUploadModel _DocumentUploadModel;
-@inject SystemSettings _SystemSettings
+@inject IAuthenticationService AuthService;
+@inject IToastService toastService;
 
 <style>
     .e-orgchart-template-div-style{
@@ -24,31 +26,28 @@
             height: 100%;
     }
 </style>
-<div class="row">
-    <div class="col-lg-12 control-section">
-        <SfToast @ref="ToastObj" ID="toast_type">
-            <ToastPosition X="@ToastPosition"></ToastPosition>
-        </SfToast>
-    </div>
-</div>
-@*<ol class="breadcrumb" style="margin-top:5px;">
-   <li class="breadcrumb-item active" style="width: 100%; background-color: bisque; color: brown; font-family: Cambria; padding: 10px; font: bolder;"> <strong> Job Title </strong></li>
+
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="color: brown;">
+        <strong>
+            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
+        </strong>| JOB TITLES
+    </li>
 </ol>
-*@
+
 <div class="row">
-    <div  class="col-md-12">
+@*     <div  class="col-md-12">
         <h3>Job Title <SfButton CssClass="e-primary" OnClick="@OnBtnClick" Content="View Job Structure" style="float:right;"></SfButton></h3>
-    </div>
+    </div> *@
     <div class="col-md-12">
         <SfGrid @ref="JobTitleGrid" TValue="AJobTitle"
-                                    Toolbar="@(new string[] {"Add","Edit","Delete","Update","Cancel","ColumnChooser"})" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+                                    Toolbar="@(new string[] {"Add","Update","Cancel","ColumnChooser"})" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
                                     AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true">
                                 @*<GridGroupSettings Columns="@GroupedColumns"></GridGroupSettings>*@
                                 <SfDataManager AdaptorInstance="@typeof(AJobTitleAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
                                 <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
                                 <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
-                               @* OnActionBegin="OnJobTitleActionBegin"*@
-                                <GridEvents  OnActionComplete="@OnJobTitleActionComplete" TValue="AJobTitle"></GridEvents>
+                                <GridEvents OnActionBegin="OnJobTitleActionBegin" OnActionComplete="@OnJobTitleActionComplete" TValue="AJobTitle"></GridEvents>
                                 <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
 
                                     <HeaderTemplate>
@@ -68,11 +67,11 @@
                                                                     <SfNumericTextBox @bind-Value="@(JobTitleReviewData.JobTitleId)" Enabled="false" Placeholder="BranchId" Format="N0" FloatLabelType="FloatLabelType.Always"></SfNumericTextBox>
                                                                 </div>
                                                                 <div class="col-md-12">
-                                                                     <p>Job Title</p>
+                                                                     <p>Job Title<span style="color:red;">*</span></p>
                                                                     <SfTextBox Multiline="false" @bind-Value="@(JobTitleReviewData.JobTitleDescription)" Enabled="true" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                                                                 </div>
                                                                 <div class="col-md-12">
-                                                                     <p>Department</p>
+                                                                     <p>Department<span style="color:red;">*</span></p>
                                                                     <SfDropDownList @bind-Value="@(JobTitleReviewData.DepartmentId)" Enabled="true" TItem="ADepartment" TValue="int?" DataSource="@DepartmentData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                                                         <DropDownListFieldSettings Value="@nameof(ADepartment.DepartmentId)" Text="@nameof(ADepartment.DepartmentDescription)"></DropDownListFieldSettings>
                                                                     </SfDropDownList>
@@ -96,10 +95,19 @@
                                 <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
                                 <GridPageSettings PageSize="20"></GridPageSettings>
                                 <GridColumns>
-                                    <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+                                    @* <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn> *@
+                                    <GridColumn HeaderText="Manage"
+                                                Width="40"
+                                                TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left">
+                                        <GridCommandColumns>
+                                            <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit/View"></GridCommandColumn>
+                                        </GridCommandColumns>
+                                    </GridColumn>
                                     <GridColumn Field=@nameof(AJobTitle.JobTitleId) HeaderText="PatientId" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
-                                    <GridColumn Field=@nameof(AJobTitle.JobTitleDescription) HeaderText="Title Description" Width="150"></GridColumn>
-                                    <GridForeignColumn Field=@nameof(AJobTitle.DepartmentId) HeaderText="Department" Width="150" ForeignKeyField="@(nameof(ADepartment.DepartmentId))" ForeignKeyValue="@(nameof(ADepartment.DepartmentDescription))" ForeignDataSource="@DepartmentData"></GridForeignColumn>
+                                    <GridColumn Field=@nameof(AJobTitle.JobTitleDescription) HeaderText="Title Description" Width="150"  FilterSettings="@(new FilterSettings{ Operator = Operator.Contains })"></GridColumn>
+                                    <GridForeignColumn Field=@nameof(AJobTitle.DepartmentId) HeaderText="Department" Width="150" ForeignKeyField="@(nameof(ADepartment.DepartmentId))" ForeignKeyValue="@(nameof(ADepartment.DepartmentDescription))" 
+                                    ForeignDataSource="@DepartmentData"  FilterSettings="@(new FilterSettings{ Operator = Operator.Contains })"></GridForeignColumn>
+
                                     @*<GridColumn Field=@nameof(AJobTitle.ReportsTo) HeaderText="Reports To" Width="150"></GridColumn>*@
                                     <GridColumn HeaderText="Reports To" Width="250">
                                                                                                             <Template>
@@ -251,6 +259,8 @@
     public double Left = 10;
     public int TopValue = 50;
     public int LeftValue = 10;
+    LoginResultModel? Credentials { get; set; }
+
 
     // Defines default values for Node object
     private void OnNodeCreating(IDiagramObject obj)
@@ -322,55 +332,57 @@
     {
         try
         {
-            var tasks = new List<Task>();
-            tasks.Add(Task.Run(async () =>
-           {
+            await base.OnInitializedAsync();
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
+            {
+                navManager.NavigateTo("/LoginPage", true);
+            }
+            else
+            {
+                Credentials = await AuthService.GetUserCredentials();
 
-               var response = await Http.GetAsync($"HumanResource/GetJobTitle");
-               var content = await response.Content.ReadAsStringAsync();
-               if (response.IsSuccessStatusCode)
+                var tasks = new List<Task>();
+                tasks.Add(Task.Run(async () =>
                {
-                   JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
-                   if (JobTitleData != null)
+
+                   var response = await Http.GetAsync($"HumanResource/GetJobTitle");
+                   var content = await response.Content.ReadAsStringAsync();
+                   if (response.IsSuccessStatusCode)
                    {
-                       DataSource = new List<HierarchicalDetails>();
-                       foreach (var n in JobTitleData)
+                       JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
+                       if (JobTitleData != null)
                        {
-                           if (string.IsNullOrEmpty(n.ReportsTo))
+                           DataSource = new List<HierarchicalDetails>();
+                           foreach (var n in JobTitleData)
                            {
-                               DataSource.Add(new HierarchicalDetails() { Id = n.JobTitleId.ToString(), Label = n.JobTitleDescription, FilllColor = "#e7704c", Border = "#c15433" });
-                           }
-                           else
-                           {
-                               DataSource.Add(new HierarchicalDetails() { Id = n.JobTitleId.ToString(), Label = n.JobTitleDescription, ReportingPerson = n.ReportsTo.Split(",").ToList(), FilllColor = "#f3904a", Border = "#d3722e" });
+                               if (string.IsNullOrEmpty(n.ReportsTo))
+                               {
+                                   DataSource.Add(new HierarchicalDetails() { Id = n.JobTitleId.ToString(), Label = n.JobTitleDescription, FilllColor = "#e7704c", Border = "#c15433" });
+                               }
+                               else
+                               {
+                                   DataSource.Add(new HierarchicalDetails() { Id = n.JobTitleId.ToString(), Label = n.JobTitleDescription, ReportingPerson = n.ReportsTo.Split(",").ToList(), FilllColor = "#f3904a", Border = "#d3722e" });
+                               }
                            }
                        }
                    }
-               }
-           }));
-            tasks.Add(Task.Run(async () =>
-           {
-
-               var response = await Http.GetAsync($"Utilities/GetDepartment");
-               var content = await response.Content.ReadAsStringAsync();
-               if (response.IsSuccessStatusCode)
+               }));
+                tasks.Add(Task.Run(async () =>
                {
-                   DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
-               }
-           }));
-            //tasks.Add(Task.Run(async () =>
-            //{
-            //
-            //    var response = await Http.GetAsync($"Utilities/GetOrgStructureJobTitle");
-            //    var content = await response.Content.ReadAsStringAsync();
-            //    if (response.IsSuccessStatusCode)
-            //    {
-            //        OrgaStructureJobTitleData = JsonSerializer.Deserialize<List<ViewOrgStructureJobTitle>>(content, _options);
-            //    }
-            //}));
-            Task t = Task.WhenAll(tasks);
-            await t;
 
+                   var response = await Http.GetAsync($"Utilities/GetDepartment");
+                   var content = await response.Content.ReadAsStringAsync();
+                   if (response.IsSuccessStatusCode)
+                   {
+                       DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
+                   }
+               }));
+
+                Task t = Task.WhenAll(tasks);
+                await t;
+
+            }
         }
         catch(Exception ex)
         {
@@ -786,6 +798,47 @@
             return products;
         }
     }
+
+    public async void OnJobTitleActionBegin(ActionEventArgs<AJobTitle> Args)
+    {
+        var data = Args.Data;
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+        {
+            if (Args.Data.JobTitleDescription == null)
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please enter the Job Title !");
+                Args.Cancel = true;
+            }
+            else if (Args.Data.DepartmentId == null)
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please enter the department !");
+                Args.Cancel = true;
+            }
+            else
+            {
+                var _deptdesc = DepartmentData.FirstOrDefault(o=>o.DepartmentId == Args.Data.DepartmentId);
+                var countdata = JobTitleData?
+                .FirstOrDefault(o =>o.DepartmentId == Args.Data.DepartmentId && (o.JobTitleDescription.Trim().ToLower() == Args.Data.JobTitleDescription.Trim().ToLower()));
+
+                if (countdata != null)
+                {
+                    toastService.ShowWarning("This job title has arleady been captured in the database as " + countdata.JobTitleDescription + " in the department " + _deptdesc.DepartmentDescription + ". Record Not Saved");
+                    Args.Cancel = true;
+                }
+            }
+        }
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+        {
+
+        }
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+        {
+
+        }
+    }
+
     public async Task OnJobTitleActionComplete(ActionEventArgs<AJobTitle> args)
     {
         try

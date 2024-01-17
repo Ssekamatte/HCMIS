@@ -11,6 +11,7 @@
 @using HCMIS.SHARED.Models;
 @using Syncfusion.XlsIO;
 @using System.Text.Json;
+@using System.Globalization
 @inject IReportService reportservice;
 @inject IToastService toastService;
 @inject Microsoft.JSInterop.IJSRuntime JS;
@@ -41,15 +42,20 @@
         </div>
         <div class="col col-md-4">
             <p>Employee</p>
-            <SfMultiSelect @bind-Value="@InputModel.Employeeid" TValue="int?[]" TItem="ViewEmployeeDropDown" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" PopupHeight="350px">
+            <SfMultiSelect @bind-Value="@InputModel.Employeeid"  Enabled="EmployeeDD" TValue="int?[]" TItem="ViewEmployeeDropDown" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" PopupHeight="350px">
                 <MultiSelectFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></MultiSelectFieldSettings>
             </SfMultiSelect>
         </div>
-        <div class="col col-md-4">
+        <div class="col col-md-3">
             <p>Department</p>
-            <SfMultiSelect @bind-Value="@InputModel.DepartmentId" TValue="int?[]" TItem="ADepartment" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@DepartmentData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Department" PopupHeight="350px">
+            <SfMultiSelect @bind-Value="@InputModel.DepartmentId" Enabled="DepartmentDD"
+                           TValue="int?[]" TItem="ADepartment" AllowFiltering="true" Placeholder="Please select" Mode="@VisualMode.CheckBox"
+                           DataSource="@DepartmentData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true"
+                           FilterBarPlaceholder="Search Department" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
                 <MultiSelectFieldSettings Value="@nameof(ADepartment.DepartmentId)" Text="@nameof(ADepartment.DepartmentDescription)"></MultiSelectFieldSettings>
+                <MultiSelectEvents TValue="int?[]" TItem="ADepartment" ValueChange="OnDepartmentChange"></MultiSelectEvents>
             </SfMultiSelect>
+
         </div>
         
         <div class="form-group col-md-12">
@@ -105,6 +111,10 @@
     public static int numberOfDays2 { get; set; } = 0;
     List<APublicHolidays>? PublicHolidaysData { get; set; }    
     public static DateTime[]? datesselectedd = null;
+    public bool EmployeeDD { get; set; }
+    public bool DepartmentDD { get; set; }
+    public bool JobTitleDD = false;
+    Query? IndicatorQuery { get; set; }
 
 
     protected override async Task OnInitializedAsync()
@@ -188,10 +198,61 @@
 
             Task _t = Task.WhenAll(t);
             await _t;
+
+            if (Credentials != null && (!string.IsNullOrEmpty(Credentials.UserRole) &&
+            Credentials.UserRole.Contains("Administrator") || Credentials.JobTitleId == 44))
+            {
+                EmployeeDD = true;
+                DepartmentDD = true;
+            }
+            else
+            {
+                EmployeeDD = false;
+                DepartmentDD = false;
+
+                if (Credentials != null && EmployeeData != null)
+                {
+                    var _employeedetails = EmployeeData.FirstOrDefault(o=>o.Employeeid == Credentials.StaffId);
+
+                    List<int?> _employeeid = new List<int?>();
+                    List<int?> _departmentid = new List<int?>();
+                    List<int?> _jobtitleid = new List<int?>();
+
+                    _employeeid.Add(Credentials.StaffId);
+                    _departmentid.Add(_employeedetails.DepartmentId);
+                    _jobtitleid.Add(_employeedetails.JibTitleId);
+
+                    InputModel.Employeeid = _employeeid.ToArray();
+                    InputModel.DepartmentId = _departmentid.ToArray();
+                    InputModel.JobTitleId = _jobtitleid.ToArray();
+                }
+            }
+
         }
         catch (Exception ex)
         {
             //throw ex;
+        }
+    }
+
+    private void OnDepartmentChange(Syncfusion.Blazor.DropDowns.MultiSelectChangeEventArgs<int?[]> args)
+    {
+        if (args.Value != null)
+        {
+            JobTitleDD = true;
+            IndicatorQuery = new Query();
+            List<WhereFilter> filterList = new List<WhereFilter>();
+            foreach (var item in args.Value)
+            {
+                filterList.Add(new WhereFilter() { Field = "DepartmentId", Operator = "equal", value = item, IgnoreCase = true });
+            }
+
+            var orWhere = WhereFilter.Or(filterList);
+            IndicatorQuery = new Query().Where(orWhere);
+        }
+        else
+        {
+            IndicatorQuery = new Query();
         }
     }
 
@@ -251,9 +312,19 @@
     private async Task OnSearchSubmit()
     {
         string? SelectedYear = null;
+        string SelectedYeardesc = string.Empty;
         if (InputModel.Year != null && InputModel.Year.Length > 0)
         {
-            SelectedYear = string.Join(",", InputModel.Year);            
+            SelectedYear = string.Join(",", InputModel.Year);   
+            foreach (var f in InputModel.Year)
+            {
+                var _operator = YearData.FirstOrDefault(o => o.YearId == Convert.ToInt32(f));
+                if (_operator != null)
+                {
+                    SelectedYeardesc += $"{_operator.YearDesc}, ";
+                }
+            }
+
         }
 
         var annualleavedays = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == 1);   
@@ -265,11 +336,49 @@
         {
             if (InputModel.Year == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please select atleast one year");
             }
 
             else
             {
+                //https://stackoverflow.com/questions/65591550/calculate-the-number-of-days-per-month-between-two-dates-in-c-sharp#:~:text=The%20DateTime%20class%20does%20a,between%20specific%20dates%20of%20interest.
+                //https://www.codeproject.com/Questions/1086883/Months-start-and-end-dates-and-no-of-days-in-each
+                
+                CultureInfo culture = new CultureInfo("en-US");
+                // DateTime start = new DateTime(2020, 1, 2); // 2 January 2020
+                // DateTime end = new DateTime(2020, 3, 4); // 4 March 2020
+
+                // if(start.Year == end.Year && start.Month == end.Month) 
+                // {
+                //     var daysInSingleMonth = end.Day - start.Day;
+                //     Console.WriteLine(start.ToString("MMM", culture) + " (Single Month): " + daysInSingleMonth.ToString("00"));
+                // } 
+                // else
+                // {
+                //     var daysInFirstMonth = DateTime.DaysInMonth(start.Year, start.Month) - start.Day;
+                //     Console.WriteLine(start.ToString("MMM", culture) + " (First Month): " + daysInFirstMonth.ToString("00"));
+
+
+                //     DateTime current = start.AddMonths(1);
+                //     while (current <= end.AddMonths(-1))
+                //     {
+                //         var daysInCurrentMonth = DateTime.DaysInMonth(current.Year, current.Month);
+                //         Console.WriteLine(current.ToString("MMM", culture) + ": " + daysInCurrentMonth.ToString("00"));
+
+                //         current = current.AddMonths(1);
+                //     }
+
+                //     var daysInLastMonth = end.Day;
+                //     Console.WriteLine(end.ToString("MMM", culture) + " (Last Month): " + daysInLastMonth.ToString("00"));
+                // }
+
+                //Function in DB
+                //,select * from  ReturnDateRangeByMonth('2024-07-24 00:00:00.000','2024-08-09 01:00:00.000')
+
+
+                //Above is my method
+
                 var data = await reportservice.GetAnnualLeaveRoaster(InputModel);
                 var data1 = await reportservice.GetAnnualLeaveRoasterMonthDays(InputModel);
                 var selecteddates = await reportservice.GetSelectedDates(InputModel);
@@ -421,7 +530,7 @@
                         worksheet.Range[row, 5].ColumnWidth = 8;
                         worksheet.Range[row, 5].WrapText = true;
 
-                        worksheet.Range[row, 6].Text = "Annual Leave For " + SelectedYear;
+                        worksheet.Range[row, 6].Text = "Annual Leave For " + SelectedYeardesc;
                         worksheet.Range[row, 6].CellStyle = headerStyle;
                         worksheet.Range[row, 6].ColumnWidth = 8;
                         worksheet.Range[row, 6].WrapText = true;
@@ -515,7 +624,7 @@
 
                         foreach (var item in data)
                         {
-                            datesselectedd = GetDatesBetween(item.ProposedLeaveStartDate.Value, item.ProposedLeaveEndDate.Value).ToArray();
+                            //datesselectedd = GetDatesBetween(item.ProposedLeaveStartDate.Value, item.ProposedLeaveEndDate.Value).ToArray();
 
                             worksheet.Range[row, 1].Text = count.ToString();
                             worksheet.Range[row, 1].VerticalAlignment = ExcelVAlign.VAlignTop;
@@ -528,8 +637,7 @@
                             worksheet.Range[row, 4].Text = item.JobTitleDescription;
                             worksheet.Range[row, 4].WrapText = true;
                             worksheet.Range[row, 4].VerticalAlignment = ExcelVAlign.VAlignTop;
-                            //worksheet.Range[row, 5].Text = item.LeaveTypeDescription;
-                            worksheet.Range[row, 5].Number = Convert.ToDouble(item.YearDesc);
+                            worksheet.Range[row, 5].Number = Convert.ToDouble(item.YearNo);
                             worksheet.Range[row, 5].HorizontalAlignment = ExcelHAlign.HAlignRight;
                             worksheet.Range[row, 5].VerticalAlignment = ExcelVAlign.VAlignTop;
                             worksheet.Range[row, 6].Number = Convert.ToDouble(annualleavedays.LeaveDaysPerYear);
@@ -537,101 +645,34 @@
                             worksheet.Range[row, 7].Number = Convert.ToDouble(annualleavedays.LeaveDaysPerYear);/* carriedforward + Convert.ToDouble(annualleavedays.LeaveDaysPerYear); */
                             worksheet.Range[row, 7].VerticalAlignment = ExcelVAlign.VAlignTop;
 
-                            //Count Selected Dates
-                            if (datesselectedd != null)
-                            {
-                                foreach (var itemdate in datesselectedd)
-                                {
-                                    month = Convert.ToDateTime(itemdate).Month;
-
-                                    if (month == 1)
-                                    {
-                                        _Jan.Add(month);
-                                    }
-                                    else if (month == 2)
-                                    {
-                                        _Feb.Add(month);
-                                    }
-                                    else if (month == 3)
-                                    {
-                                        _Mar.Add(month);
-                                    }
-                                    else if (month == 4)
-                                    {
-                                        _Apr.Add(month);
-                                    }
-                                    else if (month == 5)
-                                    {
-                                        _May.Add(month);
-                                    }
-                                    else if (month == 6)
-                                    {
-                                        _Jun.Add(month);
-                                    }
-                                    else if (month == 7)
-                                    {
-                                        _Jul.Add(month);
-                                    }
-                                    else if (month == 8)
-                                    {
-                                        _Aug.Add(month);
-                                    }
-                                    else if (month == 9)
-                                    {
-                                        _Sep.Add(month);
-                                    }
-                                    else if (month == 10)
-                                    {
-                                        _Oct.Add(month);
-                                    }
-                                    else if (month == 11)
-                                    {
-                                        _Nov.Add(month);
-                                    }
-                                    else if (month == 12)
-                                    {
-                                        _Dec.Add(month);
-                                    }
-
-                                }                              
-
-                            }
-
-                            worksheet.Range[row, 8].Number = Convert.ToDouble(item._1)  /* _Jan.Count */;
+                            worksheet.Range[row, 8].Number = Convert.ToDouble(item.Jan)  /* _Jan.Count */;
                             worksheet.Range[row, 8].VerticalAlignment = ExcelVAlign.VAlignTop;
-                            worksheet.Range[row, 9].Number = Convert.ToDouble(item._2) /* _Feb.Count */;
+                            worksheet.Range[row, 9].Number = Convert.ToDouble(item.Feb) /* _Feb.Count */;
                             worksheet.Range[row, 9].VerticalAlignment = ExcelVAlign.VAlignTop;
-                            worksheet.Range[row, 10].Number = Convert.ToDouble(item._3) /* _Mar.Count */;
+                            worksheet.Range[row, 10].Number = Convert.ToDouble(item.Mar) /* _Mar.Count */;
                             worksheet.Range[row, 10].VerticalAlignment = ExcelVAlign.VAlignTop;
-                            worksheet.Range[row, 11].Number = Convert.ToDouble(item._4) /* _Apr.Count */;
+                            worksheet.Range[row, 11].Number = Convert.ToDouble(item.Apr) /* _Apr.Count */;
                             worksheet.Range[row, 11].VerticalAlignment = ExcelVAlign.VAlignTop;
-                            worksheet.Range[row, 12].Number = Convert.ToDouble(item._5) /* _May.Count */;
+                            worksheet.Range[row, 12].Number = Convert.ToDouble(item.May) /* _May.Count */;
                             worksheet.Range[row, 12].VerticalAlignment = ExcelVAlign.VAlignTop;
-                            worksheet.Range[row, 13].Number = Convert.ToDouble(item._6) /* _Jun.Count */;
+                            worksheet.Range[row, 13].Number = Convert.ToDouble(item.Jun) /* _Jun.Count */;
                             worksheet.Range[row, 13].VerticalAlignment = ExcelVAlign.VAlignTop;
-                            worksheet.Range[row, 14].Number = Convert.ToDouble(item._7) /* _Jul.Count */; 
+                            worksheet.Range[row, 14].Number = Convert.ToDouble(item.Jul) /* _Jul.Count */; 
                             worksheet.Range[row, 14].VerticalAlignment = ExcelVAlign.VAlignTop;
-                            worksheet.Range[row, 15].Number = Convert.ToDouble(item._8) /* _Aug.Count */;
+                            worksheet.Range[row, 15].Number = Convert.ToDouble(item.Aug) /* _Aug.Count */;
                             worksheet.Range[row, 15].VerticalAlignment = ExcelVAlign.VAlignTop;
-                            worksheet.Range[row, 16].Number = Convert.ToDouble(item._9) /* _Sep.Count */;
+                            worksheet.Range[row, 16].Number = Convert.ToDouble(item.Sep) /* _Sep.Count */;
                             worksheet.Range[row, 16].VerticalAlignment = ExcelVAlign.VAlignTop;
-                            worksheet.Range[row, 17].Number = Convert.ToDouble(item._10) /* _Oct.Count */;
+                            worksheet.Range[row, 17].Number = Convert.ToDouble(item.Oct) /* _Oct.Count */;
                             worksheet.Range[row, 17].VerticalAlignment = ExcelVAlign.VAlignTop;
-                            worksheet.Range[row, 18].Number = Convert.ToDouble(item._11) /* _Nov.Count */;
+                            worksheet.Range[row, 18].Number = Convert.ToDouble(item.Nov) /* _Nov.Count */;
                             worksheet.Range[row, 18].VerticalAlignment = ExcelVAlign.VAlignTop;
-                            worksheet.Range[row, 19].Number = Convert.ToDouble(item._12) /* _Dec.Count */;
+                            worksheet.Range[row, 19].Number = Convert.ToDouble(item.Dec) /* _Dec.Count */;
                             worksheet.Range[row, 19].VerticalAlignment = ExcelVAlign.VAlignTop;
-                            
-                            totalleavedays = Convert.ToInt32(item._1 + item._2 + item._3 + item._4 +
-                            item._5 + item._6 + item._7 + item._8 + item._9 + item._10 + item._11 + item._12);
 
-                            // totalleavedays = _Jan.Count + _Feb.Count + _Mar.Count + _Apr.Count +
-                            // _May.Count + _Jun.Count + _Jul.Count + _Aug.Count + _Sep.Count + _Oct.Count + _Nov.Count +
-                            // _Dec.Count;
-
-                            worksheet.Range[row, 20].Number = totalleavedays;
+                            worksheet.Range[row, 20].Number = Convert.ToDouble(item.TotalLeaveDays);
                             worksheet.Range[row, 20].VerticalAlignment = ExcelVAlign.VAlignTop;
-                            worksheet.Range[row, 21].Number = Convert.ToDouble(annualleavedays.LeaveDaysPerYear) - totalleavedays;
+                            worksheet.Range[row, 21].Number = Convert.ToDouble(annualleavedays.LeaveDaysPerYear - item.TotalLeaveDays);
                             worksheet.Range[row, 21].VerticalAlignment = ExcelVAlign.VAlignTop;
 
                             //Pass in the selected dates here
@@ -652,8 +693,75 @@
                                     worksheet.Range[row, 22].WrapText = true;
                                     worksheet.Range[row, 22].VerticalAlignment = ExcelVAlign.VAlignTop;
                                 }
-                                
-                            }                    
+
+                            }    
+
+                            // totalleavedays = Convert.ToInt32(item._1 + item._2 + item._3 + item._4 +
+                            // item._5 + item._6 + item._7 + item._8 + item._9 + item._10 + item._11 + item._12);
+
+                            // totalleavedays = _Jan.Count + _Feb.Count + _Mar.Count + _Apr.Count +
+                            // _May.Count + _Jun.Count + _Jul.Count + _Aug.Count + _Sep.Count + _Oct.Count + _Nov.Count +
+                            // _Dec.Count;
+
+                            //Count Selected Dates
+                            // if (datesselectedd != null)
+                            // {
+                            //     foreach (var itemdate in datesselectedd)
+                            //     {
+                            //         month = Convert.ToDateTime(itemdate).Month;
+
+                            //         if (month == 1)
+                            //         {
+                            //             _Jan.Add(month);
+                            //         }
+                            //         else if (month == 2)
+                            //         {
+                            //             _Feb.Add(month);
+                            //         }
+                            //         else if (month == 3)
+                            //         {
+                            //             _Mar.Add(month);
+                            //         }
+                            //         else if (month == 4)
+                            //         {
+                            //             _Apr.Add(month);
+                            //         }
+                            //         else if (month == 5)
+                            //         {
+                            //             _May.Add(month);
+                            //         }
+                            //         else if (month == 6)
+                            //         {
+                            //             _Jun.Add(month);
+                            //         }
+                            //         else if (month == 7)
+                            //         {
+                            //             _Jul.Add(month);
+                            //         }
+                            //         else if (month == 8)
+                            //         {
+                            //             _Aug.Add(month);
+                            //         }
+                            //         else if (month == 9)
+                            //         {
+                            //             _Sep.Add(month);
+                            //         }
+                            //         else if (month == 10)
+                            //         {
+                            //             _Oct.Add(month);
+                            //         }
+                            //         else if (month == 11)
+                            //         {
+                            //             _Nov.Add(month);
+                            //         }
+                            //         else if (month == 12)
+                            //         {
+                            //             _Dec.Add(month);
+                            //         }
+
+                            //     }                              
+
+                            // }                                            
 
                             row += 1;
                             count++;
@@ -684,6 +792,7 @@
         }
         catch (Exception ex)
         {
+            toastService.ClearAll();
             toastService.ShowError(ex.ToString());
         }
         finally

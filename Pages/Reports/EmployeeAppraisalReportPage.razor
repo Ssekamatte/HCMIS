@@ -38,7 +38,7 @@
 
         <div class="col col-md-3">
             <p>Employee</p>
-            <SfMultiSelect @bind-Value="@InputModel.Employeeid" TValue="int?[]" TItem="ViewEmployeeDropDown" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+            <SfMultiSelect @bind-Value="@InputModel.Employeeid" TValue="int?[]" TItem="ViewEmployeeDropDown" Enabled="EmployeeDD" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
                 <MultiSelectFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></MultiSelectFieldSettings>
             </SfMultiSelect>
             @*<SfMultiSelect 
@@ -62,9 +62,14 @@
 
         <div class="col col-md-3">
             <p>Department</p>
-            <SfMultiSelect @bind-Value="@InputModel.DepartmentId" TValue="int?[]" TItem="ADepartment" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@DepartmentsData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+            <SfMultiSelect @bind-Value="@InputModel.DepartmentId"
+                           TValue="int?[]" TItem="ADepartment" AllowFiltering="true" Placeholder="Please select" Mode="@VisualMode.CheckBox"
+                           DataSource="@DepartmentData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true"
+                           FilterBarPlaceholder="Search Department" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
                 <MultiSelectFieldSettings Value="@nameof(ADepartment.DepartmentId)" Text="@nameof(ADepartment.DepartmentDescription)"></MultiSelectFieldSettings>
+                <MultiSelectEvents TValue="int?[]" TItem="ADepartment" ValueChange="OnDepartmentChange"></MultiSelectEvents>
             </SfMultiSelect>
+
         </div>
 
         <div class="col col-md-3">
@@ -141,13 +146,16 @@
     List<ABscPerspectivesType>? BscPerspectiveTypeData { get; set; }
     List<ViewBalanceScoreCardTargetSettingReport>? TargetSettingReportData { get; set; }
     List<AMeasurementMetric>? MeasurementUnitData { get; set; }
-    List<ADepartment>? DepartmentsData { get; set; }
+    List<ADepartment>? DepartmentData { get; set; }
     List<APerformanceScale>? ScaleData { get; set; }
     LoginResultModel? Credentials { get; set; }
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     public bool EmployeeDD { get; set; }
     double? targetvalue = 0;
     double? behavioralvalue = 0;
+    public bool DepartmentDD { get; set; }
+    public bool JobTitleDD = false;
+    Query? IndicatorQuery { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -241,7 +249,7 @@
             if (responsedepartment.IsSuccessStatusCode)
             {
                 var contentdepartment = await responsedepartment.Content.ReadAsStringAsync();
-                DepartmentsData = JsonSerializer.Deserialize<List<ADepartment>>(contentdepartment, _options);
+                DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(contentdepartment, _options);
             }
         }));
 
@@ -272,16 +280,50 @@
             Credentials.UserRole.Contains("Administrator") || Credentials.JobTitleId == 44))
         {
             EmployeeDD = true;
+            DepartmentDD = true;
         }
         else
         {
             EmployeeDD = false;
-            if(Credentials != null)
+            DepartmentDD = false;
+
+            if (Credentials != null && EmployeeData != null)
             {
+                var _employeedetails = EmployeeData.FirstOrDefault(o => o.Employeeid == Credentials.StaffId);
+
                 List<int?> _employeeid = new List<int?>();
+                List<int?> _departmentid = new List<int?>();
+                List<int?> _jobtitleid = new List<int?>();
+
                 _employeeid.Add(Credentials.StaffId);
+                _departmentid.Add(_employeedetails.DepartmentId);
+                _jobtitleid.Add(_employeedetails.JibTitleId);
+
                 InputModel.Employeeid = _employeeid.ToArray();
-            }            
+                InputModel.DepartmentId = _departmentid.ToArray();
+                InputModel.JobTitleId = _jobtitleid.ToArray();
+            }
+        }
+    }
+
+    private void OnDepartmentChange(Syncfusion.Blazor.DropDowns.MultiSelectChangeEventArgs<int?[]> args)
+    {
+        if (args.Value != null)
+        {
+            JobTitleDD = true;
+            IndicatorQuery = new Query();
+            List<WhereFilter> filterList = new List<WhereFilter>();
+            foreach (var item in args.Value)
+            {
+                filterList.Add(new WhereFilter() { Field = "DepartmentId", Operator = "equal", value = item, IgnoreCase = true });
+            }
+
+            var orWhere = WhereFilter.Or(filterList);
+            IndicatorQuery = new Query().Where(orWhere);
+        }
+        else
+        {
+            IndicatorQuery = new Query();
         }
     }
 
