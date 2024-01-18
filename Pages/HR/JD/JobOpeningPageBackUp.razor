@@ -9,8 +9,6 @@
 @inject ApiConfig _ApiConfig;
 @inject NavigationManager Navigation
 @inject SystemSettings _SystemSettings
-@inject IToastService toastService;
-@inject IJSRuntime JSRuntime;
 
 <ol class="breadcrumb" style="margin-top:5px;">
     <li class="breadcrumb-item active" style="color: brown;">
@@ -21,13 +19,11 @@
 </ol>
 
 
-<SfGrid @ref="@DataGrid" TValue="JobOpening" ID="JobOpeningGrid" AllowPaging="true" AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Delete", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
-    <GridEvents OnActionComplete="@OnJobOpeningComplete" OnActionBegin="@OnJobOpeningActionBegin" OnToolbarClick="@GridToolbarClick" TValue="JobOpening"></GridEvents>
-    
+<SfGrid @ref="@DataGrid" TValue="JobOpening" ID="JobOpeningGrid" AllowPaging="true" AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Edit", "Delete", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
         <Template>
             @{
-                JobOpeningReviewData = (context as JobOpening);
+                var JobOpeningReviewData = (context as JobOpening);
                 @if(JobOpeningReviewData != null){
                     <div class="row">
                         <div class="col-md-12" hidden>
@@ -37,16 +33,11 @@
                             <p>Job Title</p>
                             <SfDropDownList @bind-Value="@(JobOpeningReviewData.JobDescriptionId)" TItem="ViewJobDescriptionOpening" TValue="int?" Width="100%" PopupHeight="230px" AllowFiltering=true IgnoreAccent=true DataSource="@JobDescriptionData">
                                 <DropDownListFieldSettings GroupBy="@(nameof(ViewJobDescriptionOpening.DepartmentDescription))" Text="@(nameof(ViewJobDescriptionOpening.JobTitleDescription))" Value="@(nameof(ViewJobDescriptionOpening.JobDescriptionId))"></DropDownListFieldSettings>
-                                @*<DropDownListEvents TItem="ViewJobDescriptionOpening" TValue="int?" ValueChange="@JobTitleValueChangeHandler"></DropDownListEvents>*@
-                                @if(_previousbool == true)
-                                {
-                                    <DropDownListEvents TItem="ViewJobDescriptionOpening" TValue="int?" ValueChange="@JobTitleValueChangeHandler"></DropDownListEvents>                                    
-                                }
                             </SfDropDownList>
                         </div>
                         <div  class="col-md-12">
                             <p>Reference Number</p>
-                            <SfTextBox Multiline="false" @bind-Value="@(JobOpeningReviewData.ReferenceNumber)" Enabled="false" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                            <SfTextBox @bind-Value="@(JobOpeningReviewData.ReferenceNumber)" Width="100%" Placeholder="Ref No." FloatLabelType="FloatLabelType.Never"></SfTextBox>
                         </div>
                         <div class="col-md-6">
                             <p>Applications Opening Date</p>
@@ -66,16 +57,10 @@
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
     <GridPageSettings PageSizes="true"></GridPageSettings>
         <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple"></GridSelectionSettings>
+    <GridEvents OnToolbarClick="@GridToolbarClick" TValue="JobOpening"></GridEvents>
     <SfDataManager AdaptorInstance="@typeof(JobOpeningAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
     <GridColumns>
-      @* <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn> *@
-        <GridColumn HeaderText="Manage"
-                    Width="40"
-                    TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left">
-            <GridCommandColumns>
-                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit/View"></GridCommandColumn>
-            </GridCommandColumns>
-        </GridColumn>
+      <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
     	<GridColumn Field=@nameof(JobOpening.JobOpeningId) HeaderText="JobOpeningId" Visible=false AllowEditing="false" IsPrimaryKey="true" Width="150"></GridColumn>
         <GridForeignColumn Field=@nameof(JobOpening.JobDescriptionId) HeaderText="Department" AllowEditing="false" Width="150" ForeignDataSource="@JobDescriptionData" ForeignKeyField="@nameof(ViewJobDescriptionOpening.JobDescriptionId)" ForeignKeyValue="@nameof(ViewJobDescriptionOpening.DepartmentDescription)"></GridForeignColumn>
         <GridForeignColumn Field=@nameof(JobOpening.JobDescriptionId) HeaderText="Title" AllowEditing="false" Width="150" ForeignDataSource="@JobDescriptionData" ForeignKeyField="@nameof(ViewJobDescriptionOpening.JobDescriptionId)" ForeignKeyValue="@nameof(ViewJobDescriptionOpening.JobTitleDescription)"></GridForeignColumn>
@@ -87,38 +72,7 @@
 @if(ErrorMessage != null){
     <p class="alert alert-danger">@ErrorMessage</p>
 }
-
-@*Saving Dialogue*@
-<div class="form-group col-md-12">
-    <SfDialog Width="80%" Height="20vh" AllowDragging=true EnableResize=true
-              CloseOnEscape=false IsModal=true ShowCloseIcon=false
-              Target=".mainbody" @ref=@SavingDialog Visible=false>
-        <DialogTemplates>
-            <Content>
-                <div class="dialogContent">
-                    <div class="loader">
-                        <div class="loader--dot"></div>
-                        <div class="loader--dot"></div>
-                        <div class="loader--dot"></div>
-                        <div class="loader--dot"></div>
-                        <div class="loader--dot"></div>
-                        <div class="loader--dot"></div>
-                        <div class="loader-Saving-text"></div>
-                    </div>
-                    @*<p>Saving Record please wait......</p>*@
-                </div>
-            </Content>
-        </DialogTemplates>
-    </SfDialog>
-</div>
-
 @code {
-    private static JobOpening? JobOpeningReviewData { get; set; }
-    string jobreferenceno = string.Empty;
-    Syncfusion.Blazor.Grids.Action _previous { get; set; }
-    bool _previousbool;
-    SfDialog SavingDialog { get; set; }
-
     SfGrid<JobOpening>? DataGrid { get; set; }
     /// <summary>
     /// Event for Toolbar click for Grid Exporting
@@ -143,12 +97,11 @@
     SfToast? ToastObj;
     private string ToastPosition = "Right";
     List<ViewJobDescriptionOpening>? JobDescriptionData{ get; set; }
-    private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-
+     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     protected override async Task OnInitializedAsync()
     {
         try{
-
+            
             var tasks = new List<Task>();
             tasks.Add(Task.Run(async () =>
                {
@@ -171,38 +124,6 @@
         await base.OnInitializedAsync();
         StateHasChanged();
     }
-
-    private async void JobTitleValueChangeHandler(ChangeEventArgs<int?, ViewJobDescriptionOpening> args)
-    {
-        if (args.ItemData != null)
-        {
-            var tasks = new List<Task>();
-            tasks.Add(Task.Run(async () =>
-           {
-
-               var response = await Http.GetAsync($"HumanResource/ReferenceNo?jobtitle={args.ItemData.JibTitleId}");
-               var content = await response.Content.ReadAsStringAsync();
-               if (response.IsSuccessStatusCode)
-               {
-                   jobreferenceno = content;
-                   JobOpeningReviewData.ReferenceNumber = content;
-               }
-           }));
-
-            Task t = Task.WhenAll(tasks);
-            await t;
-
-            // if (_previous == Syncfusion.Blazor.Grids.Action.Add)
-            // {
-
-            // }
-
-
-            StateHasChanged();
-        }
-    }
-
-
     public class JobOpeningAdapter : DataAdaptor
     {
         HttpClient Http;
@@ -227,9 +148,9 @@
             var data = new List<JobOpening>();
             try
             {
+                
 
-
-
+                
                 var response = await Http.GetAsync($"HumanResource/GetJobOpening");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
@@ -285,13 +206,13 @@
         {
             try
             {
-
+                
                 var val = (value as JobOpening);
                 if (val != null)
                 {
                     if (val.JobOpeningId == 0)
                     {
-
+                        
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -320,7 +241,7 @@
                     }
                     else
                     {
-
+                        
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -381,13 +302,13 @@
         {
             try
             {
-
+                
                 var val = (value as JobOpening);
                 if (val != null)
                 {
                     if (val.JobOpeningId == 0)
                     {
-
+                        
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -416,7 +337,7 @@
                     }
                     else
                     {
-
+                        
                         string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                         StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -456,7 +377,7 @@
             object? products = null;
             try
             {
-
+                
                 if (Changed != null)
                 {
                     products = Changed;
@@ -466,7 +387,7 @@
                         {
                             if (val.JobOpeningId == 0)
                             {
-
+                                
                                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -495,7 +416,7 @@
                             }
                             else
                             {
-
+                                
                                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -534,7 +455,7 @@
                         {
                             if (val.JobOpeningId == 0)
                             {
-
+                                
                                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -563,7 +484,7 @@
                             }
                             else
                             {
-
+                                
                                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -620,7 +541,7 @@
             }
             else if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
             {
-                SavingDialog.HideAsync();
+                
             }
         }
         catch (Exception ex)
@@ -629,62 +550,17 @@
         }
 
     }
-    
     public async Task OnJobOpeningActionBegin(ActionEventArgs<JobOpening> args)
     {
         try
         {
-            if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add))
+            if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
             {
-                _previous = args.RequestType;
-                _previousbool = true;
+
             }
-            if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+            else if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
             {
-                _previous = args.RequestType;
-                _previousbool = false;
-            }
-            if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
-            {
-                if (args.Data.JobDescriptionId == null)
-                {
-                    toastService.ClearAll();
-                    toastService.ShowWarning("Please select the job title !");
-                    args.Cancel = true;
-                    await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
-                }
-                else if (string.IsNullOrEmpty(args.Data.ReferenceNumber))
-                {
-                    toastService.ClearAll();
-                    toastService.ShowWarning("Reference Number is required!");
-                    args.Cancel = true;
-                    await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
-                }
-                else if (args.Data.ApplicationOpeningDate == null)
-                {
-                    toastService.ClearAll();
-                    toastService.ShowWarning("Please enter the application opening date!");
-                    args.Cancel = true;
-                    await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
-                }
-                else if (args.Data.ApplicationClosingDate == null)
-                {
-                    toastService.ClearAll();
-                    toastService.ShowWarning("Please enter the application closing date!");
-                    args.Cancel = true;
-                    await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
-                }
-                else if (args.Data.ApplicationClosingDate < args.Data.ApplicationOpeningDate)
-                {
-                    toastService.ClearAll();
-                    toastService.ShowWarning("The application opening date cannot be after the application closing date!");
-                    args.Cancel = true;
-                    await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
-                }
-                else
-                {
-                    SavingDialog.ShowAsync();
-                }
+                
             }
         }
         catch (Exception ex)
