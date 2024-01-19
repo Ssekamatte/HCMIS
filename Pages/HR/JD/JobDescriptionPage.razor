@@ -1,6 +1,7 @@
 ﻿@page "/JobDescriptionPage"
 
 @using HCMIS.Data
+@using HCMIS.Interface
 @using HCMIS.Model
 @using System.Text.Json
 @using HCMIS.SHARED.Data;
@@ -10,11 +11,11 @@
 @inject HttpClient Http
 @inject AppState AppState
 @inject ApiConfig _ApiConfig;
-@inject NavigationManager Navigation
+@inject NavigationManager navManager
 @inject DocumentUploadModel _DocumentUploadModel;
 @inject IToastService toastService;
 @inject IJSRuntime JSRuntime;
-
+@inject IAuthenticationService AuthService;
 
 <style>
 
@@ -110,13 +111,21 @@
 
                                                     <div class="col-md-6">
                                                         <p>Minimum Years of Experience<span style="color:red;">*</span></p>
-                                                        <SfNumericTextBox @bind-Value="@(JobDescriptionReviewData.MinimumYearsofExperience)" TValue="double?" Width="100%" Format="N0" Placeholder="Enter Number" Min="1" Step="1" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                                        <SfDropDownList @bind-Value="@(JobDescriptionReviewData.MinimumYearsofExperience)" TItem="AYearsofExperience" TValue="double?" Width="100%" PopupHeight="230px" DataSource="@YearsofExperienceData" Placeholder="Please Select">
+                                                            <DropDownListFieldSettings Text="YearsofExperienceDesc" Value="YearsofExperienceId"></DropDownListFieldSettings>
+                                                        </SfDropDownList>
                                                     </div> 
 
                                                     <div class="col-md-6">
                                                         <p>No of Vacancies<span style="color:red;">*</span></p>
                                                         <SfNumericTextBox @bind-Value="@(JobDescriptionReviewData.Vacancies)" TValue="int?" Width="100%" Format="N0" Placeholder="Enter Number" Step="1" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
                                                     </div>  
+
+                                                    <div class="col-md-12">
+                                                        <h6 style="background-color:#268cff; color:ghostwhite;font-weight:bolder;font-size:large; text-align:center;margin-top: 10px;height: 30px;vertical-align: middle;">Qualifications<span style="color:red;">*</span></h6>
+
+                                                        <SfTextBox Multiline=true rows="6" @bind-Value="@(JobDescriptionReviewData.Qualification)" Placeholder="Type Here ...." Width="100%" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                    </div>
 
                                                     <div class="col-md-12">
                                                         @*<p>Experience<span style="color:red;">*</span></p>*@
@@ -236,11 +245,13 @@
     List<ALevelofEducation>? LevelofEducationData { get; set; }
     List<AJobStatus>? JobStatusData { get; set; }
     List<AFieldOfStudy>? FieldOfStudyData { get; set; }
+    List<AYearsofExperience>? YearsofExperienceData { get; set; }
     string? ErrorMessage { get; set; } = null;
     Query ChildQuery { get; set; } = new Query();
     Query JobTitleChildQuery { get; set; } = new Query();
     SfDropDownList<int?, AJobTitle> JobTitleObj { get; set; }
     SfDialog SavingDialog { get; set; }
+    LoginResultModel? Credentials { get; set; }
 
     private ToolbarType Tooltype = ToolbarType.MultiRow;
     private List<ToolbarItemModel> Tools = new List<ToolbarItemModel>()
@@ -378,80 +389,105 @@
     {
         try
         {
-            var tasks = new List<Task>();
-            tasks.Add(Task.Run(async () =>
-           {
+            await base.OnInitializedAsync();
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
+            {
+                navManager.NavigateTo("/LoginPage", true);
+            }
+            else
+            {
+                Credentials = await AuthService.GetUserCredentials();
 
-               var response = await Http.GetAsync($"HumanResource/GetJobTitle");
-               var content = await response.Content.ReadAsStringAsync();
-               if (response.IsSuccessStatusCode)
+                var tasks = new List<Task>();
+                tasks.Add(Task.Run(async () =>
                {
-                   JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
-               }
-           }));
-            tasks.Add(Task.Run(async () =>
-           {
 
-               var response = await Http.GetAsync($"Utilities/GetDepartment");
-               var content = await response.Content.ReadAsStringAsync();
-               if (response.IsSuccessStatusCode)
+                   var response = await Http.GetAsync($"HumanResource/GetJobTitle");
+                   var content = await response.Content.ReadAsStringAsync();
+                   if (response.IsSuccessStatusCode)
+                   {
+                       JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
+                   }
+               }));
+                tasks.Add(Task.Run(async () =>
                {
-                   DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
-               }
-           }));
-            tasks.Add(Task.Run(async () =>
-            {
 
-                var response = await Http.GetAsync($"Utilities/GetSalaryScale");
-                var content = await response.Content.ReadAsStringAsync();
-                if (response.IsSuccessStatusCode)
+                   var response = await Http.GetAsync($"Utilities/GetDepartment");
+                   var content = await response.Content.ReadAsStringAsync();
+                   if (response.IsSuccessStatusCode)
+                   {
+                       DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
+                   }
+               }));
+                tasks.Add(Task.Run(async () =>
                 {
-                    SalaryScaleData = JsonSerializer.Deserialize<List<ASalaryScale>>(content, _options);
-                }
-            }));
-            tasks.Add(Task.Run(async () =>
-            {
 
-                var response = await Http.GetAsync($"Utilities/GetJobType");
-                var content = await response.Content.ReadAsStringAsync();
-                if (response.IsSuccessStatusCode)
+                    var response = await Http.GetAsync($"Utilities/GetSalaryScale");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        SalaryScaleData = JsonSerializer.Deserialize<List<ASalaryScale>>(content, _options);
+                    }
+                }));
+                tasks.Add(Task.Run(async () =>
                 {
-                    JobTypeData = JsonSerializer.Deserialize<List<AJobType>>(content, _options);
-                }
-            }));
-            tasks.Add(Task.Run(async () =>
-            {
 
-                var response = await Http.GetAsync($"Utilities/GetContractLengthType");
-                var content = await response.Content.ReadAsStringAsync();
-                if (response.IsSuccessStatusCode)
+                    var response = await Http.GetAsync($"Utilities/GetJobType");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        JobTypeData = JsonSerializer.Deserialize<List<AJobType>>(content, _options);
+                    }
+                }));
+                tasks.Add(Task.Run(async () =>
                 {
-                    ContractLengthTypeData = JsonSerializer.Deserialize<List<AContractLengthType>>(content, _options);
-                }
-            }));
-            tasks.Add(Task.Run(async () =>
-           {
 
-               var response = await Http.GetAsync($"Utilities/GetLevelofEducation");
-               var content = await response.Content.ReadAsStringAsync();
-               if (response.IsSuccessStatusCode)
+                    var response = await Http.GetAsync($"Utilities/GetContractLengthType");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        ContractLengthTypeData = JsonSerializer.Deserialize<List<AContractLengthType>>(content, _options);
+                    }
+                }));
+                tasks.Add(Task.Run(async () =>
+                {
+
+                    var response = await Http.GetAsync($"Utilities/GetLevelofEducation");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        LevelofEducationData = JsonSerializer.Deserialize<List<ALevelofEducation>>(content, _options);
+                    }
+                }));
+
+                tasks.Add(Task.Run(async () =>
+                {
+
+                    var response = await Http.GetAsync($"Utilities/GetFieldOfStudy");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        FieldOfStudyData = JsonSerializer.Deserialize<List<AFieldOfStudy>>(content, _options);
+                    }
+                }));
+
+                tasks.Add(Task.Run(async () =>
                {
-                   LevelofEducationData = JsonSerializer.Deserialize<List<ALevelofEducation>>(content, _options);
-               }
-           }));
-            tasks.Add(Task.Run(async () =>
-            {
 
-                var response = await Http.GetAsync($"Utilities/GetFieldOfStudy");
-                var content = await response.Content.ReadAsStringAsync();
-                if (response.IsSuccessStatusCode)
-                {
-                    FieldOfStudyData = JsonSerializer.Deserialize<List<AFieldOfStudy>>(content, _options);
-                }
-            }));
-            Task t = Task.WhenAll(tasks);
-            await t;
+                   var response = await Http.GetAsync($"Utilities/GetYearsofExperience");
+                   var content = await response.Content.ReadAsStringAsync();
+                   if (response.IsSuccessStatusCode)
+                   {
+                       YearsofExperienceData = JsonSerializer.Deserialize<List<AYearsofExperience>>(content, _options);
+                   }
+               }));
 
+
+                Task t = Task.WhenAll(tasks);
+                await t;
+            }
+            
         }
         catch(Exception ex)
         {
@@ -928,6 +964,14 @@
                 {
                     toastService.ClearAll();
                     toastService.ShowWarning("Please enter the required experience details!");
+                    args.Cancel = true;
+                    await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
+                }
+
+                else if (string.IsNullOrEmpty(args.Data.Qualification))
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please enter the required qualification(s)!");
                     args.Cancel = true;
                     await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
                 }
