@@ -12,10 +12,12 @@
 @inject IToastService toastService;
 @inject IAuthenticationService AuthService;
 @inject NavigationManager navManager;
-
+@inject IJSRuntime JSRuntime;
 
 <style>
-    .e-btn.e-success:hover, .e-css.e-btn.e-success:hover {
+    /*Submit Button color on hover*/
+    .e-btn.e-success:hover, .e-css.e-btn.e-success:hover 
+    {
         background: lightgreen;
         border-color: #0a5f0a;
         box-shadow: 0 0 rgba(0,0,0,0);
@@ -508,6 +510,7 @@
                                                             <DropDownListFieldSettings Text="@(nameof(AYesNo.YesNoDesc))" Value="@(nameof(AYesNo.YesNoId))"></DropDownListFieldSettings>
                                                         </SfDropDownList>
                                                     </div>
+                                                    
                                                     @if (appliedForJobsModel.appliedForJobs.EverBeenConvicted == 1)
                                                     {
                                                         <div class="col-md-12">
@@ -518,9 +521,13 @@
                                                             <SfTextBox Multiline=true @bind-Value="@(appliedForJobsModel.appliedForJobs.ConvictionReason)" Width="100%" Placeholder="Give a brief narrative" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                                                         </div>
                                                     }
+
                                                     <div class="col-md-12" style="margin-top:10px;">
+                                                        <p>Confirm</p>
                                                         <SfCheckBox @bind-Checked=@appliedForJobsModel.appliedForJobs.InformationAcknowledgement LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After" Label="I hereby certify that to the best of my knowledge and belief, the particulars given in this form are true and complete in all aspects."></SfCheckBox>
                                                     </div>
+
+                                                    @* <button @onclick="OnButtonClick" class="btn btn-primary">Click Button</button> *@
                                                 </div>
                                             }
                                         }
@@ -634,6 +641,11 @@
     List<AYearsofExperience>? YearsofExperienceData { get; set; }
     public bool? radiovalue;
 
+    private async void OnButtonClick()
+    {
+        await JSRuntime.InvokeVoidAsync("OnScrollEvent");
+    }
+
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
@@ -713,30 +725,30 @@
                    }
                }));
 
-               tasks.Add(Task.Run(async () =>
-                {
-                    //Get Non Staff
-                    if (Credentials.UserRole == "Non-Staff")
-                    {
+                tasks.Add(Task.Run(async () =>
+                 {
+                     //Get Non Staff
+                     if (Credentials.UserRole == "Non-Staff")
+                     {
                          var response = await Http.GetAsync($"HumanResource/GetAppliedForJobsForNonStaffApplicant/{Credentials.StaffId}");
                          if (response.IsSuccessStatusCode)
                          {
                              var content = await response.Content.ReadAsStringAsync();
                              AppliedForJobsData = JsonSerializer.Deserialize<List<AppliedForJobs>>(content, _options);
                          }
-                    }
-                    //Get Continuing Staff
-                    else
-                    {
+                     }
+                     //Get Continuing Staff
+                     else
+                     {
                          var response = await Http.GetAsync($"HumanResource/GetAppliedForJobsForEmployeeApplicant/{Credentials.StaffId}");
                          if (response.IsSuccessStatusCode)
                          {
                              var content = await response.Content.ReadAsStringAsync();
                              AppliedForJobsData = JsonSerializer.Deserialize<List<AppliedForJobs>>(content, _options);
                          }
-                    }
-                    
-                }));
+                     }
+
+                 }));
 
                 tasks.Add(Task.Run(async () =>
                {
@@ -762,7 +774,7 @@
 
                 Task t = Task.WhenAll(tasks);
                 await t;
-                
+
             }
         }
         catch (Exception ex)
@@ -773,7 +785,7 @@
             IsPageLoaded = true;
         }
     }
-    
+
     private void OnValueChange(ChangeArgs<bool?> args)
     {
         radiovalue = args.Value;
@@ -830,7 +842,7 @@
         InputModel = new();
         JobDecriptionModel = new();
     }
-    
+
     private void FilterChangedAsync(Microsoft.AspNetCore.Components.ChangeEventArgs args)
     {
         //SearchText = args.Value.ToString();
@@ -862,7 +874,7 @@
             appliedForJobsModel.appliedForJobs.JobOpeningId = SelectedJobsModel.viewAvailableJobs.JobOpeningId;
             appliedForJobsModel.appliedForJobs.ApplicationDate = DateTime.Now;
             appliedForJobsModel.appliedForJobs.ApplicationStatusId = 1;
-            
+
             if (Credentials != null && Credentials.UserRole == "Non-Staff")
             {
                 appliedForJobsModel.appliedForJobs.NonStaffid = Credentials.StaffId;
@@ -894,6 +906,9 @@
             if (data.AreYouRelatedToAnyCompanyStaff == null || data.EverBeenConvicted == null
                 || data.InformationAcknowledgement == false || data.NoOfChildren==null || data.PreviouslyAppliedForAjob==null)
             {
+                await JSRuntime.InvokeVoidAsync("OnScrollEvent");
+                //await JSRuntime.InvokeVoidAsync("topFunction");OnScrollEvent
+
                 error = "<ul>";
                 if(data.AreYouRelatedToAnyCompanyStaff == null)
                 {
@@ -922,11 +937,11 @@
                     error += $"<li>Please enter the details of the offence. </li>";
                 }
             }
-            // else if(appliedForJobsModel.appliedForJobReferees.Count < 2)
-            // {
-            //     error = "<ul>";
-            //     error += $"<li>Please enter atleast two personal referees. </li>";
-            // }
+            else if(appliedForJobsModel.appliedForJobReferees.Count < 2)
+            {
+                error = "<ul>";
+                error += $"<li>Please enter atleast two personal referees. </li>";
+            }
             else
             {
                 await SavingDialog.ShowAsync();
