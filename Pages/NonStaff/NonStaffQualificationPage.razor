@@ -33,6 +33,10 @@
         font-size: 16px;
         opacity: 0.4;
     }
+
+    .mibtnclas {
+        color: green;
+    }
 </style>
 
 <div class="row">
@@ -55,9 +59,12 @@
             <SfDataManager AdaptorInstance="@typeof(NonStaffQualificationAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
             <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
             <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+            
+            @* CellSaved="CellSavedHandler" *@
+            
             <GridEvents 
                         CellSelected="CellSelectHandler"
-                        CellSaved="CellSavedHandler"
+                        
                         OnBatchAdd="BatchAddHandler"
                         CommandClicked="OnCommandClicked"
                         TValue="NonStaffQualification">
@@ -156,13 +163,7 @@
             <GridPageSettings PageSize="20"></GridPageSettings>
             <GridColumns>
                 <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
-                @*<GridColumn HeaderText="Edit"
-                            Width="40"
-                            TextAlign="TextAlign.Left">
-                    <GridCommandColumns>
-                        <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit"></GridCommandColumn>
-                    </GridCommandColumns>
-                </GridColumn>*@
+                
                 <GridColumn Field=@nameof(NonStaffQualification.QualificationId) HeaderText="PatientId" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="60"></GridColumn>
                 <GridColumn Field=@nameof(NonStaffQualification.StartDate) Format="dd/MM/yyyy" HeaderText="From" Width="50"></GridColumn>
                 <GridColumn Field=@nameof(NonStaffQualification.EndDate) Format="dd/MM/yyyy" HeaderText="To" Width="50"></GridColumn>
@@ -171,13 +172,13 @@
                                 
                 <GridForeignColumn Field=@nameof(NonStaffQualification.DegreeClassId) HeaderText="Degree Class" Width="80" ForeignKeyField="@(nameof(ADegreeClass.DegreeClassId))" ForeignKeyValue="@(nameof(ADegreeClass.DegreeClassDesc))" ForeignDataSource="@DegreeClassData" AllowEditing="degreeclassenabled"></GridForeignColumn>
                 
-                <GridColumn Field=@nameof(NonStaffQualification.InstitutionName) HeaderText="Institution" Width="100">
+                @* <GridColumn Field=@nameof(NonStaffQualification.InstitutionName) HeaderText="Institution" Width="100">
                     <EditTemplate>
                         <SfAutoComplete TItem="AUniversities" TValue="string" ID="InstitutionName" @bind-Value="@((context as AUniversities).UniversityName)" DataSource="@UniversityData">
                             <AutoCompleteFieldSettings Value="UniversityName"></AutoCompleteFieldSettings>
                         </SfAutoComplete>
                     </EditTemplate>
-                </GridColumn>
+                </GridColumn> *@
                
                 <GridColumn Field=@nameof(EmployeeQualification.InstitutionName)
                             HeaderText="Institution"
@@ -196,6 +197,8 @@
                             Width="80"
                             CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
                     <GridCommandColumns>
+                        <GridCommandColumn Title="Edit" Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { IconCss = "e-icons e-edit", CssClass = "e-flat" })"></GridCommandColumn>
+                        <GridCommandColumn Title="Save" ButtonOption="@(new CommandButtonOptions() {IconCss="e-icons e-save", CssClass="e-flat mibtnclas"})" ID="Save"></GridCommandColumn>
                         <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-delete", CssClass = "e-flat"})" ID="Delete"></GridCommandColumn>
                     </GridCommandColumns>
                 </GridColumn>
@@ -342,6 +345,27 @@
                 selectedemployee = args.RowData;
                 ConfirmationText = "<p>Are you sure you want to delete this record? </p>";
                 await this.ConfirmationDeleteDialogue.ShowAsync();
+            }
+            catch (Exception ex)
+            {
+                toasterservice.ClearAll();
+                toasterservice.ShowError(ex.Message.ToString());
+            }
+            finally
+            {
+                StateHasChanged();
+            }
+
+        }
+
+        if (args.CommandColumn.ID == "Save")
+        {
+            try
+            {
+                await QualificationGrid.EndEditAsync();
+                // selectedemployee = args.RowData;
+                // ConfirmationText = "<p>Are you sure you want to delete this record? </p>";
+                // await this.ConfirmationDeleteDialogue.ShowAsync();
             }
             catch (Exception ex)
             {

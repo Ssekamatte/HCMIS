@@ -77,8 +77,8 @@
                                             </SfDropDownList>
                                         </div>
                                         <div class="col-md-4">
-                                            <label>Pass mark</label>
-                                            <SfNumericTextBox @bind-Value="@(HeaderReviewData.PassMark)" Enabled="true" Placeholder="Pass mark" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                            <label>Pass mark (%)</label>
+                                            <SfNumericTextBox @bind-Value="@(HeaderReviewData.PassMark)" Enabled="true" Placeholder="Enter Percentage" Format="N0" FloatLabelType="FloatLabelType.Never" Min="0" Max="100"></SfNumericTextBox>
                                         </div>
                                         <div class="col-md-12">
                                             <label>Summary</label>
@@ -89,7 +89,7 @@
                                         </div>
                                         <div class="col-md-4">
                                             <label>Duration</label>
-                                            <SfNumericTextBox @bind-Value="@(HeaderReviewData.TestDuration)" Enabled="true" Placeholder="Pass mark" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                            <SfNumericTextBox @bind-Value="@(HeaderReviewData.TestDuration)" Enabled="true" Placeholder="Enter Number" Min="0" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
                                         </div>
                                         <div class="col-md-4">
                                             <label>Duration Type</label>
@@ -99,7 +99,7 @@
                                         </div>
                                         <div class="col-md-4">
                                             <label>No of Question per session</label>
-                                            <SfNumericTextBox @bind-Value="@(HeaderReviewData.NoOfQuestionsPerSession)" Enabled="true" Placeholder="Enter No" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                                            <SfNumericTextBox @bind-Value="@(HeaderReviewData.NoOfQuestionsPerSession)" Enabled="true" Placeholder="Enter No" Min="0" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
                                         </div>
                                         <div class="col-md-12" style="margin-top: 10px;">
                                             <h3>Aptitude Question</h3>
@@ -183,6 +183,7 @@
                                                                                     <GridEvents 
                                                                                         CellSelected="CellSelectHandler"
                                                                                         CellSaved="CellSavedHandler"
+                                                                                        OnBatchAdd="BatchAddHandler"
                                                                                         CommandClicked="OnCommandClicked"
                                                                                         OnActionComplete="@OnAnswerActionComplete"
                                                                                         TValue="AptituddeTestQuestionAnswers">
@@ -212,16 +213,9 @@
                                                                                 </GridEditSettings>
                                                                                 <GridColumns>
                                                                                     @*<GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>*@
-                                                                                <GridColumn HeaderText="Action"
-                                                                                            TextAlign="TextAlign.Center"
-                                                                                            Width="80"
-                                                                                            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
-                                                                                    <GridCommandColumns>
-                                                                                        <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-delete", CssClass = "e-flat"})" ID="Delete"></GridCommandColumn>
-                                                                                    </GridCommandColumns>
-                                                                                </GridColumn>
+                                                                                
                                                                                     <GridColumn Field=@nameof(AptituddeTestQuestionAnswers.AptituddeTestQuestionAnswersId) HeaderText="Id" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
-                                                                                    <GridColumn Field=@nameof(AptituddeTestQuestionAnswers.Answer) HeaderText="Question" Width="200" AllowFiltering="false"></GridColumn>
+                                                                                    <GridColumn Field=@nameof(AptituddeTestQuestionAnswers.Answer) HeaderText="Answer" Width="200" AllowFiltering="false"></GridColumn>
                                                                                     @*<GridColumn HeaderText="Rating" TextAlign="TextAlign.Center" Width="150">
                                                                                         <Template Context="RadioContext">
                                                                                             @{
@@ -236,7 +230,16 @@
                                                                                     </GridColumn>*@
 
                                                                                     <GridColumn Field=@nameof(AptituddeTestQuestionAnswers.IsCorrectAnswer) HeaderText="Correct Answer" Width="120" DisplayAsCheckBox="true" AllowEditing="true">
-                                                                                    
+
+                                                                            <GridColumn HeaderText="Action"
+                                                                                        TextAlign="TextAlign.Center"
+                                                                                        Width="80"
+                                                                                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+                                                                                <GridCommandColumns>
+                                                                                    <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-delete", CssClass = "e-flat"})" ID="Delete"></GridCommandColumn>
+                                                                                </GridCommandColumns>
+                                                                            </GridColumn>
+
                                                                                     </GridColumn>
                                                                                     @*<GridColumn Field=@nameof(AptituddeTestQuestionAnswers.IsCorrectAnswer) HeaderText="Is Correct Answer" Width="120" AllowFiltering="false"></GridColumn>*@
                                                                                 </GridColumns>
@@ -456,6 +459,8 @@
     string ConfirmationText { get; set; }
     AptituddeTestQuestionAnswers selectedemployee { get; set; }
     SfDialog SavingDialog { get; set; }
+    int random = -9999;
+
 
     private ToolbarType Tooltype = ToolbarType.MultiRow;
     private List<ToolbarItemModel> Tools = new List<ToolbarItemModel>()
@@ -905,6 +910,12 @@
         {
             // throw ex;
         }
+    }
+
+    public void BatchAddHandler(BeforeBatchAddArgs<AptituddeTestQuestionAnswers> Args)
+    {
+        Args.DefaultData.AptituddeTestQuestionAnswersId = random;
+        random++;
     }
 
     public async Task OnCommandClicked(CommandClickEventArgs<AptituddeTestQuestionAnswers> args)
