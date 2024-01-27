@@ -8,133 +8,155 @@
     var Div = (new string[] { "BscPerspectiveTypeId"});
 }
 
+<div class="col-md-12">
+    @if (!string.IsNullOrEmpty(RegisterError))
+    {
+        <p class="alert-danger" style="padding:10px;">
+            @RegisterError
+        </p>
+    }
+</div>
 
-<SfGrid @ref="@ChildDataGrid"
-        TValue="ABscKpidetails"
-        ID="ChGrid"
-        DataSource="@datasource"
-        AllowPaging="false"
-        AllowFiltering="false"
-        AllowReordering="true"
-        AllowResizing="true"
-        AllowGrouping="true"
-        AllowExcelExport="true"
-        AllowPdfExport="true"
-        AllowSelection="true"
-        AllowSorting="true"
-        AllowTextWrap="true" GridLines="GridLine.Both" Height="600px">
-    <GridEditSettings AllowAdding="false" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false">
+<div class="col-md-12">
 
-    </GridEditSettings>
+    <SfGrid @ref="@ChildDataGrid"
+            TValue="ABscKpidetails"
+            ID="ChGrid"
+            DataSource="@datasource"
+            AllowPaging="false"
+            AllowFiltering="false"
+            AllowReordering="true"
+            AllowResizing="true"
+            AllowGrouping="true"
+            AllowExcelExport="true"
+            AllowPdfExport="true"
+            AllowSelection="true"
+            AllowSorting="true"
+            AllowTextWrap="true" GridLines="GridLine.Both" Height="600px">
+        <GridEditSettings AllowAdding="false" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false">
 
-    <GridGroupSettings Columns="@Div" ShowDropArea="false">
-        <CaptionTemplate Context="HeaderCaptionTemplateContext">
-            @{
-                dvn = (HeaderCaptionTemplateContext as CaptionTemplateContext);
+        </GridEditSettings>
 
-                string text = string.Empty;
-                if (dvn.Field == "BscPerspectiveTypeId" && BscPerspectiveTypeData != null)
-                {
-                    var data = BscPerspectiveTypeData.FirstOrDefault(o => o.BscPerspectiveTypeId.ToString() == dvn.Key);
-                    if (data != null)
+        <GridGroupSettings Columns="@Div" ShowDropArea="false">
+            <CaptionTemplate Context="HeaderCaptionTemplateContext">
+                @{
+                    dvn = (HeaderCaptionTemplateContext as CaptionTemplateContext);
+
+                    string text = string.Empty;
+                    if (dvn.Field == "BscPerspectiveTypeId" && BscPerspectiveTypeData != null)
                     {
-                        text = "Perspective: " + data.BscPerspectiveTypeDescription;
-                    }
-                }
-                <div><p class="pp"><strong>@text</strong></p></div>
-            }
-        </CaptionTemplate>
-    </GridGroupSettings>
-
-    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
-    <GridPageSettings PageSizes="true"></GridPageSettings>
-
-    <GridAggregates>
-        <GridAggregate>
-            <GridAggregateColumns>
-                <GridAggregateColumn Field=@nameof(ABscKpidetails.IndividualTargetWeight) Type="Syncfusion.Blazor.Grids.AggregateType.Sum">
-                    <GroupFooterTemplate>
-                        @{
-                            aggregate = (context as AggregateTemplateContext);
-                            <div>
-                                <p span style="color:Purple;">Total: @aggregate.Sum</p>
-                            </div>
+                        var data = BscPerspectiveTypeData.FirstOrDefault(o => o.BscPerspectiveTypeId.ToString() == dvn.Key);
+                        if (data != null)
+                        {
+                            text = "Perspective: " + data.BscPerspectiveTypeDescription;
                         }
-                    </GroupFooterTemplate>
-                </GridAggregateColumn>
-            </GridAggregateColumns>
-        </GridAggregate>
-    </GridAggregates>
+                    }
+                    <div><p class="pp"><strong>@text</strong></p></div>
+                }
+            </CaptionTemplate>
+        </GridGroupSettings>
 
-    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell" CellSelectionMode="CellSelectionMode.Box"></GridSelectionSettings>
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+        <GridPageSettings PageSizes="true"></GridPageSettings>
 
-    <GridEvents CellSelected="PerspectiveCellSelectHandler"
-                QueryCellInfo="QueryCellInfoHandlerChild"
-                OnActionComplete="DetailActionComplete"
-                CellSaved="OnCellSaved"
-                OnCellSave="CellSaveHandler"
-                OnBatchSave="BatchSave"
-                TValue="ABscKpidetails">
-    </GridEvents>
+        <GridAggregates>
+            <GridAggregate>
+                <GridAggregateColumns>
+                    <GridAggregateColumn Field=@nameof(ABscKpidetails.IndividualTargetWeight) Type="Syncfusion.Blazor.Grids.AggregateType.Sum">
+                        <GroupFooterTemplate>
+                            @{
+                                aggregate = (context as AggregateTemplateContext);
+                                <div>
+                                    @if (isentryvalid == true)
+                                    {
+                                        <p span style="color:Purple;">Total: @aggregate.Sum</p>
+                                    }
+                                    else
+                                    {
+                                        <p span style="color:red;">Total: @aggregate.Sum</p>
+                                        // <p>You have validation errors</p>
+                                    }
 
-    <GridColumns>
-        <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
+                                </div>
+                            }
+                        </GroupFooterTemplate>
+                    </GridAggregateColumn>
+                </GridAggregateColumns>
+            </GridAggregate>
+        </GridAggregates>
 
-        <GridColumn Field=@nameof(ABscKpidetails.BsckpidetailsId)
-                    HeaderText="BsckpidetailsId"
-                    AllowEditing="false"
-                    IsPrimaryKey="true"
-                    Width="80"
-                    Visible="false"
-                    CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr3" }})">
-        </GridColumn>
-        <GridForeignColumn Field=@nameof(ABscKpidetails.BscPerspectiveTypeId)
-                           HeaderText="Perspective"
-                           Width="90"
-                           AllowEditing="false"
-                           ForeignKeyField="@(nameof(ABscPerspectivesType.BscPerspectiveTypeId))"
-                           ForeignKeyValue="@(nameof(ABscPerspectivesType.BscPerspectiveTypeDescription))"
-                           ForeignDataSource="@BscPerspectiveTypeData"
-                           AllowFiltering="false"
-                           IsFrozen="false"
-                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
-        </GridForeignColumn>
+        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell" CellSelectionMode="CellSelectionMode.Box"></GridSelectionSettings>
 
-        <GridColumn Field=@nameof(ABscKpidetails.Objective)
-                    HeaderText="Objective (s)"
-                    TextAlign="TextAlign.Justify"
-                    AllowEditing="true"
-                    ValidationRules="@(new ValidationRules { Required = false })"
-                    Width="150"
-                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
-        </GridColumn>
+        <GridEvents CellSelected="PerspectiveCellSelectHandler"
+                    QueryCellInfo="QueryCellInfoHandlerChild"
+                    OnActionComplete="DetailActionComplete"
+                    CellSaved="OnCellSaved"
+                    OnCellSave="CellSaveHandler"
+                    OnBatchSave="BatchSave"
+                    TValue="ABscKpidetails">
+        </GridEvents>
 
-        <GridColumn Field=@nameof(ABscKpidetails.IndividualTargetWeight)
-                    HeaderText="Individual Target Weight"
-                    TextAlign="TextAlign.Justify"
-                    AllowEditing="true"
-                    ValidationRules="@(new ValidationRules { Required = true, Min = 1 , Max=100 })"
-                    EditType="EditType.NumericEdit"
-                    Format="###.##"
-                    Width="50"
-                    EditorSettings="@(new NumericEditCellParams() {Params = new Syncfusion.Blazor.Inputs.NumericTextBoxModel<object>(){ShowSpinButton=false}})"
-                    ClipMode="ClipMode.EllipsisWithTooltip"
-                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
-        </GridColumn>
+        <GridColumns>
+            <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
 
-        <GridForeignColumn Field=@nameof(ABscKpidetails.MeasurementMetricId)
-                           HeaderText="Basic Unit"
-                           TextAlign="TextAlign.Justify"
-                           Width="60"
-                           AllowEditing="true"
-                           ValidationRules="@(new ValidationRules { Required = true})"
-                           ForeignKeyField="@(nameof(AMeasurementMetric.MeasurementMetricId))"
-                           ForeignKeyValue="@(nameof(AMeasurementMetric.MeasurementMetricDesc))"
-                           ForeignDataSource="@MeasurementUnitData"
-                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
-        </GridForeignColumn>
-    </GridColumns>
-</SfGrid>
+            <GridColumn Field=@nameof(ABscKpidetails.BsckpidetailsId)
+                        HeaderText="BsckpidetailsId"
+                        AllowEditing="false"
+                        IsPrimaryKey="true"
+                        Width="80"
+                        Visible="false"
+                        CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr3" }})">
+            </GridColumn>
+            <GridForeignColumn Field=@nameof(ABscKpidetails.BscPerspectiveTypeId)
+                               HeaderText="Perspective"
+                               Width="90"
+                               AllowEditing="false"
+                               ForeignKeyField="@(nameof(ABscPerspectivesType.BscPerspectiveTypeId))"
+                               ForeignKeyValue="@(nameof(ABscPerspectivesType.BscPerspectiveTypeDescription))"
+                               ForeignDataSource="@BscPerspectiveTypeData"
+                               AllowFiltering="false"
+                               IsFrozen="false"
+                               CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+            </GridForeignColumn>
+
+            <GridColumn Field=@nameof(ABscKpidetails.Objective)
+                        HeaderText="Objective (s)"
+                        TextAlign="TextAlign.Justify"
+                        AllowEditing="true"
+                        ValidationRules="@(new ValidationRules { Required = false })"
+                        Width="150"
+                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+            </GridColumn>
+
+            <GridColumn Field=@nameof(ABscKpidetails.IndividualTargetWeight)
+                        HeaderText="Individual Target Weight"
+                        TextAlign="TextAlign.Justify"
+                        AllowEditing="true"
+                        ValidationRules="@(new ValidationRules { Required = true, Min = 1 , Max=100 })"
+                        EditType="EditType.NumericEdit"
+                        Format="###.##"
+                        Width="50"
+                        EditorSettings="@(new NumericEditCellParams() {Params = new Syncfusion.Blazor.Inputs.NumericTextBoxModel<object>(){ShowSpinButton=false}})"
+                        ClipMode="ClipMode.EllipsisWithTooltip"
+                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+            </GridColumn>
+
+            <GridForeignColumn Field=@nameof(ABscKpidetails.MeasurementMetricId)
+                               HeaderText="Basic Unit"
+                               TextAlign="TextAlign.Justify"
+                               Width="60"
+                               AllowEditing="true"
+                               ValidationRules="@(new ValidationRules { Required = true})"
+                               ForeignKeyField="@(nameof(AMeasurementMetric.MeasurementMetricId))"
+                               ForeignKeyValue="@(nameof(AMeasurementMetric.MeasurementMetricDesc))"
+                               ForeignDataSource="@MeasurementUnitData"
+                               CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+            </GridForeignColumn>
+        </GridColumns>
+    </SfGrid>
+
+</div>
+
 
 @code {
     [Parameter]
@@ -151,10 +173,20 @@
     public List<ABscPerspectivesType>? BscPerspectiveTypeDataRepeated { get; set; }
     [Parameter]
     public List<AMeasurementMetric>? MeasurementUnitData { get; set; }
-        
+
     Syncfusion.Blazor.Grids.CaptionTemplateContext? dvn { get; set; }
     Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
     int? previousBsckpiid { get; set; }
+    [Parameter]
+    public ViewABscPerspectivesDetail? perspweightsfinancial { get; set; }
+    [Parameter]
+    public ViewABscPerspectivesDetail? perspweightsinternal { get; set; }
+    [Parameter]
+    public ViewABscPerspectivesDetail? perspweightscustomer { get; set; }
+    [Parameter]
+    public ViewABscPerspectivesDetail? perspweightslearning { get; set; }
+    bool isentryvalid = true;
+    string? RegisterError { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -201,7 +233,7 @@
     {
         try
         {
-            
+
 
         }
         catch (Exception ex)
@@ -242,10 +274,93 @@
 
 
     public async void CellSaveHandler(CellSaveArgs<ABscKpidetails> args)
-    {
+    {        
+        List<double?> _summation = new List<double?>();
+        double sumtotal = 0;
+
+
         if (!object.Equals(args.Value, args.PreviousValue))
         {
-            await ChildDataGrid.EndEditAsync();
+            var datainfo = await ChildDataGrid.GetCurrentViewRecordsAsync();
+
+            var filteredList = datainfo.Where(x => x.BscPerspectiveTypeId == args.RowData.BscPerspectiveTypeId).ToList();
+
+            foreach (var n in filteredList)
+            {
+                _summation.Add(n.IndividualTargetWeight);
+            }
+
+            sumtotal = _summation.Sum(x => Convert.ToInt32(x));
+
+            double newsumtotal = (sumtotal - Convert.ToDouble(args.PreviousValue)) + Convert.ToDouble(args.Value);
+            //toastService.ShowError("Value is " + newsumtotal);
+
+            @if (perspweightscustomer != null && ((newsumtotal > perspweightscustomer.PerspectiveTotalWeight) || (newsumtotal < perspweightscustomer.PerspectiveTotalWeight)) && args.RowData.BscPerspectiveTypeId == 3)
+            {
+                isentryvalid = false;
+                //args.Cancel = true;
+                RegisterError = "Please ensure your set customer perspective weights equal to:" + perspweightscustomer.WeightPercentage;
+                //toastService.ShowError("Value is " + sumtotal);
+            }
+            else if (perspweightsfinancial != null && ((newsumtotal > perspweightsfinancial.PerspectiveTotalWeight) || (newsumtotal < perspweightsfinancial.PerspectiveTotalWeight)) && args.RowData.BscPerspectiveTypeId == 1)
+            {
+                isentryvalid = false;
+                //args.Cancel = true;
+                RegisterError = "Please ensure your set financial perspective weights equal to : " + perspweightsfinancial.WeightPercentage;
+                //toastService.ShowError("Value is " + sumtotal);
+            }
+            else if (perspweightsinternal != null && ((newsumtotal > perspweightsinternal.PerspectiveTotalWeight) || (newsumtotal < perspweightsinternal.PerspectiveTotalWeight)) && args.RowData.BscPerspectiveTypeId == 2)
+            {
+                isentryvalid = false;
+                //args.Cancel = true;
+                RegisterError = "Please ensure your set internal perspective weights equal to:" + perspweightsinternal.WeightPercentage;
+                //toastService.ShowError("Value is " + sumtotal);
+            }
+            else if (perspweightslearning != null && ((newsumtotal > perspweightslearning.PerspectiveTotalWeight) || (newsumtotal < perspweightslearning.PerspectiveTotalWeight)) && args.RowData.BscPerspectiveTypeId == 4)
+            {
+                isentryvalid = false;
+                //args.Cancel = true;
+                RegisterError = "Please ensure your set learning perspective weights equal to:" + perspweightslearning.WeightPercentage;
+                //toastService.ShowError("Value is " + sumtotal);
+            }
+            else
+            {
+                isentryvalid = true;
+                RegisterError = string.Empty;
+                //args.Cancel = false;
+                await ChildDataGrid.EndEditAsync();
+                //toastService.ShowError("Value is Okay");
+            }
+
+
+            
+
+            //After End Edit
+
+
+            // var datainfo = await ChildDataGrid.GetCurrentViewRecordsAsync();
+            // var filteredList = datainfo.Where(x => x.BscPerspectiveTypeId == args.RowData.BscPerspectiveTypeId).ToList();
+
+            // foreach (var n in filteredList)
+            // {
+            //     _summation.Add(n.IndividualTargetWeight);
+            // }
+            // sumtotal = _summation.Sum(x => Convert.ToInt32(x));
+                        
+
+            // @if (perspweightscustomer != null && (sumtotal > perspweightscustomer.PerspectiveTotalWeight))
+            // {
+            //     args.Cancel = true;
+            //     toastService.ShowError("Value is " + sumtotal);
+            // }
+            // else
+            // {
+            //     args.Cancel = false;
+            //     toastService.ShowError("Value is Okay" );
+            // }
+
+            //After End Edit
+
             // get the row index using the primarykey value
             // var RowIndex = await GridInstance.GetRowIndexByPrimaryKey(e.RowData.OrderID);
             // // edit the selected cell using the cell index and column name

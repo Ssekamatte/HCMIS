@@ -127,6 +127,7 @@
     public bool DepartmentDD { get; set; }
     public bool JobTitleDD = false;
     Query? IndicatorQuery { get; set; }
+    string imagepath;
 
     protected override async Task OnInitializedAsync()
     {
@@ -141,6 +142,15 @@
             Credentials = await AuthService.GetUserCredentials();
 
             List<Task> t = new List<Task>();
+            t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetImagePath");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        imagepath = content;
+                    }
+                }));
 
             t.Add(Task.Run(async () =>
                 {
@@ -351,42 +361,25 @@
                     DivisionStyle.EndUpdate();
 
                     #endregion
+                    worksheet.Range["B1"].AutofitColumns();
+                    worksheet.Range["B1:B2"].Merge();
 
 
                     //Logo
-                    worksheet.Range["A1"].AutofitColumns();
-                    worksheet.Range["A1:B2"].Merge();
-                    var images = await UtilityRepo.GetLocalLogos();
-                    byte[]? _imagebyte = null;
-                    if (images != null && images.Count > 0)
-                    {
-                        var NHCC = images.FirstOrDefault(o => o.ImageName.Contains("logonhcc"));
-                        if (NHCC != null)
-                        {
 
-                            NHCCLogo = NHCC.ImageString;
-                            NHCCLogoName = NHCC.ImageName;
-                            if (!string.IsNullOrEmpty(NHCC.ImageString))
-                            {
-                                var a = NHCC.ImageString.Split(";base64,");
-                                _imagebyte = Convert.FromBase64String(a[1]);
-                            }
+                    //var basePath = @".\wwwroot\Image";
+                    //string basePath = $@"{ hostEnvironment.ContentRootPath }\wwwroot\image";
+                    FileStream imageStream = new FileStream(imagepath + @"/logonhcc.png", FileMode.Open, FileAccess.Read);
 
-                        }
-                    }
-                    if (_imagebyte != null && _imagebyte.Length > 0)
-                    {
-                        MemoryStream _ms = new MemoryStream(_imagebyte);
+                    IPictureShape shape = worksheet.Pictures.AddPicture(1, 1, imageStream);
+                    //Re-sizing a Picture
+                    shape.Height = 70;
+                    shape.Width = 80;
+                    shape.Left = 40;
+                    shape.Top = 2;
 
-                        IPictureShape shape = worksheet.Pictures.AddPicture(1, 1, _ms);
-                        //Re-sizing a Picture
-                        shape.Height = 70;
-                        shape.Width = 140;
-                        //shape.IsSizeWithCell = true;
-                        //shape.IsMoveWithCell = true;
-                        shape.Left = 5;
-                        shape.Top = 2;
-                    }
+                    //New
+
                     //Logo
 
                     int row = 1;

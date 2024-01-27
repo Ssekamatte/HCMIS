@@ -72,6 +72,10 @@ using static HCMIS.Pages.NonStaff.NonStaffQualificationAttachmentPage;
 using static HCMIS.Pages.Utilities.LogInLogsPage;
 using static HCMIS.Pages.Utilities.JobTitlePage;
 using static HCMIS.Pages.Utilities.DepartmentPage;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.FileProviders;
+
+
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.Services.AddSyncfusionBlazor();
 builder.Services.AddMudServices();
@@ -178,6 +182,7 @@ builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, HCMISAuthStateProvider>();
 builder.Services.AddScoped<IUtilityRepository,UtilityRepository>();
 builder.Services.AddScoped<IAuthenticationService,AuthenticationService>();
+
 
 //builder.Services.AddSyncfusionBlazor(options => { options.IgnoreScriptIsolation = false; });
 Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Mjk5OTUxOEAzMjM0MmUzMDJlMzBqNjMyUXFBTTB0OEh1N1NmUlZHZTZlVzc4amo1ZCtQWHZadnF0dTBnKy9rPQ==");

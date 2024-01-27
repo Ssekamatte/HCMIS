@@ -371,11 +371,35 @@
                                                     Telephone contact during Leave<span style="color:red;">*</span>
                                                 </td>
                                                 <td>
-                                                    <SfTextBox Multiline="false"
+                                                    @*<SfTextBox Multiline="false"
                                                     @bind-Value="@(LeaveData.Telephone)"
                                                                Enabled="@OnSubmitButtonsBool"
                                                                FloatLabelType="FloatLabelType.Never">
-                                                    </SfTextBox>
+                                                    </SfTextBox>*@
+
+                                                    <SfDropDownList TValue="int?" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" TItem="ACountry" Width="50px" DataSource="CountryData" PopupWidth="300px" @bind-Value="@(LeaveData.CountryId)">
+                                                        <DropDownListTemplates TItem="ACountry">
+                                                            <ItemTemplate Context="itemcontext">
+                                                                <div>
+                                                                    <p><img className="empImage" src="https://flagcdn.com/16x12/@((itemcontext as ACountry).Eimg).png" height="11px" width="20px" alt="employee" />  @((itemcontext as ACountry).CountryDesc)  @((itemcontext as ACountry).CountryCode)</p>
+
+                                                                </div>
+                                                            </ItemTemplate>
+                                                            <ValueTemplate Context="valuecontext">
+                                                                <div>
+                                                                    <img className="empImage" src="https://flagcdn.com/16x12/@((valuecontext as ACountry).Eimg).png" height="11px" width="20px" alt="employee" />
+                                                                </div>
+                                                            </ValueTemplate>
+                                                        </DropDownListTemplates>
+                                                        <DropDownListFieldSettings Value="CoutryId" Text="CountryDesc"></DropDownListFieldSettings>
+                                                        <DropDownListEvents TValue="int?" TItem="ACountry" ValueChange="changeHandler"></DropDownListEvents>
+                                                    </SfDropDownList>
+
+                                                    <SfTextBox Multiline="false" ID="DialCode" @bind-Value="@(LeaveData.DialCode)" FloatLabelType="FloatLabelType.Never" Enabled="false" Width="50px"></SfTextBox>
+
+                                                    <SfMaskedTextBox Mask="@maskvalue" @bind-Value="@(LeaveData.Telephone)" Width="100px" Enabled="@(LeaveData.CountryId == null ? false : true)"></SfMaskedTextBox>
+
+
                                                 </td>
                                             </tr>
 
@@ -481,7 +505,7 @@
                                             {
                                                 @if (LeaveData != null && LeaveData.LeaveTypeId == 4)
                                                 {                                                    
-                                                    <div class="col-md-4">
+                                                    <div class="col-md-4" hidden>
                                                         <p>No. of Children:<span style="color:red;">*</span></p>
                                                         <SfNumericTextBox TValue="int?" @bind-Value="@(LeaveData.NoChildren)" Enabled="OnSubmitButtonsBool" Format="N0" Min="1">
                                                             @*<NumericTextBoxEvents TValue="int?" ValueChange="ChildrenChange"></NumericTextBoxEvents>*@
@@ -514,22 +538,24 @@
                                                 else if (leavetypedays != null && (LeaveData.LeaveTypeId != 2 && LeaveData.LeaveTypeId != 4) &&
                                                     (LeaveData.TotalDays > @leavetypedays.LeaveDaysPerYear))
                                                 {
-                                                    <h6>
+                                                    <h6 style="margin-top: 10px;">
                                                         You have exceeded the @leavetypedays.LeaveDaysPerYear working days allocated.
                                                         Kindly reduce on the number of days.
                                                     </h6>
                                                 }
+                                                
                                                 else
                                                 {
                                                     <div class="col-md-3">
                                                         <p style="margin-top:10px;">Days Entitled:</p>
-                                                        @if (leavetypedays != null && leavetypedays.LeaveTypeId != 4)
+                                                        @*@if (leavetypedays != null && leavetypedays.LeaveTypeId != 4)*@
+                                                        @if (leavetypedays != null)
                                                         {
                                                             @leavetypedays.LeaveDaysPerYear
                                                         }
                                                         else if (leavetypedays != null && leavetypedays.LeaveTypeId == 4)
                                                         {
-                                                            <p>@leavetypedays.LeaveDaysPerYear Days Per Child</p>
+                                                            <p>@leavetypedays.LeaveDaysPerYear Days</p>
                                                         }
                                                     </div>
 
@@ -570,12 +596,21 @@
                                                 }                                                
                                             }
                                             
-                                            <div  class="col-md-12">
-                                                @if (LeaveData != null && LeaveData.LeaveTypeId == 3)
-                                                {
+                                            @if (LeaveData != null && LeaveData.LeaveTypeId == 3)
+                                            {
+                                                 <div class="col-md-12">
+                                                    <p style="margin-top:10px;">Any further explanation can be given here:</p>
+                                                    <SfTextBox Multiline="true" rows="4"
+                                                               @bind-Value="@(LeaveData.OtherDetails)"
+                                                               Enabled="@OnSubmitButtonsBool"
+                                                               FloatLabelType="FloatLabelType.Never">
+                                                    </SfTextBox>
+
                                                     <h6 style="background-color:#2c3e50; color:ghostwhite;margin-top: 10px;">NB: YOU ARE REQUIRED TO UPLOAD EVIDENCE FOR SICK LEAVE APPLICATION.OTHERWISE IT MIGHT NOT BE GRANTED</h6>
-                                                }
-                                            </div>
+                                                 </div>
+                                                
+                                            }
+
                                         </div>
                                     </ContentTemplate>
                                 </AccordionItem>
@@ -1148,6 +1183,9 @@
     bool RejectionCommentsSection = false;
     private DialogSettings AttachmentDialog = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "95%" };
     int _recallnewtotaldays = 0;
+    public string maskvalue { get; set; } = "000 000 000 0";
+    List<ACountry>? CountryData { get; set; }
+
 
     private List<object> ToolbarMenu = new List<object>()
     {
@@ -1169,6 +1207,15 @@
     //     }
     // }
 
+    public async void changeHandler(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ACountry> args)
+    {
+        if (args.Value != null)
+        {
+            var _countrycode = CountryData.FirstOrDefault(o => o.CoutryId == args.ItemData.CoutryId);
+            LeaveData.DialCode = _countrycode.CountryCode;
+        }
+
+    }
 
     private void ToggleRejectionComments(List<EmployeeLeaveRejectionComments>? HODCommentsChange)
     {
@@ -1243,6 +1290,16 @@
                 MainQuery = new Query();
 
                 List<Task> t = new List<Task>();
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responsecountry = await Http.GetAsync($"Utilities/GetCountry");
+                    if (responsecountry.IsSuccessStatusCode)
+                    {
+                        var contentcountry = await responsecountry.Content.ReadAsStringAsync();
+                        CountryData = JsonSerializer.Deserialize<List<ACountry>>(contentcountry, _options);
+                    }
+                }));
 
                 t.Add(Task.Run(async () =>
                 {
@@ -1363,10 +1420,14 @@
     {
         try
         {
-            var existingdates = LeaveDataSource.Where(o => (o.LeaveApprovalStatusId == 9) && 
+            // var existingdates = LeaveDataSource.Where(o => (o.LeaveApprovalStatusId == 9) && 
+            // ((LeaveData.CommencementDate >= o.CommencementDate && LeaveData.CommencementDate <= o.EndDate)
+            // || (LeaveData.EndDate <= o.EndDate && LeaveData.EndDate >= o.CommencementDate)
+            // && (o.LeaveTypeId == LeaveData.LeaveTypeId && o.Employeeid == LeaveData.Employeeid))).ToList();
+
+            var existingdates = LeaveDataSource.Where(o => ((o.LeaveApprovalStatusId == 9 && o.LeaveTypeId == LeaveData.LeaveTypeId && o.Employeeid == LeaveData.Employeeid) &&
             ((LeaveData.CommencementDate >= o.CommencementDate && LeaveData.CommencementDate <= o.EndDate)
-            || (LeaveData.EndDate <= o.EndDate && LeaveData.EndDate >= o.CommencementDate)
-            && (o.LeaveTypeId == LeaveData.LeaveTypeId && o.Employeeid == LeaveData.Employeeid))).ToList();
+            || (LeaveData.EndDate <= o.EndDate && LeaveData.EndDate >= o.CommencementDate)))).ToList();
 
             if(LeaveData.Employeeid == null)
             {
@@ -1388,15 +1449,15 @@
                 toastService.ShowWarning("Please select the leave type");
             }
 
-            else if (LeaveData.LeaveTypeId == 4 && LeaveData.NoChildren == null)
-            {
-                toastService.ShowWarning("Please enter the number of children");
-            }
+            // else if (LeaveData.LeaveTypeId == 4 && LeaveData.NoChildren == null)
+            // {
+            //     toastService.ShowWarning("Please enter the number of children");
+            // }
 
-            else if (LeaveData.LeaveTypeId == 4 && LeaveData.NoChildren == null)
-            {
-                toastService.ShowWarning("Please enter the number of children");
-            }
+            // else if (LeaveData.LeaveTypeId == 4 && LeaveData.NoChildren == null)
+            // {
+            //     toastService.ShowWarning("Please enter the number of children");
+            // }
 
             else if (LeaveData.LeaveTypeId == 3 && LeaveData.EmployeeLeaveHeaderAttachment.Count <= 0)
             {
@@ -1853,6 +1914,19 @@
         LeaveData.TotalDays = null;
         LeaveData.NoChildren = null;
         LeaveData.NoDaysAppliedFor = null;
+        TotalDaysTakenPrior = 0;
+
+        //For Sick Leave - Open the Dates
+        if(args.ItemData.LeaveTypeId == 3)
+        {
+            MinDate = new DateTime(2000, 01, 01);
+            MaxDate = new DateTime(DateTime.Now.Year, 12, 31); 
+        }
+        else
+        {
+            MinDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
+            MaxDate = new DateTime(DateTime.Now.Year, 12, 31); 
+        }
 
         StateHasChanged();
     }
@@ -1865,9 +1939,10 @@
     protected async Task OnMaternityDateChange(ChangedEventArgs<DateTime?> args)
     {
         leavetypedays = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == LeaveData.LeaveTypeId);
+        StartDate = Convert.ToDateTime(args.Value);
 
         //Annual
-        if(LeaveData.LeaveTypeId == 1 )
+        if (LeaveData.LeaveTypeId == 1 || LeaveData.LeaveTypeId == 5)
         {
             EndDateEnablerBool = true;
             LeaveData.EndDate = null;
@@ -1876,10 +1951,8 @@
             LeaveData.TotalDays = 0;
         }
         //Compassionate and Maternity and Sick Leave
-        else if(LeaveData.LeaveTypeId == 2 || LeaveData.LeaveTypeId == 3 || LeaveData.LeaveTypeId == 5 )
-        {            
-            StartDate = Convert.ToDateTime(args.Value);
-
+        else if(LeaveData.LeaveTypeId == 2 || LeaveData.LeaveTypeId == 3/*  || LeaveData.LeaveTypeId == 5  */)
+        {                        
             DateTime EndDateWeekDays = GetWeekDaysOnly(StartDate, leavetypedays.LeaveDaysPerYear.Value).AddDays(0); // Subtract one day inorder to get end date as the actual date the leave ends
 
             PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDateWeekDays);
@@ -1905,24 +1978,26 @@
             }   
 
             //Compassionate leave
-            else if(LeaveData.LeaveTypeId == 5)
-            {
-                EndDateEnablerBool = false;
-                LeaveData.NoDaysAppliedFor = leavetypedays.LeaveDaysPerYear.Value;
-            }             
+            // else if(LeaveData.LeaveTypeId == 5)
+            // {
+            //     EndDateEnablerBool = false;
+            //     LeaveData.NoDaysAppliedFor = leavetypedays.LeaveDaysPerYear.Value;
+            // }             
         }
 
         //Parternity
         else if(LeaveData.LeaveTypeId == 4 )
         {
             EndDateEnablerBool = false;
-            TotalPaternalDays = (leavetypedays.LeaveDaysPerYear.Value * Convert.ToInt32(LeaveData.NoChildren));
+            TotalPaternalDays = leavetypedays.LeaveDaysPerYear.Value;
+            // TotalPaternalDays = (leavetypedays.LeaveDaysPerYear.Value * Convert.ToInt32(LeaveData.NoChildren));
 
             DateTime EndDateWeekDays = GetWeekDaysOnly(StartDate, TotalPaternalDays).AddDays(0);
 
             LeaveData.TotalDays = TotalPaternalDays;
             PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDateWeekDays);
             LeaveData.EndDate = EndDateWeekDays.AddDays(PublicHolidays);
+            LeaveData.NoDaysAppliedFor = TotalPaternalDays;
         }
 
 
@@ -2089,6 +2164,11 @@
                 IsHiddenRejected = true;
                 IsHiddenRecall = true;
 
+                //Clear fields on add
+
+                // leavetypedays.LeaveDaysPerYear = 0;
+                TotalDaysTakenPrior = 0;
+
                 Args.RowData.DateAdded = DateTime.Now;
                 Args.RowData.FinancialYearId = finyearid;
                 Args.RowData.RecordStatusId = 1;
@@ -2114,7 +2194,7 @@
                     employeeno = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
                     employeenosupervisor = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
                     employeenohodchange = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
-                    employeeactingofficer = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
+                    //employeeactingofficer = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
 
                     //Assign the CHRO
                     var _data = EmployeeData.FirstOrDefault(o => o.JibTitleId == 44);
