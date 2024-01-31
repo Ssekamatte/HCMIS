@@ -23,6 +23,7 @@ namespace HCMIS.ViewModel
         public List<ALanguageProlific>? LanguageProlific { get; set; }
         public List<ALanguages>? Languages { get; set; }
         public List<AUniversities>? Universities { get; set; }
+        public List<AShortlist>? ShortlistDetail { get; set; }
     }
 
     public class EmployeeRegistrationModel

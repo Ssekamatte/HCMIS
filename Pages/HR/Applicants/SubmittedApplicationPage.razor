@@ -1,6 +1,7 @@
 ﻿@page "/SubmittedApplicationPage"
 @using HCMIS.DTOs
 @using System.Collections
+@using HCMIS.Data
 @using HCMIS.Interface
 @using System.Text.Json;
 @using HCMIS.Model;
@@ -41,174 +42,218 @@
     }
 </style>
 
-<BreadcrumbPage CategoryName="Applications" PageName="Newly Submitted"/>
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="color: brown;">
+        <strong>
+            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
+        </strong>| SUBMITTED APPLICATIONS
+    </li>
+</ol>
 
-<SfGrid @ref=@AppliedForJobGrid TValue="AppliedForJobDTO" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
-        AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true"
-        Toolbar="@(new string[] {"Edit","Update","Cancel","ColumnChooser"})">
-    <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
-    <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
-    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
-    <GridPageSettings PageSize="20"></GridPageSettings>
-    <SfDataManager AdaptorInstance="@typeof(SubmittedApplicationAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-    <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
-        <Template>
-            @{
-                HeaderReviewData = (context as AppliedForJobDTO);
-                if(HeaderReviewData != null){
-                  <div class="row">
-                        <HCMIS.Pages.HR.Applicants.PartialPages.ApplicantHeaderPartialPage HeaderReviewData="@HeaderReviewData"/>
-                      <div class="col-md-12">
-                         <SfTab>
-                             <TabItems>
-                                <TabItem>
-                                     <ChildContent>
-                                         <TabHeader Text="Process Comments"></TabHeader>
-                                     </ChildContent>
-                                     <ContentTemplate>
-                                         <div style="margin:10px; width:100%;">
-                                                <HCMIS.Pages.HR.Applicants.PartialPages.ApplicationCommentPartialPage AppliedForJobsCommentData="@HeaderReviewData.AppliedForJobsCommentData" />
-                                         </div>
-                                     </ContentTemplate>
-                                 </TabItem>
-                                 <TabItem>
-                                     <ChildContent>
-                                         <TabHeader Text="Qualifications"></TabHeader>
-                                     </ChildContent>
-                                     <ContentTemplate>
-                                         <div style="margin:10px; width:100%;">
-                                                <HCMIS.Pages.HR.Applicants.PartialPages.QualificationPartialPage 
-                                                QualificationData="@HeaderReviewData.Qualification" FieldOfStudyData="@FieldOfStudyData"
-                                                JobDescriptionKnowledgeData ="@HeaderReviewData.JobDescriptionKnowledgeData"
-                                                 LevelofEducationData="@LevelofEducationData" AccessToken="@AccessToken"/>
-                                         </div>
-                                     </ContentTemplate>
-                                 </TabItem>
-                                 <TabItem>
-                                     <ChildContent>
-                                         <TabHeader Text="Work Experience"></TabHeader>
-                                     </ChildContent>
-                                     <ContentTemplate>
-                                         <div style="margin:10px; width:100%;">
-                                                <HCMIS.Pages.HR.Applicants.PartialPages.WorkExperiencePatialPage 
-                                                JobDescriptionWorkExperienceRequirementData=@HeaderReviewData.JobDescriptionWorkExperienceRequirementData
-                                                JobDescriptionResponsibilityData=@HeaderReviewData.JobDescriptionResponsibilityData
-                                                WorkExperienceData="@HeaderReviewData.WorkExperience" AccessToken="@AccessToken" />
-                                         </div>
-                                     </ContentTemplate>
-                                 </TabItem>
-                                    <TabItem>
-                                        <ChildContent>
-                                            <TabHeader Text="Skills"></TabHeader>
-                                        </ChildContent>
-                                        <ContentTemplate>
-                                            <div style="margin:10px; width:100%;">
-                                                <HCMIS.Pages.HR.Applicants.PartialPages.SkillsPartialPage SkillsData="@HeaderReviewData.Skills"
-                                                                                                  SkillLevelData="@SkillLevelData" AccessToken="@AccessToken" />
+@* <BreadcrumbPage CategoryName="Applications" PageName="Newly Submitted"/> *@
+
+<MudOverlay @bind-Visible="@loadingspinner" DarkBackground="true" AutoClose="false" Absolute="true">
+<SfSpinner @bind-Visible="loadingspinner" Type="@Syncfusion.Blazor.Spinner.SpinnerType.Bootstrap" Size="70" Label="Page loading">
+</SfSpinner>
+</MudOverlay>
+
+<div class="form-row">
+    <div class="form-group col-md-12">
+        <SfAccordion ExpandMode="@ExpandMode.Single">
+            <AccordionItems>
+                <AccordionItem Expanded="false" CssClass="const">
+                    <HeaderTemplate>Search Panel</HeaderTemplate>
+                    <ContentTemplate>
+                        <HCMIS.Pages.HR.Applicants.PartialPages.SubmittedApplicationsSearchPage 
+                            ShortlistDetailData="@ShortlistDetailData" 
+                            listid="@listid" 
+                            onsearchtoggle="@ToggleSearchQuery">
+                        </HCMIS.Pages.HR.Applicants.PartialPages.SubmittedApplicationsSearchPage>
+                    </ContentTemplate>
+                </AccordionItem>
+            </AccordionItems>
+        </SfAccordion>
+    </div>
+</div>
+
+<div class="form-group col-md-12">
+    <SfGrid @ref=@AppliedForJobGrid TValue="AppliedForJobs" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+            AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true"
+            Query="@MainQuery">
+        <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+        <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+        <GridPageSettings PageSize="20"></GridPageSettings>
+        <SfDataManager AdaptorInstance="@typeof(SubmittedApplicationAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+        <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
+            <Template>
+                @{
+                    HeaderReviewData = (context as AppliedForJobs);
+                    if (HeaderReviewData != null)
+                    {
+                        <div class="row">
+                            <HCMIS.Pages.HR.Applicants.PartialPages.ApplicantHeaderPartialPage HeaderReviewData="@HeaderReviewData" />
+                            <div class="col-md-12">
+                                <SfTab>
+                                    <TabItems>
+                                        <TabItem>
+                                            <ChildContent>
+                                                <TabHeader Text="Process Comments"></TabHeader>
+                                            </ChildContent>
+                                            <ContentTemplate>
+                                                <div style="margin:10px; width:100%;">
+                                                    <HCMIS.Pages.HR.Applicants.PartialPages.ApplicationCommentPartialPage AppliedForJobsComment="@HeaderReviewData.AppliedForJobsComment" />
+                                                </div>
+                                            </ContentTemplate>
+                                        </TabItem>
+                                        <TabItem>
+                                            <ChildContent>
+                                                <TabHeader Text="Qualifications"></TabHeader>
+                                            </ChildContent>
+                                            <ContentTemplate>
+                                                <div style="margin:10px; width:100%;">
+                                                    <HCMIS.Pages.HR.Applicants.PartialPages.QualificationPartialPage QualificationData="@HeaderReviewData.NonStaff.NonStaffQualification.ToList()" FieldOfStudyData="@FieldOfStudyData"
+                                                                                                                     JobDescriptionKnowledgeData="@HeaderReviewData.JobOpening.JobDescription.JobDescriptionKnowledge.ToList()"
+                                                                                                                     LevelofEducationData="@LevelofEducationData" AccessToken="@AccessToken" />
+                                                </div>
+                                            </ContentTemplate>
+                                        </TabItem>
+                                        <TabItem>
+                                            <ChildContent>
+                                                <TabHeader Text="Work Experience"></TabHeader>
+                                            </ChildContent>
+                                            <ContentTemplate>
+                                                <div style="margin:10px; width:100%;">
+                                                    <HCMIS.Pages.HR.Applicants.PartialPages.WorkExperiencePatialPage JobDescriptionWorkExperienceRequirementData=@HeaderReviewData.JobOpening.JobDescription.JobDescriptionWorkExperienceRequirement.ToList()
+                                                                                                                     JobDescriptionResponsibilityData=@HeaderReviewData.JobOpening.JobDescription.JobDescriptionResponsibility.ToList()
+                                                                                                                     WorkExperienceData="@HeaderReviewData.NonStaff.NonStaffWorkExperience.ToList()" AccessToken="@AccessToken" />
+                                                </div>
+                                            </ContentTemplate>
+                                        </TabItem>
+                                        <TabItem>
+                                            <ChildContent>
+                                                <TabHeader Text="Skills"></TabHeader>
+                                            </ChildContent>
+                                            <ContentTemplate>
+                                                <div style="margin:10px; width:100%;">
+                                                    <HCMIS.Pages.HR.Applicants.PartialPages.SkillsPartialPage SkillsData="@HeaderReviewData.NonStaff.NonStaffSkills.ToList()"
+                                                                                                              SkillLevelData="@SkillLevelData" AccessToken="@AccessToken" />
+                                                </div>
+                                            </ContentTemplate>
+                                        </TabItem>
+                                        <TabItem>
+                                            <ChildContent>
+                                                <TabHeader Text="Languages Known"></TabHeader>
+                                            </ChildContent>
+                                            <ContentTemplate>
+                                                <div style="margin:10px; width:100%;">
+                                                    <HCMIS.Pages.HR.Applicants.PartialPages.LanguageKnownPartialPage KnownLanguageData="@HeaderReviewData.NonStaff.NonStaffLanguagesKnown.ToList()"
+                                                                                                                     LanguageProlificData="@LanguageProlificData" LanguagesData="@LanguagesData" />
+                                                </div>
+                                            </ContentTemplate>
+                                        </TabItem>
+                                        <TabItem>
+                                            <ChildContent>
+                                                <TabHeader Text="Referees"></TabHeader>
+                                            </ChildContent>
+                                            <ContentTemplate>
+                                                <div style="margin:10px; width:100%;">
+                                                    <HCMIS.Pages.HR.Applicants.PartialPages.RefereesPartialPage JobRefereesData="@HeaderReviewData.AppliedForJobReferees.ToList()"
+                                                                                                                CountryData="@CountryData" />
+                                                </div>
+                                            </ContentTemplate>
+                                        </TabItem>
+                                    </TabItems>
+                                </SfTab>
+                            </div>
+                            <div class="col-md-12">
+                                <SfDialog @ref=@ConfirmationDialog Visible=false Width="50%" EnableResize=true AllowDragging=true
+                                          CloseOnEscape=false ShowCloseIcon=false IsModal=true Target=".page">
+                                    <DialogTemplates>
+                                        <Header>
+                                            <h1>Confirmation</h1>
+                                        </Header>
+                                        <Content>
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    @*<p>Are you sure you would like to approve @HeaderReviewData.FullName</p>*@
+                                                    <p>Are you sure you would like to approve @HeaderReviewData.Employee</p>
+                                                </div>
                                             </div>
-                                        </ContentTemplate>
-                                    </TabItem>
-                                    <TabItem>
-                                        <ChildContent>
-                                            <TabHeader Text="Languages Known"></TabHeader>
-                                        </ChildContent>
-                                        <ContentTemplate>
-                                            <div style="margin:10px; width:100%;">
-                                            <HCMIS.Pages.HR.Applicants.PartialPages.LanguageKnownPartialPage KnownLanguageData="@HeaderReviewData.LanguagesKnown"
-                                             LanguageProlificData="@LanguageProlificData" LanguagesData="@LanguagesData"/>
+                                        </Content>
+                                        <FooterTemplate>
+                                            <button class="btn btn-primary" @onclick=@ConfirmationYes>Yes Continue</button>
+                                            <button class="btn btn-danger" @onclick=@ConfirmationNo>Cancel</button>
+                                        </FooterTemplate>
+                                    </DialogTemplates>
+                                </SfDialog>
+                            </div>
+                            <div class="col-md-12">
+                                <SfDialog @ref=@CommentDialog Visible=false Width="50%" EnableResize=true AllowDragging=true
+                                          CloseOnEscape=false ShowCloseIcon=false IsModal=true Target=".page">
+                                    <DialogTemplates>
+                                        <Header>
+                                            <h1>Decission Comment</h1>
+                                        </Header>
+                                        <Content>
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <p>Please Enter a comment</p>
+                                                </div>
+                                                <div class="col-md-12">
+                                                    @if (CommentModel != null)
+                                                    {
+                                                        <SfTextBox Multiline=true @bind-Value=@(CommentModel.CommentDesc) Placeholder="Comment" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                    }
+                                                </div>
                                             </div>
-                                        </ContentTemplate>
-                                    </TabItem>
-                                    <TabItem>
-                                        <ChildContent>
-                                            <TabHeader Text="Referees"></TabHeader>
-                                        </ChildContent>
-                                        <ContentTemplate>
-                                            <div style="margin:10px; width:100%;">
-                                                <HCMIS.Pages.HR.Applicants.PartialPages.RefereesPartialPage JobRefereesData="@HeaderReviewData.appliedForJobReferees"
-                                                CountryData="@CountryData"/>
-                                            </div>
-                                        </ContentTemplate>
-                                    </TabItem>
-                             </TabItems>
-                         </SfTab>
-                      </div>
-                        <div class="col-md-12">
-                            <SfDialog @ref=@ConfirmationDialog Visible=false Width="50%" EnableResize=true AllowDragging=true
-                              CloseOnEscape=false ShowCloseIcon=false IsModal=true Target=".page">
-                                <DialogTemplates>
-                                <Header>
-                                    <h1>Confirmation</h1>
-                                </Header>
-                                    <Content> 
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <p>Are you sure you would like to approve @HeaderReviewData.FullName</p>
-                                            </div>
-                                        </div>
-                                    </Content>
-                                    <FooterTemplate>
-                                        <button class="btn btn-primary" @onclick=@ConfirmationYes>Yes Continue</button>
-                                        <button class="btn btn-danger" @onclick=@ConfirmationNo>Cancel</button>
-                                    </FooterTemplate>
-                                </DialogTemplates>
-                            </SfDialog>
-                      </div>
-                        <div class="col-md-12">
-                            <SfDialog @ref=@CommentDialog Visible=false Width="50%" EnableResize=true AllowDragging=true
-                              CloseOnEscape=false ShowCloseIcon=false IsModal=true Target=".page">
-                                <DialogTemplates>
-                                    <Header>
-                                        <h1>Decission Comment</h1>
-                                    </Header>
-                                    <Content>
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <p>Please Enter a comment</p>
-                                            </div>
-                                            <div class="col-md-12">
-                                                @if (CommentModel != null)
-                                                {
-                                                    <SfTextBox Multiline=true @bind-Value=@(CommentModel.CommentDesc) Placeholder="Comment" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                                                }
-                                            </div>
-                                        </div>
-                                    </Content>
-                                    <FooterTemplate>
-                                        <button class="btn btn-primary" @onclick=@SaveComment>Save Record</button>
-                                        <button class="btn btn-danger" @onclick=@CancelComment>Cancel</button>
-                                    </FooterTemplate>
-                                </DialogTemplates>
-                            </SfDialog>
+                                        </Content>
+                                        <FooterTemplate>
+                                            <button class="btn btn-primary" @onclick=@SaveComment>Save Record</button>
+                                            <button class="btn btn-danger" @onclick=@CancelComment>Cancel</button>
+                                        </FooterTemplate>
+                                    </DialogTemplates>
+                                </SfDialog>
+                            </div>
                         </div>
-                  </div>
+                    }
                 }
-            }
-        </Template>
-        <FooterTemplate>
-            <button class="btn btn-primary" @onclick=@ApproveApplicant>Approve Applicant</button>
-            <button class="btn btn-dark" @onclick=@RejectApplicant>Reject Applicant</button>
-            <button class="btn btn-danger" @onclick=@SaveApplicant>Save Application</button>
-        </FooterTemplate>
-    </GridEditSettings>
-    <GridColumns>
-        <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobDTO.AppliedForJobsId))" Visible=false IsPrimaryKey=true IsIdentity=true HeaderText="Ref Id" Width="120" AllowFiltering="true"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobDTO.ReferenceNumber))" HeaderText="Ref No" Width="120" AllowFiltering="true"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobDTO.DepartmentDescription))" HeaderText="Department" Width="120" AllowFiltering="true"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobDTO.JobTitleDescription))" HeaderText="Job Title" Width="120" AllowFiltering="true"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobDTO.FullName))" HeaderText="Name" Width="120" AllowFiltering="true"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobDTO.GenderDesc))" HeaderText="Gender" Width="120" AllowFiltering="true"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobDTO.DoB))" HeaderText="Date of Birth" Width="120" AllowFiltering="true"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobDTO.EmailAddress))" HeaderText="Email" Width="120" AllowFiltering="true"></GridColumn>
-    </GridColumns>
-</SfGrid>
+            </Template>
+            <FooterTemplate>
+                <button class="btn btn-primary" @onclick=@ApproveApplicant>Approve Applicant</button>
+                <button class="btn btn-dark" @onclick=@RejectApplicant>Reject Applicant</button>
+                <button class="btn btn-danger" @onclick=@SaveApplicant>Save Application</button>
+            </FooterTemplate>
+        </GridEditSettings>
+        <GridColumns>
+            @* <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn> *@
+            <GridColumn HeaderText="Manage"
+                        Width="40"
+                        CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"
+                        TextAlign="TextAlign.Left">
+                <GridCommandColumns>
+                    <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit/View"></GridCommandColumn>
+                </GridCommandColumns>
+            </GridColumn>
+            <GridColumn Field="@(nameof(AppliedForJobs.AppliedForJobsId))" Visible=true IsPrimaryKey=true IsIdentity=true HeaderText="Ref Id" Width="120" AllowFiltering="true"></GridColumn>
+            <GridColumn Field="@(nameof(AppliedForJobs.JobReferenceNo))" HeaderText="Ref No" Width="120" AllowFiltering="true"></GridColumn>
+            @* <GridColumn Field="@(nameof(AppliedForJobs.DepartmentDescription))" HeaderText="Department" Width="120" AllowFiltering="true"></GridColumn>
+            <GridColumn Field="@(nameof(AppliedForJobs.JobTitleDescription))" HeaderText="Job Title" Width="120" AllowFiltering="true"></GridColumn>
+            <GridColumn Field="@(nameof(AppliedForJobs.FullName))" HeaderText="Name" Width="120" AllowFiltering="true"></GridColumn>
+            <GridColumn Field="@(nameof(AppliedForJobs.GenderDesc))" HeaderText="Gender" Width="120" AllowFiltering="true"></GridColumn>
+            <GridColumn Field="@(nameof(AppliedForJobs.DoB))" HeaderText="Date of Birth" Width="120" AllowFiltering="true"></GridColumn>
+            <GridColumn Field="@(nameof(AppliedForJobs.EmailAddress))" HeaderText="Email" Width="120" AllowFiltering="true"></GridColumn> *@
+        </GridColumns>
+    </SfGrid>
+</div>
+
+
 
 @code {
     SfDialog? ConfirmationDialog;
     SfDialog? CommentDialog;
-    SfGrid<AppliedForJobDTO>? AppliedForJobGrid { get; set; }
-    AppliedForJobDTO? HeaderReviewData { get; set; }
+    SfGrid<AppliedForJobs>? AppliedForJobGrid { get; set; }
+    AppliedForJobs? HeaderReviewData { get; set; }
     AppliedForJobsComment? CommentModel { get; set; }
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "80vh", Width = "96%" };
     List<ACountry>? CountryData { get; set; }
@@ -217,47 +262,97 @@
     List<ALanguages>? LanguagesData { get; set; }
     List<ALanguageProlific>? LanguageProlificData { get; set; }
     List<ASkillLevel>? SkillLevelData { get; set; }
+    List<AShortlist>? ShortlistDetailData { get; set; }
     string? AccessToken { get; set; }
-        LoginResultModel? Credentials { get; set; }
-
+    LoginResultModel? Credentials { get; set; }
+    public int? listid { get; set; }
+    public AppraisalSearch searchpanel { get; set; } = new AppraisalSearch();
+    public Query MainQuery = new Query();
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    public bool loadingspinner { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        await base.OnInitializedAsync();
-
-        var isAuthenticated = await AuthService.CheckAuthenticationStatus();
-        if (isAuthenticated == false)
+        try
         {
-            navManager.NavigateTo("/LoginPage", true);
+            loadingspinner = true;
+            await base.OnInitializedAsync();
+
+
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
+            {
+                navManager.NavigateTo("/LoginPage", true);
+            }
+
+            else
+            {
+                Credentials = await AuthService.GetUserCredentials();
+                var tasks = new List<Task>();
+                tasks.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"NonStaff/GetRegistrationPrimartData");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var _ExternalRegistrationModel = JsonSerializer.Deserialize<ExternalRegistrationModel>(content, _options);
+
+                        if (_ExternalRegistrationModel != null)
+                        {
+                            if (_ExternalRegistrationModel.Coutry != null)
+                            {
+                                CountryData = _ExternalRegistrationModel.Coutry.OrderBy(o => o.CountryDesc).ToList();
+                            }
+                            FieldOfStudyData = _ExternalRegistrationModel.FieldOfStudy;
+                            LevelofEducationData = _ExternalRegistrationModel.LevelofEducation;
+                            SkillLevelData = _ExternalRegistrationModel.SkillLevel;
+                            LanguageProlificData = _ExternalRegistrationModel.LanguageProlific;
+                            LanguagesData = _ExternalRegistrationModel.Languages;
+                            ShortlistDetailData = _ExternalRegistrationModel.ShortlistDetail;
+
+                            if (ShortlistDetailData != null)
+                            {
+                                listid = 1;
+                                List<int?> _listid = new List<int?>();
+                                _listid.Add(listid);
+                                searchpanel.ShortlistId = _listid.ToArray();
+                                MainQuery = new Query().AddParams("MeetsRequirements", string.Join(",", searchpanel.ShortlistId));
+                            }
+                        }
+                    }
+                }));
+
+                Task _t = Task.WhenAll(tasks);
+                await _t;
+            }
+        }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            loadingspinner = false;
         }
 
-        else
-        {
-            Credentials = await AuthService.GetUserCredentials();
-            var tasks = new List<Task>();
-            tasks.Add(Task.Run(async () =>
-            {
-                var response = await Http.GetAsync($"NonStaff/GetRegistrationPrimartData");
-                var content = await response.Content.ReadAsStringAsync();
-                if (response.IsSuccessStatusCode)
-                {
-                    var _ExternalRegistrationModel = JsonSerializer.Deserialize<ExternalRegistrationModel>(content, _options);
+    }
 
-                    if (_ExternalRegistrationModel != null)
-                    {
-                        if (_ExternalRegistrationModel.Coutry != null)
-                        {
-                            CountryData = _ExternalRegistrationModel.Coutry.OrderBy(o => o.CountryDesc).ToList();
-                        }
-                        FieldOfStudyData = _ExternalRegistrationModel.FieldOfStudy;
-                        LevelofEducationData = _ExternalRegistrationModel.LevelofEducation;
-                        SkillLevelData = _ExternalRegistrationModel.SkillLevel;
-                        LanguageProlificData = _ExternalRegistrationModel.LanguageProlific;
-                        LanguagesData = _ExternalRegistrationModel.Languages;
-                    }
-                }
-            }));
+    private void ToggleSearchQuery(Query? DetailData)
+    {
+        try
+        {
+            if (DetailData != null)
+            {
+                MainQuery = DetailData;
+            }
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            StateHasChanged();
         }
 
     }
@@ -301,11 +396,11 @@
         else
         {
             CommentModel.AppliedForJobsId = HeaderReviewData.AppliedForJobsId;
-            if (HeaderReviewData.AppliedForJobsCommentData == null)
+            if (HeaderReviewData.AppliedForJobsComment == null)
             {
-                HeaderReviewData.AppliedForJobsCommentData = new List<AppliedForJobsComment>();
+                HeaderReviewData.AppliedForJobsComment = new List<AppliedForJobsComment>();
             }
-            HeaderReviewData.AppliedForJobsCommentData.Add(CommentModel);
+            HeaderReviewData.AppliedForJobsComment.Add(CommentModel);
             CommentDialog.HideAsync();
             AppliedForJobGrid.EndEditAsync();
         }
@@ -325,7 +420,20 @@
         }
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         {
-            var data = await reopsitory.GetApplicationsAsync("1,3");
+
+            string? _ListId = null;
+
+            if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
+            {
+                var val = dataManagerRequest.Params;
+
+                if (val.FirstOrDefault(o => o.Key == "MeetsRequirements").Value != null)
+                {
+                    _ListId = val.FirstOrDefault(o => o.Key == "MeetsRequirements").Value.ToString();
+                }
+            }
+
+            var data = await reopsitory.GetApplicationsAsync("1,3",_ListId);
 
             IEnumerable GridData = data;
             int _count = data.Count;
@@ -360,20 +468,20 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<AppliedForJobDTO>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<AppliedForJobs>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
         }
         public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
         {
-            var val = (value as AppliedForJobDTO);
+            var val = (value as AppliedForJobs);
             await reopsitory.SaveUpdateApplicationAsync(val);
             return value;
         }
         public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
         {
-            var val = (value as AppliedForJobDTO);
+            var val = (value as AppliedForJobs);
             await reopsitory.SaveUpdateApplicationAsync(val);
 
             return value;

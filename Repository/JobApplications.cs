@@ -2,6 +2,7 @@
 using HCMIS.DTOs;
 using HCMIS.Interface;
 using HCMIS.SHARED.Data;
+using HCMIS.SHARED.Models;
 using HCMIS.ViewModel;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -20,18 +21,20 @@ namespace HCMIS.Repository
             this.toastService = toastService;
             this.settingsRepo = settingsRepo;
         }
-        public async Task<List<AppliedForJobDTO>?> GetApplicationsAsync(string? ApplicationStatusId)
+        public async Task<List<AppliedForJobs>?> GetApplicationsAsync(string? ApplicationStatusId, string? MeetsRequirementsId)
         {
-            List<AppliedForJobDTO> result = new List<AppliedForJobDTO>();
+            List<AppliedForJobs> result = new List<AppliedForJobs>();
             try
             {
                 string? accessToken = await settingsRepo.GetAccessToken();
                  
-                var response = await http.GetAsync($"HumanResource/GetApplicationForStatus/{ApplicationStatusId}");
+                //var response = await http.GetAsync($"HumanResource/GetApplicationForStatus/{ApplicationStatusId}");
+                //var response = await http.GetAsync($"HumanResource/GetApplicationForStatus?ApplicationStatusId={ApplicationStatusId}");
+                var response = await http.GetAsync($"HumanResource/GetApplicationForStatus?ApplicationStatusId={ApplicationStatusId}&MeetsRequirementsId={MeetsRequirementsId}");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    result = JsonSerializer.Deserialize<List<AppliedForJobDTO>>(content, _options);
+                    result = JsonSerializer.Deserialize<List<AppliedForJobs>>(content, _options);
                 }
                 else
                 {
@@ -45,7 +48,7 @@ namespace HCMIS.Repository
             return result;
         }
 
-        public async Task SaveUpdateApplicationAsync(AppliedForJobDTO data)
+        public async Task SaveUpdateApplicationAsync(AppliedForJobs data)
         {
             try
             {
@@ -81,9 +84,9 @@ namespace HCMIS.Repository
             }
         }
 
-        public async Task<List<AppliedForJobDTO>?> GetMyApplicationsAsync(string? ApplicationStatusId, string? ApplicantId)
+        public async Task<List<AppliedForJobs>?> GetMyApplicationsAsync(string? ApplicationStatusId, string? ApplicantId)
         {
-            List<AppliedForJobDTO> result = new List<AppliedForJobDTO>();
+            List<AppliedForJobs> result = new List<AppliedForJobs>();
             try
             {
                 string? accessToken = await settingsRepo.GetAccessToken();
@@ -92,7 +95,7 @@ namespace HCMIS.Repository
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    result = JsonSerializer.Deserialize<List<AppliedForJobDTO>>(content, _options);
+                    result = JsonSerializer.Deserialize<List<AppliedForJobs>>(content, _options);
                 }
                 else
                 {

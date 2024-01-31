@@ -47,7 +47,7 @@
 
 <BreadcrumbPage CategoryName="Applications" PageName="Interviews" />
 
-<SfGrid @ref=@AppliedForJobGrid TValue="AppliedForJobDTO" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+<SfGrid @ref=@AppliedForJobGrid TValue="AppliedForJobs" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
         AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true"
         Toolbar="@(new string[] {"Edit","Update","Cancel","ColumnChooser"})">
     <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
@@ -58,7 +58,7 @@
     <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
         <Template>
             @{
-                HeaderReviewData = (context as AppliedForJobDTO);
+                HeaderReviewData = (context as AppliedForJobs);
                 if (HeaderReviewData != null)
                 {
                     <div class="row">
@@ -73,7 +73,7 @@
                                         <ContentTemplate>
                                             <div style="margin:10px; width:100%;">
                                                 <HCMIS.Pages.HR.Applicants.PartialPages.ApplicationCommentPartialPage 
-                                                AppliedForJobsCommentData="@HeaderReviewData.AppliedForJobsCommentData" />
+                                                AppliedForJobsCommentData="@HeaderReviewData.AppliedForJobsComment.ToList()" />
                                             </div>
                                         </ContentTemplate>
                                     </TabItem>
@@ -83,8 +83,8 @@
                                         </ChildContent>
                                         <ContentTemplate>
                                             <div style="margin:10px; width:100%;">
-                                                <HCMIS.Pages.HR.Applicants.PartialPages.QualificationPartialPage QualificationData="@HeaderReviewData.Qualification" FieldOfStudyData="@FieldOfStudyData"
-                                                                                                         JobDescriptionKnowledgeData="@HeaderReviewData.JobDescriptionKnowledgeData"
+                                                <HCMIS.Pages.HR.Applicants.PartialPages.QualificationPartialPage QualificationData="@HeaderReviewData.NonStaff.NonStaffQualification.ToList()" FieldOfStudyData="@FieldOfStudyData"
+                                                                                                         JobDescriptionKnowledgeData="@HeaderReviewData.JobOpening.JobDescription.JobDescriptionKnowledge.ToList()"
                                                                                                          LevelofEducationData="@LevelofEducationData" AccessToken="@AccessToken" />
                                             </div>
                                         </ContentTemplate>
@@ -95,9 +95,9 @@
                                         </ChildContent>
                                         <ContentTemplate>
                                             <div style="margin:10px; width:100%;">
-                                                <HCMIS.Pages.HR.Applicants.PartialPages.WorkExperiencePatialPage JobDescriptionWorkExperienceRequirementData=@HeaderReviewData.JobDescriptionWorkExperienceRequirementData
-                                                                                                         JobDescriptionResponsibilityData=@HeaderReviewData.JobDescriptionResponsibilityData
-                                                                                                         WorkExperienceData="@HeaderReviewData.WorkExperience" AccessToken="@AccessToken" />
+                                                <HCMIS.Pages.HR.Applicants.PartialPages.WorkExperiencePatialPage JobDescriptionWorkExperienceRequirementData=@HeaderReviewData.JobOpening.JobDescription.JobDescriptionWorkExperienceRequirement.ToList()
+                                                                                                         JobDescriptionResponsibilityData=@HeaderReviewData.JobOpening.JobDescription.JobDescriptionResponsibility.ToList()
+                                                                                                         WorkExperienceData="@HeaderReviewData.NonStaff.NonStaffWorkExperience.ToList()" AccessToken="@AccessToken" />
                                             </div>
                                         </ContentTemplate>
                                     </TabItem>
@@ -107,7 +107,7 @@
                                         </ChildContent>
                                         <ContentTemplate>
                                             <div style="margin:10px; width:100%;">
-                                                <HCMIS.Pages.HR.Applicants.PartialPages.SkillsPartialPage SkillsData="@HeaderReviewData.Skills"
+                                                <HCMIS.Pages.HR.Applicants.PartialPages.SkillsPartialPage SkillsData="@HeaderReviewData.NonStaff.NonStaffSkills.ToList()"
                                                                                                   SkillLevelData="@SkillLevelData" AccessToken="@AccessToken" />
                                             </div>
                                         </ContentTemplate>
@@ -118,7 +118,7 @@
                                         </ChildContent>
                                         <ContentTemplate>
                                             <div style="margin:10px; width:100%;">
-                                                <HCMIS.Pages.HR.Applicants.PartialPages.LanguageKnownPartialPage KnownLanguageData="@HeaderReviewData.LanguagesKnown"
+                                                <HCMIS.Pages.HR.Applicants.PartialPages.LanguageKnownPartialPage KnownLanguageData="@HeaderReviewData.NonStaff.NonStaffLanguagesKnown.ToList()"
                                                                                                          LanguageProlificData="@LanguageProlificData" LanguagesData="@LanguagesData" />
                                             </div>
                                         </ContentTemplate>
@@ -129,7 +129,7 @@
                                         </ChildContent>
                                         <ContentTemplate>
                                             <div style="margin:10px; width:100%;">
-                                                <HCMIS.Pages.HR.Applicants.PartialPages.RefereesPartialPage JobRefereesData="@HeaderReviewData.appliedForJobReferees"
+                                                <HCMIS.Pages.HR.Applicants.PartialPages.RefereesPartialPage JobRefereesData="@HeaderReviewData.AppliedForJobReferees.ToList()"
                                                                                                     CountryData="@CountryData" />
                                             </div>
                                         </ContentTemplate>
@@ -147,7 +147,8 @@
                                     <Content>
                                         <div class="row">
                                             <div class="col-md-12">
-                                                <p>Are you sure you would like to approve @HeaderReviewData.FullName</p>
+                                                @*<p>Are you sure you would like to approve @HeaderReviewData.FullName</p>*@
+                                                <p>Are you sure you would like to approve @HeaderReviewData.Employee</p>
                                             </div>
                                         </div>
                                     </Content>
@@ -197,18 +198,18 @@
     </GridEditSettings>
     <GridColumns>
         <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobDTO.AppliedForJobsId))" Visible=false IsPrimaryKey=true IsIdentity=true HeaderText="Ref Id" Width="120" AllowFiltering="true"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobDTO.ReferenceNumber))" HeaderText="Ref No" Width="120" AllowFiltering="true"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobDTO.DepartmentDescription))" HeaderText="Department" Width="120" AllowFiltering="true"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobDTO.JobTitleDescription))" HeaderText="Job Title" Width="120" AllowFiltering="true"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobDTO.FullName))" HeaderText="Name" Width="120" AllowFiltering="true"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobDTO.GenderDesc))" HeaderText="Gender" Width="120" AllowFiltering="true"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobDTO.DoB))" HeaderText="Date of Birth" Width="120" AllowFiltering="true"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobDTO.EmailAddress))" HeaderText="Email" Width="120" AllowFiltering="true"></GridColumn>
+        <GridColumn Field="@(nameof(AppliedForJobs.AppliedForJobsId))" Visible=false IsPrimaryKey=true IsIdentity=true HeaderText="Ref Id" Width="120" AllowFiltering="true"></GridColumn>
+        @* <GridColumn Field="@(nameof(AppliedForJobs.ReferenceNumber))" HeaderText="Ref No" Width="120" AllowFiltering="true"></GridColumn>
+        <GridColumn Field="@(nameof(AppliedForJobs.DepartmentDescription))" HeaderText="Department" Width="120" AllowFiltering="true"></GridColumn>
+        <GridColumn Field="@(nameof(AppliedForJobs.JobTitleDescription))" HeaderText="Job Title" Width="120" AllowFiltering="true"></GridColumn>
+        <GridColumn Field="@(nameof(AppliedForJobs.FullName))" HeaderText="Name" Width="120" AllowFiltering="true"></GridColumn>
+        <GridColumn Field="@(nameof(AppliedForJobs.GenderDesc))" HeaderText="Gender" Width="120" AllowFiltering="true"></GridColumn>
+        <GridColumn Field="@(nameof(AppliedForJobs.DoB))" HeaderText="Date of Birth" Width="120" AllowFiltering="true"></GridColumn>
+        <GridColumn Field="@(nameof(AppliedForJobs.EmailAddress))" HeaderText="Email" Width="120" AllowFiltering="true"></GridColumn> *@
         <GridColumn HeaderText="Aptitudde Test">
             <GridColumns>
-                <GridColumn Field="@(nameof(AppliedForJobDTO.AptituddeTestPassMark))" HeaderText="Pass mark" Width="120" AllowFiltering="true"></GridColumn>
-                <GridColumn Field="@(nameof(AppliedForJobDTO.AptituddeTestApplicantScore))" HeaderText="Test Score" Format="N1" Width="120" AllowFiltering="true"></GridColumn>
+                <GridColumn Field="@(nameof(AppliedForJobs.AptituddeTestPassMark))" HeaderText="Pass mark" Width="120" AllowFiltering="true"></GridColumn>
+                <GridColumn Field="@(nameof(AppliedForJobs.AptituddeTestApplicantScore))" HeaderText="Test Score" Format="N1" Width="120" AllowFiltering="true"></GridColumn>
             </GridColumns>
         </GridColumn>
     </GridColumns>
@@ -217,8 +218,8 @@
 @code {
     SfDialog? ConfirmationDialog;
     SfDialog? CommentDialog;
-    SfGrid<AppliedForJobDTO>? AppliedForJobGrid { get; set; }
-    AppliedForJobDTO? HeaderReviewData { get; set; }
+    SfGrid<AppliedForJobs>? AppliedForJobGrid { get; set; }
+    AppliedForJobs? HeaderReviewData { get; set; }
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "80vh", Width = "96%" };
     List<ACountry>? CountryData { get; set; }
     List<ALevelofEducation>? LevelofEducationData { get; set; }
@@ -314,11 +315,11 @@
         else
         {
             CommentModel.AppliedForJobsId = HeaderReviewData.AppliedForJobsId;
-            if (HeaderReviewData.AppliedForJobsCommentData == null)
+            if (HeaderReviewData.AppliedForJobsComment == null)
             {
-                HeaderReviewData.AppliedForJobsCommentData = new List<AppliedForJobsComment>();
+                HeaderReviewData.AppliedForJobsComment = new List<AppliedForJobsComment>();
             }
-            HeaderReviewData.AppliedForJobsCommentData.Add(CommentModel);
+            HeaderReviewData.AppliedForJobsComment.Add(CommentModel);
             CommentDialog.HideAsync();
             AppliedForJobGrid.EndEditAsync();
         }
@@ -338,7 +339,7 @@
         }
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         {
-            var data = await reopsitory.GetApplicationsAsync("6,7");
+            var data = await reopsitory.GetApplicationsAsync("6,7",null);
 
             IEnumerable GridData = data;
             int _count = data.Count;
@@ -373,20 +374,20 @@
             {
                 foreach (var group in dataManagerRequest.Group)
                 {
-                    GridData = DataUtil.Group<AppliedForJobDTO>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                    GridData = DataUtil.Group<AppliedForJobs>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
                 }
             }
             return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
         }
         public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
         {
-            var val = (value as AppliedForJobDTO);
+            var val = (value as AppliedForJobs);
             await reopsitory.SaveUpdateApplicationAsync(val);
             return value;
         }
         public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
         {
-            var val = (value as AppliedForJobDTO);
+            var val = (value as AppliedForJobs);
             await reopsitory.SaveUpdateApplicationAsync(val);
 
             return value;

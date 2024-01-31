@@ -1,12 +1,13 @@
 ﻿using HCMIS.DTOs;
+using HCMIS.SHARED.Models;
 using HCMIS.ViewModel;
 
 namespace HCMIS.Interface
 {
     public interface IJobApplications
     {
-        Task<List<AppliedForJobDTO>?> GetApplicationsAsync(string? ApplicationStatusId);
-        Task<List<AppliedForJobDTO>?> GetMyApplicationsAsync(string? ApplicationStatusId, string? ApplicantId);
-        Task SaveUpdateApplicationAsync(AppliedForJobDTO data);
+        Task<List<AppliedForJobs>?> GetApplicationsAsync(string? ApplicationStatusId, string? MeetsRequirementsId);
+        Task<List<AppliedForJobs>?> GetMyApplicationsAsync(string? ApplicationStatusId, string? ApplicantId);
+        Task SaveUpdateApplicationAsync(AppliedForJobs data);
     }
 }

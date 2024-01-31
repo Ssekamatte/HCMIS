@@ -621,12 +621,21 @@
 
                             </div>
 
+                            <div class="col-md-6" style="margin-top:10px;">
+                                <p class="alert alert-danger"><b>Biometric Employee ID</b></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p  style="margin-bottom:29px;">Enter Employee ID from Attendance System</p>
+                                <SfNumericTextBox  TValue="int?" @bind-Value="@(EmployeeReviewData.BiometricEmployeeid)" Enabled="true" Placeholder="Enter Number" Format="N0" Min="1" FloatLabelType="FloatLabelType.Never">
+                                </SfNumericTextBox>
+                            </div>
+
                             @if(_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
                             {
-                                <div class="col-md-12" style="margin-top:10px;">
+                                <div class="col-md-6" style="margin-top:10px;">
                                     <p class="alert alert-danger"><b>Separation of Duty (To be used where necessary)</b></p>
                                 </div>
-                                <div class="col-md-12">
+                                <div class="col-md-6">
                                         <p  style="margin-bottom:29px;">Separtion of Duty (Reason)</p>
                                         <SfDropDownList @bind-Value="@(EmployeeReviewData.DutyReasonId)" Enabled="true" TItem="ASeparationofDuty" TValue="int?" DataSource="@DutyReasonData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                             <DropDownListFieldSettings Value="@nameof(ASeparationofDuty.DutyReasonId)" Text="@nameof(ASeparationofDuty.DutyReason)"></DropDownListFieldSettings>
@@ -647,6 +656,18 @@
     </GridEditSettings>
     <GridColumns>
         @*<GridColumn Type="ColumnType.CheckBox" Width="20"></GridColumn>*@
+
+        @*Visible="@hide"*@
+        <GridColumn HeaderText="MANAGE"
+            TextAlign="TextAlign.Center" 
+            Width="50"
+            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})"> 
+            <GridCommandColumns> 
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})"></GridCommandColumn>
+                <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-delete", CssClass = "e-flat"})" ID="Delete"></GridCommandColumn>
+            </GridCommandColumns> 
+        </GridColumn>
+
         <GridColumn 
             Field=@nameof(Employee.Employeeid) 
             Visible=false 
@@ -661,8 +682,9 @@
             HeaderText="EMPLOYEE NUMBER" 
             AllowEditing="false"
             CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})"
-            Width="80">
+            Width="50">
         </GridColumn>
+
         <GridColumn HeaderText="EMPLOYEE NAME" TextAlign="TextAlign.Center" Width="80"
         CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
             <Template>
@@ -682,15 +704,25 @@
             </Template>
         </GridColumn>
 
-        @*Visible="@hide"*@
-        <GridColumn HeaderText="MANAGE RECORDS"
-        TextAlign="TextAlign.Center" 
-        Width="80"
-        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})"> 
-            <GridCommandColumns> 
-                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})"></GridCommandColumn>
-                <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-delete", CssClass = "e-flat"})" ID="Delete"></GridCommandColumn>
-            </GridCommandColumns> 
+        <GridForeignColumn 
+            Field=@nameof(Employee.DepartmentId) 
+            HeaderText="DEPARTMENT" 
+            Width="80" 
+            ForeignKeyField="@(nameof(ADepartment.DepartmentId))" 
+            ForeignKeyValue="@(nameof(ADepartment.DepartmentDescription))" 
+            ForeignDataSource="@DepartmentData"  
+            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})"
+            FilterSettings="@(new FilterSettings{ Operator = Operator.Contains })">
+        </GridForeignColumn>
+
+        <GridColumn Field=@nameof(Employee.DateJoined)
+                        HeaderText="DATE JOINED"
+                        Format="dd/MMMM/yyyy"
+                        TextAlign="TextAlign.Justify"
+                        Width="60"
+                        ClipMode="ClipMode.EllipsisWithTooltip"
+                        Type="ColumnType.Date"
+                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
         </GridColumn>
 
         @*<GridColumn 
@@ -1126,39 +1158,40 @@
         }
     }
 
+
     protected async Task OnDOBChange(ChangedEventArgs<DateTime?> value)
     {
         DateTime today = DateTime.Today;
         DateTime dob = Convert.ToDateTime(value.Value);
 
-            int months = today.Month - dob.Month;
-            int years = today.Year - dob.Year;
+        int months = today.Month - dob.Month;
+        int years = today.Year - dob.Year;
 
-            if (today.Day < dob.Day)
-            {
-                months--;
-            }
+        if (today.Day < dob.Day)
+        {
+            months--;
+        }
 
-            if (months < 0)
-            {
-                years--;
-                months += 12;
-            }
+        if (months < 0)
+        {
+            years--;
+            months += 12;
+        }
 
-            int days = (today - dob.AddMonths((years * 12) + months)).Days;
-                       
-            //toastService.ShowSuccess("Years , Months, Days" +years + months  + days);
+        int days = (today - dob.AddMonths((years * 12) + months)).Days;
 
-            if(years >= 18)
-            {
-                isdobvalid = true;
-                //toastService.ShowSuccess(">18");
-            }
-            else
-            {
-                isdobvalid = false;
-                //toastService.ShowSuccess("<18");
-            }
+        //toastService.ShowSuccess("Years , Months, Days" +years + months  + days);
+
+        if(years >= 18)
+        {
+            isdobvalid = true;
+            //toastService.ShowSuccess(">18");
+        }
+        else
+        {
+            isdobvalid = false;
+            //toastService.ShowSuccess("<18");
+        }
 
     }
 
@@ -1308,6 +1341,7 @@
 
         catch (Exception ex)
         {
+            toastService.ClearAll();
             toastService.ShowError(ex.Message.ToString());
         }
     }
@@ -1322,105 +1356,127 @@
     {
         try
         {
+            var _biometricid = EmployeeData.FirstOrDefault(o=>o.BiometricEmployeeid == EmployeeReviewData.BiometricEmployeeid);
+
             if (string.IsNullOrEmpty(EmployeeReviewData.FirstName))
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please fill in Employee First Name before saving this record.");
 
             }
             else if (string.IsNullOrEmpty(EmployeeReviewData.LastName))
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please fill in Employee Last Name before saving this record.");
 
             }
             else if (EmployeeReviewData.GenderId == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please select the gender.");
 
             }
             else if (EmployeeReviewData.DoB == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please enter the Date of Birth.");
 
             }
 
             else if(isdobvalid == false)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Date of birth is invalid. 18 Years and above is required");
             }
 
             else if (EmployeeReviewData.MaritalStatusId == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please select the marital status.");
 
             }
             else if (EmployeeReviewData.MobileNumber == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please enter the mobile number.");
 
             }
             else if (EmployeeReviewData.NationalityId == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please select the employee nationality of before saving this record.");
 
             }
             else if (EmployeeReviewData.PlaceofResidenceDistrictId == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please select the Employee District of Residence before saving this record.");
 
             }
             else if (EmployeeReviewData.PlaceofResidenceSubCountyId == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please select the Employee SubCounty of Residence before saving this record.");
 
             }
             else if (EmployeeReviewData.PlaceofResidenceParishId == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please select the Employee Parish of Residence before saving this record.");
 
             }
 
             else if (string.IsNullOrEmpty(EmployeeReviewData.EmployeFatherName))
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please fill in Employee Father's Name before saving this record.");
 
             }
             else if (string.IsNullOrEmpty(EmployeeReviewData.EmployeMotherName))
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please fill in Employee Mother's Name before saving this record.");
 
             }
             else if (string.IsNullOrEmpty(EmployeeReviewData.NextofKinName))
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please fill in Employee Next of Kin's Name before saving this record.");
 
             }
             else if (string.IsNullOrEmpty(EmployeeReviewData.NextofKinTelephoneNumber))
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please fill in  Next of Kin Phone Number  before saving this record.");
 
             }
             else if (EmployeeReviewData.NextofKinRelationShipId == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please select the Next of Kin Relationship with Employee before saving this record.");
 
             }
             else if (string.IsNullOrEmpty(EmployeeReviewData.ContactPersonName))
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please fill in Employee Contact Person's Name before saving this record.");
 
             }
             else if (string.IsNullOrEmpty(EmployeeReviewData.NextofKinTelephoneNumber))
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please fill in  Contact Person Phone Number  before saving this record.");
 
             }
             else if (EmployeeReviewData.ContactPersonRelationShipId == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please select the Contact Person Relationship with Employee before saving this record.");
 
             }
             else if (EmployeeReviewData.EmailAddress == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please provide the official email address.");
 
             }
@@ -1428,26 +1484,28 @@
             else if (!string.IsNullOrEmpty(EmployeeReviewData.EmailAddress) &&
             IsValid(EmployeeReviewData.EmailAddress) == false)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please enter a valid email address.");
 
             }
 
             else if (string.IsNullOrEmpty(EmployeeReviewData.NationalIdentificationNumber))
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please enter the Identification Number (e.g NIN, Driving Permint, Passport).");
 
             }
 
             else if (EmployeeReviewData.DepartmentId == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please select the department.");
 
             }
 
-
-
             else if (EmployeeReviewData.JobDescriptionId == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please select the designation.");
 
             }
@@ -1455,6 +1513,7 @@
 
             else if (EmployeeReviewData.ContractDurationId == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please select the contract type.");
 
             }
@@ -1462,20 +1521,28 @@
 
             else if (EmployeeReviewData.DateJoined == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please enter the Date of Appointment.");
 
             }
 
             else if (EmployeeReviewData.ContractEndDate == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please enter the date of end of contract.");
 
+            }
+
+            else if(_biometricid != null)
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Biometric ID " +_biometricid.BiometricEmployeeid+ " is arleady registered with " + _biometricid.EmployeeDetails);
             }
 
             else
             {
                 await LoadingDialogue.ShowAsync();
-                
+
                 if (EmployeeModelGrid != null)
                 {
                     if (EmployeeSpouseref != null && EmployeeSpouseref.AEmployeeSpouseGrid != null)
@@ -1564,7 +1631,7 @@
         try
         {
             await this.ConfirmationDeleteDialogue.HideAsync();
-            
+
             if (EmployeeModelGrid != null)
             {
                 if (EmployeeSpouseref != null && EmployeeSpouseref.AEmployeeSpouseGrid != null)
@@ -1603,6 +1670,7 @@
                 try
                 {
                     EmployeeModelGrid.Refresh();
+                    toastService.ClearAll();
                     toastService.ShowSuccess("Record Successfully Deleted");
                 }
                 catch (Exception ex)
@@ -1617,11 +1685,13 @@
             }
             else
             {
+                toastService.ClearAll();
                 toastService.ShowError("Record Not Deleted");
             }
         }
         catch (Exception ex)
         {
+            toastService.ClearAll();
             toastService.ShowError(ex.Message.ToString());
         }
         finally
@@ -1723,6 +1793,7 @@
                 var content = await response.Content.ReadAsStringAsync();
                 if (!response.IsSuccessStatusCode)
                 {
+                    toastService.ClearAll();
                     toastService.ShowError(response.ReasonPhrase);
                 }
                 data = JsonSerializer.Deserialize<List<Employee>>(content, _options);
@@ -1730,6 +1801,7 @@
             }
             catch (Exception ex)
             {
+                toastService.ClearAll();
                 toastService.ShowError(ex.Message.ToString());
             }
             finally
@@ -1798,16 +1870,19 @@
                             {
                                 if (data.IsSuccess)
                                 {
+                                    toastService.ClearAll();
                                     toastService.ShowSuccess(data.Message);
                                 }
                                 else
                                 {
+                                    toastService.ClearAll();
                                     toastService.ShowError(data.Message);
                                 }
                             }
                         }
                         else
                         {
+                            toastService.ClearAll();
                             toastService.ShowError(result.ReasonPhrase);
                         }
 
@@ -1816,6 +1891,7 @@
             }
             catch (Exception ex)
             {
+                toastService.ClearAll();
                 toastService.ShowError(ex.Message.ToString());
             }
             return value;
@@ -1844,16 +1920,19 @@
                             {
                                 if (data.IsSuccess)
                                 {
+                                    toastService.ClearAll();
                                     toastService.ShowSuccess(data.Message);
                                 }
                                 else
                                 {
+                                    toastService.ClearAll();
                                     toastService.ShowError(data.Message);
                                 }
                             }
                         }
                         else
                         {
+                            toastService.ClearAll();
                             toastService.ShowError(result.ReasonPhrase);
                         }
 
@@ -1862,6 +1941,7 @@
             }
             catch (Exception ex)
             {
+                toastService.ClearAll();
                 toastService.ShowError(ex.Message.ToString());
             }
 
@@ -1942,6 +2022,7 @@
                     {
                         if (countdata != null)
                         {
+                            toastService.ClearAll();
                             toastService.ShowWarning("This employee with the Identification Number (e.g NIN, Driving Permint, Passport) " + args.Data.NationalIdentificationNumber.Trim() + "  has arleady been registered in the system as " + countdata.FirstName + " " + countdata.MiddleName + " " + countdata.LastName + ". Record Not Saved");
                             args.Cancel = true;
                         }
@@ -1950,6 +2031,7 @@
                     {
                         if (countdata != null && countdata.Employeeid != args.Data.Employeeid)
                         {
+                            toastService.ClearAll();
                             toastService.ShowWarning("This employee with the Identification Number (e.g NIN, Driving Permint, Passport) " + args.Data.NationalIdentificationNumber.Trim() + "  has arleady been registered in the system as " + countdata.FirstName + " " + countdata.MiddleName + " " + countdata.LastName + ". Record Not Saved");
                             args.Cancel = true;
                         }
@@ -1968,6 +2050,7 @@
         }
         catch (Exception ex)
         {
+            toastService.ClearAll();
             toastService.ShowError(ex.Message.ToString());
         }
         finally
@@ -2046,6 +2129,7 @@
         }
         catch (Exception ex)
         {
+            toastService.ClearAll();
             toastService.ShowError(ex.Message.ToString());
         }
         return result;
@@ -2091,7 +2175,7 @@
             System.IO.FileInfo info = new System.IO.FileInfo(e.File.Name);
             if (e.File.ContentType.ToLower().Contains("png") || e.File.ContentType.ToLower().Contains("gif") || e.File.ContentType.ToLower().Contains("jpeg") || e.File.ContentType.ToLower().Contains("jpg"))
             {
-                
+
                 fileName = "PassportPhoto_" + EmployeeReviewData.FirstName + "_" + EmployeeReviewData.MiddleName + "_" + EmployeeReviewData.LastName + info.Extension;
                 byte[] bytes = ms.ToArray();
                 //byte[] bytes = file.Stream.ToArray();
@@ -2115,6 +2199,7 @@
 
             else
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg)");
             }
         }

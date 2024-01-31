@@ -1,4 +1,4 @@
-﻿@page "/LeaveRequestReportPage"
+﻿@page "/BiometricReportPage"
 @using HCMIS.Data;
 @using HCMIS.Model;
 @using HCMIS.SHARED.Data;
@@ -26,29 +26,29 @@
     <li class="breadcrumb-item active" style="color: brown;">
         <strong>
             <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
-        </strong>| LEAVE REQUEST REPORT - EMPLOYEE
+        </strong>| Biometric Report - EMPLOYEE
     </li>
 </ol>
 
 <EditForm Model="@InputModel" OnValidSubmit="@OnSearchSubmit">
-    <DataAnnotationsValidator/>
+    <DataAnnotationsValidator />
     <div class="row" style="margin-bottom:10px;">
 
         <div class="col col-md-3">
             <p>Employee</p>
-            <SfMultiSelect @bind-Value="@InputModel.Employeeid" TValue="int?[]" 
-            TItem="ViewEmployeeDropDown" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" 
-            Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" ShowSelectAll="true" EnableSelectionOrder="true" 
-            ShowDropDownIcon="true" FilterBarPlaceholder="Employee" FloatLabelType="FloatLabelType.Never" PopupHeight="350px" Enabled="EmployeeDD">
+            <SfMultiSelect @bind-Value="@InputModel.Employeeid" TValue="int?[]"
+                           TItem="ViewEmployeeDropDown" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                           Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" ShowSelectAll="true" EnableSelectionOrder="true"
+                           ShowDropDownIcon="true" FilterBarPlaceholder="Employee" FloatLabelType="FloatLabelType.Never" PopupHeight="350px" Enabled="EmployeeDD">
                 <MultiSelectFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></MultiSelectFieldSettings>
             </SfMultiSelect>
         </div>
 
         @*<div class="col col-md-3">
-            <p>Gender</p>
-            <SfMultiSelect @bind-Value="@InputModel.GenderId" TValue="int?[]" TItem="AGender" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@GenderData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Gender" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
-                <MultiSelectFieldSettings Value="@nameof(AGender.GenderId)" Text="@nameof(AGender.GenderDesc)"></MultiSelectFieldSettings>
-            </SfMultiSelect>
+        <p>Gender</p>
+        <SfMultiSelect @bind-Value="@InputModel.GenderId" TValue="int?[]" TItem="AGender" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@GenderData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Gender" FloatLabelType="FloatLabelType.Always" PopupHeight="350px">
+        <MultiSelectFieldSettings Value="@nameof(AGender.GenderId)" Text="@nameof(AGender.GenderDesc)"></MultiSelectFieldSettings>
+        </SfMultiSelect>
         </div>*@
         <div class="col col-md-3">
             <p>Leave Type</p>
@@ -229,7 +229,7 @@
 
                 if (Credentials != null && EmployeeData != null)
                 {
-                    var _employeedetails = EmployeeData.FirstOrDefault(o=>o.Employeeid == Credentials.StaffId);
+                    var _employeedetails = EmployeeData.FirstOrDefault(o => o.Employeeid == Credentials.StaffId);
 
                     List<int?> _employeeid = new List<int?>();
                     List<int?> _departmentid = new List<int?>();
@@ -276,7 +276,7 @@
 
         try
         {
-            var data = await reportservice.GetLeaveRequest(InputModel);
+            var data = await reportservice.GetBiometricRawData(InputModel);
             if (data.Count > 0)
             {
                 using (ExcelEngine excelEngine = new ExcelEngine())
@@ -285,7 +285,7 @@
                     application.DefaultVersion = ExcelVersion.Excel2013;
                     IWorkbook workbook = application.Workbooks.Create(1);
                     IWorksheet worksheet = workbook.Worksheets[0];
-                    worksheet.Name = "Leave Request Report";
+                    worksheet.Name = "Biometric Report";
 
                     #region Styles
                     var headerStyle = workbook.Styles.Add("headerStyle");
@@ -330,7 +330,7 @@
 
                     CategoryStyle.BeginUpdate();
                     CategoryStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
-                    CategoryStyle.Color = Syncfusion.Drawing.Color.FromArgb(0,204,0);
+                    CategoryStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 204, 0);
                     CategoryStyle.Font.Bold = true;
                     CategoryStyle.Font.FontName = "Arial";
                     CategoryStyle.Font.Size = 20f;
@@ -385,7 +385,7 @@
                     //Logo
 
                     int row = 1;
-                    worksheet.Range["A" + row].Text = "Leave Request Report";
+                    worksheet.Range["A" + row].Text = "Biometric Report";
                     worksheet.Range["A" + row + ":O" + row].CellStyle = CategoryStyle;
                     worksheet.Range["A" + row + ":O" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
                     worksheet.Range["A" + row + ":O" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
@@ -393,7 +393,7 @@
                     worksheet.Range["A" + row + ":O" + row].Merge();
                     row++;
 
-                    
+
                     //FILTERS SEARCHED BY
                     row++;
                     row++;
@@ -403,211 +403,134 @@
                     worksheet.Range[row, 1].ColumnWidth = 5;
                     worksheet.Range[row, 1].WrapText = true;
 
-                    worksheet.Range[row, 2].Text = "Leave Number";
+                    worksheet.Range[row, 2].Text = "Name";
                     worksheet.Range[row, 2].CellStyle = headerStyle;
                     worksheet.Range[row, 2].ColumnWidth = 20;
                     worksheet.Range[row, 2].WrapText = true;
 
-                    worksheet.Range[row, 3].Text = "Employee";
+                    worksheet.Range[row, 3].Text = "Date";
                     worksheet.Range[row, 3].CellStyle = headerStyle;
                     worksheet.Range[row, 3].ColumnWidth = 20;
                     worksheet.Range[row, 3].WrapText = true;
 
-                    worksheet.Range[row, 4].Text = "Department";
+                    worksheet.Range[row, 4].Text = "Week Day";
                     worksheet.Range[row, 4].CellStyle = headerStyle;
                     worksheet.Range[row, 4].ColumnWidth = 20;
                     worksheet.Range[row, 4].WrapText = true;
 
-                    worksheet.Range[row, 5].Text = "Leave Type";
+                    worksheet.Range[row, 5].Text = "Check In At";
                     worksheet.Range[row, 5].CellStyle = headerStyle;
                     worksheet.Range[row, 5].ColumnWidth = 20;
                     worksheet.Range[row, 5].WrapText = true;
 
-                    worksheet.Range[row, 6].Text = "Commencement Date";
+                    worksheet.Range[row, 6].Text = "Check Out At";
                     worksheet.Range[row, 6].CellStyle = headerStyle;
                     worksheet.Range[row, 6].ColumnWidth = 20;
                     worksheet.Range[row, 6].WrapText = true;
 
-                    worksheet.Range[row, 7].Text = "End Date";
+                    worksheet.Range[row, 7].Text = "Minutes Worked";
                     worksheet.Range[row, 7].CellStyle = headerStyle;
                     worksheet.Range[row, 7].ColumnWidth = 20;
                     worksheet.Range[row, 7].WrapText = true;
 
-                    worksheet.Range[row, 8].Text = "Total Days Taken";
-                    worksheet.Range[row, 8].CellStyle = headerStyle;
-                    worksheet.Range[row, 8].ColumnWidth = 20;
-                    worksheet.Range[row, 8].WrapText = true;
-
-                    worksheet.Range[row, 9].Text = "Supervisor";
-                    worksheet.Range[row, 9].CellStyle = headerStyle;
-                    worksheet.Range[row, 9].ColumnWidth = 20;
-                    worksheet.Range[row, 9].WrapText = true;
-
-                    worksheet.Range[row, 10].Text = "Supervisor Approval Date";
-                    worksheet.Range[row, 10].CellStyle = headerStyle;
-                    worksheet.Range[row, 10].ColumnWidth = 20;
-                    worksheet.Range[row, 10].WrapText = true;
-
-                    worksheet.Range[row, 11].Text = "Head of Department";
-                    worksheet.Range[row, 11].CellStyle = headerStyle;
-                    worksheet.Range[row, 11].ColumnWidth = 20;
-                    worksheet.Range[row, 11].WrapText = true;
-
-                    worksheet.Range[row, 12].Text = "HOD Approval Date";
-                    worksheet.Range[row, 12].CellStyle = headerStyle;
-                    worksheet.Range[row, 12].ColumnWidth = 20;
-                    worksheet.Range[row, 12].WrapText = true;
-
-                    worksheet.Range[row, 13].Text = "CHRO";
-                    worksheet.Range[row, 13].CellStyle = headerStyle;
-                    worksheet.Range[row, 13].ColumnWidth = 20;
-                    worksheet.Range[row, 13].WrapText = true;
-
-                    worksheet.Range[row, 14].Text = "Approval Date";
-                    worksheet.Range[row, 14].CellStyle = headerStyle;
-                    worksheet.Range[row, 14].ColumnWidth = 20;
-                    worksheet.Range[row, 14].WrapText = true;
-
-                    worksheet.Range[row, 15].Text = "Leave Status";
-                    worksheet.Range[row, 15].CellStyle = headerStyle;
-                    worksheet.Range[row, 15].ColumnWidth = 20;
-                    worksheet.Range[row, 15].WrapText = true;
-
                     row++;
                     int count = 1;
 
-                    foreach (var item in data)
+                    var _year = data.Select(o => o.ReportYear ).ToList().Distinct().ToList();
+                    var _month = data.Select(o => o.ReportMonth).ToList().Distinct().ToList();
+                    var _day = data.Select(o => new { o.DayNamesNo}).ToList().Distinct().ToList();
+                    var _employees = data.Select(o => new { o.HcmisemployeeId, o.EmployeeDetails }).ToList().Distinct().ToList();
+
+
+
+                    foreach (var y in _year)
                     {
-                        worksheet.Range[row, 1].Text = count.ToString();
-                        worksheet.Range[row, 2].Text = item.EmployeeLeaveNo;
-                        worksheet.Range[row, 2].VerticalAlignment = ExcelVAlign.VAlignTop;
-                        worksheet.Range[row, 2].HorizontalAlignment = ExcelHAlign.HAlignRight;
-
-                        if(item.Hod != null)
+                        foreach (var m in _month)
                         {
-                            var _resultdata = EmployeeData.FirstOrDefault(o => o.Employeeid == item.Employeeid);
-                            worksheet.Range[row, 3].Text = _resultdata.EmployeeDetails;
-                            worksheet.Range[row, 3].WrapText = true;
-                            worksheet.Range[row, 3].VerticalAlignment = ExcelVAlign.VAlignTop; 
-                            worksheet.Range[row, 3].HorizontalAlignment = ExcelHAlign.HAlignRight;
+                            foreach (var item in _employees)
+                            {
+                                if (y.HasValue && m.HasValue)
+                                {
+                                    int ndays = DateTime.DaysInMonth(y.Value, m.Value);
+                                    for (int i = 1; i <= ndays; i++)
+                                    {
+                                        var _data = data.FirstOrDefault(o => o.ReportYear == y && o.ReportMonth == m && o.ReportDay == i && o.HcmisemployeeId == item.HcmisemployeeId);
+                                        if (_data != null)
+                                        {
+                                            worksheet.Range[row, 1].Number = count;
+
+                                            worksheet.Range[row, 2].Text = item.EmployeeDetails;
+                                            if (_data.AuthDate.HasValue)
+                                            {
+                                                worksheet.Range[row, 3].Text = _data.AuthDate.Value.ToString("dd/MM/yyyy");
+                                            }
+
+
+
+                                            worksheet.Range[row, 4].Text = _data.DayNames;
+
+                                            worksheet.Range[row, 5].Text = _data.CheckIn;
+
+                                            worksheet.Range[row, 6].Text = _data.CheckOut;
+
+                                            if (_data.MinutesWorked.HasValue)
+                                            {
+                                                worksheet.Range[row, 7].Number = _data.MinutesWorked.Value;
+                                            }
+
+                                            if (_data.HoursWorked.HasValue)
+                                            {
+                                                worksheet.Range[row, 8].Number = _data.HoursWorked.Value;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            DateTime _date = new DateTime(y.Value, m.Value, i);
+                                            string dayname = _date.DayOfWeek.ToString();
+
+                                            worksheet.Range[row, 1].Number = count;
+
+                                            worksheet.Range[row, 2].Text = item.EmployeeDetails;
+
+                                            worksheet.Range[row, 3].Text = _date.ToString("dd/MM/yyyy");
+
+                                            worksheet.Range[row, 4].Text = dayname;
+
+                                            worksheet.Range[row, 5].Text = "-";
+
+                                            worksheet.Range[row, 6].Text = "-";
+
+                                            worksheet.Range[row, 7].Number = 0;
+
+                                            worksheet.Range[row, 8].Number = 0;
+                                        }
+
+                                        worksheet.Range[row, 1, row, 8].CellStyle = Style;
+                                        row++;
+                                        count++;
+                                    }
+
+                                    row++;
+                                }                                
+                            }
+
+                            row++;
                         }
-
-                        worksheet.Range[row, 4].Text = item.DepartmentDescription;
-                        worksheet.Range[row, 4].WrapText = true;
-                        worksheet.Range[row, 4].VerticalAlignment = ExcelVAlign.VAlignTop;
-                        worksheet.Range[row, 4].HorizontalAlignment = ExcelHAlign.HAlignRight;
-
-                        if(item.LeaveTypeId != null)
-                        {
-                            var _leavetype = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == item.LeaveTypeId);
-                            worksheet.Range[row, 5].Text = _leavetype.LeaveTypeDescription;
-                            worksheet.Range[row, 5].VerticalAlignment = ExcelVAlign.VAlignTop; 
-                            worksheet.Range[row, 5].HorizontalAlignment = ExcelHAlign.HAlignRight;
-
-                        }
-
-                        if (item.CommencementDate.HasValue)
-                        {
-                            worksheet.Range[row, 6].Text = item.CommencementDate.Value.ToString("dd/MM/yyyy");
-                            worksheet.Range[row, 6].VerticalAlignment = ExcelVAlign.VAlignTop;
-                            worksheet.Range[row, 6].HorizontalAlignment = ExcelHAlign.HAlignRight;
-                        }
-
-                        if (item.EndDate.HasValue)
-                        {
-                            worksheet.Range[row, 7].Text = item.EndDate.Value.ToString("dd/MM/yyyy");
-                            worksheet.Range[row, 7].VerticalAlignment = ExcelVAlign.VAlignTop; 
-                            worksheet.Range[row, 7].HorizontalAlignment = ExcelHAlign.HAlignRight;
-                        }
-
-                        if (item.NoDaysAppliedFor.HasValue)
-                        {
-                            worksheet.Range[row, 8].Number = item.NoDaysAppliedFor.Value;
-                            worksheet.Range[row, 8].VerticalAlignment = ExcelVAlign.VAlignTop; 
-                            worksheet.Range[row, 8].HorizontalAlignment = ExcelHAlign.HAlignRight;
-                        }                
-
-                        if(item.ImmediateSupervisor != null)
-                        {
-                            var _resultdata = EmployeeData.FirstOrDefault(o => o.Employeeid == item.ImmediateSupervisor);
-                            worksheet.Range[row, 9].Text = _resultdata.EmployeeDetails;
-                            worksheet.Range[row, 9].VerticalAlignment = ExcelVAlign.VAlignTop; 
-                            worksheet.Range[row, 9].HorizontalAlignment = ExcelHAlign.HAlignRight;
-                        }
-
-                        if (item.SupervisorApprovalDate.HasValue)
-                        {
-                            worksheet.Range[row, 10].Text = item.SupervisorApprovalDate.Value.ToString("dd/MM/yyyy  hh:mm:ss");
-                            worksheet.Range[row, 10].VerticalAlignment = ExcelVAlign.VAlignTop;
-                            worksheet.Range[row, 10].HorizontalAlignment = ExcelHAlign.HAlignRight;
-                        }
-
-                        if(item.Hod != null)
-                        {
-                            var _resultdata = EmployeeData.FirstOrDefault(o => o.Employeeid == item.Hod);
-                            worksheet.Range[row, 11].Text = _resultdata.EmployeeDetails;
-                            worksheet.Range[row, 11].VerticalAlignment = ExcelVAlign.VAlignTop; 
-                            worksheet.Range[row, 11].HorizontalAlignment = ExcelHAlign.HAlignRight;
-                        }
-
-                        if (item.HodapprovalDate.HasValue)
-                        {
-                            worksheet.Range[row, 12].Text = item.HodapprovalDate.Value.ToString("dd/MM/yyyy  hh:mm:ss");
-                            worksheet.Range[row, 12].VerticalAlignment = ExcelVAlign.VAlignTop; 
-                            worksheet.Range[row, 12].HorizontalAlignment = ExcelHAlign.HAlignRight;
-                        }
-
-                        if(item.Chro != null)
-                        {
-                            var _resultdata = EmployeeData.FirstOrDefault(o => o.Employeeid == item.Chro);
-                            worksheet.Range[row, 13].Text = _resultdata.EmployeeDetails;
-                            worksheet.Range[row, 13].VerticalAlignment = ExcelVAlign.VAlignTop; 
-                            worksheet.Range[row, 13].HorizontalAlignment = ExcelHAlign.HAlignRight;
-                        }
-
-                        if (item.ChroapprovalDate.HasValue)
-                        {
-                            worksheet.Range[row, 14].Text = item.ChroapprovalDate.Value.ToString("dd/MM/yyyy  hh:mm:ss");
-                            worksheet.Range[row, 14].VerticalAlignment = ExcelVAlign.VAlignTop; 
-                            worksheet.Range[row, 14].HorizontalAlignment = ExcelHAlign.HAlignRight;
-                        }
-
-                        var _leavetypestatus = ApprovalStatusData.FirstOrDefault(o => o.LeaveApprovalStatusId == item.LeaveApprovalStatusId);
-
-                        if(_leavetypestatus != null)
-                        {
-                            var color = Aspose.Svg.Drawing.Color.FromString(_leavetypestatus.LeaveApprovalStatusColor);
-                            var fontcolor = Aspose.Svg.Drawing.Color.FromString(_leavetypestatus.LeaveApprovalTextColor);
-                            int rgbColor = color.ToInt();
-                            int fontrgbColor = fontcolor.ToInt();
-
-                            worksheet.Range[row, 15].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(rgbColor);   
-                            
-                            //worksheet.Range[row, 15].CellStyle.Font.Color = Syncfusion.Drawing.Color.FromArgb(fontrgbColor);   
-
-                            worksheet.Range[row, 15].Text = _leavetypestatus.LeaveApprovalStatus;
-                            worksheet.Range[row, 15].WrapText = true;
-                            worksheet.Range[row, 15].VerticalAlignment = ExcelVAlign.VAlignTop; 
-                            worksheet.Range[row, 15].HorizontalAlignment = ExcelHAlign.HAlignRight; 
-                        }
-
-                        row += 1;
-                        count++;
-                    }
-
+                    }                    
 
                     MemoryStream ms = new MemoryStream();
                     // Save and close the document.
                     workbook.SaveAs(ms);
                     //Reset the memory stream position.
                     ms.Position = 0;
-                    string _filename = "Leave Request Report.xlsx";
+                    string _filename = "Biometric Report.xlsx";
                     filename = _filename;
                     JS.InvokeAsync<object>("saveAsFile", filename, Convert.ToBase64String(ms.ToArray()));
                     ms.Dispose();
                     workbook.Close();
                     Downloadreport = false;
                     InputModel.Response = "Report Downloaded Successfully";
+
                 }
             }
             else
@@ -617,7 +540,7 @@
                 StateHasChanged();
             }
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             toastService.ShowError(ex.ToString());
         }
@@ -634,3 +557,4 @@
     }
 
 }
+

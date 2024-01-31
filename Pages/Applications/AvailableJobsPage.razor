@@ -13,6 +13,7 @@
 @inject IAuthenticationService AuthService;
 @inject NavigationManager navManager;
 @inject IJSRuntime JSRuntime;
+@inject DocumentUploadModel _DocumentUploadModel;
 
 <style>
     /*Submit Button color on hover*/
@@ -212,6 +213,8 @@
                                     else
                                     {
                                         <div class="col-md-3" style="padding:10px;">
+                                            <button class="btn btn-success" @onclick=@(()=>{downloadJobClick(data);})><i class="oi oi-cloud-download"></i> Download</button>
+
                                             <button class="btn btn-primary" @onclick=@(()=>{viewJobClick(data);})><i class="oi oi-eye"></i> View Job</button>
                                         </div>
                                     }
@@ -296,42 +299,32 @@
                                 </tr>
                                 <tr style="font-weight: bold;">
                                     <td>Post:</td>
-                                    <td>@SelectedJobsModel.viewAvailableJobs?.JobTitleDescription?.Replace("(1)", "") - @SelectedJobsModel.viewAvailableJobs?.Vacancies Post(s) </td>
-                                </tr>
-
-                                <tr style="font-weight: bold;">
-                                    <td>Reference:</td>
-                                    <td>@SelectedJobsModel.viewAvailableJobs?.ReferenceNumber</td>
-                                </tr>
-
-                                <tr style="font-weight: bold;">
-                                    <td>Salary Scale:</td>
-                                    <td>@SelectedJobsModel.viewAvailableJobs?.SalaryScaleDescription</td>
+                                    <td style="font-weight:bold">@SelectedJobsModel.viewAvailableJobs?.JobTitleDescription?.Replace("(1)", "") - @SelectedJobsModel.viewAvailableJobs?.Vacancies Post(s) - @SelectedJobsModel.viewAvailableJobs?.ReferenceNumber </td>
                                 </tr>
 
                                 <tr style="font-weight: bold;">
                                     <td>Reports To:</td>
-                                    <td> @SelectedJobsModel.viewAvailableJobs?.ReportsToDesc?.Replace("(1)","")</td>
+                                    <td>@SelectedJobsModel.viewAvailableJobs?.ReportsToDesc</td>
                                 </tr>
 
-                                <tr>
-                                    <td style="font-weight: bold;">Qualifications:</td>
-                                    <td> @SelectedJobsModel.viewAvailableJobs?.Qualification</td>
+                                <tr style="font-weight: bold;">
+                                    <td>Responsible For:</td>
+                                    <td>@SelectedJobsModel.viewAvailableJobs?.ResponsibleFor</td>
                                 </tr>
 
-                                <tr>
-                                    <td style="font-weight: bold;">Experience:</td>
-                                    <td> @SelectedJobsModel.viewAvailableJobs?.RequiredWorkExperience</td>
+                                <tr style="font-weight: bold;">
+                                    <td>Job Purpose:</td>
+                                    <td>@SelectedJobsModel.viewAvailableJobs?.OtherRequirements</td>
                                 </tr>
 
-                                <tr>
-                                    <td style="font-weight: bold;">Other Requirements:</td>
-                                    <td> @SelectedJobsModel.viewAvailableJobs?.OtherRequirements</td>
+                                <tr style="font-weight: bold;">
+                                    <td>Key Duties and Responsibilities:</td>
+                                    <td>@((MarkupString)SelectedJobsModel.viewAvailableJobs?.JobDescription)</td>
                                 </tr>
 
-                                <tr>
-                                    <td style="font-weight: bold;">Duties and Responsibilities:</td>
-                                    <td> @((MarkupString)SelectedJobsModel.viewAvailableJobs?.JobDescription) @* @SelectedJobsModel.viewAvailableJobs?.JobDescription *@</td>
+                                <tr style="font-weight: bold;">
+                                    <td>Relevant Competencies:</td>
+                                    <td> @SelectedJobsModel.viewAvailableJobs?.RequiredWorkExperience?.Replace("(1)","")</td>
                                 </tr>
                             </table>
                         </div>
@@ -388,11 +381,11 @@
                                                             <DropDownListFieldSettings Text="@(nameof(AYesNo.YesNoDesc))" Value="@(nameof(AYesNo.YesNoId))"></DropDownListFieldSettings>
                                                         </SfDropDownList>
                                                     </div>
-                                                    <div class="col-md-6">
+                                                    @* <div class="col-md-6">
                                                         <p>NUMBER OF CHILDREN</p>
                                                         <SfNumericTextBox @bind-Value="@(appliedForJobsModel.appliedForJobs.NoOfChildren)" TValue="int?" Width="100%" Format="N0" Placeholder="Children" Step="1" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
-                                                    </div>
-                                                    <div class="col-md-12">
+                                                    </div> *@
+                                                    <div class="col-md-6">
                                                         <p>
                                                             HAVE YOU PREVIOUSLY APPLIED FOR APPOINTMENT TO THE
                                                             SERVICE OF THE COMPANY FOR ANY OTHER VACANCY?<span style="color:red;">*</span>
@@ -410,7 +403,7 @@
                                                     }
                                                     <div class="col-md-12">
                                                         <p>
-                                                            PERSONAL REFEREES <span style="color:red;">*</span>: (Give names and addresses of atleast two responsible and
+                                                            PERSONAL REFEREES <span style="color:red;">*</span>: (Give atleast two responsible and
                                                             professional persons who know you well, either in private or public life. Names of
                                                             candidate’s relatives should not be given)
                                                         </p>
@@ -419,7 +412,7 @@
                                                     <div class="col-md-12">
                                                         <SfGrid @ref="@JobRefereesGrid" TValue="AppliedForJobReferees" DataSource="@appliedForJobsModel.appliedForJobReferees"
                                                                 AllowPaging="true" AllowFiltering="true" AllowReordering="true" AllowResizing="true"
-                                                                Toolbar="@(new List<string>() {"Add"})">
+                                                                Toolbar="@(new List<string>() {"Add","Cancel"})">
                                                             <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
                                                             <GridPageSettings PageSizes="true"></GridPageSettings>
                                                             <GridEvents OnActionComplete="@OnJobRefereesActionComplete"
@@ -430,78 +423,87 @@
                                                             </GridEvents>
                                                             <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
                                                             <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
+                                                                <HeaderTemplate>
+                                                                    @{
+                                                                        var text = GetJobRefereesHeader((context as AppliedForJobReferees));
+                                                                        <div class="headerbandimg">
+                                                                            <span>@text</span>
+                                                                        </div>
+                                                                    }
+                                                                </HeaderTemplate>
                                                                 <Template>
                                                                     @{
                                                                         var ReferenceReviewData = (context as AppliedForJobReferees);
                                                                         if (ReferenceReviewData != null)
                                                                         {
                                                                             <div class="row">
-                                                                                <div class="col-md-4">
+                                                                                <div class="col-md-6">
                                                                                     <p>Name <span style="color:red;">*</span></p>
                                                                                     <SfTextBox Multiline=true @bind-Value="@(ReferenceReviewData.RefereeName)" Width="100%" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                                                                                 </div>
-                                                                                <div class="col-md-4">
+                                                                                @*<div class="col-md-4">
                                                                                     <p>Gender <span style="color:red;">*</span></p>
                                                                                     <SfDropDownList @bind-Value="@(ReferenceReviewData.GenderId)" Enabled="true" TItem="AGender" TValue="int?" DataSource="@GenderData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                                                                         <DropDownListFieldSettings Value="@nameof(AGender.GenderId)" Text="@nameof(AGender.GenderDesc)"></DropDownListFieldSettings>
                                                                                     </SfDropDownList>
-                                                                                </div>
-                                                                                <div class="col-md-4">
+                                                                                </div>*@
+                                                                                @*<div class="col-md-4">
                                                                                     <p>Nationality</p>
                                                                                     <SfDropDownList @bind-Value="@(ReferenceReviewData.CoutryId)" Enabled="true" TItem="ACountry" TValue="int?" DataSource="@CountryData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                                                                         <DropDownListFieldSettings Value="@nameof(ACountry.CoutryId)" Text="@nameof(ACountry.CountryDesc)"></DropDownListFieldSettings>
                                                                                     </SfDropDownList>
-                                                                                </div>
-                                                                                <div class="col-md-4">
+                                                                                </div>*@
+                                                                                @*<div class="col-md-4">
                                                                                     <p>Title of the Current Job <span style="color:red;">*</span></p>
                                                                                     <SfTextBox Multiline=true @bind-Value="@(ReferenceReviewData.RefereeJobTitle)" Width="100%" Placeholder="Enter Title" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                                                                                </div>
-                                                                                <div class="col-md-4">
-                                                                                    <p>Current Organisation Name <span style="color:red;">*</span></p>
+                                                                                </div>*@
+                                                                                <div class="col-md-6">
+                                                                                    <p>Current Organisation Name</p>
                                                                                     <SfTextBox Multiline=true @bind-Value="@(ReferenceReviewData.RefereeCompany)" Width="100%" Placeholder="Enter Organisation" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                                                                                 </div>
-                                                                                <div class="col-md-4">
+                                                                                <div class="col-md-6">
                                                                                     <p>Email <span style="color:red;">*</span></p>
-                                                                                    <SfTextBox Multiline=true @bind-Value="@(ReferenceReviewData.RefereeEmail)" Width="100%" Placeholder="Enter Email" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                                                    <SfTextBox Multiline=false @bind-Value="@(ReferenceReviewData.RefereeEmail)" Width="100%" Placeholder="Enter Email" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                                                                                 </div>
-                                                                                <div class="col-md-4">
+                                                                                <div class="col-md-6">
                                                                                     <p>Phone Number <span style="color:red;">*</span></p>
                                                                                     <SfNumericTextBox @bind-Value="@(ReferenceReviewData.RefereePhoneNumber)" Width="100%" Placeholder="Phone Number" FloatLabelType="FloatLabelType.Never" Format="##" Decimals="0"></SfNumericTextBox>
                                                                                 </div>
-                                                                                <div class="col-md-4">
+                                                                                <div class="col-md-6">
                                                                                     <p>Other Phone Number</p>
                                                                                     <SfNumericTextBox @bind-Value="@(ReferenceReviewData.RefereeOtherPhoneNumber)" Width="100%" Placeholder="Mobile" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
                                                                                 </div>
-                                                                                <div class="col-md-4">
+                                                                                @*<div class="col-md-4">
                                                                                     <p>Physical Address</p>
                                                                                     <SfTextBox Multiline=true @bind-Value="@(ReferenceReviewData.RefereePhysicalAddress)" Width="100%" Placeholder="Enter Address" FloatLabelType="FloatLabelType.Never"></SfTextBox>
-                                                                                </div>
+                                                                                </div>*@
                                                                             </div>
                                                                         }
                                                                     }
                                                                 </Template>
                                                             </GridEditSettings>
                                                             <GridColumns>
-                                                                @* <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn> *@
-                                                                <GridColumn Field=@nameof(AppliedForJobReferees.AppliedForRefereeId) Visible=false HeaderText="JobDescriptionId" AllowEditing="false" IsPrimaryKey="true" Width="150"></GridColumn>
-                                                                <GridColumn Field=@nameof(AppliedForJobReferees.AppliedForJobsId) Visible=false HeaderText="AppliedForJobsId" AllowEditing="false" Width="150"></GridColumn>
-                                                                <GridColumn Field=@nameof(AppliedForJobReferees.RefereeName) Visible=true HeaderText="Name" AllowEditing="true" Width="150"></GridColumn>
-                                                                <GridForeignColumn Field=@nameof(AppliedForJobReferees.GenderId) Visible=true HeaderText="Gender" AllowEditing="true" Width="100" ForeignKeyField="@(nameof(AGender.GenderId))" ForeignKeyValue="@(nameof(AGender.GenderDesc))" ForeignDataSource="@GenderData"></GridForeignColumn>
-                                                                <GridForeignColumn Field=@nameof(AppliedForJobReferees.CoutryId) Visible=true HeaderText="Nationality" AllowEditing="true" Width="120" ForeignKeyField="@(nameof(ACountry.CoutryId))" ForeignKeyValue="@(nameof(ACountry.CountryDesc))" ForeignDataSource="@CountryData"></GridForeignColumn>
-                                                                <GridColumn Field=@nameof(AppliedForJobReferees.RefereeJobTitle) Visible=true HeaderText="Title" AllowEditing="true" Width="150"></GridColumn>
-                                                                <GridColumn Field=@nameof(AppliedForJobReferees.RefereeCompany) Visible=true HeaderText="Company" AllowEditing="true" Width="150"></GridColumn>
-                                                                <GridColumn Field=@nameof(AppliedForJobReferees.RefereeEmail) Visible=true HeaderText="Email" AllowEditing="true" Width="150"></GridColumn>
-                                                                <GridColumn Field=@nameof(AppliedForJobReferees.RefereePhoneNumber) Visible=true HeaderText="Offical Phone Number" AllowEditing="true" Width="150"></GridColumn>
-                                                                <GridColumn Field=@nameof(AppliedForJobReferees.RefereePhysicalAddress) Visible=true HeaderText="Physical Address" AllowEditing="true" Width="150"></GridColumn>
                                                                 <GridColumn HeaderText="Action"
                                                                             TextAlign="TextAlign.Center"
                                                                             Width="80"
                                                                             CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
                                                                     <GridCommandColumns>
                                                                         <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})"></GridCommandColumn>
-                                                                        <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-delete", CssClass = "e-flat"})" ID="Delete"></GridCommandColumn>
+                                                                        @* <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-delete", CssClass = "e-flat"})" ID="Delete"></GridCommandColumn> *@
                                                                     </GridCommandColumns>
                                                                 </GridColumn>
+                                                                @* <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn> *@
+                                                                <GridColumn Field=@nameof(AppliedForJobReferees.AppliedForRefereeId) Visible=false HeaderText="JobDescriptionId" AllowEditing="false" IsPrimaryKey="true" Width="150"></GridColumn>
+                                                                <GridColumn Field=@nameof(AppliedForJobReferees.AppliedForJobsId) Visible=false HeaderText="AppliedForJobsId" AllowEditing="false" Width="150"></GridColumn>
+                                                                <GridColumn Field=@nameof(AppliedForJobReferees.RefereeName) Visible=true HeaderText="Name" AllowEditing="true" Width="150"></GridColumn>
+                                                                @* <GridForeignColumn Field=@nameof(AppliedForJobReferees.GenderId) Visible=true HeaderText="Gender" AllowEditing="true" Width="100" ForeignKeyField="@(nameof(AGender.GenderId))" ForeignKeyValue="@(nameof(AGender.GenderDesc))" ForeignDataSource="@GenderData"></GridForeignColumn>
+                                                                <GridForeignColumn Field=@nameof(AppliedForJobReferees.CoutryId) Visible=true HeaderText="Nationality" AllowEditing="true" Width="120" ForeignKeyField="@(nameof(ACountry.CoutryId))" ForeignKeyValue="@(nameof(ACountry.CountryDesc))" ForeignDataSource="@CountryData"></GridForeignColumn> *@
+                                                                @* <GridColumn Field=@nameof(AppliedForJobReferees.RefereeJobTitle) Visible=true HeaderText="Title" AllowEditing="true" Width="150"></GridColumn> *@
+                                                                <GridColumn Field=@nameof(AppliedForJobReferees.RefereeCompany) Visible=true HeaderText="Company" AllowEditing="true" Width="150"></GridColumn>
+                                                                <GridColumn Field=@nameof(AppliedForJobReferees.RefereeEmail) Visible=true HeaderText="Email" AllowEditing="true" Width="150"></GridColumn>
+                                                                <GridColumn Field=@nameof(AppliedForJobReferees.RefereePhoneNumber) Visible=true HeaderText="Offical Phone Number" AllowEditing="true" Width="150"></GridColumn>
+                                                                @* <GridColumn Field=@nameof(AppliedForJobReferees.RefereePhysicalAddress) Visible=true HeaderText="Physical Address" AllowEditing="true" Width="150"></GridColumn> *@
+                                                                
                                                             </GridColumns>
                                                         </SfGrid>
                                                     </div>
@@ -851,7 +853,44 @@
         //SearchText = args.Value.ToString();
         //.ToLower().IndexOf(args.Value.ToString().ToLower(), StringComparison.OrdinalIgnoreCase) >= 0)
     }
-    private void viewJobClick(ViewAvailableJobs value){
+
+    private async void downloadJobClick(ViewAvailableJobs value)
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(value.DocumentName))
+            {
+                var a = await _DocumentUploadModel.GetDocument(value.DocumentName, "JobDescription");
+
+                if (a != null && a.DocumentByte != null && a.DocumentByte.Length > 0)
+                {
+                    if (a.DocumentExt.Contains("pdf"))
+                    {
+                        string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                        JSRuntime.InvokeAsync<object>("saveAsFile", value.DocumentName, base64String);
+                    }
+                    else
+                    {
+                        string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                        JSRuntime.InvokeAsync<object>("saveAsFile", value.DocumentName, base64String);
+                    }
+
+                }
+            }
+            else
+            {
+                toastService.ShowError("Attachment is not provided for this position");
+            }
+
+        }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+    }
+
+    private void viewJobClick(ViewAvailableJobs value)
+    {
         try
         {
             SelectedJobsModel = availableJobsModel?.FirstOrDefault(o => o.viewAvailableJobs?.JobDescriptionId == value.JobDescriptionId);
@@ -907,7 +946,7 @@
             string? error = string.Empty;
             var data = appliedForJobsModel.appliedForJobs;
             if (data.AreYouRelatedToAnyCompanyStaff == null || data.EverBeenConvicted == null
-                || data.InformationAcknowledgement == false || data.NoOfChildren==null || data.PreviouslyAppliedForAjob==null)
+                || data.InformationAcknowledgement == false || /* data.NoOfChildren==null || */ data.PreviouslyAppliedForAjob==null)
             {
                 await JSRuntime.InvokeVoidAsync("OnScrollEvent");
                 //await JSRuntime.InvokeVoidAsync("topFunction");OnScrollEvent
@@ -921,10 +960,10 @@
                 {
                     error += $"<li>Please select to indicate whether you have ever been convincted or not. </li>";
                 }
-                if(data.NoOfChildren == null)
-                {
-                    error += $"<li>Please enter the number of children you have. </li>";
-                }
+                // if(data.NoOfChildren == null)
+                // {
+                //     error += $"<li>Please enter the number of children you have. </li>";
+                // }
                 if(data.PreviouslyAppliedForAjob == null)
                 {
                     error += $"<li>Please select to indicator whether you had ever applied for a job at this company or not. </li>";
@@ -1106,21 +1145,21 @@
                     toastService.ShowWarning("Please enter the name of the referee.");
                     args.Cancel = true;
                 }
-                else if (args.Data.GenderId == null)
-                {
-                    toastService.ShowWarning("Please select the gender.");
-                    args.Cancel = true;
-                }
-                else if (string.IsNullOrEmpty(args.Data.RefereeJobTitle))
-                {
-                    toastService.ShowWarning("Please enter the job title of the referee.");
-                    args.Cancel = true;
-                }
-                else if (string.IsNullOrEmpty(args.Data.RefereeCompany))
-                {
-                    toastService.ShowWarning("Please enter the organisation of the referee.");
-                    args.Cancel = true;
-                }
+                // else if (args.Data.GenderId == null)
+                // {
+                //     toastService.ShowWarning("Please select the gender.");
+                //     args.Cancel = true;
+                // }
+                // else if (string.IsNullOrEmpty(args.Data.RefereeJobTitle))
+                // {
+                //     toastService.ShowWarning("Please enter the job title of the referee.");
+                //     args.Cancel = true;
+                // }
+                // else if (string.IsNullOrEmpty(args.Data.RefereeCompany))
+                // {
+                //     toastService.ShowWarning("Please enter the organisation of the referee.");
+                //     args.Cancel = true;
+                // }
                 else if (string.IsNullOrEmpty(args.Data.RefereeEmail))
                 {
                     toastService.ShowWarning("Please enter the email of the referee.");
@@ -1136,6 +1175,18 @@
         catch (Exception ex)
         {
             toastService.ShowError(ex.Message.ToString());
+        }
+    }
+
+    public string GetJobRefereesHeader(AppliedForJobReferees Value)
+    {
+        if (Value.AppliedForRefereeId == 0)
+        {
+            return "Add a Referee";
+        }
+        else
+        {
+            return "Edit Details for " + Value.RefereeName;
         }
     }
 

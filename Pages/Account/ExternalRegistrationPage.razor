@@ -8,6 +8,8 @@
 @inject ApiConfig _ApiConfig;
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@inject IToastService toastService;
+
 
 @*<h3>ExternalRegistrationPage</h3>*@
 <style>
@@ -71,12 +73,18 @@
                         <SfDropDownList @bind-Value="@(inputmodel.NewNonStaff.GenderId)" Enabled="true" TItem="AGender" TValue="int?" DataSource="@GenderData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                             <DropDownListFieldSettings Value="@nameof(AGender.GenderId)" Text="@nameof(AGender.GenderDesc)"></DropDownListFieldSettings>
                         </SfDropDownList>
-                        <p> <ValidationMessage For="@(() => inputmodel.NewNonStaff.GenderId)" /></p>
+                        <p> <ValidationMessage For="@(() => inputmodel.NewNonStaff.GenderId)" /></p>                        
                    </div>
                    <div class="col-md-4">
                        <p>Date of Birth <span style="color:red;">*</span></p>
-                        <SfDatePicker @bind-Value="@(inputmodel.NewNonStaff.DoB)" Placeholder="Select Date" Format="dd/MM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                        <SfDatePicker @bind-Value="@(inputmodel.NewNonStaff.DoB)" Placeholder="Select Date" Format="dd/MM/yyyy" FloatLabelType="FloatLabelType.Never">
+                            <DatePickerEvents TValue="DateTime?" ValueChange="OnDOBChange"></DatePickerEvents>
+                        </SfDatePicker>
                         <p> <ValidationMessage For="@(() => inputmodel.NewNonStaff.DoB)" /></p>
+                        @if (isdobvalid == false)
+                        {
+                            <p style="color:red;font-size: .75rem;text-align: start;font-weight: 400;line-height: 1.66;letter-spacing: .03333em;">Date of birth is invalid. 18 Years and above is required</p>
+                        }
                    </div>
                     <div class="col-md-4">
                         <p>Nationality <span style="color:red;">*</span></p>
@@ -254,7 +262,7 @@
     bool IsSubmitDisabled;
     public bool loadingspinner { get; set; }
     public string maskvalue { get; set; } = "000 000 000 0";
-
+    bool isdobvalid = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -294,6 +302,42 @@
             loadingspinner = false;
         }
         await base.OnInitializedAsync();
+    }
+
+    protected async Task OnDOBChange(ChangedEventArgs<DateTime?> value)
+    {
+        DateTime today = DateTime.Today;
+        DateTime dob = Convert.ToDateTime(value.Value);
+
+        int months = today.Month - dob.Month;
+        int years = today.Year - dob.Year;
+
+        if (today.Day < dob.Day)
+        {
+            months--;
+        }
+
+        if (months < 0)
+        {
+            years--;
+            months += 12;
+        }
+
+        int days = (today - dob.AddMonths((years * 12) + months)).Days;
+
+        //toastService.ShowSuccess("Years , Months, Days" +years + months  + days);
+
+        if (years >= 18)
+        {
+            isdobvalid = true;
+            //toastService.ShowSuccess(">18");
+        }
+        else
+        {
+            isdobvalid = false;
+            //toastService.ShowSuccess("<18");
+        }
+
     }
 
     public async void changeHandler(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ACountry> args)
@@ -392,6 +436,11 @@
                 {
                     missingfields.Add("Username is required");
                 }
+            }
+
+            else if(isdobvalid == false)
+            {
+                toastService.ShowWarning("Date of birth is invalid. 18 Years and above is required");
             }
             
             //If there is no error

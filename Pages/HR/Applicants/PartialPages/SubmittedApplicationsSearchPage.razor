@@ -1,0 +1,114 @@
+﻿@* <h3>SubmittedApplicationsSearchPage</h3> *@
+
+@using HCMIS.Data;
+@using HCMIS.SHARED.Models;
+
+@inject IToastService toastService;
+
+<div class="form-row">
+    <div class="form-group col-md-12">
+        <div class="form-group col-md-12">
+            <EditForm Model="@searchpanel" OnValidSubmit="@OnLoadRecords">
+                <DataAnnotationsValidator />
+                <div class="row" style="margin-bottom:10px;">
+                    <div class="col-md-12">
+                        <SfMultiSelect @bind-Value="@searchpanel.ShortlistId"
+                                       TValue="int?[]" TItem="AShortlist"
+                                       AllowFiltering="true"
+                                       FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                                       Mode="@VisualMode.CheckBox"
+                                       DataSource="@ShortlistDetailData"
+                                       ShowSelectAll="true"
+                                       EnableSelectionOrder="true"
+                                       ShowDropDownIcon="true"
+                                       FilterBarPlaceholder="Year"
+                                       FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+                            <MultiSelectFieldSettings Value="@nameof(AShortlist.ShortlistId)"
+                                                      Text="@nameof(AShortlist.ShortlistDescription)">
+                            </MultiSelectFieldSettings>
+                        </SfMultiSelect>
+                    </div>
+
+                    <div class="col col-md-12" style="margin-top:20px">
+                        <button class="btn btn-success" data-ripple="true" style="margin-right:10px;">Load Records</button>
+                        <button @onclick="@ClearSearchBtnClick" class="btn btn-danger" data-ripple="true" style="margin-right:10px;">Clear Search</button>
+                    </div>
+                </div>
+                <ValidationSummary />
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    public AppraisalSearch searchpanel { get; set; } = new AppraisalSearch();
+    [Parameter]
+    public List<AShortlist>? ShortlistDetailData { get; set; }
+
+    public Query MainQuery = new Query();
+    [Parameter]
+    public EventCallback<Query?> onsearchtoggle { get; set; }
+    [Parameter]
+    public int? listid { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            List<int?> _listid = new List<int?>();
+            _listid.Add(listid);
+            searchpanel.ShortlistId = _listid.ToArray();
+        }
+        catch (Exception ex)
+        {
+
+        }
+    }
+
+    private async void OnLoadRecords()
+    {
+        try
+        {
+            string _listId = null;
+            if (searchpanel.ShortlistId != null)
+            {
+                _listId = string.Join(",", searchpanel.ShortlistId);
+            }
+
+            MainQuery = new Query()
+            .AddParams("MeetsRequirements", _listId);
+            await onsearchtoggle.InvokeAsync(MainQuery);
+
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowWarning(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async void ClearSearchBtnClick()
+    {
+        try
+        {
+            searchpanel = new AppraisalSearch();
+            MainQuery = new Query();
+            await onsearchtoggle.InvokeAsync(MainQuery);
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+}
+
+

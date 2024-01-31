@@ -26,5 +26,6 @@ namespace HCMIS.Interface
         Task<List<BalanceScoreCardHodcomments>> GetHODComments(UtilitiesSearchPanel SearchModel);
         Task<List<BalanceScoreCardCeocomments>> GetCEOComments(UtilitiesSearchPanel SearchModel);
         Task<List<ViewEmployeeLeaveReport>> GetLeaveRequest(UtilitiesSearchPanel SearchModel);
+        Task<List<ViewTimeandAttendance>> GetBiometricRawData(UtilitiesSearchPanel SearchModel);
     }
 }
