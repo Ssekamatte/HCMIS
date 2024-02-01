@@ -17,7 +17,26 @@
 
 @*Calender Improvement*@
 
+@* Weekend Background Color *@
+
 <style>
+    /* Weekend Cells Background Color */
+    .custom-class {
+        background-color: #576574 !important;
+        z-index: 1;
+        position: relative;
+        color: ghostwhite !important;
+    }
+</style>
+
+<style>
+        
+    /*Cell Background color on Hover*/
+    .e-schedule .e-month-view .e-work-cells:hover, .e-schedule .e-month-agenda-view .e-work-cells:hover {
+    background: darkgray;
+    color: #201f1e;
+}
+
     #display-date {
         max-width: 300px;
         margin: 0 auto;
@@ -31,24 +50,6 @@
         padding-top: 20px;
     }
 
-    .e-calendar .e-content .e-cell.personal-appointment span.e-day,
-    .e-calendar .e-content td:hover.e-cell.personal-appointment span.e-day,
-    .e-calendar .e-content td.e-selected.e-focused-date.e-cell.personal-appointment span.e-day {
-        color: #28a745;
-        font-weight: 800;
-    }
-
-    .e-calendar .e-content .e-cell.official-appointment span.e-day,
-    .e-calendar .e-content td:hover.e-cell.official-appointment span.e-day,
-    .e-calendar .e-content td.e-selected.e-focused-date.e-cell.official-appointment span.e-day {
-        color: #dc3545;
-        font-weight: 800;
-    }
-
-    .e-calendar .e-content td.e-selected.e-focused-date.e-cell.personal-appointment span.e-day,
-    .e-calendar .e-content td.e-selected.e-focused-date.e-cell.official-appointment span.e-day {
-        background-color: #b511485e;
-    }
 </style>
 
 
@@ -100,7 +101,7 @@ color: ghostwhite;
 }
 
 /*Days of the Week CSS*/
-    .e-schedule .e-month-view .e-date-header-wrap table td, .e-schedule .e-month-agenda-view .e-date-header-wrap table td {
+/*     .e-schedule .e-month-view .e-date-header-wrap table td, .e-schedule .e-month-agenda-view .e-date-header-wrap table td {
         background: #fff;
         border-color: #edebe9;
         border-style: solid;
@@ -111,7 +112,7 @@ color: ghostwhite;
         text-transform: none;
         font-size: x-large;
         font-family: cursive;
-    }
+    } */
 
     /*Header Cells Designs - For Month*/
     .e-schedule .e-month-view .e-date-header-wrap table td, .e-schedule .e-month-agenda-view .e-date-header-wrap table td {
@@ -144,12 +145,6 @@ color: ghostwhite;
         min-width: 94%;
     }
     
-    /* .e-dialog {
-        max-height: 98%;
-        max-width: 100%;
-        min-width: 90%;
-        position: absolute;
-    } */
 
     .e-recurrenceeditor .e-editor {
         display: -ms-flexbox;
@@ -193,22 +188,6 @@ color: ghostwhite;
     }
 </style>
 
-<style>
-    .e-schedule .e-vertical-view .e-all-day-appointment-wrapper .e-appointment.custom-class,
-    .e-schedule .e-vertical-view .e-day-wrapper .e-appointment.custom-class,
-    .e-schedule .e-month-view .e-appointment.custom-class {
-        background: yellow;
-        color: red;
-    }
-
-    .e-schedule .e-vertical-view .e-work-cells.cell-custom-class {
-        background: red !important;
-    }
-
-    .e-schedule .e-vertical-view .e-day-wrapper .e-appointment.e-past-app, .e-schedule .e-month-view .e-appointment.e-past-app {
-        background-color: chocolate;
-    }
-</style>
 
 <ol class="breadcrumb" style="margin-top:5px;">
     <li class="breadcrumb-item active" style="color: brown;">
@@ -383,10 +362,12 @@ color: ghostwhite;
         </ScheduleField>
     </ScheduleEventSettings>
     <ScheduleViews>
+        <ScheduleView Option="View.Year"></ScheduleView>
         <ScheduleView Option="View.Month"></ScheduleView>
         <ScheduleView Option="View.Day"></ScheduleView>
         <ScheduleView Option="View.Week"></ScheduleView>
-        <ScheduleView Option="View.WorkWeek"></ScheduleView>        
+        <ScheduleView Option="View.WorkWeek"></ScheduleView>    
+        
         @*<ScheduleView Option="View.Agenda"></ScheduleView>*@
     </ScheduleViews>
 </SfSchedule>
@@ -428,8 +409,10 @@ color: ghostwhite;
     List<AYears>? YearData { get; set; }
     SfSchedule<ViewEmployeeLeaveRoster>? ScheduleRef;
     bool IsEnabled { get; set; } = true;
-    public string[] CellCustomClass = { "cell-custom-class" };
+    
+    // public string[] CellCustomClass = { "cell-custom-class" };
     public string[] CustomClass = { "custom-class" };
+
     List<ViewUserManagement>? UsersData { get; set; }
     // List<ViewEmployeePlannedDays>? LeaveTotalPlannedDaysData { get; set; }
     List<ViewEmployeePlannedDays>? OverrallDaysData { get; set; }
@@ -442,7 +425,7 @@ color: ghostwhite;
     public static int TotalDays { get; set; } = 0;
     private static ViewEmployeePlannedDays RoasterCount { get; set; }
     LoginResultModel? Credentials { get; set; }
-    public List<string> CustomClassPast = new List<string>() { "e-past-app" };
+
     public bool EmployeeDD = true;
     public bool WarningDisplay = true;
     SfDialog? SavingDialog { get; set; }
@@ -463,6 +446,7 @@ color: ghostwhite;
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "80%" };
     int _startdate = 2000;
     int FormEditType = 0;
+    public static DateTime[]? datesselectedd = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -816,118 +800,202 @@ color: ghostwhite;
         }
 
     }
-    public async void OnRenderCell(RenderCellEventArgs args)
+
+
+    public void OnRenderCell(RenderCellEventArgs args)
     {
-        if (args.ElementType == ElementType.AllDayCells)
+        DateTime cellDate = args.Date;
+        int weekDay = (int)cellDate.DayOfWeek;
+        if (weekDay == 0 || weekDay == 6)
         {
-            args.CssClasses = CustomClassPast;
+            args.CssClasses = new List<string>(CustomClass);
         }
     }
 
+    // public async void OnRenderCell(RenderCellEventArgs args)
+    // {
+    //     // if (args.ElementType == ElementType.AllDayCells)
+    //     // {
+    //     //     args.CssClasses = CustomClassPast;
+    //     // }
+
+    //     // if ((args.Date.DayOfWeek == DayOfWeek.Saturday) || (args.Date.DayOfWeek == DayOfWeek.Sunday))
+    //     // {
+    //     //     args.CssClasses = CustomClassPast;
+    //     //     //args.CssClasses = new List<string>(CustomClass);
+    //     // }
+
+    //     DateTime cellDate = args.Date;
+
+    //     int weekDay = (int)cellDate.DayOfWeek;
+
+    //     if (weekDay == 0 || weekDay == 6)
+    //     {
+    //         args.CssClasses = new List<string>(CellCustomClass);
+    //     }
+    // }
+
     public async void OnPopupOpen(PopupOpenEventArgs<ViewEmployeeLeaveRoster> args)
     {
-        List<Task> t = new List<Task>();
-
-        t.Add(Task.Run(async () =>
+        try
         {
-            var response = await Http.GetAsync($"Employeez/GetEmployeeLeaverRosterDays");
-            if (response.IsSuccessStatusCode)
+            List<Task> t = new List<Task>();
+
+            t.Add(Task.Run(async () =>
             {
-                var content = await response.Content.ReadAsStringAsync();
-                OverrallDaysData = JsonSerializer.Deserialize<List<ViewEmployeePlannedDays>>(content, _options);
-            }
-        }));
-
-        Task _t = Task.WhenAll(t);
-        await _t;
-
-        _startdate = Convert.ToDateTime(args.Data.ProposedLeaveStartDate).Year;
-        MinDateForm = new DateTime(_startdate, 01, 01);
-        MaxDateForm = new DateTime(_startdate, 12, 31);
-
-        //Initialize these to zero incase the database is null or empty
-        LeaveRosterData.NoofDaysPlannedFor = 0;
-        LeaveRosterData.NoofDays = 0;
-
-        var b = YearData.FirstOrDefault(o => o.YearDesc == _startdate);
-        if (b != null)
-        {
-            args.Data.YearId = b.YearId;
-        }
-
-        if (LeaveRosterData != null && LeaveRosterData.IsBlock != null && LeaveRosterData.IsBlock == true)
-        {
-            args.Cancel = true;
-        }
-
-        else
-        {
-            args.Data.EmployeeId = Credentials.StaffId;
-
-            StartDate = Convert.ToDateTime(args.Data.ProposedLeaveStartDate.Value);
-            EndDate = Convert.ToDateTime(args.Data.ProposedLeaveEndDate);
-
-            numberOfDays2 = GetNumberOfDates(StartDate, EndDate);
-            PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDate);
-
-
-            _employee = OverrallDaysData.FirstOrDefault(o => o.EmployeeId == args.Data.EmployeeId && o.YearId == args.Data.YearId);
-
-            //New Record
-            if(args.Data.LeaveRosterId == null)
-            {
-                //Adding New Record
-                FormEditType = 1;
-
-
-                LeaveRosterData.NoofDaysPlannedFor = numberOfDays2 - PublicHolidays;
-
-                if (_employee != null)
+                var response = await Http.GetAsync($"Employeez/GetEmployeeLeaverRosterDays");
+                if (response.IsSuccessStatusCode)
                 {
-                    LeaveRosterData.NoofDays = (LeaveRosterData.NoofDaysPlannedFor) + _employee.TotalDays;
+                    var content = await response.Content.ReadAsStringAsync();
+                    OverrallDaysData = JsonSerializer.Deserialize<List<ViewEmployeePlannedDays>>(content, _options);
                 }
+            }));
+
+            Task _t = Task.WhenAll(t);
+            await _t;
+
+            if(args.Data.ProposedLeaveStartDate.HasValue)
+            {
+                _startdate = Convert.ToDateTime(args.Data.ProposedLeaveStartDate).Year;
+                MinDateForm = new DateTime(_startdate, 01, 01);
+                MaxDateForm = new DateTime(_startdate, 12, 31);
+
+                //Initialize these to zero incase the database is null or empty
+                LeaveRosterData.NoofDaysPlannedFor = 0;
+                LeaveRosterData.NoofDays = 0;
+
+                var b = YearData.FirstOrDefault(o => o.YearDesc == _startdate);
+                if (b != null)
+                {
+                    args.Data.YearId = b.YearId;
+                }
+
+                if (LeaveRosterData != null && LeaveRosterData.IsBlock != null && LeaveRosterData.IsBlock == true)
+                {
+                    args.Cancel = true;
+                }
+
                 else
                 {
-                    LeaveRosterData.NoofDays = (LeaveRosterData.NoofDaysPlannedFor);
-                }   
-            }
+                    args.Data.EmployeeId = Credentials.StaffId;
 
-            //Editing Record
-            else
-            {
-                //Editing Record
-                FormEditType = 2;
+                    StartDate = Convert.ToDateTime(args.Data.ProposedLeaveStartDate.Value);
+                    EndDate = Convert.ToDateTime(args.Data.ProposedLeaveEndDate);
 
-                LeaveRosterData.NoofDaysPlannedFor = numberOfDays2 - PublicHolidays;
+                    numberOfDays2 = GetNumberOfDates(StartDate, EndDate);
+                    PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDate);
 
-                if (_employee != null)
-                {
-                    LeaveRosterData.NoofDays = _employee.TotalDays;
+
+                    _employee = OverrallDaysData.FirstOrDefault(o => o.EmployeeId == args.Data.EmployeeId && o.YearId == args.Data.YearId);
+
+                    //New Record
+                    if (args.Data.LeaveRosterId == null)
+                    {
+                        //Adding New Record
+                        FormEditType = 1;
+
+
+                        LeaveRosterData.NoofDaysPlannedFor = numberOfDays2 - PublicHolidays;
+
+                        if (_employee != null)
+                        {
+                            LeaveRosterData.NoofDays = (LeaveRosterData.NoofDaysPlannedFor) + _employee.TotalDays;
+                        }
+                        else
+                        {
+                            LeaveRosterData.NoofDays = (LeaveRosterData.NoofDaysPlannedFor);
+                        }
+                    }
+
+                    //Editing Record
+                    else
+                    {
+                        //Editing Record
+                        FormEditType = 2;
+
+                        LeaveRosterData.NoofDaysPlannedFor = numberOfDays2 - PublicHolidays;
+
+                        if (_employee != null)
+                        {
+                            LeaveRosterData.NoofDays = _employee.TotalDays;
+                        }
+                    }
+
+                    StateHasChanged();
                 }
             }
-
-            StateHasChanged();
+            else
+            {
+                toastService.ShowWarning("Start Date is null");
+            }
         }
+        catch(Exception ex)
+        {
+
+        }        
+    }
+
+    //Function to get all dates between two dates
+    public List<DateTime> GetDatesBetween(DateTime startDate, DateTime endDate)
+    {
+        List<DateTime> allDates = new List<DateTime>();
+
+        for (DateTime date = startDate; date <= endDate; date = date.AddDays(1))
+        {
+            var countdata = PublicHolidaysData?.FirstOrDefault(o => o.HolidayDate == date);
+
+            allDates.Add(date.Date);
+            // if ((date.DayOfWeek == DayOfWeek.Saturday && date.DayOfWeek == DayOfWeek.Sunday) && (countdata == null))
+            // {
+            //     allDates.Add(date.Date);
+            // }
+        }
+
+        return allDates;
     }
 
     public void OnEventRendered(EventRenderedArgs<ViewEmployeeLeaveRoster> args)
     {
-        args.CssClasses = new List<string>(CustomClass);
+        // https://blazor.syncfusion.com/documentation/scheduler/events?_gl=1*101729g*_ga*Mzg0MTE4NDM5LjE2NTU3MjY3NTk.*_ga_41J4HFMX1J*MTcwNjcwNjY2Ny4yMTguMS4xNzA2NzA5MTY3LjAuMC4w#eventrendered
 
-        // Dictionary<string, object> attributes = new Dictionary<string, object>();
-        // Dictionary<string, object> attributesfont = new Dictionary<string, object>();
-        // /*Assign color to different events on schedular*/
-        // if(DepartmentData != null)
+        // datesselectedd = GetDatesBetween(Convert.ToDateTime(args.Data.ProposedLeaveStartDate), Convert.ToDateTime(args.Data.ProposedLeaveEndDate)).ToArray();
+
+        // if (datesselectedd != null)
         // {
-        //     var impcolor = DepartmentData.FirstOrDefault(o => o.DepartmentId == args.Data.DepartmentId);
-        //     if (impcolor != null)
+        //     foreach (var n in datesselectedd)
         //     {
-        //         attributes.Add("style", $"background: {impcolor.ColorCode}");
-        //         //attributesfont.Add("style", $"color: {impcolor.FontColorCode}");
-        //         args.Attributes = attributes;
-        //         //args..Attributes = attributesfont;
+        //         if ((n.DayOfWeek == DayOfWeek.Saturday) || (n.DayOfWeek == DayOfWeek.Sunday))
+        //         {
+        //             args.CssClasses = new List<string>(CustomClass);
+        //         }
         //     }
-        // }             
+        // }
+
+        // if (Convert.ToDateTime(args.Data.ActualLeaveStartDate).DayOfWeek == "Saturday")
+        // {
+        //     args.CssClasses = new List<string>(CustomClass);
+        // }
+        
+        // if ((dayToday == DayOfWeek.Saturday) || (dayToday == DayOfWeek.Sunday))
+        // {
+        //     Console.WriteLine("This is a weekend");
+        // }
+
+        //All Data
+        Dictionary<string, object> attributes = new Dictionary<string, object>();
+        Dictionary<string, object> attributesfont = new Dictionary<string, object>();
+        /*Assign color to different events on schedular*/
+        if(DepartmentData != null)
+        {
+            var impcolor = DepartmentData.FirstOrDefault(o => o.DepartmentId == args.Data.DepartmentId);
+            if (impcolor != null)
+            {
+                attributes.Add("style", $"background: {impcolor.ColorCode}");
+                //attributesfont.Add("style", $"color: {impcolor.FontColorCode}");
+                args.Attributes = attributes;
+                //args..Attributes = attributesfont;
+            }
+        }             
     }
 
     public async Task OnCellClick(CellClickEventArgs args)
