@@ -133,7 +133,7 @@
                             <DropDownListEvents TValue="int?" TItem="ACountry" ValueChange="changeHandler"></DropDownListEvents>
                         </SfDropDownList>
 
-                        <SfTextBox Multiline="false" ID="DialCode" @bind-Value="@(inputmodel.NewNonStaff.DialCode)" FloatLabelType="FloatLabelType.Never" Enabled="false" Width="50px"></SfTextBox>
+                        @* <SfTextBox Multiline="false" ID="DialCode" @bind-Value="@(inputmodel.NewNonStaff.DialCode)" FloatLabelType="FloatLabelType.Never" Enabled="false" Width="50px"></SfTextBox> *@
 
                         <SfMaskedTextBox Mask="@maskvalue" @bind-Value="@(inputmodel.NewNonStaff.OfficialPhoneNumber)" Width="150px" Enabled="@(inputmodel.NewNonStaff.CoutryId == null ? false : true)"></SfMaskedTextBox>
 
@@ -161,10 +161,10 @@
                                 </ValueTemplate>
                             </DropDownListTemplates>
                             <DropDownListFieldSettings Value="CoutryId" Text="CountryDesc"></DropDownListFieldSettings>
-                            <DropDownListEvents TValue="int?" TItem="ACountry" ValueChange="otherchangeHandler"></DropDownListEvents>
+                            <DropDownListEvents TValue="int?" TItem="ACountry" ValueChange="changeHandler"></DropDownListEvents>
                         </SfDropDownList>
 
-                        <SfTextBox Multiline="false" ID="OtherDialCode" @bind-Value="@(inputmodel.NewNonStaff.OtherDialCode)" FloatLabelType="FloatLabelType.Never" Enabled="false" Width="50px"></SfTextBox>
+                        @* <SfTextBox Multiline="false" ID="OtherDialCode" @bind-Value="@(inputmodel.NewNonStaff.OtherDialCode)" FloatLabelType="FloatLabelType.Never" Enabled="false" Width="50px"></SfTextBox> *@
 
                         <SfMaskedTextBox Mask="@maskvalue" @bind-Value="@(inputmodel.NewNonStaff.MobileNumber)" Width="150px" Enabled="@(inputmodel.NewNonStaff.OtherCoutryId == null ? false : true)"></SfMaskedTextBox>
                         <p> <ValidationMessage For="@(() => inputmodel.NewNonStaff.MobileNumber)" /></p>
@@ -340,25 +340,48 @@
 
     }
 
+    // public async void changeHandler(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ACountry> args)
+    // {
+    //     if (args.Value != null)
+    //     {
+    //         var _countrycode = CountryData.FirstOrDefault(o => o.CoutryId == args.ItemData.CoutryId);
+    //         inputmodel.NewNonStaff.DialCode = _countrycode.CountryCode;
+    //     }
+
+    // }
+
     public async void changeHandler(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ACountry> args)
     {
-        if (args.Value != null)
+        if (args.ItemData != null)
         {
-            var _countrycode = CountryData.FirstOrDefault(o => o.CoutryId == args.ItemData.CoutryId);
-            inputmodel.NewNonStaff.DialCode = _countrycode.CountryCode;
+            maskvalue = null;
+            if (!string.IsNullOrEmpty(args.ItemData.CountryCode))
+            {
+                foreach (var item in args.ItemData.CountryCode.Trim())
+                {
+                    if (item != '-')
+                    {
+                        maskvalue += $@"\\{item}";
+                    }
+                }
+                maskvalue += " 000 000 000";
+            }
         }
-
+        else
+        {
+            maskvalue = "000 000 000 000";
+        }
     }
 
-    public async void otherchangeHandler(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ACountry> args)
-    {
-        if (args.Value != null)
-        {
-            var _countrycode = CountryData.FirstOrDefault(o => o.CoutryId == args.ItemData.CoutryId);
-            inputmodel.NewNonStaff.OtherDialCode = _countrycode.CountryCode;
-        }
+    // public async void otherchangeHandler(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ACountry> args)
+    // {
+    //     if (args.Value != null)
+    //     {
+    //         var _countrycode = CountryData.FirstOrDefault(o => o.CoutryId == args.ItemData.CoutryId);
+    //         inputmodel.NewNonStaff.OtherDialCode = _countrycode.CountryCode;
+    //     }
 
-    }
+    // }
 
     //https://blazor.syncfusion.com/documentation/textbox/events -- textbox change
 

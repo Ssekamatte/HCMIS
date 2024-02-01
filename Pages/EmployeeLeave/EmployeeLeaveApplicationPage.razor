@@ -397,9 +397,9 @@
                                                         <DropDownListEvents TValue="int?" TItem="ACountry" ValueChange="changeHandler"></DropDownListEvents>
                                                     </SfDropDownList>
 
-                                                    <SfTextBox Multiline="false" ID="DialCode" @bind-Value="@(LeaveData.DialCode)" FloatLabelType="FloatLabelType.Never" Enabled="false" Width="50px"></SfTextBox>
+                                                    @*<SfTextBox Multiline="false" ID="DialCode" @bind-Value="@(LeaveData.DialCode)" FloatLabelType="FloatLabelType.Never" Enabled="false" Width="50px"></SfTextBox>*@
 
-                                                    <SfMaskedTextBox Mask="@maskvalue" @bind-Value="@(LeaveData.Telephone)" Width="100px" Enabled="@(LeaveData.CountryId == null ? false : true)"></SfMaskedTextBox>
+                                                    <SfMaskedTextBox Mask="@maskvalue" @bind-Value="@(LeaveData.Telephone)" Width="150px" Enabled="@(LeaveData.CountryId == null ? false : true)"></SfMaskedTextBox>
 
 
                                                 </td>
@@ -1209,15 +1209,39 @@
     //     }
     // }
 
+
     public async void changeHandler(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ACountry> args)
     {
-        if (args.Value != null)
+        if(args.ItemData != null)
         {
-            var _countrycode = CountryData.FirstOrDefault(o => o.CoutryId == args.ItemData.CoutryId);
-            LeaveData.DialCode = _countrycode.CountryCode;
+            maskvalue = null;
+            if (!string.IsNullOrEmpty(args.ItemData.CountryCode))
+            {
+                foreach (var item in args.ItemData.CountryCode.Trim())
+                {
+                    if (item != '-')
+                    {
+                        maskvalue += $@"\\{item}";
+                    }
+                }
+                maskvalue += " 000 000 000";
+            }
         }
-
+        else
+        {
+            maskvalue = "000 000 000 000";
+        }
     }
+
+    // public async void changeHandler(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ACountry> args)
+    // {
+    //     if (args.Value != null)
+    //     {
+    //         var _countrycode = CountryData.FirstOrDefault(o => o.CoutryId == args.ItemData.CoutryId);
+    //         LeaveData.DialCode = _countrycode.CountryCode;
+    //     }
+
+    // }
 
     private void ToggleRejectionComments(List<EmployeeLeaveRejectionComments>? HODCommentsChange)
     {

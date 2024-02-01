@@ -57,19 +57,16 @@ namespace HCMIS.Repository
             return data;
         }
 
-        public async Task GetLogos()
+        public async Task<List<Image>?> GetLocalLogos()
         {
+            List<Image>? data = new List<Image>();
             try
             {
                 var response = await _httpClient.GetAsync($"Utilities/GetLogos");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    var data = JsonSerializer.Deserialize<List<Image>>(content, _options);
-                    if (data != null)
-                    {
-                        await LocalStorage.SetItemAsync("Logos", data);
-                    }
+                    data = JsonSerializer.Deserialize<List<Image>>(content, _options);
                 }
                 else
                 {
@@ -80,20 +77,8 @@ namespace HCMIS.Repository
             {
                 toastService.ShowError(ex.Message);
             }
-        }
-
-        public async Task<List<Image>> GetLocalLogos()
-        {
-            List<Image> data = new List<Image>();
-            try
-            {
-                data = await LocalStorage.GetItemAsync<List<Image>>("Logos");
-            }
-            catch (Exception ex)
-            {
-                toastService.ShowError(ex.Message);
-            }
             return data;
         }
+
     }
 }
