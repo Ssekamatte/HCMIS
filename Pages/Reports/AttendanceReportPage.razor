@@ -123,6 +123,7 @@
     List<APublicHolidays>? PublicHolidaysData { get; set; }
     public static int PublicHolidays { get; set; } = 0;
     public static int numberOfDays2 { get; set; } = 0;
+    List<EmployeeLeaveHeader>? LeaveDataSource { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -137,6 +138,16 @@
             Credentials = await AuthService.GetUserCredentials();
 
             List<Task> t = new List<Task>();
+
+            t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"EmployeeLeave/GetEmployeeLeaveData");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        LeaveDataSource = JsonSerializer.Deserialize<List<EmployeeLeaveHeader>>(content, _options);
+                    }
+                }));
 
             t.Add(Task.Run(async () =>
                 {
@@ -498,7 +509,7 @@
 
                         //Employee
                         worksheet.Range["A" + row].Text = "Employee:";
-                        worksheet.Range["A" + row].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 0, 0);
+                        worksheet.Range["A" + row].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 204, 0);
                         worksheet.Range["A" + row].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
                         worksheet.Range["A" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
 
@@ -518,7 +529,7 @@
 
                         //Department
                         worksheet.Range["D" + row].Text = "Department:";
-                        worksheet.Range["D" + row].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 0, 0);
+                        worksheet.Range["D" + row].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 204, 0);
                         worksheet.Range["D" + row].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
                         worksheet.Range["D" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
 
@@ -538,7 +549,7 @@
                         //Year
 
                         worksheet.Range["G" + row].Text = "Year:";
-                        worksheet.Range["G" + row].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 0, 0);
+                        worksheet.Range["G" + row].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 204, 0);
                         worksheet.Range["G" + row].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
                         worksheet.Range["G" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
 
@@ -558,7 +569,7 @@
                         //Month
 
                         worksheet.Range["J" + row].Text = "Month:";
-                        worksheet.Range["J" + row].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 0, 0);
+                        worksheet.Range["J" + row].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 204, 0);
                         worksheet.Range["J" + row].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
                         worksheet.Range["J" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
 
@@ -658,6 +669,9 @@
                         var _employees = data.Select(o => new { o.HcmisemployeeId, o.EmployeeDetails }).ToList().Distinct().ToList();
                         double totalhoursworked = 0;
 
+                        // var getutilizeddays = LeaveDataSource.OrderByDescending(x => x.TotalDays)
+                        // .FirstOrDefault(o => o.Employeeid == LeaveData.Employeeid &&
+                        //     o.LeaveTypeId == LeaveData.LeaveTypeId && o.LeaveApprovalStatusId == 9);
 
                         foreach (var y in _year)
                         {
@@ -694,9 +708,16 @@
 
                                 if (y.HasValue && m.HasValue)
                                 {
+                                    var _yeardesc = YearData.FirstOrDefault(o=>o.YearDesc== y);
+
                                     int ndays = DateTime.DaysInMonth(y.Value, m.Value);
                                     int expectedworkhours = 0;
                                     int hoursabsent = 0;
+                                    double daysabsentfromduty = 0;
+                                    int daysonofficialduty = 0;
+                                    int daysonleave = 0;
+                                    double daysunaccountedfor = 0;
+
 
                                     DateTime StartDate = new DateTime(y.Value, m.Value, 01);
                                     DateTime EndDate = new DateTime(y.Value, m.Value, ndays);
@@ -717,6 +738,10 @@
                                     {
                                         foreach (var item in _data)
                                         {
+                                            var getutilizeddays = LeaveDataSource.OrderByDescending(x => x.TotalDays)
+                                            .FirstOrDefault(o => o.Employeeid == item.HcmisemployeeId &&
+                                                o.LeaveTypeId == 1 && o.FinancialYearId == _yeardesc.YearId && o.LeaveApprovalStatusId == 9);
+
                                             worksheet.Range[row, 1].Number = count;
 
                                             worksheet.Range[row, 2].Text = item.EmployeeDetails;
@@ -751,13 +776,46 @@
                                             if (hoursabsent <= 7)
                                             {
                                                 worksheet.Range[row, 8].Number = 0;
+                                                daysabsentfromduty = 0;
                                             }
                                             else
                                             {
                                                 double hhvalue = Math.Round((double)(hoursabsent / (double)8), 1);
                                                 worksheet.Range[row, 8].Number = Convert.ToDouble(hhvalue);
+                                                daysabsentfromduty = hhvalue;
                                             }
 
+                                            //Total Days on Leave
+                                            if (getutilizeddays != null && getutilizeddays.TotalDays.HasValue)
+                                            {
+                                                worksheet.Range[row, 9].Number = getutilizeddays.TotalDays.Value;
+                                                daysonleave = getutilizeddays.TotalDays.Value;
+                                            }
+                                            else
+                                            {
+                                                worksheet.Range[row, 9].Number = 0;
+                                                daysonleave = 0;
+                                            }
+
+                                            //Total days on Official duty
+                                            worksheet.Range[row, 10].Number = 0;
+                                            daysonofficialduty = 0;
+
+                                            //Total Days / Hrs Due/Uncounted for
+
+                                            if (daysabsentfromduty - daysonleave - daysonofficialduty >= 0.1)
+                                            {
+                                                daysunaccountedfor = daysabsentfromduty - daysonleave - daysonofficialduty;
+                                                worksheet.Range[row, 11].Number = daysunaccountedfor;
+                                            }
+                                            else
+                                            {
+                                                worksheet.Range[row, 11].Number = 0;
+                                                daysunaccountedfor = 0;
+                                            }
+
+                                            //Remarks/Recommendations
+                                            worksheet.Range[row, 12].Text = "Officer has to account for " + daysunaccountedfor + " days";
                                             // //Year
                                             // worksheet.Range[row, 13].Number = Convert.ToDouble(item.ReportYear);
 
