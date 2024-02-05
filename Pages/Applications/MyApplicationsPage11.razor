@@ -1,0 +1,147 @@
+﻿@page "/MyApplicationsPage11"
+@using HCMIS.Interface
+@using HCMIS.Model
+@using HCMIS.SHARED.Models
+@using System.Text.Json
+@inject HttpClient Http
+@inject NavigationManager navManager
+@inject IAuthenticationService AuthService;
+@inject IJobApplications JobRepo;
+
+@* Sfcard styles *@
+@* https://blazor.syncfusion.com/documentation/card/style *@
+
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="color: brown;">
+        <strong>
+            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
+        </strong>| MY APPLICATIONS
+    </li>
+</ol>
+
+@if (MyApplicationData != null && MyApplicationData.Count > 0)
+{
+    <div class="row e-card-layout" style="text-align:center;">
+        @foreach (var data in MyApplicationData)
+        {
+            List<string?> _jobtypelist = new List<string?>();
+            string repto = string.Empty;
+
+            var _jobopening = JobOpeningData.FirstOrDefault(o => o.JobOpeningId == data.JobOpeningId);
+            var _jobdesc = JobDescriptionData.FirstOrDefault(o => o.JobDescriptionId == _jobopening.JobDescriptionId);
+            var _jobtitle = JobTitleData.FirstOrDefault(o => o.JobTitleId == _jobdesc.JibTitleId);
+            var _dept = DepartmentData.FirstOrDefault(o => o.DepartmentId == _jobdesc.DepartmentId);
+            var _jobtype = JobTypeData.FirstOrDefault(o => o.JobTypeId == _jobdesc.JobTypeId);
+
+
+            <div class="col-lg-3 col-md-3 col-sm-6">
+                <SfCard>
+                    <CardHeader Title=@_dept.DepartmentDescription SubTitle=@data.JobReferenceNo />
+                    <CardContent Content=@_jobtitle.JobTitleDescription/>
+                </SfCard>
+            </div>
+        }
+    </div>
+}
+
+
+@code {
+    List<ViewEmployeeDropDown>? EmployeeData { get; set; }
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    LoginResultModel? Credentials { get; set; }
+    List<AppliedForJobs>? MyApplicationData { get; set; }
+    List<AJobType>? JobTypeData { get; set; }
+    List<AJobTitle>? JobTitleData { get; set; }
+    List<ADepartment>? DepartmentData { get; set; }
+    List<JobDescription>? JobDescriptionData { get; set; }
+    List<JobOpening>? JobOpeningData { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await base.OnInitializedAsync();
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
+            {
+                navManager.NavigateTo("/LoginPage", true);
+            }
+            else
+            {
+                Credentials = await AuthService.GetUserCredentials();
+
+                List<Task> t = new List<Task>();
+
+                t.Add(Task.Run(async () =>
+                {
+                    MyApplicationData = await JobRepo.GetMyApplicationsAsync("null", Credentials.StaffId.ToString());
+
+                }));
+
+                t.Add(Task.Run(async () =>
+               {
+
+                   var response = await Http.GetAsync($"HumanResource/GetJobOpening");
+                   var content = await response.Content.ReadAsStringAsync();
+                   if (response.IsSuccessStatusCode)
+                   {
+                       JobOpeningData = JsonSerializer.Deserialize<List<JobOpening>>(content, _options);
+                   }
+               }));
+
+                t.Add(Task.Run(async () =>
+               {
+
+                   var response = await Http.GetAsync($"HumanResource/GetJobDescription");
+                   var content = await response.Content.ReadAsStringAsync();
+                   if (response.IsSuccessStatusCode)
+                   {
+                       JobDescriptionData = JsonSerializer.Deserialize<List<JobDescription>>(content, _options);
+                   }
+               }));
+
+                t.Add(Task.Run(async () =>
+               {
+
+                   var response = await Http.GetAsync($"HumanResource/GetJobTitle");
+                   var content = await response.Content.ReadAsStringAsync();
+                   if (response.IsSuccessStatusCode)
+                   {
+                       JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
+                   }
+               }));
+
+                t.Add(Task.Run(async () =>
+               {
+
+                   var response = await Http.GetAsync($"Utilities/GetDepartment");
+                   var content = await response.Content.ReadAsStringAsync();
+                   if (response.IsSuccessStatusCode)
+                   {
+                       DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
+                   }
+               }));
+
+                t.Add(Task.Run(async () =>
+                 {
+
+                     var response = await Http.GetAsync($"Utilities/GetJobType");
+                     var content = await response.Content.ReadAsStringAsync();
+                     if (response.IsSuccessStatusCode)
+                     {
+                         JobTypeData = JsonSerializer.Deserialize<List<AJobType>>(content, _options);
+                     }
+                 }));
+
+                Task _t = Task.WhenAll(t);
+                await _t;
+
+            }
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+
+    }
+}

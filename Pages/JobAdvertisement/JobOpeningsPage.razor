@@ -1,7 +1,33 @@
 ﻿@page "/JobOpeningsPage"
+@using HCMIS.Interface
+@using HCMIS.Model
 @using HCMIS.SHARED.Models
 @using System.Text.Json
 @inject HttpClient Http
+@inject NavigationManager navManager
+@inject IAuthenticationService AuthService;
+
+@* https://blazor.syncfusion.com/documentation/card/style *@@*  Link to styling card elements *@
+<style>
+    /* Customizing the card content */
+    .e-card .e-card-content {
+    font-size: 20px;
+    color: gray;
+    line-height: initial;
+    font-weight: normal;
+}
+
+    /* Divider used to separate the elements inside the card */
+    .e-card .e-card-separator {
+        padding-bottom: 30px;
+    }
+
+    /* Including a title or caption for the image */
+    .e-card .e-card-image .e-card-title {
+        font-family: cursive;
+        font-style: italic;
+    }
+</style>
 
 @* Url to bootstrap card formats *@
 @* https://ordinarycoders.com/blog/article/codepen-bootstrap-card-hovers *@
@@ -25,26 +51,38 @@
 @code {
     List<ViewEmployeeDropDown>? EmployeeData { get; set; }
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    LoginResultModel? Credentials { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            List<Task> t = new List<Task>();
-
-            t.Add(Task.Run(async () =>
+            await base.OnInitializedAsync();
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
             {
-                var responseemployee = await Http.GetAsync($"Utilities/GetEmployeeDD");
-                if (responseemployee.IsSuccessStatusCode)
+                navManager.NavigateTo("/LoginPage", true);
+            }
+            else
+            {
+                Credentials = await AuthService.GetUserCredentials();
+
+                List<Task> t = new List<Task>();
+
+                t.Add(Task.Run(async () =>
                 {
-                    var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-                    EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(contentemployee, _options);
-                }
-            }));
+                    var responseemployee = await Http.GetAsync($"Utilities/GetEmployeeDD");
+                    if (responseemployee.IsSuccessStatusCode)
+                    {
+                        var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+                        EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(contentemployee, _options);
+                    }
+                }));
 
-            Task _t = Task.WhenAll(t);
-            await _t;
-
+                Task _t = Task.WhenAll(t);
+                await _t;
+                
+            }            
         }
         catch(Exception ex)
         {

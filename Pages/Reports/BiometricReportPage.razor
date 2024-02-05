@@ -112,7 +112,7 @@
     string imagepath;
     private string? JMSLogo { get; set; }
     private string? JMSLogoName { get; set; }
-
+    List<AMonth>? MonthData { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -187,6 +187,17 @@
                          JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
                      }
                  }));
+
+            t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetMonth");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        MonthData = JsonSerializer.Deserialize<List<AMonth>>(content, _options);
+                    }
+                }));
+
 
 
             Task _t = Task.WhenAll(t);
@@ -424,7 +435,7 @@
 
                             worksheet.Range["B" + row].Text = empdesc;
                             worksheet.Range["B" + row].WrapText = true;
-                            
+
                         }
                         else
                         {
@@ -516,10 +527,10 @@
                         row++;
                         int count = 1;
 
-                        var _year = data.Select(o => o.ReportYear).ToList().Distinct().ToList();
-                        var _month = data.Select(o => o.ReportMonth).ToList().Distinct().ToList();
+                        var _year = data.Select(o => o.ReportYear).ToList().Distinct().ToList().OrderBy(o => o.Value).ToList();
+                        var _month = data.Select(o => o.ReportMonth).ToList().Distinct().ToList().OrderBy(o => o.Value).ToList();
                         var _day = data.Select(o => new { o.DayNamesNo }).ToList().Distinct().ToList();
-                        var _employees = data.Select(o => new { o.HcmisemployeeId, o.EmployeeDetails }).ToList().Distinct().ToList();
+                        var _employees = data.Select(o => new { o.HcmisemployeeId, o.EmployeeDetails}).ToList().Distinct().ToList().OrderBy(o => o.EmployeeDetails).ToList();
                         double totalhoursworked = 0;
 
 
@@ -527,15 +538,58 @@
                         {
                             foreach (var m in _month)
                             {
+                                string? EmployeeName = null;
+                                int? Month = null;
                                 foreach (var item in _employees)
                                 {
+                                    if (!string.IsNullOrEmpty(EmployeeName))
+                                    {
+                                        if (EmployeeName != item.EmployeeDetails || Month != m)
+                                        {
+                                            //Provide Sum for Hours Worked
+                                            worksheet.Range["G" + row].Text = "Total Hours";
+                                            worksheet.Range["H" + row].Number = totalhoursworked;
+                                            worksheet.Range["A" + row + ":H" + row].CellStyle = Style;
 
-                                    worksheet.Range["A" + row].Text = item.EmployeeDetails;
+                                            row++;
+                                            EmployeeName = item.EmployeeDetails;
+                                            Month = m;
+                                            totalhoursworked = 0;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        EmployeeName = item.EmployeeDetails;
+                                        Month = m;
+                                    }
+
+                                    worksheet.Range["A" + row].Text = item.EmployeeDetails.Trim();
                                     worksheet.Range["A" + row + ":H" + row].Merge();
                                     worksheet.Range["A" + row + ":H" + row].CellStyle = DivisionStyle;
                                     worksheet.Range["A" + row].WrapText = true;
 
+                                    row ++;
+
+                                    worksheet.Range["A" + row].Text = "Year : " + Convert.ToDouble(y);
+                                    worksheet.Range["A" + row + ":H" + row].Merge();
+                                    worksheet.Range["A" + row + ":H" + row].WrapText = true;
+                                    worksheet.Range["A" + row + ":H" + row].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 204, 0);
+                                    worksheet.Range["A" + row + ":H" + row].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
+                                    worksheet.Range["A" + row + ":H" + row].CellStyle.Font.Size = 14;
+
+                                    row++;
+
+                                    var _mth = MonthData.FirstOrDefault(o => o.MonthId == m);
+
+                                    worksheet.Range["A" + row].Text = "Month : " + _mth.MonthDesc;
+                                    worksheet.Range["A" + row + ":H" + row].Merge();
+                                    worksheet.Range["A" + row].WrapText = true;
+                                    worksheet.Range["A" + row + ":H" + row].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(44, 62, 80);
+                                    worksheet.Range["A" + row + ":H" + row].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
+                                    worksheet.Range["A" + row + ":H" + row].CellStyle.Font.Size = 14;
+
                                     row += 2;
+
 
                                     if (y.HasValue && m.HasValue)
                                     {
@@ -631,25 +685,21 @@
                                             count++;
                                         }
 
-                                        row++;
+                                        //row++;
                                     }
-
-                                    // //Provide Sum for Hours Worked
-                                    // worksheet.Range["A" + row].Number = totalhoursworked;
-                                    // worksheet.Range["A" + row + ":H" + row].Merge();
-                                    // worksheet.Range["A" + row + ":H" + row].CellStyle = DivisionStyle;
-                                    // worksheet.Range["A" + row].WrapText = true;
 
                                     // //Provide Sum for Hours Worked
                                 }
 
-                                // //Provide Sum for Hours Worked
-                                // worksheet.Range["A" + row].Number = totalhoursworked;
-                                // worksheet.Range["A" + row + ":H" + row].Merge();
-                                // worksheet.Range["A" + row + ":H" + row].CellStyle = DivisionStyle;
-                                // worksheet.Range["A" + row].WrapText = true;
+                                //Provide Sum for Hours Worked
+                                worksheet.Range["G" + row].Text = "Total Hours";
+                                worksheet.Range["H" + row].Number = totalhoursworked;
+                                worksheet.Range["A" + row + ":H" + row].CellStyle = Style;
 
-                                // //Provide Sum for Hours Worked
+                                row++;
+                                EmployeeName = null;
+                                Month = null;
+                                totalhoursworked = 0;
 
                                 row++;
                             }

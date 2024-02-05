@@ -282,7 +282,7 @@
             
     }
     <div class="col-md-12">
-        <SfDialog  Width="98%" ShowCloseIcon="true" @bind-Visible="Visibility" AllowDragging="true" EnableResize="true" IsModal="true">
+        <SfDialog  Width="auto" ShowCloseIcon="true" @bind-Visible="Visibility" AllowDragging="true" EnableResize="true" IsModal="true">
             <DialogEvents OnOpen="@DialogOpen" Closed="@DialogClose"></DialogEvents>
             <DialogTemplates>
                 <Header>Job Details</Header>	
@@ -291,7 +291,7 @@
                     @if(SelectedJobsModel != null)
                     {
                         <div style="overflow-x:auto;">
-                            <table  class="center">
+                            <table  class="center" style="margin:10px;">
                                 <tr>
                                     <td colspan="2" style="text-align: center;font-size: large;font-weight: bold;">
                                         <img src="/Image/logonhcc.png" width="40" height="25" /> NATIONAL HOUSING AND CONSTRUCTION COMPANY LIMITED
@@ -299,7 +299,12 @@
                                 </tr>
                                 <tr style="font-weight: bold;">
                                     <td>Post:</td>
-                                    <td style="font-weight:bold">@SelectedJobsModel.viewAvailableJobs?.JobTitleDescription?.Replace("(1)", "") - @SelectedJobsModel.viewAvailableJobs?.Vacancies Post(s) - @SelectedJobsModel.viewAvailableJobs?.ReferenceNumber </td>
+                                    <td style="font-weight:bold">@SelectedJobsModel.viewAvailableJobs?.JobTitleDescription?.Replace("(1)", "") - @SelectedJobsModel.viewAvailableJobs?.Vacancies Post(s)</td>
+                                </tr>
+
+                                <tr style="font-weight: bold;">
+                                    <td>Reference No:</td>
+                                    <td style="font-weight:bold">@SelectedJobsModel.viewAvailableJobs?.ReferenceNumber </td>
                                 </tr>
 
                                 <tr style="font-weight: bold;">
@@ -439,7 +444,7 @@
                                                                             <div class="row">
                                                                                 <div class="col-md-6">
                                                                                     <p>Name <span style="color:red;">*</span></p>
-                                                                                    <SfTextBox Multiline=true @bind-Value="@(ReferenceReviewData.RefereeName)" Width="100%" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                                                    <SfTextBox Multiline=false @bind-Value="@(ReferenceReviewData.RefereeName)" Width="100%" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                                                                                 </div>
                                                                                 @*<div class="col-md-4">
                                                                                     <p>Gender <span style="color:red;">*</span></p>
@@ -459,7 +464,7 @@
                                                                                 </div>*@
                                                                                 <div class="col-md-6">
                                                                                     <p>Current Organisation Name</p>
-                                                                                    <SfTextBox Multiline=true @bind-Value="@(ReferenceReviewData.RefereeCompany)" Width="100%" Placeholder="Enter Organisation" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                                                    <SfTextBox Multiline=false @bind-Value="@(ReferenceReviewData.RefereeCompany)" Width="100%" Placeholder="Enter Organisation" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                                                                                 </div>
                                                                                 <div class="col-md-6">
                                                                                     <p>Email <span style="color:red;">*</span></p>
@@ -948,6 +953,7 @@
             if (data.AreYouRelatedToAnyCompanyStaff == null || data.EverBeenConvicted == null
                 || data.InformationAcknowledgement == false || /* data.NoOfChildren==null || */ data.PreviouslyAppliedForAjob==null)
             {
+                toastService.ShowError("Please provide all the required details on the form");
                 await JSRuntime.InvokeVoidAsync("OnScrollEvent");
                 //await JSRuntime.InvokeVoidAsync("topFunction");OnScrollEvent
 
@@ -971,6 +977,7 @@
             }
             else if((data.PreviouslyAppliedForAjob==1 && string.IsNullOrEmpty(data.AppointmentDetail)) || (data.EverBeenConvicted==1 && string.IsNullOrEmpty(data.ConvictionReason)))
             {
+                toastService.ShowError("Please provide all the required details on the form");
                 error = "<ul>";
                 if((data.PreviouslyAppliedForAjob==1 && string.IsNullOrEmpty(data.AppointmentDetail))){
                     error += $"<li>Please enter the appointment detail. </li>";
@@ -981,6 +988,7 @@
             }
             else if(appliedForJobsModel.appliedForJobReferees.Count < 2)
             {
+                toastService.ShowError("Please provide all the required details on the form");
                 error = "<ul>";
                 error += $"<li>Please enter atleast two personal referees. </li>";
             }
@@ -1002,6 +1010,32 @@
                         if (_data.IsSuccess)
                         {
                             toastService.ShowSuccess(_data.Message);
+
+                            List<Task> t = new List<Task>();
+
+                            //Get Non Staff
+                            if (Credentials.UserRole == "Non-Staff")
+                            {
+                                var response = await Http.GetAsync($"HumanResource/GetAppliedForJobsForNonStaffApplicant/{Credentials.StaffId}");
+                                if (response.IsSuccessStatusCode)
+                                {
+                                    var _content = await response.Content.ReadAsStringAsync();
+                                    AppliedForJobsData = JsonSerializer.Deserialize<List<AppliedForJobs>>(_content, _options);
+                                }
+                            }
+                            //Get Continuing Staff
+                            else
+                            {
+                                var response = await Http.GetAsync($"HumanResource/GetAppliedForJobsForEmployeeApplicant/{Credentials.StaffId}");
+                                if (response.IsSuccessStatusCode)
+                                {
+                                    var _content = await response.Content.ReadAsStringAsync();
+                                    AppliedForJobsData = JsonSerializer.Deserialize<List<AppliedForJobs>>(_content, _options);
+                                }
+                            }
+
+                            Task _t = Task.WhenAll(t);
+                            await _t;
                         }
                         else
                         {
