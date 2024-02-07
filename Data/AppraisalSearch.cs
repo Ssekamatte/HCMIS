@@ -15,5 +15,8 @@
         public int?[] YearId { get; set; }
 
         public int?[] ShortlistId { get; set; }
+        public int?[] DepartmentId { get; set; }
+
+        public string? ReferenceNumber { get; set; }
     }
 }

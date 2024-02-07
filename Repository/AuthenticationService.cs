@@ -83,6 +83,7 @@ namespace HCMIS.Repository
             }
             catch (Exception ex)
             {
+                toastService.ClearAll();
                 toastService.ShowError(ex.Message);
             }
             return model;
@@ -116,6 +117,7 @@ namespace HCMIS.Repository
                 
                 if (!authResult.IsSuccessStatusCode)
                 {
+                    toastService.ClearAll();
                     toastService.ShowWarning(authResult.ReasonPhrase);
                     return result;
                 }
@@ -126,6 +128,7 @@ namespace HCMIS.Repository
                 {
                     if (result.IsSuccess==false)
                     {
+                        toastService.ClearAll();
                         toastService.ShowWarning(result.ErrorMsg);
                     }
                     else
@@ -142,7 +145,7 @@ namespace HCMIS.Repository
             }
             catch (Exception ex)
             {
-                //toastService.ShowError(ex.Message);
+                toastService.ClearAll();
                 toastService.ShowError(ex.ToString());
             }
 
@@ -201,6 +204,7 @@ namespace HCMIS.Repository
 
                 if (!authResult.IsSuccessStatusCode)
                 {
+                    toastService.ClearAll();
                     toastService.ShowError(authResult.ReasonPhrase);
                 }
                 else
@@ -210,6 +214,7 @@ namespace HCMIS.Repository
             }
             catch (Exception ex)
             {
+                toastService.ClearAll();
                 toastService.ShowError(ex.Message);
             }
             return data;
@@ -272,11 +277,13 @@ namespace HCMIS.Repository
                 }
                 else
                 {
+                    toastService.ClearAll();
                     toastService.ShowError(response.ReasonPhrase);
                 }
             }
             catch (Exception ex)
             {
+                toastService.ClearAll();
                 toastService.ShowError(ex.Message);
             }
             return data;
@@ -296,11 +303,13 @@ namespace HCMIS.Repository
                 }
                 else
                 {
+                    toastService.ClearAll();
                     toastService.ShowError(response.ReasonPhrase);
                 }
             }
             catch (Exception ex)
             {
+                toastService.ClearAll();
                 toastService.ShowError(ex.Message);
             }
             return data;
@@ -318,6 +327,7 @@ namespace HCMIS.Repository
 
                 if (!authResult.IsSuccessStatusCode)
                 {
+                    toastService.ClearAll();
                     toastService.ShowError(authResult.ReasonPhrase);
                 }
                 else
@@ -327,10 +337,12 @@ namespace HCMIS.Repository
                     {
                         if (m.IsSuccess == true)
                         {
+                            toastService.ClearAll();
                             toastService.ShowSuccess(m.Message);
                         }
                         else
                         {
+                            toastService.ClearAll();
                             toastService.ShowError(m.Message);
                         }
                     }
@@ -339,6 +351,7 @@ namespace HCMIS.Repository
             }
             catch (Exception ex)
             {
+                toastService.ClearAll();
                 toastService.ShowError(ex.Message);
             }
         }
@@ -355,6 +368,7 @@ namespace HCMIS.Repository
 
                 if (!authResult.IsSuccessStatusCode)
                 {
+                    toastService.ClearAll();
                     toastService.ShowError(authResult.ReasonPhrase);
                 }
                 else
@@ -364,10 +378,12 @@ namespace HCMIS.Repository
                     {
                         if (m.IsSuccess == true)
                         {
+                            toastService.ClearAll();
                             toastService.ShowSuccess(m.Message);
                         }
                         else
                         {
+                            toastService.ClearAll();
                             toastService.ShowError(m.Message);
                         }
                     }
@@ -376,6 +392,7 @@ namespace HCMIS.Repository
             }
             catch (Exception ex)
             {
+                toastService.ClearAll();
                 toastService.ShowError(ex.Message);
             }
         }
@@ -392,6 +409,7 @@ namespace HCMIS.Repository
 
                 if (!authResult.IsSuccessStatusCode)
                 {
+                    toastService.ClearAll();
                     toastService.ShowWarning(authResult.ReasonPhrase);
                 }
                 else
@@ -401,10 +419,12 @@ namespace HCMIS.Repository
                     {
                         if (m.IsSuccess == true)
                         {
+                            toastService.ClearAll();
                             toastService.ShowSuccess(m.Message);
                         }
                         else
                         {
+                            toastService.ClearAll();
                             toastService.ShowWarning(m.Message);
                         }
                     }
@@ -413,6 +433,7 @@ namespace HCMIS.Repository
             }
             catch (Exception ex)
             {
+                toastService.ClearAll();
                 toastService.ShowError(ex.Message);
             }
         }
@@ -429,6 +450,7 @@ namespace HCMIS.Repository
 
                 if (!authResult.IsSuccessStatusCode)
                 {
+                    toastService.ClearAll();
                     toastService.ShowError(authResult.ReasonPhrase);
                 }
                 else
@@ -438,10 +460,12 @@ namespace HCMIS.Repository
                     {
                         if (m.IsSuccess == true)
                         {
+                            toastService.ClearAll();
                             toastService.ShowSuccess(m.Message);
                         }
                         else
                         {
+                            toastService.ClearAll();
                             toastService.ShowError(m.Message);
                         }
                     }
@@ -450,6 +474,7 @@ namespace HCMIS.Repository
             }
             catch (Exception ex)
             {
+                toastService.ClearAll();
                 toastService.ShowError(ex.Message);
             }
         }

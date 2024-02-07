@@ -21,16 +21,14 @@ namespace HCMIS.Repository
             this.toastService = toastService;
             this.settingsRepo = settingsRepo;
         }
-        public async Task<List<AppliedForJobs>?> GetApplicationsAsync(string? ApplicationStatusId, string? MeetsRequirementsId)
+        public async Task<List<AppliedForJobs>?> GetApplicationsAsync(string? ApplicationStatusId, string? MeetsRequirementsId, string? DepartmentId, string? ReferenceNumber)
         {
             List<AppliedForJobs> result = new List<AppliedForJobs>();
             try
             {
                 string? accessToken = await settingsRepo.GetAccessToken();
                  
-                //var response = await http.GetAsync($"HumanResource/GetApplicationForStatus/{ApplicationStatusId}");
-                //var response = await http.GetAsync($"HumanResource/GetApplicationForStatus?ApplicationStatusId={ApplicationStatusId}");
-                var response = await http.GetAsync($"HumanResource/GetApplicationForStatus?ApplicationStatusId={ApplicationStatusId}&MeetsRequirementsId={MeetsRequirementsId}");
+                var response = await http.GetAsync($"HumanResource/GetApplicationForStatus?ApplicationStatusId={ApplicationStatusId}&MeetsRequirementsId={MeetsRequirementsId}&DepartmentId={DepartmentId}&ReferenceNumber={ReferenceNumber}");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {

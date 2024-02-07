@@ -6,7 +6,7 @@ namespace HCMIS.Interface
 {
     public interface IJobApplications
     {
-        Task<List<AppliedForJobs>?> GetApplicationsAsync(string? ApplicationStatusId, string? MeetsRequirementsId);
+        Task<List<AppliedForJobs>?> GetApplicationsAsync(string? ApplicationStatusId, string? MeetsRequirementsId, string? DepartmentId, string? ReferenceNumber);
         Task<List<AppliedForJobs>?> GetMyApplicationsAsync(string? ApplicationStatusId, string? ApplicantId);
         Task SaveUpdateApplicationAsync(AppliedForJobs data);
     }

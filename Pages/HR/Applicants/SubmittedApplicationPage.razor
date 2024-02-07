@@ -40,6 +40,11 @@
     .alert-info{
         padding:10px;
     }
+
+    /*hide the Default Grid spinner */
+    .e-grid .e-spinner-pane {
+        display: none;
+    }
 </style>
 
 <ol class="breadcrumb" style="margin-top:5px;">
@@ -66,6 +71,7 @@
                     <ContentTemplate>
                         <HCMIS.Pages.HR.Applicants.PartialPages.SubmittedApplicationsSearchPage 
                             ShortlistDetailData="@ShortlistDetailData" 
+                            DepartmentData="@DepartmentData"
                             listid="@listid" 
                             onsearchtoggle="@ToggleSearchQuery">
                         </HCMIS.Pages.HR.Applicants.PartialPages.SubmittedApplicationsSearchPage>
@@ -84,6 +90,11 @@
         <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
         <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
         <GridPageSettings PageSize="20"></GridPageSettings>
+        <GridEvents 
+                    QueryCellInfo="QueryCellInfoHandler"
+                    DataBound="DataBoundHandler"
+                    TValue="AppliedForJobs">
+        </GridEvents>
         <SfDataManager AdaptorInstance="@typeof(SubmittedApplicationAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
         <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
             <Template>
@@ -102,7 +113,7 @@
                                             </ChildContent>
                                             <ContentTemplate>
                                                 <div style="margin:10px; width:100%;">
-                                                    <HCMIS.Pages.HR.Applicants.PartialPages.ApplicationCommentPartialPage AppliedForJobsComment="@HeaderReviewData.AppliedForJobsComment" />
+                                                    @*<HCMIS.Pages.HR.Applicants.PartialPages.ApplicationCommentPartialPage AppliedForJobsComment="@HeaderReviewData.AppliedForJobsComment" />*@
                                                 </div>
                                             </ContentTemplate>
                                         </TabItem>
@@ -227,27 +238,118 @@
         </GridEditSettings>
         <GridColumns>
             @* <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn> *@
-            <GridColumn HeaderText="Manage"
-                        Width="40"
+            <GridColumn HeaderText="View"
+                        Width="20"
                         CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"
                         TextAlign="TextAlign.Left">
                 <GridCommandColumns>
-                    <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit/View"></GridCommandColumn>
+                    <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="View" })" Title="View"></GridCommandColumn>
                 </GridCommandColumns>
             </GridColumn>
-            <GridColumn Field="@(nameof(AppliedForJobs.AppliedForJobsId))" Visible=true IsPrimaryKey=true IsIdentity=true HeaderText="Ref Id" Width="120" AllowFiltering="true"></GridColumn>
-            <GridColumn Field="@(nameof(AppliedForJobs.JobReferenceNo))" HeaderText="Ref No" Width="120" AllowFiltering="true"></GridColumn>
-            @* <GridColumn Field="@(nameof(AppliedForJobs.DepartmentDescription))" HeaderText="Department" Width="120" AllowFiltering="true"></GridColumn>
-            <GridColumn Field="@(nameof(AppliedForJobs.JobTitleDescription))" HeaderText="Job Title" Width="120" AllowFiltering="true"></GridColumn>
-            <GridColumn Field="@(nameof(AppliedForJobs.FullName))" HeaderText="Name" Width="120" AllowFiltering="true"></GridColumn>
-            <GridColumn Field="@(nameof(AppliedForJobs.GenderDesc))" HeaderText="Gender" Width="120" AllowFiltering="true"></GridColumn>
-            <GridColumn Field="@(nameof(AppliedForJobs.DoB))" HeaderText="Date of Birth" Width="120" AllowFiltering="true"></GridColumn>
-            <GridColumn Field="@(nameof(AppliedForJobs.EmailAddress))" HeaderText="Email" Width="120" AllowFiltering="true"></GridColumn> *@
+            <GridColumn Field="@(nameof(AppliedForJobs.AppliedForJobsId))" Visible=false IsPrimaryKey=true IsIdentity=true HeaderText="Ref Id" Width="120" AllowFiltering="true"></GridColumn>
+            
+            <GridForeignColumn Field=@nameof(AppliedForJobs.AppliedForJobsId)
+                               HeaderText="Ref No"
+                               Width="50"
+                               AllowEditing="false"
+                               ForeignKeyField="@(nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId))"
+                               ForeignKeyValue="@(nameof(ViewAppliedForJobsDetails2024.JobOpeningReferenceNumber))"
+                               ForeignDataSource="@AppliedforJobsDetailData" AllowFiltering="false"
+                               CustomAttributes="@(new Dictionary<string,
+                    object>(){ { "class", "e-attr1" }})">
+            </GridForeignColumn>
+
+            <GridForeignColumn Field=@nameof(AppliedForJobs.AppliedForJobsId)
+                               HeaderText="Applicant"
+                               Width="60"
+                               AllowEditing="false"
+                               ForeignKeyField="@(nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId))"
+                               ForeignKeyValue="@(nameof(ViewAppliedForJobsDetails2024.FullName))"
+                               ForeignDataSource="@AppliedforJobsDetailData" AllowFiltering="false"
+                               CustomAttributes="@(new Dictionary<string,
+                    object>(){ { "class", "e-attr1" }})">
+            </GridForeignColumn>
+
+            
+            <GridForeignColumn Field=@nameof(AppliedForJobs.AppliedForJobsId)
+                               HeaderText="Gender"
+                               Width="40"
+                               AllowEditing="false"
+                               ForeignKeyField="@(nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId))"
+                               ForeignKeyValue="@(nameof(ViewAppliedForJobsDetails2024.GenderDesc))"
+                               ForeignDataSource="@AppliedforJobsDetailData" AllowFiltering="false"
+                               CustomAttributes="@(new Dictionary<string,
+                    object>(){ { "class", "e-attr1" }})">
+            </GridForeignColumn>            
+
+            <GridForeignColumn Field=@nameof(AppliedForJobs.AppliedForJobsId)
+                               HeaderText="Department"
+                               Width="80"
+                               AllowEditing="true"
+                               ForeignKeyField="@(nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId))"
+                               ForeignKeyValue="@(nameof(ViewAppliedForJobsDetails2024.DepartmentDescription))"
+                               ForeignDataSource="@AppliedforJobsDetailData" AllowFiltering="false"
+                               CustomAttributes="@(new Dictionary<string,
+                    object>(){ { "class", "e-attr1" }})">
+            </GridForeignColumn>
+
+            <GridForeignColumn Field=@nameof(AppliedForJobs.AppliedForJobsId)
+                               HeaderText="Application Date"
+                               Width="80"
+                               AllowEditing="true"
+                               ForeignKeyField="@(nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId))"
+                               ForeignKeyValue="@(nameof(ViewAppliedForJobsDetails2024.ApplicationDate))"
+                               ForeignDataSource="@AppliedforJobsDetailData" AllowFiltering="false"
+                               Format="dd/MMMM/yyyy HH:mm:ss"
+                               CustomAttributes="@(new Dictionary<string,
+                    object>(){ { "class", "e-attr1" }})">
+            </GridForeignColumn>
+
+            <GridForeignColumn Field=@nameof(AppliedForJobs.MeetsRequirements)
+                               HeaderText="Status"
+                               Width="60"
+                               AllowEditing="false"
+                               ForeignKeyField="@(nameof(AShortlist.ShortlistId))"
+                               ForeignKeyValue="@(nameof(AShortlist.ShortlistDescription))"
+                               ForeignDataSource="@ShortlistDetailData" AllowFiltering="false"
+                               CustomAttributes="@(new Dictionary<string,
+                    object>(){ { "class", "e-attr1" }})">
+            </GridForeignColumn>  
         </GridColumns>
     </SfGrid>
 </div>
 
+<div>
+    <SfDialog @ref="@LoadingDialogue"
+              ID="LoadingDialog"
+              Height="auto"
+              Width="20%"
+              AllowDragging="true"
+              Target=".mainbody"
+              ShowCloseIcon="false"
+              IsModal=true
+              Visible="false">
+        <DialogTemplates>
+            <Content>
+                <div style="padding:25px">
+                    <div class="loader">
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader-Loading-text"></div>
+                        @*<div class="loader-Saving-text"></div>*@
+                    </div>
+                </div>
+            </Content>
+            <FooterTemplate>
 
+            </FooterTemplate>
+        </DialogTemplates>
+    </SfDialog>
+</div>
 
 @code {
     SfDialog? ConfirmationDialog;
@@ -270,6 +372,10 @@
     public Query MainQuery = new Query();
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     public bool loadingspinner { get; set; }
+    List<ViewJobDescOpening2024>? JobOpeningData { get; set; }
+    List<ViewAppliedForJobsDetails2024>? AppliedforJobsDetailData { get; set; }
+    List<ADepartment>? DepartmentData { get; set; }
+    SfDialog? LoadingDialogue;
 
     protected override async Task OnInitializedAsync()
     {
@@ -321,6 +427,40 @@
                         }
                     }
                 }));
+
+                tasks.Add(Task.Run(async () =>
+              {
+
+                  var response = await Http.GetAsync($"HumanResource/GetJobOpening");
+                  var content = await response.Content.ReadAsStringAsync();
+                  if (response.IsSuccessStatusCode)
+                  {
+                      JobOpeningData = JsonSerializer.Deserialize<List<ViewJobDescOpening2024>>(content, _options);
+                  }
+              }));
+
+                tasks.Add(Task.Run(async () =>
+              {
+
+                  var response = await Http.GetAsync($"HumanResource/GetAppliedForJobsDetail");
+                  var content = await response.Content.ReadAsStringAsync();
+                  if (response.IsSuccessStatusCode)
+                  {
+                      AppliedforJobsDetailData = JsonSerializer.Deserialize<List<ViewAppliedForJobsDetails2024>>(content, _options);
+                  }
+              }));
+
+                tasks.Add(Task.Run(async () =>
+                {
+
+                    var response = await Http.GetAsync($"Utilities/GetDepartment");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
+                    }
+                }));
+
 
                 Task _t = Task.WhenAll(tasks);
                 await _t;
@@ -422,6 +562,8 @@
         {
 
             string? _ListId = null;
+            string? _DepartmentId = null;
+            string _ReferenceNumber = null;
 
             if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
             {
@@ -431,9 +573,18 @@
                 {
                     _ListId = val.FirstOrDefault(o => o.Key == "MeetsRequirements").Value.ToString();
                 }
-            }
+                if (val.FirstOrDefault(o => o.Key == "DepartmentId").Value != null)
+                {
+                    _DepartmentId = val.FirstOrDefault(o => o.Key == "DepartmentId").Value.ToString();
+                }
 
-            var data = await reopsitory.GetApplicationsAsync("1,3",_ListId);
+                if (val.FirstOrDefault(o => o.Key == "ReferenceNumber").Value != null)
+                {
+                    _ReferenceNumber = val.FirstOrDefault(o => o.Key == "ReferenceNumber").Value.ToString();
+                }
+            }
+            
+            var data = await reopsitory.GetApplicationsAsync("1,3",_ListId,_DepartmentId,_ReferenceNumber);
 
             IEnumerable GridData = data;
             int _count = data.Count;
@@ -486,5 +637,26 @@
 
             return value;
         }
+    }
+
+    public void QueryCellInfoHandler(QueryCellInfoEventArgs<AppliedForJobs> Args)
+    {
+        if (Args.Column.Field == "MeetsRequirements")
+        {
+            if (ShortlistDetailData != null)
+            {
+                var impcolor = ShortlistDetailData.FirstOrDefault(o => o.ShortlistId == Args.Data.MeetsRequirements);
+                if (impcolor != null)
+                {
+                    Args.Cell.AddStyle(new string[] { $"background-color:{impcolor.ColorCode}", $"color:{impcolor.FontColorCode}" });
+                }
+            }
+
+        }
+    }
+
+    public void DataBoundHandler()
+    {
+        // Here, you can customize your code.
     }
 }

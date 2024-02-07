@@ -11,7 +11,8 @@
             <EditForm Model="@searchpanel" OnValidSubmit="@OnLoadRecords">
                 <DataAnnotationsValidator />
                 <div class="row" style="margin-bottom:10px;">
-                    <div class="col-md-12">
+                    <div class="col-md-4">
+                        <p>Shortlisted/Not-Shortlisted Status</p>
                         <SfMultiSelect @bind-Value="@searchpanel.ShortlistId"
                                        TValue="int?[]" TItem="AShortlist"
                                        AllowFiltering="true"
@@ -27,6 +28,36 @@
                                                       Text="@nameof(AShortlist.ShortlistDescription)">
                             </MultiSelectFieldSettings>
                         </SfMultiSelect>
+                    </div>
+
+                    <div class="col-md-4">
+                        <p>Department</p>
+                        <SfMultiSelect @bind-Value="@searchpanel.DepartmentId"
+                                       TValue="int?[]" TItem="ADepartment"
+                                       AllowFiltering="true"
+                                       FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                                       Mode="@VisualMode.CheckBox"
+                                       DataSource="@DepartmentData"
+                                       ShowSelectAll="true"
+                                       EnableSelectionOrder="true"
+                                       ShowDropDownIcon="true"
+                                       FilterBarPlaceholder="Year"
+                                       FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+                            <MultiSelectFieldSettings Value="@nameof(ADepartment.DepartmentId)"
+                                                      Text="@nameof(ADepartment.DepartmentDescription)">
+                            </MultiSelectFieldSettings>
+                        </SfMultiSelect>
+                    </div>
+
+                    <div class="col-md-4">
+                        <p>Reference No.</p>
+                        <SfTextBox 
+                            Multiline="false" 
+                            @bind-Value="@(searchpanel.ReferenceNumber)"
+                            Enabled="true" 
+                            FloatLabelType="FloatLabelType.Never">
+                        </SfTextBox>
+                        
                     </div>
 
                     <div class="col col-md-12" style="margin-top:20px">
@@ -45,6 +76,9 @@
     public AppraisalSearch searchpanel { get; set; } = new AppraisalSearch();
     [Parameter]
     public List<AShortlist>? ShortlistDetailData { get; set; }
+
+    [Parameter]
+    public List<ADepartment>? DepartmentData { get; set; }
 
     public Query MainQuery = new Query();
     [Parameter]
@@ -76,8 +110,22 @@
                 _listId = string.Join(",", searchpanel.ShortlistId);
             }
 
+            string _DepartmentId = null;
+            if (searchpanel.DepartmentId != null)
+            {
+                _DepartmentId = string.Join(",", searchpanel.DepartmentId);
+            }
+
+            string _ReferenceNumber = null;
+            if (searchpanel.ReferenceNumber != null)
+            {
+                _ReferenceNumber = searchpanel.ReferenceNumber;
+            }
+
             MainQuery = new Query()
-            .AddParams("MeetsRequirements", _listId);
+            .AddParams("MeetsRequirements", _listId)
+            .AddParams("DepartmentId", _DepartmentId)
+            .AddParams("ReferenceNumber", _ReferenceNumber);
             await onsearchtoggle.InvokeAsync(MainQuery);
 
         }
