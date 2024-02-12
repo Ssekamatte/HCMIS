@@ -1,48 +1,33 @@
 ﻿@*https://techcommunity.microsoft.com/t5/web-development/blazor-wasm-pwa-applications-updates-cache-busting-with/m-p/3920976*@
 
-@page "/SystemUpdatePage"
+@* Explains the work above well *@
+@* https://whuysentruit.medium.com/blazor-wasm-pwa-adding-a-new-update-available-notification-d9f65c4ad13 *@
 
-<h3>SystemUpdate</h3>
-
+@* @page "/UpdateAvailableDetector" *@
 @inject IJSRuntime _jsRuntime
 @inject NavigationManager uriHelper
 
-@*To Prompt User to update*@
-@if (_newVersionAvailable)
-{
-    <button type="button" class="btn btn-danger shadow floating-update-button" onclick="window.location.reload()">
-        A new version of the application is available. Click here to upgrade.
-    </button>
-}
-
-@code {
-    private bool _newVersionAvailable = false;
-
-    protected override async Task OnInitializedAsync()
-    {
-        await RegisterForUpdateAvailableNotification();
+<style>
+    /*Mud Overlay Height*/
+    .mud-overlay .mud-overlay-scrim.mud-overlay-dark {
+        height: 2000px;
+        border-color: var(--mud-palette-overlay-dark);
+        background-color: var(--mud-palette-overlay-dark);
     }
 
-    private async Task RegisterForUpdateAvailableNotification()
-    {
-        await _jsRuntime.InvokeAsync<object>(
-            identifier: "registerForUpdateAvailableNotification",
-            DotNetObjectReference.Create(this),
-            nameof(OnUpdateAvailable));
+    u {
+        text-decoration: underline;
+        text-decoration-color: green;
     }
 
-    [JSInvokable(nameof(OnUpdateAvailable))]
-    public Task OnUpdateAvailable()
-    {
-        _newVersionAvailable = true;
-
-        StateHasChanged();
-
-        return Task.CompletedTask;
+    u:hover {
+        background-color: goldenrod;
+        color: ghostwhite;
     }
-}
+</style>
 
-@*To automatically update*@
+
+@*Code to automatically clear cache and update system*@
 
 @*
 @code {
@@ -70,3 +55,46 @@
     }
 }
 *@
+
+@*Code below to trigger reload button*@
+
+
+@if (_newVersionAvailable)
+{
+    <MudOverlay @bind-Visible="@loadingspinner" DarkBackground="true" AutoClose="false" Absolute="true">
+        <button type="button" class="btn btn-warning shadow floating-update-button" onclick="window.location.reload()">
+            A new version of the application is available. Click <u>here</u> to upgrade.
+        </button>
+    </MudOverlay>
+}
+
+@code {
+
+    private bool _newVersionAvailable = false;
+    public bool loadingspinner { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RegisterForUpdateAvailableNotification();
+    }
+
+    private async Task RegisterForUpdateAvailableNotification()
+    {
+        await _jsRuntime.InvokeAsync<object>(
+            identifier: "registerForUpdateAvailableNotification",
+            DotNetObjectReference.Create(this),
+            nameof(OnUpdateAvailable));
+    }
+
+    [JSInvokable(nameof(OnUpdateAvailable))]
+    public Task OnUpdateAvailable()
+    {
+        _newVersionAvailable = true;
+        loadingspinner = true;
+
+        StateHasChanged();
+
+        return Task.CompletedTask;
+    }
+
+}

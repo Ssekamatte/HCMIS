@@ -1,173 +1,310 @@
-﻿@page "/MyApplicationsPage"
-@using HCMIS.DTOs;
-@using HCMIS.Interface;
-@using HCMIS.Model;
+﻿@* @page "/MyApplicationsPageOld" *@
+@using HCMIS.Interface
+@using HCMIS.Model
+@using HCMIS.SHARED.Models
 @using System.Text.Json
-@inject IToastService toastService;
-@inject IJobApplications JobRepo;
-@inject IAuthenticationService AuthService;
-@inject NavigationManager navManager;
+@using HCMIS.ViewModel
 @inject HttpClient Http
+@inject NavigationManager navManager
+@inject IAuthenticationService AuthService;
+@inject IToastService toastService;
+@inject DocumentUploadModel _DocumentUploadModel;
+@inject IJSRuntime _JSRuntime;
 
-<ol class="breadcrumb" style="margin-top:5px;">
-    <li class="breadcrumb-item active" style="color: brown;">
-        <strong>
-            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
-        </strong>| MY APPLICATIONS
-    </li>
-</ol>
+@* https://blazor.syncfusion.com/documentation/card/style *@@*  Link to styling card elements *@
+<style>
+    /*Submit Button color on hover*/
+    .e-btn.e-success:hover, .e-css.e-btn.e-success:hover {
+        background: lightgreen;
+        border-color: #0a5f0a;
+        box-shadow: 0 0 rgba(0,0,0,0);
+        color: #fff;
+    }
 
-@*<h3>MyApplicationsPage</h3>*@
-@if(LoadingPageComplete)
+    /*Responsive HTML Table*/
+    table.center {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    table, th, td {
+        border-collapse: collapse;
+        border-spacing: 0;
+        width: auto;
+        border: 1px solid #ddd;
+        border: 1px solid black;
+        border-collapse: collapse;
+        text-align: left;
+        padding: 8px;
+        margin-left: 60px;
+        margin-right: 20px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #f2f2f2
+    }
+
+    /*Responsive HTML Table*/
+
+    #target {
+        max-height: 800px;
+        height: 400px;
+    }
+
+    h3 {
+        color: ghostwhite;
+        background-color: #00cc00;
+        padding: 10px;
+        width: 100%;
+        font-size: large;
+    }
+
+    li {
+        margin: 0px 0px 4px;
+        line-height: 1.8;
+        color: rgb(102, 102, 102);
+        font-family: "Open Sans", sans-serif;
+        font-size: 14px;
+        font-style: normal;
+        font-weight: 400;
+        text-indent: 0px;
+        white-space: normal;
+        /* background-color: rgb(255, 255, 255);*/
+        text-align: justify;
+    }
+
+    p {
+        margin: 0px 0px 4px;
+        line-height: 1.8;
+        color: rgb(102, 102, 102);
+        font-family: "Open Sans", sans-serif;
+        font-size: 14px;
+        font-style: normal;
+        font-weight: 400;
+        text-indent: 0px;
+        white-space: normal;
+        /* background-color: rgb(255, 255, 255);*/
+        text-align: justify;
+    }
+
+    h5 {
+        color: #06c;
+    }
+
+    label {
+        margin-top: 15px;
+    }
+
+    ul.e-list-parent .e-ul > li {
+        min-height: 10vh;
+    }
+</style>
+
+@* Url to bootstrap card formats *@
+@* https://ordinarycoders.com/blog/article/codepen-bootstrap-card-hovers *@
+
+@if (AvailableJobsData != null)
 {
-    if(MyApplicationData != null && MyApplicationData.Count > 0)
-    {
-        var listData = MyApplicationData.Skip(SkipValue).Take(TakeValue).ToList();
-        <div class="row">
-            <div class="col-md-12">
-            <SfListView TValue="AppliedForJobs" DataSource="@listData" EnableVirtualization="false" CssClass="e-list-template">
-                @* <ListViewFieldSettings Id="AppliedForJobsId" Text="JobTitleDescription" GroupBy="DepartmentDescription" TValue="AppliedForJobs" /> *@
-                <ListViewFieldSettings Id="AppliedForJobsId" Text="JobTitleDescription" TValue="AppliedForJobs" />
-                <ListViewTemplates TValue="AppliedForJobs">
-                    <Template>
-                        @{
-                            var data = (context as AppliedForJobs);
+    <div class="row e-card-layout" style="text-align:center;">
+        @foreach (var data in AvailableJobsData)
+        {
+            string ContractLengthTypeDesc = string.Empty;
+            string JobTitleDesc = string.Empty;
+            string JobTypeDesc = string.Empty;
+            string _imageurl = string.Empty;
 
-                                List<string?> _jobtypelist = new List<string?>();
-                                string repto = string.Empty;
+            var _jobdesc = JobDescriptionData.FirstOrDefault(o => o.JobDescriptionId == data.JobDescriptionId);
+            var _jobtitle = JobTitleData.FirstOrDefault(o => o.JobTitleId == _jobdesc.JibTitleId);
+            var _dept = DepartmentData.FirstOrDefault(o => o.DepartmentId == _jobdesc.DepartmentId);
+            var _jobtype = JobTypeData.FirstOrDefault(o => o.JobTypeId == _jobdesc.JobTypeId);
+            var _contractlength = ContractLengthTypeData.FirstOrDefault(o => o.ContractLengthTypeId == _jobdesc.ContractLengthTypeId);
 
-                                var _jobopening = JobOpeningData.FirstOrDefault(o => o.JobOpeningId == data.JobOpeningId);
-                                var _jobdesc = JobDescriptionData.FirstOrDefault(o => o.JobDescriptionId == _jobopening.JobDescriptionId);
-                                var _jobtitle = JobTitleData.FirstOrDefault(o => o.JobTitleId == _jobdesc.JibTitleId);
-                                var _dept = DepartmentData.FirstOrDefault(o => o.DepartmentId == _jobdesc.DepartmentId);
-                                var _jobtype = JobTypeData.FirstOrDefault(o => o.JobTypeId == _jobdesc.JobTypeId);
-                                
-                                <div class="row" style="margin:10px; border-color:gray; border-style:solid; border-width:1px;">
-                                    <div class="col-md-9" style="padding:10px;">
-                                        @* <h5>@data.ReferenceNumber @data.JobTitleDescription?.Replace("(1)","")</h5> *@
-                                        <h5>@data.JobReferenceNo @data.AppliedForJobsId)</h5>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                @* Original *@
-                                                @* <p>Department: @data.DepartmentDescription</p>
-                                                    <p>Reports To: @data.ReportsToDesc</p>
-                                                    <p>Job Type: @data.TypeDescription</p> *@
-                                                @* Original *@
+            if (_jobtitle != null)
+            {
+                JobTitleDesc = _jobtitle.JobTitleDescription;
+            }
 
-                                                <p>Department: @_dept.DepartmentDescription</p>
+            if (_contractlength != null)
+            {
+                ContractLengthTypeDesc = _contractlength.ContractLengthTypeDesc;
+            }
 
-                                                @if (_jobtitle != null && !string.IsNullOrEmpty(_jobtitle.ReportsTo))
-                                                {
-                                                    string[] splitReportsTo = _jobtitle.ReportsTo.Split(",");
-                                                    @foreach (var n in splitReportsTo)
-                                                    {
-                                                        var _jobtt = JobTitleData.FirstOrDefault(o => o.JobTitleId == Convert.ToInt32(n));
-                                                        _jobtypelist.Add(_jobtt.JobTitleDescription);
-                                                    }
-                                                    repto = String.Join(",", _jobtypelist);
+            if (_jobtype != null)
+            {
+                JobTypeDesc = _jobtype.TypeDescription;
+            }
 
-                                                    <p>Reports To: @repto</p>
-                                                }
-                                                else
-                                                {
-                                                    <p>Reports To: None</p>
-                                                }
+            @*Images*@
+            if (_jobdesc.DepartmentId == 1)
+            {
+                _imageurl = "/image/NHCC1.jeg";
+            }
+            else if (_jobdesc.DepartmentId == 2)
+            {
+                _imageurl = "/image/NHCC9.avif";
+            }
+            else if (_jobdesc.DepartmentId == 3)
+            {
+                _imageurl = "/image/NHCC3.jpg";
+            }
+            else if (_jobdesc.DepartmentId == 4)
+            {
+                _imageurl = "/image/NHCC4.jpeg";
+            }
+            else if (_jobdesc.DepartmentId == 5)
+            {
+                _imageurl = "/image/NHCC5.png";
+            }
+            else if (_jobdesc.DepartmentId == 6)
+            {
+                _imageurl = "/image/NHCC6.png";
+            }
+            else if (_jobdesc.DepartmentId == 7)
+            {
+                _imageurl = "/image/NHCC7.jpg";
+            }
+            else if (_jobdesc.DepartmentId == 8)
+            {
+                _imageurl = "/image/NHCC8.jpg";
+            }
 
-                                                <p>Job Type: @_jobtype.TypeDescription</p>
-                                            </div>
-                                            <div class="col-md-6">
-                                                @if (_jobdesc.JobTypeId == 3)
-                                                {
-                                                    if(_jobdesc.ContractLength != null && _jobdesc.ContractLengthTypeId != null)
-                                                    {
-                                                        var _contractlengthtype = ContractLengthTypeData.FirstOrDefault(o => o.ContractLengthTypeId == _jobdesc.ContractLengthTypeId);
-                                                        <p>Contract length: @_jobdesc.ContractLength @_contractlengthtype.ContractLengthTypeDesc</p>
-                                                    }                                                    
-                                                }
-
-                                                @if(_jobdesc.SalaryScaleId != null)
-                                                {
-                                                    var _salaryscale = SalaryScaleData.FirstOrDefault(o => o.SalaryScaleId == _jobdesc.SalaryScaleId);
-                                                    <p>Salary Scale: @_salaryscale.SalaryScaleDescription</p>
-                                                }
-
-                                                @if (_jobdesc.Vacancies != null)
-                                                {
-                                                    <p>Vacancies: @_jobdesc.Vacancies</p>                                                    
-                                                }
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                    <div class="col-md-3" style="padding:10px;">
-                                        @if (data.ApplicationStatusId == 4)
-                                        {
-                                            <button class="btn btn-primary" @onclick=@(()=>{StartAmptituddeTest(_jobdesc.JibTitleId,data.AppliedForJobsId);})><i class="oi oi-eye"></i> Start Aptitudde Test</button>
-                                        }
-                                    </div>
-                                </div>
-
-                        }
-                        
-                    </Template>
-                    <GroupTemplate>
-                        <div>
-                            <span class="category">@context.Text</span>
-                        </div>
-                    </GroupTemplate>
-                </ListViewTemplates>
-            </SfListView>
-            </div>
-            <div class="col-md-12">
-                <SfPager @ref="@Page" PageSize=5 NumericItemsCount=4 TotalItemsCount=@MyApplicationData.Count ItemClick="PaggerClick">
-                </SfPager>
-            </div>
-        </div>
-
-    }
-    else
-    {
-
-        <p class="alert-info" style="padding:10px;">You have not yet applied for any job on this platform.</p>
-    }
-}
-else{
-    <div class="col-md-12">
-        <div class="loader">
-            <div class="loader--dot"></div>
-            <div class="loader--dot"></div>
-            <div class="loader--dot"></div>
-            <div class="loader--dot"></div>
-            <div class="loader--dot"></div>
-            <div class="loader--dot"></div>
-            <div class="loader--text"></div>
-        </div>
+            <div class="col-lg-3 col-md-3 col-sm-6" style="margin-top:10px;">
+                <MudCard>
+                    <MudCardMedia Image="@_imageurl" Height="60" />
+                    <MudCardContent>
+                        <MudText Typo="Typo.h5" Style="font-size:0.9rem; font-weight:bolder;"><i class="fa fa-briefcase"></i> @JobTitleDesc</MudText>
+                            <MudText Typo="Typo.body2" Style="font-size:0.7rem;text-align: center;"><i class="fa fa-list-ol"></i> @data.ReferenceNumber</MudText>
+                            <MudText Typo="Typo.body2" Style="font-size:0.7rem;text-align: center;"><i class="fa fa-share-square-o"></i> @JobTypeDesc</MudText>
+                            @if(_jobdesc.ContractLength != null)
+                            {
+                                <MudText Typo="Typo.body2" Style="font-size:0.7rem;text-align: center;"><i class="fa fa-google-wallet"></i> @_jobdesc.ContractLength @ContractLengthTypeDesc</MudText>
+                            }
+                            
+                        </MudCardContent>
+                        <MudCardActions>
+                            <MudButton Variant="Variant.Text" Color="Color.Primary" @onclick=@(()=>{downloadJobClick(data);})>Download</MudButton>
+                            <MudButton Variant="Variant.Text" Color="Color.Primary"  @onclick=@(()=>{viewJobClick(data);})>View Job</MudButton>
+                        </MudCardActions>
+                    </MudCard>
+             </div>
+            
+        }
     </div>
 }
+
+else
+{
+    <div class="col-lg-3 col-md-12 col-sm-6">
+        <MudAlert Severity="Severity.Error" Elevation="3">
+            There are no current openings.
+        </MudAlert>
+    </div>    
+}
+
+@*View Full Job Description*@
+
+
+<div class="col-md-12">
+    <SfDialog Width="auto" ShowCloseIcon="true" @bind-Visible="Visibility" AllowDragging="true" EnableResize="true" IsModal="true">
+        <DialogEvents OnOpen="@DialogOpen" Closed="@DialogClose"></DialogEvents>
+        <DialogTemplates>
+            <Header>Job Details</Header>
+            <Content>
+
+                @if (SelectedJobsModel != null)
+                {
+                    var _jobdesc = JobDescriptionData.FirstOrDefault(o => o.JobDescriptionId == SelectedJobsModel.JobDescriptionId);
+                    var _jobtitle = JobTitleData.FirstOrDefault(o => o.JobTitleId == _jobdesc.JibTitleId);
+                    var _dept = DepartmentData.FirstOrDefault(o => o.DepartmentId == _jobdesc.DepartmentId);
+                    var _jobtype = JobTypeData.FirstOrDefault(o => o.JobTypeId == _jobdesc.JobTypeId);
+                    var _contractlength = ContractLengthTypeData.FirstOrDefault(o => o.ContractLengthTypeId == _jobdesc.ContractLengthTypeId);
+
+                    <div style="overflow-x:auto;">
+                        <table class="center" style="margin:10px;">
+                            <tr>
+                                <td colspan="2" style="text-align: center;font-size: large;font-weight: bold;">
+                                    <img src="/Image/logonhcc.png" width="40" height="25" /> NATIONAL HOUSING AND CONSTRUCTION COMPANY LIMITED
+                                </td>
+                            </tr>
+                            <tr style="font-weight: bold;">
+                                <td>Post:</td>
+                                <td style="font-weight:bold">@_jobtitle.JobTitleDescription - @_jobdesc.Vacancies Post(s)</td>
+                            </tr>
+
+                            <tr style="font-weight: bold;">
+                                <td>Reference No:</td>
+                                <td style="font-weight:bold">@SelectedJobsModel.ReferenceNumber </td>
+                            </tr>
+
+                            <tr style="font-weight: bold;">
+                                <td>Reports To:</td>
+                                <td>@_jobtitle.ReportsTo</td>
+                            </tr>
+
+                            <tr style="font-weight: bold;">
+                                <td>Responsible For:</td>
+                                <td>@_jobdesc.ResponsibleFor</td>
+                            </tr>
+
+                            <tr style="font-weight: bold;">
+                                <td>Job Purpose:</td>
+                                <td>@_jobdesc.OtherRequirements</td>
+                            </tr>
+
+                            <tr style="font-weight: bold;">
+                                <td>Key Duties and Responsibilities:</td>
+                                <td>@((MarkupString)_jobdesc.JobDescription1)</td>
+                            </tr>
+
+                            <tr style="font-weight: bold;">
+                                <td>Relevant Competencies:</td>
+                                <td> @_jobdesc.RequiredWorkExperience</td>
+                            </tr>
+                        </table>
+                    </div>
+                }
+
+               
+            </Content>
+            <FooterTemplate>
+                <button @onclick="@ApplyBtnclicked" class="btn btn-success" data-ripple="true">Apply</button>
+                <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel</button>
+            </FooterTemplate>
+        </DialogTemplates>
+        <DialogPositionData X="center" Y="center"></DialogPositionData>
+    </SfDialog>
+</div>
+
 @code {
-    SfPager? Page;
-    List<AppliedForJobs>? MyApplicationData{ get; set; }
-    bool LoadingPageComplete { get; set; } = false;
-    private int SkipValue { get; set; }
-    private int pageSize { get; set; }
-    private int TakeValue { get; set; } = 5;
-    LoginResultModel? Credentials { get; set; }
-    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    List<ViewEmployeeDropDown>? EmployeeData { get; set; }
+    List<ViewDepartmentSections>? DepartmentSectionsData { get; set; }
+    List<ADepartment>? DepartmentData { get; set; }
+    List<JobOpening>? AvailableJobsData { get; set; }
     List<AJobType>? JobTypeData { get; set; }
     List<AJobTitle>? JobTitleData { get; set; }
-    List<ADepartment>? DepartmentData { get; set; }
     List<JobDescription>? JobDescriptionData { get; set; }
-    List<ViewJobDescOpening2024>? JobOpeningData { get; set; }
-    List<ViewEmployeeDropDown>? EmployeeData { get; set; }
     List<AContractLengthType>? ContractLengthTypeData { get; set; }
-    List<ASalaryScale>? SalaryScaleData { get; set; }
+    private bool Visibility { get; set; } = false;
+
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    LoginResultModel? Credentials { get; set; }
+    private bool ShowButton { get; set; } = false;
+    JobOpening? SelectedJobsModel { get; set; } = new();
+
+    private void DialogOpen(Object args)
+    {
+        this.ShowButton = false;
+    }
+    private void DialogClose(Object args)
+    {
+        this.ShowButton = true;
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        await base.OnInitializedAsync();
         try
         {
-            LoadingPageComplete = false;
+            await base.OnInitializedAsync();
             var isAuthenticated = await AuthService.CheckAuthenticationStatus();
             if (isAuthenticated == false)
             {
@@ -176,91 +313,49 @@ else{
             else
             {
                 Credentials = await AuthService.GetUserCredentials();
+
                 List<Task> t = new List<Task>();
 
                 t.Add(Task.Run(async () =>
                 {
-                    var response = await Http.GetAsync($"Utilities/GetEmployeeDD");
+                    var responseemployee = await Http.GetAsync($"HumanResource/GetAvailableJobs");
+                    if (responseemployee.IsSuccessStatusCode)
+                    {
+                        var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+                        AvailableJobsData = JsonSerializer.Deserialize<List<JobOpening>>(contentemployee, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responseemployee = await Http.GetAsync($"Utilities/GetEmployeeDD");
+                    if (responseemployee.IsSuccessStatusCode)
+                    {
+                        var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+                        EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(contentemployee, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetDepartment");
                     if (response.IsSuccessStatusCode)
                     {
                         var content = await response.Content.ReadAsStringAsync();
-                        EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(content, _options);
+                        DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
                     }
                 }));
 
-
                 t.Add(Task.Run(async () =>
                 {
-                    MyApplicationData = await JobRepo.GetMyApplicationsAsync("null", Credentials.StaffId.ToString());
-
-                }));
-                
-                t.Add(Task.Run(async () =>
-               {
-
-                   var response = await Http.GetAsync($"HumanResource/GetJobOpening");
-                   var content = await response.Content.ReadAsStringAsync();
-                   if (response.IsSuccessStatusCode)
-                   {
-                       JobOpeningData = JsonSerializer.Deserialize<List<ViewJobDescOpening2024>>(content, _options);
-                   }
-               }));
-
-                t.Add(Task.Run(async () =>
-               {
-
-                   var response = await Http.GetAsync($"HumanResource/GetJobDescription");
-                   var content = await response.Content.ReadAsStringAsync();
-                   if (response.IsSuccessStatusCode)
-                   {
-                       JobDescriptionData = JsonSerializer.Deserialize<List<JobDescription>>(content, _options);
-                   }
-               }));
-                
-                t.Add(Task.Run(async () =>
-               {
-
-                   var response = await Http.GetAsync($"HumanResource/GetJobTitle");
-                   var content = await response.Content.ReadAsStringAsync();
-                   if (response.IsSuccessStatusCode)
-                   {
-                       JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
-                   }
-               }));
-
-                t.Add(Task.Run(async () =>
-               {
-
-                   var response = await Http.GetAsync($"Utilities/GetDepartment");
-                   var content = await response.Content.ReadAsStringAsync();
-                   if (response.IsSuccessStatusCode)
-                   {
-                       DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
-                   }
-               }));
-
-                t.Add(Task.Run(async () =>
-                {
-
-                    var response = await Http.GetAsync($"Utilities/GetContractLengthType");
-                    var content = await response.Content.ReadAsStringAsync();
+                    var response = await Http.GetAsync($"Utilities/GetDepartmentSections");
                     if (response.IsSuccessStatusCode)
                     {
-                        ContractLengthTypeData = JsonSerializer.Deserialize<List<AContractLengthType>>(content, _options);
+                        var content = await response.Content.ReadAsStringAsync();
+                        DepartmentSectionsData = JsonSerializer.Deserialize<List<ViewDepartmentSections>>(content, _options);
                     }
                 }));
 
-                t.Add(Task.Run(async () =>
-                {
-
-                    var response = await Http.GetAsync($"Utilities/GetSalaryScale");
-                    var content = await response.Content.ReadAsStringAsync();
-                    if (response.IsSuccessStatusCode)
-                    {
-                        SalaryScaleData = JsonSerializer.Deserialize<List<ASalaryScale>>(content, _options);
-                    }
-                }));
-                
                 t.Add(Task.Run(async () =>
                  {
 
@@ -272,27 +367,119 @@ else{
                      }
                  }));
 
+                t.Add(Task.Run(async () =>
+              {
+
+                  var response = await Http.GetAsync($"HumanResource/GetJobTitle");
+                  var content = await response.Content.ReadAsStringAsync();
+                  if (response.IsSuccessStatusCode)
+                  {
+                      JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
+                  }
+              }));
+
+                t.Add(Task.Run(async () =>
+                {
+
+                    var response = await Http.GetAsync($"HumanResource/GetJobDescription");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        JobDescriptionData = JsonSerializer.Deserialize<List<JobDescription>>(content, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+
+                    var response = await Http.GetAsync($"Utilities/GetContractLengthType");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        ContractLengthTypeData = JsonSerializer.Deserialize<List<AContractLengthType>>(content, _options);
+                    }
+                }));
                 Task _t = Task.WhenAll(t);
                 await _t;
+
             }            
+        }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+
+    }
+
+    private void viewJobClick(JobOpening value)
+    {
+        try
+        {
+            SelectedJobsModel = value;
+            this.Visibility = true;
         }
         catch (Exception ex)
         {
-            toastService.ShowError(ex.Message);
-        }
-        finally{
-            LoadingPageComplete = true;
-            //StateHasChanged();
+            toastService.ShowError(ex.Message.ToString());
         }
     }
-    public void PaggerClick(Syncfusion.Blazor.Navigations.PagerItemClickEventArgs args)
+
+    private async void downloadJobClick(JobOpening value)
     {
-        SkipValue = (args.CurrentPage * Page.PageSize) - Page.PageSize;
-        TakeValue = Page.PageSize;
-        //StateHasChanged();
+        try
+        {
+            var _jobdesc = JobDescriptionData.FirstOrDefault(o => o.JobDescriptionId == value.JobDescriptionId);
+            
+            if (_jobdesc != null && !string.IsNullOrEmpty(_jobdesc.DocumentName))
+            {
+                var a = await _DocumentUploadModel.GetDocument(_jobdesc.DocumentName, "JobDescription");
+
+                if (a != null && a.DocumentByte != null && a.DocumentByte.Length > 0)
+                {
+                    if (a.DocumentExt.Contains("pdf"))
+                    {
+                        string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                        await _JSRuntime.InvokeAsync<object>("saveAsFile", _jobdesc.DocumentName, base64String);
+                    }
+                    else
+                    {
+                        string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                        await _JSRuntime.InvokeAsync<object>("saveAsFile", _jobdesc.DocumentName, base64String);
+                    }
+
+                }
+            }
+            else
+            {
+                toastService.ShowError("Attachment is not provided for this position");
+            }
+
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
     }
-    private void StartAmptituddeTest(int? JobTitleId, int? AppliedForJobsId)
+
+
+    public async Task ApplyBtnclicked()
     {
-        navManager.NavigateTo($"ApplicantAptituddeTestPage/{JobTitleId}/{AppliedForJobsId}");
+        try
+        {
+
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            
+        }
+    }
+
+    public void DialogCancelBtnclicked()
+    {
+        this.Visibility = false;
     }
 }

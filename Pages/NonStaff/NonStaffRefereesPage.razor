@@ -1,0 +1,852 @@
+﻿@* <h3>NonStaffRefereesPage</h3> *@
+
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using HCMIS.SHARED.Data;
+@using HCMIS.SHARED.Models;
+@using HCMIS.ViewModel
+@using System.Collections;
+@inject HttpClient Http
+@inject AppState AppState
+@inject ApiConfig _ApiConfig;
+@inject NavigationManager Navigation
+@inject DocumentUploadModel _DocumentUploadModel;
+@inject DocumentUploadModel _DocumentUploadModel;
+@inject IToastService toasterservice;
+
+<div class="col-md-12">
+    <SfGrid @ref="@JobRefereesGrid" TValue="AppliedForJobReferees" Query="@mainQuery"
+            AllowPaging="true" AllowFiltering="true" AllowReordering="true" AllowResizing="true"
+            Toolbar="@(new List<string>() {"Add","Cancel"})">
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+        <GridPageSettings PageSizes="true"></GridPageSettings>
+        <GridEvents OnActionComplete="@OnJobRefereesActionComplete"
+                    OnActionBegin="OnJobRefereesActionBegin"
+                    CommandClicked="OnCommandClicked"
+                    TValue="AppliedForJobReferees">
+        </GridEvents>
+        <SfDataManager AdaptorInstance="@typeof(RefereesAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+        <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
+            <HeaderTemplate>
+                @{
+                    var text = GetJobRefereesHeader((context as AppliedForJobReferees));
+                    <div class="headerbandimg">
+                        <span>@text</span>
+                    </div>
+                }
+            </HeaderTemplate>
+            <Template>
+                @{
+                    var ReferenceReviewData = (context as AppliedForJobReferees);
+                    if (ReferenceReviewData != null)
+                    {
+                        ReferenceReviewData.NonStaffid = NonstaffId;
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p>Name <span style="color:red;">*</span></p>
+                                <SfTextBox Multiline=false @bind-Value="@(ReferenceReviewData.RefereeName)" Width="100%" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                            </div>
+                            @*<div class="col-md-4">
+                            <p>Gender <span style="color:red;">*</span></p>
+                            <SfDropDownList @bind-Value="@(ReferenceReviewData.GenderId)" Enabled="true" TItem="AGender" TValue="int?" DataSource="@GenderData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                            <DropDownListFieldSettings Value="@nameof(AGender.GenderId)" Text="@nameof(AGender.GenderDesc)"></DropDownListFieldSettings>
+                            </SfDropDownList>
+                            </div>*@
+                                    @*<div class="col-md-4">
+                            <p>Nationality</p>
+                            <SfDropDownList @bind-Value="@(ReferenceReviewData.CoutryId)" Enabled="true" TItem="ACountry" TValue="int?" DataSource="@CountryData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                            <DropDownListFieldSettings Value="@nameof(ACountry.CoutryId)" Text="@nameof(ACountry.CountryDesc)"></DropDownListFieldSettings>
+                            </SfDropDownList>
+                            </div>*@
+                                    @*<div class="col-md-4">
+                            <p>Title of the Current Job <span style="color:red;">*</span></p>
+                            <SfTextBox Multiline=true @bind-Value="@(ReferenceReviewData.RefereeJobTitle)" Width="100%" Placeholder="Enter Title" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                            </div>*@
+                            <div class="col-md-6">
+                                <p>Current Organisation Name</p>
+                                <SfTextBox Multiline=false @bind-Value="@(ReferenceReviewData.RefereeCompany)" Width="100%" Placeholder="Enter Organisation" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                            </div>
+
+                            <div class="col-md-6">
+                                <p>Address</p>
+                                <SfTextBox Multiline=false @bind-Value="@(ReferenceReviewData.RefereePhysicalAddress)" Width="100%" Placeholder="Enter Address" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                            </div>
+
+                            <div class="col-md-6">
+                                <p>Email <span style="color:red;">*</span></p>
+                                <SfTextBox Multiline=false @bind-Value="@(ReferenceReviewData.RefereeEmail)" Width="100%" Placeholder="Enter Email" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                            </div>                            
+
+                            <div class="col-md-6">
+                                <p>Phone Number <span style="color:red;">*</span></p>
+                                <SfDropDownList TValue="int?" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" TItem="ACountry" Width="50px" DataSource="CountryData" PopupWidth="300px" @bind-Value="@(ReferenceReviewData.CoutryId)">
+                                    <DropDownListTemplates TItem="ACountry">
+                                        <ItemTemplate Context="itemcontext">
+                                            <div>
+                                                <p><img className="empImage" src="https://flagcdn.com/16x12/@((itemcontext as ACountry).Eimg).png" height="11px" width="20px" alt="employee" />  @((itemcontext as ACountry).CountryDesc)  @((itemcontext as ACountry).CountryCode)</p>
+
+                                            </div>
+                                        </ItemTemplate>
+                                        <ValueTemplate Context="valuecontext">
+                                            <div>
+                                                <img className="empImage" src="https://flagcdn.com/16x12/@((valuecontext as ACountry).Eimg).png" height="11px" width="20px" alt="employee" />
+                                            </div>
+                                        </ValueTemplate>
+                                    </DropDownListTemplates>
+                                    <DropDownListFieldSettings Value="CoutryId" Text="CountryDesc"></DropDownListFieldSettings>
+                                    <DropDownListEvents TValue="int?" TItem="ACountry" ValueChange="changeHandler"></DropDownListEvents>
+                                </SfDropDownList>
+                                <SfMaskedTextBox Mask="@maskvalue" @bind-Value="@(ReferenceReviewData.RefereePhoneNumber)" Width="150px" Enabled="@(ReferenceReviewData.CoutryId == null ? false : true)"></SfMaskedTextBox>
+
+                            </div>
+                            <div class="col-md-6">
+                                <p>Other Phone Number</p>
+                                <SfDropDownList TValue="int?" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" TItem="ACountry" Width="50px" DataSource="CountryData" PopupWidth="300px" @bind-Value="@(ReferenceReviewData.OtherCoutryId)">
+                                    <DropDownListTemplates TItem="ACountry">
+                                        <ItemTemplate Context="itemcontext">
+                                            <div>
+                                                <p><img className="empImage" src="https://flagcdn.com/16x12/@((itemcontext as ACountry).Eimg).png" height="11px" width="20px" alt="employee" />  @((itemcontext as ACountry).CountryDesc)  @((itemcontext as ACountry).CountryCode)</p>
+
+                                            </div>
+                                        </ItemTemplate>
+                                        <ValueTemplate Context="valuecontext">
+                                            <div>
+                                                <img className="empImage" src="https://flagcdn.com/16x12/@((valuecontext as ACountry).Eimg).png" height="11px" width="20px" alt="employee" />
+                                            </div>
+                                        </ValueTemplate>
+                                    </DropDownListTemplates>
+                                    <DropDownListFieldSettings Value="CoutryId" Text="CountryDesc"></DropDownListFieldSettings>
+                                    <DropDownListEvents TValue="int?" TItem="ACountry" ValueChange="changeHandler"></DropDownListEvents>
+                                </SfDropDownList>
+                                <SfMaskedTextBox Mask="@maskvalue2" @bind-Value="@(ReferenceReviewData.RefereeOtherPhoneNumber)" Width="150px" Enabled="@(ReferenceReviewData.OtherCoutryId == null ? false : true)"></SfMaskedTextBox>
+                            </div>
+                                                        
+                        </div>
+                    }
+                }
+            </Template>
+        </GridEditSettings>
+        <GridColumns>
+            <GridColumn HeaderText="Action"
+                        TextAlign="TextAlign.Center"
+                        Width="80"
+                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+                <GridCommandColumns>
+                    <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})"></GridCommandColumn>
+                    @* <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-delete", CssClass = "e-flat"})" ID="Delete"></GridCommandColumn> *@
+                </GridCommandColumns>
+            </GridColumn>
+            @* <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn> *@
+            <GridColumn Field=@nameof(AppliedForJobReferees.AppliedForRefereeId) Visible=false HeaderText="JobDescriptionId" AllowEditing="false" IsPrimaryKey="true" Width="150"></GridColumn>
+            @* <GridColumn Field=@nameof(AppliedForJobReferees.AppliedForJobsId) Visible=false HeaderText="AppliedForJobsId" AllowEditing="false" Width="150"></GridColumn> *@
+            <GridColumn Field=@nameof(AppliedForJobReferees.RefereeName) Visible=true HeaderText="Name" AllowEditing="true" Width="150"></GridColumn>
+            @* <GridForeignColumn Field=@nameof(AppliedForJobReferees.GenderId) Visible=true HeaderText="Gender" AllowEditing="true" Width="100" ForeignKeyField="@(nameof(AGender.GenderId))" ForeignKeyValue="@(nameof(AGender.GenderDesc))" ForeignDataSource="@GenderData"></GridForeignColumn>
+            <GridForeignColumn Field=@nameof(AppliedForJobReferees.CoutryId) Visible=true HeaderText="Nationality" AllowEditing="true" Width="120" ForeignKeyField="@(nameof(ACountry.CoutryId))" ForeignKeyValue="@(nameof(ACountry.CountryDesc))" ForeignDataSource="@CountryData"></GridForeignColumn> *@
+            @* <GridColumn Field=@nameof(AppliedForJobReferees.RefereeJobTitle) Visible=true HeaderText="Title" AllowEditing="true" Width="150"></GridColumn> *@
+            <GridColumn Field=@nameof(AppliedForJobReferees.RefereeCompany) Visible=true HeaderText="Company" AllowEditing="true" Width="150"></GridColumn>
+            <GridColumn Field=@nameof(AppliedForJobReferees.RefereeEmail) Visible=true HeaderText="Email" AllowEditing="true" Width="150"></GridColumn>
+            <GridColumn Field=@nameof(AppliedForJobReferees.RefereePhoneNumber) Visible=true HeaderText="Offical Phone Number" AllowEditing="true" Width="150"></GridColumn>
+            @* <GridColumn Field=@nameof(AppliedForJobReferees.RefereePhysicalAddress) Visible=true HeaderText="Physical Address" AllowEditing="true" Width="150"></GridColumn> *@
+
+        </GridColumns>
+    </SfGrid>
+</div>
+
+@*Confirm Deletion*@
+
+<div class="form-group col-md-12">
+    <SfDialog @ref="@ConfirmationDeleteDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @((MarkupString)@ConfirmationText)
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationApproveYes" />
+            <DialogButton Content="No" OnClick="@ComfirmationApproveNo" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+@*Saving Dialogue*@
+
+@*Saving Dialogue*@
+<div class="form-group col-md-12">
+    <SfDialog Width="80%" Height="20vh" AllowDragging=true EnableResize=true
+              CloseOnEscape=false IsModal=true ShowCloseIcon=false
+              Target=".mainbody" @ref=@SavingDialog Visible=false>
+        <DialogTemplates>
+            <Content>
+                <div class="dialogContent">
+                    <div class="loader">
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader-Saving-text"></div>
+                    </div>
+                    @*<p>Saving Record please wait......</p>*@
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+</div>
+
+@code {
+    SfGrid<AppliedForJobReferees>? JobRefereesGrid;
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "80%" };
+    Query mainQuery { get; set; } = new();
+    [Parameter]
+    public int NonstaffId { get; set; }
+    string? ErrorMessage { get; set; } = null;
+    SfDialog ConfirmationDeleteDialogue;
+    string ConfirmationText { get; set; }
+    SfDialog SavingDialog { get; set; }
+    AppliedForJobReferees selectedemployee { get; set; }
+    public string maskvalue { get; set; } = "000 000 000 0";
+    public string maskvalue2 { get; set; } = "000 000 000 0";
+    List<ACountry>? CountryData { get; set; }
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+    public async void changeHandler(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ACountry> args)
+    {
+        if (args.ItemData != null)
+        {
+            maskvalue = null;
+            maskvalue2 = null;
+            if (!string.IsNullOrEmpty(args.ItemData.CountryCode))
+            {
+                foreach (var item in args.ItemData.CountryCode.Trim())
+                {
+                    if (item != '-')
+                    {
+                        maskvalue += $@"\\{item}";
+                        // maskvalue2 += $@"\\{item}";
+                    }
+                }
+                maskvalue += " 000 000 000";
+                // maskvalue2 += " 000 000 000";
+            }
+        }
+        else
+        {
+            maskvalue = "000 000 000 000";
+            // maskvalue2 = "000 000 000 000";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            mainQuery = new();
+            mainQuery.AddParams("NonstaffId", NonstaffId).AddParams("BaseUrl", _ApiConfig.BaseUrl);
+
+            var tasks = new List<Task>();
+
+            tasks.Add(Task.Run(async () =>
+                {
+                    var responsecountry = await Http.GetAsync($"Utilities/GetCountry");
+                    if (responsecountry.IsSuccessStatusCode)
+                    {
+                        var contentcountry = await responsecountry.Content.ReadAsStringAsync();
+                        CountryData = JsonSerializer.Deserialize<List<ACountry>>(contentcountry, _options);
+                    }
+                }));
+
+            Task t = Task.WhenAll(tasks);
+            await t;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error: {ex.Message}";
+        }
+        await base.OnInitializedAsync();
+    }
+
+    public class RefereesAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        SystemSettings _SystemSettings;
+        ApiConfig _ApiConfig;
+        public IToastService toastService;
+        //private UserManagement _userManagement;
+        public RefereesAdapter(HttpClient _http, IToastService ts/*, UserManagement userManagement*/
+        , SystemSettings systemSettings, ApiConfig apiConfig)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            _SystemSettings = systemSettings;
+            _ApiConfig = apiConfig;
+            //_userManagement = userManagement;
+            toastService = ts;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<AppliedForJobReferees>();
+            try
+            {
+                int? NonstaffId = null;
+                string? AccessToken = null;
+                string? BaseUrl = null;
+                if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
+                {
+                    var val = dataManagerRequest.Params;
+                    if (val.FirstOrDefault(o => o.Key == "NonstaffId").Value != null)
+                    {
+                        NonstaffId = Convert.ToInt32(val.FirstOrDefault(o => o.Key == "NonstaffId").Value.ToString());
+                    }
+                    if (val.FirstOrDefault(o => o.Key == "AccessToken").Value != null)
+                    {
+                        AccessToken = val.FirstOrDefault(o => o.Key == "AccessToken").Value.ToString();
+                    }
+                    if (val.FirstOrDefault(o => o.Key == "BaseUrl").Value != null)
+                    {
+                        BaseUrl = val.FirstOrDefault(o => o.Key == "BaseUrl").Value.ToString();
+                    }
+                }
+
+
+                var response = await Http.GetAsync($"NonStaff/GetLanguagesKnownForNonStaff/{NonstaffId}");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    data = JsonSerializer.Deserialize<List<AppliedForJobReferees>>(content, _options);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<AppliedForJobReferees>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            try
+            {
+
+                var val = (value as AppliedForJobReferees);
+                if (val != null)
+                {
+                    if (val.AppliedForRefereeId == 0)
+                    {
+
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"NonStaff/PostJobRefereesForNonStaff", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"NonStaff/PutJobRefereesForNonStaff", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return value;
+        }
+        
+        public override async Task<object> RemoveAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            //try
+            //{
+            //    int data = (int)value;
+            //    using (var dbContext = new MUCOBADIContext())
+            //    {
+            //        var exists = dbContext.AAdministrationPhase.FirstOrDefault(o => o.AdministrationPhaseId == data);
+            //        if (exists != null)
+            //        {
+            //            dbContext.AAdministrationPhase.Remove(exists);
+            //        }
+            //        await dbContext.SaveChangesAsync();
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    toastService.ShowError(ex.Message.ToString());
+            //}
+
+
+            return value;
+        }
+        
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            try
+            {
+
+                var val = (value as AppliedForJobReferees);
+                if (val != null)
+                {
+                    if (val.AppliedForRefereeId == 0)
+                    {
+
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PostAsync($"NonStaff/PostJobRefereesForNonStaff", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+
+                    }
+                    else
+                    {
+
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                        var result = await Http.PutAsync($"NonStaff/PutJobRefereesForNonStaff", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            var content = await result.Content.ReadAsStringAsync();
+                            var data = JsonSerializer.Deserialize<Response>(content, _options);
+                            if (data != null)
+                            {
+                                if (data.IsSuccess)
+                                {
+                                    toastService.ShowSuccess(data.Message);
+                                }
+                                else
+                                {
+                                    toastService.ShowError(data.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            toastService.ShowError(result.ReasonPhrase);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            return value;
+        }
+        public override async Task<object> BatchUpdateAsync(DataManager dm, object Changed, object Added, object Deleted, string KeyField, string Key, int? dropIndex)
+        {
+            object? products = null;
+            try
+            {
+
+                if (Changed != null)
+                {
+                    products = Changed;
+                    foreach (var val in (List<AppliedForJobReferees>)Changed)
+                    {
+                        if (val != null)
+                        {
+                            if (val.AppliedForRefereeId == 0)
+                            {
+
+                                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                                var result = await Http.PostAsync($"NonStaff/PostLanguagesKnown", httpContent);
+                                if (result.IsSuccessStatusCode)
+                                {
+                                    var content = await result.Content.ReadAsStringAsync();
+                                    var data = JsonSerializer.Deserialize<Response>(content, _options);
+                                    if (data != null)
+                                    {
+                                        if (data.IsSuccess)
+                                        {
+                                            toastService.ShowSuccess(data.Message);
+                                        }
+                                        else
+                                        {
+                                            toastService.ShowError(data.Message);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    toastService.ShowError(result.ReasonPhrase);
+                                }
+
+                            }
+                            else
+                            {
+
+                                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                                var result = await Http.PutAsync($"NonStaff/PutLanguagesKnown", httpContent);
+                                if (result.IsSuccessStatusCode)
+                                {
+                                    var content = await result.Content.ReadAsStringAsync();
+                                    var data = JsonSerializer.Deserialize<Response>(content, _options);
+                                    if (data != null)
+                                    {
+                                        if (data.IsSuccess)
+                                        {
+                                            toastService.ShowSuccess(data.Message);
+                                        }
+                                        else
+                                        {
+                                            toastService.ShowError(data.Message);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    toastService.ShowError(result.ReasonPhrase);
+                                }
+                            }
+                        }
+                    }
+
+                }
+                if (Added != null)
+                {
+                    products = Added;
+                    foreach (var val in (List<AppliedForJobReferees>)Added)
+                    {
+                        if (val != null)
+                        {
+                            if (val.AppliedForRefereeId == 0)
+                            {
+
+                                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                                var result = await Http.PostAsync($"NonStaff/PostLanguagesKnown", httpContent);
+                                if (result.IsSuccessStatusCode)
+                                {
+                                    var content = await result.Content.ReadAsStringAsync();
+                                    var data = JsonSerializer.Deserialize<Response>(content, _options);
+                                    if (data != null)
+                                    {
+                                        if (data.IsSuccess)
+                                        {
+                                            toastService.ShowSuccess(data.Message);
+                                        }
+                                        else
+                                        {
+                                            toastService.ShowError(data.Message);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    toastService.ShowError(result.ReasonPhrase);
+                                }
+
+                            }
+                            else
+                            {
+
+                                string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
+                                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                                var result = await Http.PutAsync($"NonStaff/PutLanguagesKnown", httpContent);
+                                if (result.IsSuccessStatusCode)
+                                {
+                                    var content = await result.Content.ReadAsStringAsync();
+                                    var data = JsonSerializer.Deserialize<Response>(content, _options);
+                                    if (data != null)
+                                    {
+                                        if (data.IsSuccess)
+                                        {
+                                            toastService.ShowSuccess(data.Message);
+                                        }
+                                        else
+                                        {
+                                            toastService.ShowError(data.Message);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    toastService.ShowError(result.ReasonPhrase);
+                                }
+                            }
+                        }
+                    }
+
+                }
+                if (Deleted != null)
+                {
+                    products = Deleted;
+                    //foreach (var rec in (List<OrderDetails>)Deleted)
+                    //{
+                    //    Orders.Remove(Orders.Where(or => or.OrderID == rec.OrderID).FirstOrDefault());
+                    //}
+
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return products;
+        }
+    }
+        
+    public async Task OnJobRefereesActionComplete(ActionEventArgs<AppliedForJobReferees> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            JobRefereesGrid.PreventRender(false);
+        }
+    }
+
+    public async void OnJobRefereesActionBegin(ActionEventArgs<AppliedForJobReferees> args)
+    {
+        try
+        {
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
+            {
+
+            }
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+            {
+                if (string.IsNullOrEmpty(args.Data.RefereeName))
+                {
+                    toasterservice.ShowWarning("Please enter the name of the referee.");
+                    args.Cancel = true;
+                }
+                // else if (args.Data.GenderId == null)
+                // {
+                //     toastService.ShowWarning("Please select the gender.");
+                //     args.Cancel = true;
+                // }
+                // else if (string.IsNullOrEmpty(args.Data.RefereeJobTitle))
+                // {
+                //     toastService.ShowWarning("Please enter the job title of the referee.");
+                //     args.Cancel = true;
+                // }
+                // else if (string.IsNullOrEmpty(args.Data.RefereeCompany))
+                // {
+                //     toastService.ShowWarning("Please enter the organisation of the referee.");
+                //     args.Cancel = true;
+                // }
+                else if (string.IsNullOrEmpty(args.Data.RefereeEmail))
+                {
+                    toasterservice.ShowWarning("Please enter the email of the referee.");
+                    args.Cancel = true;
+                }
+                else if (args.Data.RefereePhoneNumber == null)
+                {
+                    toasterservice.ShowWarning("Please enter the phone number of the referee.");
+                    args.Cancel = true;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toasterservice.ShowError(ex.Message.ToString());
+        }
+    }
+
+    public async Task OnCommandClicked(CommandClickEventArgs<AppliedForJobReferees> args)
+    {
+
+        if (args.CommandColumn.ID == "Delete")
+        {
+            try
+            {
+                selectedemployee = args.RowData;
+                ConfirmationText = "<p>Are you sure you want to delete this record? </p>";
+                await this.ConfirmationDeleteDialogue.ShowAsync();
+            }
+            catch (Exception ex)
+            {
+                toasterservice.ShowError(ex.Message.ToString());
+            }
+            finally
+            {
+                StateHasChanged();
+            }
+
+        }
+    }
+
+    private async void ComfirmationApproveYes()
+    {
+        try
+        {
+            await this.ConfirmationDeleteDialogue.HideAsync();
+
+            await SavingDialog.ShowAsync();
+
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(selectedemployee);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            var result = await Http.PostAsync($"NonStaff/DeleteJobRefereesForNonStaff?qualificationid={selectedemployee.AppliedForRefereeId}", httpContent);
+
+            if (result.IsSuccessStatusCode)
+            {
+                try
+                {
+                    if (JobRefereesGrid != null)
+                    {
+                        await JobRefereesGrid.Refresh();
+                    }
+
+                    toasterservice.ShowSuccess("Record Successfully Deleted");
+                }
+                catch (Exception ex)
+                {
+
+                }
+                finally
+                {
+                    await SavingDialog.HideAsync();
+                }
+
+            }
+            else
+            {
+                toasterservice.ShowError("Record Not Deleted");
+            }
+        }
+        catch (Exception ex)
+        {
+            toasterservice.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            await SavingDialog.HideAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void ComfirmationApproveNo()
+    {
+        this.ConfirmationDeleteDialogue.HideAsync();
+    }
+
+    public string GetJobRefereesHeader(AppliedForJobReferees Value)
+    {
+        if (Value.AppliedForRefereeId == 0)
+        {
+            return "Add a Referee";
+        }
+        else
+        {
+            return "Edit Details for " + Value.RefereeName;
+        }
+    }
+
+}

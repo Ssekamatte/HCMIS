@@ -1,4 +1,4 @@
-﻿window.updateAvailable = new Promise((resolve, reject) => {
+window.updateAvailable = new Promise((resolve, reject) => {
     if (!('serviceWorker' in navigator)) {
         const errorMessage = `This browser doesn't support service workers`;
         console.error(errorMessage);
@@ -9,6 +9,10 @@
     navigator.serviceWorker.register('/service-worker.js')
         .then(registration => {
             console.info(`Service worker registration successful (scope: ${registration.scope})`);
+            setInterval(() =>
+            {
+                registration.update();
+            }, 60 * 1000); // 60000ms -> check each minute
             registration.onupdatefound = () => {
                 const installingServiceWorker = registration.installing;
                 installingServiceWorker.onstatechange = () => {
@@ -25,9 +29,7 @@
 });
 
 window.registerForUpdateAvailableNotification = (caller, methodName) => {
-
     window.updateAvailable.then(isUpdateAvailable => {
-
         if (isUpdateAvailable) {
             caller.invokeMethodAsync(methodName).then();
         }

@@ -70,10 +70,11 @@ using static HCMIS.Pages.Utilities.SectionsPage;
 using static HCMIS.Pages.Utilities.LeaveRoasterDeadlineDatePage;
 using static HCMIS.Pages.NonStaff.NonStaffQualificationAttachmentPage;
 using static HCMIS.Pages.Utilities.LogInLogsPage;
-using static HCMIS.Pages.Utilities.JobTitlePage;
+using static HCMIS.Pages.Utilities.PositionPage;
 using static HCMIS.Pages.Utilities.DepartmentPage;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.FileProviders;
+using static HCMIS.Pages.NonStaff.NonStaffRefereesPage;
 
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -168,6 +169,7 @@ builder.Services.AddScoped<SectionAdapter>();
 builder.Services.AddScoped<MaximumYearAdapter>();
 builder.Services.AddScoped<NonStaffQualificationAttachmentAdapter>();
 builder.Services.AddScoped<LoginLogAdapter>();
+builder.Services.AddScoped<RefereesAdapter>();
 
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IReportService, ReportService>();
