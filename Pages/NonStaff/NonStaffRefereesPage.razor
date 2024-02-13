@@ -102,7 +102,7 @@
 
                             </div>
                             <div class="col-md-6">
-                                <p>Other Phone Number</p>
+                                <p>Other Phone Number1</p>
                                 <SfDropDownList TValue="int?" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" TItem="ACountry" Width="50px" DataSource="CountryData" PopupWidth="300px" @bind-Value="@(ReferenceReviewData.OtherCoutryId)">
                                     <DropDownListTemplates TItem="ACountry">
                                         <ItemTemplate Context="itemcontext">
@@ -118,9 +118,9 @@
                                         </ValueTemplate>
                                     </DropDownListTemplates>
                                     <DropDownListFieldSettings Value="CoutryId" Text="CountryDesc"></DropDownListFieldSettings>
-                                    <DropDownListEvents TValue="int?" TItem="ACountry" ValueChange="changeHandler"></DropDownListEvents>
+                                    <DropDownListEvents TValue="int?" TItem="ACountry" ValueChange="otherchangeHandler"></DropDownListEvents>
                                 </SfDropDownList>
-                                <SfMaskedTextBox Mask="@maskvalue2" @bind-Value="@(ReferenceReviewData.RefereeOtherPhoneNumber)" Width="150px" Enabled="@(ReferenceReviewData.OtherCoutryId == null ? false : true)"></SfMaskedTextBox>
+                                <SfMaskedTextBox Mask="@othermaskvalue" @bind-Value="@(ReferenceReviewData.RefereeOtherPhoneNumber)" Width="150px" Enabled="@(ReferenceReviewData.OtherCoutryId == null ? false : true)"></SfMaskedTextBox>
                             </div>
                                                         
                         </div>
@@ -128,16 +128,7 @@
                 }
             </Template>
         </GridEditSettings>
-        <GridColumns>
-            <GridColumn HeaderText="Action"
-                        TextAlign="TextAlign.Center"
-                        Width="80"
-                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
-                <GridCommandColumns>
-                    <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})"></GridCommandColumn>
-                    @* <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-delete", CssClass = "e-flat"})" ID="Delete"></GridCommandColumn> *@
-                </GridCommandColumns>
-            </GridColumn>
+        <GridColumns>            
             @* <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn> *@
             <GridColumn Field=@nameof(AppliedForJobReferees.AppliedForRefereeId) Visible=false HeaderText="JobDescriptionId" AllowEditing="false" IsPrimaryKey="true" Width="150"></GridColumn>
             @* <GridColumn Field=@nameof(AppliedForJobReferees.AppliedForJobsId) Visible=false HeaderText="AppliedForJobsId" AllowEditing="false" Width="150"></GridColumn> *@
@@ -147,9 +138,33 @@
             @* <GridColumn Field=@nameof(AppliedForJobReferees.RefereeJobTitle) Visible=true HeaderText="Title" AllowEditing="true" Width="150"></GridColumn> *@
             <GridColumn Field=@nameof(AppliedForJobReferees.RefereeCompany) Visible=true HeaderText="Company" AllowEditing="true" Width="150"></GridColumn>
             <GridColumn Field=@nameof(AppliedForJobReferees.RefereeEmail) Visible=true HeaderText="Email" AllowEditing="true" Width="150"></GridColumn>
-            <GridColumn Field=@nameof(AppliedForJobReferees.RefereePhoneNumber) Visible=true HeaderText="Offical Phone Number" AllowEditing="true" Width="150"></GridColumn>
+            <GridColumn Field=@nameof(AppliedForJobReferees.RefereePhoneNumber) Visible=true HeaderText="Offical Phone Number" AllowEditing="true" Width="150">
+                <Template>
+                    @{
+                        var data = (context as AppliedForJobReferees);
+                        string _phonenumber = string.Empty;
+                        if (CountryData != null)
+                        {
+                            var _code = CountryData.FirstOrDefault(o=>o.CoutryId == data.CoutryId);
+                            if(_code != null)
+                            {
+                                _phonenumber = _code.CountryCode + data.RefereePhoneNumber;
+                            }
+                        }
+                        <label>@_phonenumber</label>
+                    }
+                </Template>
+            </GridColumn>
             @* <GridColumn Field=@nameof(AppliedForJobReferees.RefereePhysicalAddress) Visible=true HeaderText="Physical Address" AllowEditing="true" Width="150"></GridColumn> *@
-
+            <GridColumn HeaderText="Action"
+                        TextAlign="TextAlign.Center"
+                        Width="80"
+                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+                <GridCommandColumns>
+                    <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})"></GridCommandColumn>
+                    <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-delete", CssClass = "e-flat"})" ID="Delete"></GridCommandColumn>
+                </GridCommandColumns>
+            </GridColumn>
         </GridColumns>
     </SfGrid>
 </div>
@@ -207,7 +222,7 @@
     SfDialog SavingDialog { get; set; }
     AppliedForJobReferees selectedemployee { get; set; }
     public string maskvalue { get; set; } = "000 000 000 0";
-    public string maskvalue2 { get; set; } = "000 000 000 0";
+    public string othermaskvalue { get; set; } = "000 000 000 0";
     List<ACountry>? CountryData { get; set; }
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
@@ -216,7 +231,6 @@
         if (args.ItemData != null)
         {
             maskvalue = null;
-            maskvalue2 = null;
             if (!string.IsNullOrEmpty(args.ItemData.CountryCode))
             {
                 foreach (var item in args.ItemData.CountryCode.Trim())
@@ -224,20 +238,40 @@
                     if (item != '-')
                     {
                         maskvalue += $@"\\{item}";
-                        // maskvalue2 += $@"\\{item}";
                     }
                 }
                 maskvalue += " 000 000 000";
-                // maskvalue2 += " 000 000 000";
             }
         }
         else
         {
             maskvalue = "000 000 000 000";
-            // maskvalue2 = "000 000 000 000";
         }
     }
 
+    public async void otherchangeHandler(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ACountry> args)
+    {
+        if (args.ItemData != null)
+        {
+            othermaskvalue = null;
+            if (!string.IsNullOrEmpty(args.ItemData.CountryCode))
+            {
+                foreach (var item in args.ItemData.CountryCode.Trim())
+                {
+                    if (item != '-')
+                    {
+                        othermaskvalue += $@"\\{item}";
+                    }
+                }
+                othermaskvalue += " 000 000 000";
+            }
+        }
+        else
+        {
+            othermaskvalue = "000 000 000 000";
+        }
+    }
+    
     protected override async Task OnInitializedAsync()
     {
         try
@@ -312,7 +346,7 @@
                 }
 
 
-                var response = await Http.GetAsync($"NonStaff/GetLanguagesKnownForNonStaff/{NonstaffId}");
+                var response = await Http.GetAsync($"NonStaff/GetJobRefereesForNonStaff/{NonstaffId}");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {

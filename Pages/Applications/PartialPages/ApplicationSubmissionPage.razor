@@ -1,0 +1,397 @@
+﻿@* <h3>ApplicationSubmissionPage</h3> *@
+
+@inject IToastService toast;
+
+
+
+
+@if (NonStaffData != null)
+{
+    string _firstname = string.Empty;
+    string _middlename = string.Empty;
+    string _lastname = string.Empty;
+    string _gender= string.Empty;
+    string _countrydesc = string.Empty;
+    string _countrycode = string.Empty;
+    string _othercountrycode = string.Empty;
+    string _identtype = string.Empty;
+    string _identnumber = string.Empty;
+
+    if (!string.IsNullOrEmpty(NonStaffData.FirstName))
+    {
+        _firstname = NonStaffData.FirstName;
+    }
+    if (!string.IsNullOrEmpty(NonStaffData.MiddleName))
+    {
+        _middlename = NonStaffData.MiddleName;
+    }
+    if (!string.IsNullOrEmpty(NonStaffData.LastName))
+    {
+        _lastname = NonStaffData.LastName;
+    }
+
+    if (NonStaffData.GenderId != null)
+    {
+        var gender = GenderData.FirstOrDefault(o => o.GenderId == NonStaffData.GenderId);
+        _gender = gender.GenderDesc;
+    }
+
+    @if (NonStaffData.NationalityId != null)
+    {
+        var _country = CountryData.FirstOrDefault(o => o.CoutryId == NonStaffData.NationalityId);
+        _countrydesc = _country.CountryDesc;
+    }
+
+    @if (NonStaffData.CoutryId != null)
+    {
+        var _country = CountryData.FirstOrDefault(o => o.CoutryId == NonStaffData.CoutryId);
+        _countrycode = _country.CountryCode;
+    }
+
+    @if (NonStaffData.OtherCoutryId != null)
+    {
+        var _country = CountryData.FirstOrDefault(o => o.CoutryId == NonStaffData.OtherCoutryId);
+        _othercountrycode = _country.CountryCode;
+    }
+
+    @if (NonStaffData.IdentificationTypeId != null)
+    {
+        var type = IdentificationTypeData.FirstOrDefault(o => o.IdentificationTypeId == NonStaffData.IdentificationTypeId);
+        _identtype = type.IdentificationTypeDesc;
+    }
+
+    @if (!string.IsNullOrEmpty(NonStaffData.IdentificationNumber))
+    {
+        _identnumber = (NonStaffData.IdentificationNumber);
+    }
+
+    <div class="row">
+        <div class="col-md-12">
+            <h4>Application Details</h4>
+        </div>
+
+        <div class="col-md-3">
+            <p>Applicant Name:</p>
+            <p><b>@_firstname @_middlename @_lastname</b></p>
+        </div>
+
+        <div class="col-md-3">
+            <p>Gender:</p>
+            <p><b>@_gender</b></p>
+        </div>
+
+        <div class="col-md-3">
+            <p>D.O.B:</p>
+            @if (NonStaffData.DoB.HasValue)
+            {
+                <p><b>@NonStaffData.DoB.Value.ToString("dd/MM/yyyy")</b></p>
+            }
+        </div>
+        
+        <div class="col-md-3">
+            <p>Nationality:</p>            
+            <p><b>@_countrydesc</b></p>
+        </div>
+
+        <div class="col-md-3">
+            <p>Email:</p>
+            <p><b>@NonStaffData.EmailAddress</b></p>
+        </div>
+
+        <div class="col-md-3">
+            <p>Official Phone Number:</p>
+            <p><b>@_countrycode@NonStaffData.OfficialPhoneNumber</b></p>
+        </div>
+
+        <div class="col-md-3">
+            <p>Other Mobile:</p>
+            <p><b>@_othercountrycode@NonStaffData.MobileNumber</b></p>
+        </div>
+
+         <div class="col-md-3">
+            <p>Identification Type:</p>
+            <p><b>@_identtype @_identnumber</b></p>
+        </div>
+
+        @*Qualifications*@
+
+        @if(NonStaffQualificationData != null)
+        {
+            <div class="col-md-12">
+                <h4>Qualifications</h4>
+            </div>
+
+            <div class="col-md-12">
+                <SfGrid TValue="NonStaffQualification" DataSource="NonStaffQualificationData"
+                    AllowGrouping="false" ShowColumnChooser="false" AllowTextWrap="true"
+                        AllowPaging="false" AllowFiltering="false" GridLines="GridLine.Both" AllowSelection="true">
+                    <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+
+                    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                    <GridPageSettings PageSize="20"></GridPageSettings>
+                    <GridColumns>
+                        <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
+
+                        <GridColumn Field=@nameof(NonStaffQualification.QualificationId) HeaderText="Id" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="60"></GridColumn>
+                        <GridColumn Field=@nameof(NonStaffQualification.StartDate) Format="dd/MM/yyyy" HeaderText="From" Width="40" EditType="EditType.DatePickerEdit" Type="ColumnType.DateOnly"></GridColumn>
+                        <GridColumn Field=@nameof(NonStaffQualification.EndDate) Format="dd/MM/yyyy" HeaderText="To" Width="40"></GridColumn>
+
+                        <GridForeignColumn Field=@nameof(NonStaffQualification.LevelofEducationId) HeaderText="Level of Education" Width="50" ForeignKeyField="@(nameof(ALevelofEducation.LevelofEducationId))" ForeignKeyValue="@(nameof(ALevelofEducation.LevelofEducationDesc))" ForeignDataSource="@LevelofEducationData"></GridForeignColumn>
+
+                        <GridForeignColumn Field=@nameof(NonStaffQualification.DegreeClassId) HeaderText="Degree Class" Width="50" ForeignKeyField="@(nameof(ADegreeClass.DegreeClassId))" ForeignKeyValue="@(nameof(ADegreeClass.DegreeClassDesc))" ForeignDataSource="@DegreeClassData"></GridForeignColumn>
+
+
+                        <GridColumn Field=@nameof(EmployeeQualification.InstitutionName)
+                                    HeaderText="Institution"
+                                    Width="50"
+                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+                        </GridColumn>
+
+                        <GridColumn Field=@nameof(EmployeeQualification.QualificationAttained)
+                                    HeaderText="Award/Qualification Attained"
+                                    Width="50"
+                                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+                        </GridColumn>
+
+                    </GridColumns>
+                </SfGrid>
+            </div>
+        }
+
+        @*Work Experience*@
+        @if(NonStaffWorkExperienceData != null)
+        {
+            
+            <div class="col-md-12">
+                <h4>Work Experience</h4>
+            </div>
+
+            <div class="col-md-12">
+                <SfGrid TValue="NonStaffWorkExperience" DataSource="NonStaffWorkExperienceData"
+                         AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+                        AllowPaging="false" AllowFiltering="false" GridLines="GridLine.Both" AllowSelection="true">
+                    
+                    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                    <GridPageSettings PageSize="20"></GridPageSettings>
+                    <GridColumns>
+                        <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
+
+                        <GridColumn Field=@nameof(NonStaffWorkExperience.WorkExperienceId) HeaderText="WorkExperienceId" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+                        <GridColumn Field=@nameof(NonStaffWorkExperience.Organisation) HeaderText="Organisation" Width="50"></GridColumn>
+                        <GridColumn Field=@nameof(NonStaffWorkExperience.JobTitle) HeaderText="Job Title" Width="50"></GridColumn>
+                        <GridColumn Field=@nameof(NonStaffWorkExperience.StartDate) Format="dd/MM/yyyy" HeaderText="From" Width="50"></GridColumn>
+                        <GridColumn Field=@nameof(NonStaffWorkExperience.EndDate) Format="dd/MM/yyyy" HeaderText="To" Width="50"></GridColumn>                        
+                    </GridColumns>
+                </SfGrid>
+            </div>
+        }
+
+        @*Skills*@
+        @if (NonStaffSkillsData != null)
+        {
+            
+            <div class="col-md-12">
+                <h4>Skills</h4>
+            </div>
+
+            <div class="col-md-12">
+                <SfGrid TValue="NonStaffSkills" DataSource="NonStaffSkillsData"
+                    AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true">
+                    
+                    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                    <GridPageSettings PageSize="20"></GridPageSettings>
+                    <GridColumns>
+                        <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
+                        <GridColumn Field=@nameof(NonStaffSkills.ExtraSkillsId) HeaderText="ExtraSkillsId" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+                        <GridColumn Field=@nameof(NonStaffSkills.SkillDescription) HeaderText="Skill" Width="80"></GridColumn>
+                        <GridForeignColumn Field=@nameof(NonStaffSkills.SkillLevelId) HeaderText="Skill Level" Width="80" ForeignKeyField="@(nameof(ASkillLevel.SkillLevelId))" ForeignKeyValue="@(nameof(ASkillLevel.SkillLevelDesc))" ForeignDataSource="@SkillLevelData"></GridForeignColumn>
+                        <GridColumn Field=@nameof(NonStaffSkills.YearsofExperience) HeaderText="Years of Experience" Width="50"></GridColumn>
+                        
+                    </GridColumns>
+                </SfGrid>
+            </div>
+        }
+
+        @*Languages*@
+        @if (NonStaffLanguagesKnownData != null)
+        {
+            
+            <div class="col-md-12">
+                <h4>Languages</h4>
+            </div>
+
+            <div class="col-md-12">
+
+                <SfGrid TValue="NonStaffLanguagesKnown" DataSource="NonStaffLanguagesKnownData"
+                        AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
+                        AllowPaging="false" AllowFiltering="false" GridLines="GridLine.Both" AllowSelection="true">
+
+                    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                    <GridPageSettings PageSize="20"></GridPageSettings>
+                    <GridColumns>
+                        @* <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn> *@
+                        <GridColumn Field=@nameof(NonStaffLanguagesKnown.LanguagesKnownId) HeaderText="LanguagesKnownId" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="100"></GridColumn>
+                        <GridForeignColumn Field=@nameof(NonStaffLanguagesKnown.LanguageId) HeaderText="Language" Width="80" ForeignKeyField="@(nameof(ALanguages.LanguageId))" ForeignKeyValue="@(nameof(ALanguages.LanguageDesc))" ForeignDataSource="@LanguagesData"></GridForeignColumn>
+                        <GridForeignColumn Field=@nameof(NonStaffLanguagesKnown.LanguageProlificId) HeaderText="Proficiency" Width="80" ForeignKeyField="@(nameof(ALanguageProlific.LanguageProlificId))" ForeignKeyValue="@(nameof(ALanguageProlific.LanguageProlificDesc))" ForeignDataSource="@LanguageProlificData"></GridForeignColumn>
+
+                    </GridColumns>
+                </SfGrid>
+            </div>
+
+        }
+
+
+        @if (JobRefereesData != null)
+        {
+            <div class="col-md-12">
+                <h4>Referees</h4>
+            </div>
+
+            <div class="col-md-12">
+                <SfGrid TValue="AppliedForJobReferees" DataSource="JobRefereesData"
+                        AllowPaging="false" AllowFiltering="false" AllowReordering="false" AllowResizing="false" GridLines="GridLine.Both" Toolbar="@(new List<string>() {"Add","Cancel"})">
+                    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                    <GridPageSettings PageSizes="false"></GridPageSettings>
+
+                    <GridColumns>
+                        @* <GridColumn Field=@nameof(AppliedForJobReferees.AppliedForRefereeId) Visible=false HeaderText="JobDescriptionId" AllowEditing="false" IsPrimaryKey="true" Width="150"></GridColumn> *@
+                        <GridColumn Field=@nameof(AppliedForJobReferees.RefereeName) Visible=true HeaderText="Name" AllowEditing="true" Width="150"></GridColumn>
+                        <GridColumn Field=@nameof(AppliedForJobReferees.RefereeCompany) Visible=true HeaderText="Company" AllowEditing="true" Width="150"></GridColumn>
+                        <GridColumn Field=@nameof(AppliedForJobReferees.RefereeEmail) Visible=true HeaderText="Email" AllowEditing="true" Width="150"></GridColumn>
+                        <GridColumn Field=@nameof(AppliedForJobReferees.RefereePhoneNumber) Visible=true HeaderText="Offical Phone Number" AllowEditing="true" Width="150">
+                            <Template>
+                                @{
+                                    var data = (context as AppliedForJobReferees);
+                                    string _phonenumber = string.Empty;
+                                    if (CountryData != null)
+                                    {
+                                        var _code = CountryData.FirstOrDefault(o => o.CoutryId == data.CoutryId);
+                                        if (_code != null)
+                                        {
+                                            _phonenumber = _code.CountryCode + data.RefereePhoneNumber;
+                                        }
+                                    }
+                                    <label>@_phonenumber</label>
+                                }
+                            </Template>
+                        </GridColumn>
+
+                    </GridColumns>
+                </SfGrid>
+            </div>            
+        }
+
+        @if (NonStaffQualificationAttachmentData != null)
+        {
+            <div class="col-md-12">
+                <h4>Supporting Documents</h4>
+            </div>
+
+            <div class="col-md-12">
+                <table style="width:100%;font-size:15px">
+                    <tr>
+                        <td style="border-color:ghostwhite; background-color:black; color:ghostwhite;">Attachment Name</td>
+                        <td style="border-color:ghostwhite; background-color:black; color:ghostwhite;">Action</td>
+                    </tr>
+                    @foreach (var item in NonStaffQualificationAttachmentData)
+                    {
+                        string? DocName = null;
+
+                        if(!string.IsNullOrEmpty(item.AttachmentName))
+                        {
+                            DocName = item.AttachmentName;
+                        }
+                        else
+                        {
+                            DocName = "Not Labeled";
+                        }
+
+                    
+                            <tr><td>@DocName</td><td><DialogDocumentReviewPage DocumentName="@item.AttachmentUrl" DocumentExt="@item.AttachmentExt" FolderName="EmployeeQualification" GridId="" /></td></tr>
+                                        
+                    }
+                </table>
+            </div>
+            
+        }
+
+        <div class="col-md-12" style="margin-top: 20px;">
+            
+            <MudAlert Severity="Severity.Warning" Elevation="3">
+                By submitting this job application, I hereby certify that 
+                all the information provided in this application is true, 
+                accurate, and complete to the best of my knowledge. I understand 
+                that any false statements or omissions may result in disqualification 
+                from employment consideration or termination if employed.
+            </MudAlert>            
+        </div>
+
+        <div class="col-md-12" style="margin-left: -55px;margin-top: 20px;">
+            <SfCheckBox @bind-Checked=@AppliedForJobsData.InformationAcknowledgement LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After" Label="I hereby certify that to the best of my knowledge and belief, the particulars given in this form are true and complete in all aspects."></SfCheckBox>
+        </div>
+
+        <div class="col-md-12" style="float: right;margin-top: 20px;">
+            @if (AppliedForJobsData.InformationAcknowledgement == true)
+            {                
+                <button class="btn btn-danger" style="float: right;">Cancel</button>
+                <button class="btn btn-success" style="float: right;margin-right: 10px;">Apply</button>
+            }
+            else
+            {
+                <button class="btn btn-danger" style="float: right;">Cancel</button>
+            }
+            
+        </div>
+    </div>
+
+}
+
+@code {
+    [Parameter]
+    public NonStaff? NonStaffData { get; set; }
+
+    [Parameter]
+    public List<NonStaffQualification>? NonStaffQualificationData { get; set; }
+
+    [Parameter]
+    public List<NonStaffWorkExperience>? NonStaffWorkExperienceData { get; set; }
+
+    [Parameter]
+    public List<NonStaffSkills>? NonStaffSkillsData { get; set; }
+
+    [Parameter]
+    public List<NonStaffLanguagesKnown>? NonStaffLanguagesKnownData { get; set; }
+
+    [Parameter]
+    public List<NonStaffQualificationAttachment>? NonStaffQualificationAttachmentData { get; set; }
+
+    [Parameter]
+    public List<AppliedForJobReferees>? JobRefereesData { get; set; }
+    [Parameter]
+    public List<ALevelofEducation> LevelofEducationData { get; set; }
+    [Parameter]
+    public List<ADegreeClass>? DegreeClassData { get; set; }
+
+    [Parameter]
+    public int NonstaffId { get; set; }
+
+    [Parameter]
+    public List<AGender>? GenderData { get; set; }
+
+    [Parameter]
+    public List<ACountry>? CountryData { get; set; }
+
+    [Parameter]
+    public List<AIdentificationType>? IdentificationTypeData { get; set; }
+
+    [Parameter]
+    public List<ALanguages>? LanguagesData { get; set; }
+
+    [Parameter]
+    public List<ALanguageProlific>? LanguageProlificData { get; set; }
+
+    [Parameter]
+    public List<ASkillLevel>? SkillLevelData { get; set; }
+
+    private AppliedForJobs? AppliedForJobsData { get; set; } = new();
+}

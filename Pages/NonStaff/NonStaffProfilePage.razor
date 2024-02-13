@@ -210,9 +210,9 @@
                                                     </ValueTemplate>
                                                 </DropDownListTemplates>
                                                 <DropDownListFieldSettings Value="CoutryId" Text="CountryDesc"></DropDownListFieldSettings>
-                                                <DropDownListEvents TValue="int?" TItem="ACountry" ValueChange="changeHandler"></DropDownListEvents>
+                                                <DropDownListEvents TValue="int?" TItem="ACountry" ValueChange="otherchangeHandler"></DropDownListEvents>
                                             </SfDropDownList>
-                                            <SfMaskedTextBox Mask="@maskvalue" @bind-Value="@(inputmodel.MobileNumber)" Width="150px" Enabled="@(inputmodel.CoutryId == null ? false : true)"></SfMaskedTextBox>
+                                            <SfMaskedTextBox Mask="@othermaskvalue" @bind-Value="@(inputmodel.MobileNumber)" Width="150px" Enabled="@(inputmodel.CoutryId == null ? false : true)"></SfMaskedTextBox>
                                             <p> <ValidationMessage For="@(() => inputmodel.MobileNumber)" /></p>
                                     </div>
                                         @*<div class="col-md-4">
@@ -497,6 +497,7 @@
     string fileName = string.Empty;
     bool IsSubmitDisabled;
     public string maskvalue { get; set; } = "000 000 000 0";
+    public string othermaskvalue { get; set; } = "000 000 000 0";
 
     protected override async Task OnInitializedAsync()
     {
@@ -620,12 +621,25 @@
 
     public async void otherchangeHandler(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ACountry> args)
     {
-        if (args.Value != null)
+        if (args.ItemData != null)
         {
-            var _countrycode = CountryData.FirstOrDefault(o => o.CoutryId == args.ItemData.CoutryId);
-            inputmodel.OtherDialCode = _countrycode.CountryCode;
+            othermaskvalue = null;
+            if (!string.IsNullOrEmpty(args.ItemData.CountryCode))
+            {
+                foreach (var item in args.ItemData.CountryCode.Trim())
+                {
+                    if (item != '-')
+                    {
+                        othermaskvalue += $@"\\{item}";
+                    }
+                }
+                othermaskvalue += " 000 000 000";
+            }
         }
-
+        else
+        {
+            othermaskvalue = "000 000 000 000";
+        }
     }
 
     private void ToggleBalanceScoreCardAttachment(List<NonStaffQualificationAttachment>? AttachmentChange)

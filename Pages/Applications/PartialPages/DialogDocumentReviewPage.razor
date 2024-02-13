@@ -1,0 +1,120 @@
+﻿@using HCMIS.ViewModel
+@using Syncfusion.DocIORenderer
+@using Syncfusion.Pdf
+@* <h3>DialogDocumentReviewPage</h3> *@
+
+<style>
+    u:hover {
+        background-color: goldenrod;
+        color: ghostwhite;
+    }
+</style>
+@inject DocumentUploadModel docService;
+
+@* <button class="btn btn-primary" @onclick="@(async() => { await viewdocumentclick(DocumentName, DocumentExt, FolderName);})">
+    View document
+</button> *@
+<a @onclick="@(async () => { await viewdocumentclick(DocumentName, DocumentExt, FolderName); })" style="color:dodgerblue; cursor:pointer;"><span class="fa fa-eye"></span><u> View Attachment</u></a>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <MudAlert Severity="Severity.Error" Elevation="2" Style="margin:10px; padding:5px;">@ErrorMessage</MudAlert>
+}
+
+<SfDialog @ref="@PersonalDocumentDialogue" Height="auto" Width="80%" AllowDragging="true" Target="@GridId" ShowCloseIcon="true" Visible="false">
+    <DialogTemplates>
+        <Header>
+            <div id="template" title="Document Review" class="e-icon-settings">Document Review</div>
+        </Header>
+        <Content>
+            <div style="padding:25px">
+                @((MarkupString)@DocumentString)
+            </div>
+        </Content>
+        <FooterTemplate>
+
+        </FooterTemplate>
+    </DialogTemplates>
+</SfDialog>
+@code {
+    [Parameter]
+    public string? DocumentName{ get; set; }
+    [Parameter]
+    public string? DocumentExt { get; set; }
+    [Parameter]
+    public string? FolderName { get; set; }
+    [Parameter]
+    public string? GridId { get; set; }
+
+    string? DocumentString { get; set; }
+    SfDialog? PersonalDocumentDialogue;
+    string? ErrorMessage { get; set; }
+
+
+    private async Task viewdocumentclick(string? name, string? ext, string? location)
+    {
+        try
+        {
+            ErrorMessage = null;
+            if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(ext) && !string.IsNullOrEmpty(location))
+            {
+                var doc = await docService.GetDocument(name, location);
+                if (doc != null && doc.DocumentByte != null && doc.DocumentByte.Length > 0)
+                {
+                    string? base64String = null;
+                    if (ext.Contains("pdf") || ext.Contains("doc") || ext.Contains("docx"))
+                    {
+                        if (ext.Contains("doc") || ext.Contains("docx"))
+                        {
+                            Stream stream = new MemoryStream(doc.DocumentByte);
+                            stream.Position = 0;
+                            //Create a new document
+                            Syncfusion.DocIO.DLS.WordDocument document;
+                            if (ext.Contains("doc") && !ext.Contains("docx"))
+                            {
+                                document = new Syncfusion.DocIO.DLS.WordDocument(stream, Syncfusion.DocIO.FormatType.Doc);
+                            }
+                            else
+                            {
+                                document = new Syncfusion.DocIO.DLS.WordDocument(stream, Syncfusion.DocIO.FormatType.Docx);
+                            }
+                            //Creates an instance of the DocToPDFConverter
+                            DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
+                            PdfDocument pdfDocument = render.ConvertToPDF(document);
+                            stream.Dispose();
+                            MemoryStream _ms = new MemoryStream();
+                            pdfDocument.Save(_ms);
+                            _ms.Position = 0;
+                            base64String = Convert.ToBase64String(_ms.ToArray());
+                            DocumentString = "<embed src='data:application/pdf;base64," + base64String + "' alt='" + name + "#toolbar=0' width='100%' height='700px' style='border:none;' frameborder='0' allowfullscreen='true' />";
+                            _ms.Dispose();
+                            pdfDocument.Dispose();
+                            render.Dispose();
+                            document.Dispose();
+
+                        }
+                        else
+                        {
+                            base64String = Convert.ToBase64String(doc.DocumentByte, 0, doc.DocumentByte.Length);
+                            DocumentString = "<embed src='data:application/" + ext.Trim().Replace(".","") + ";base64," + base64String + "' alt='" + name + "#toolbar=0' width='100%' height='700px' style='border:none;' frameborder='0' allowfullscreen='true' />";
+                        }
+                    }
+                    else
+                    {
+                        base64String = Convert.ToBase64String(doc.DocumentByte, 0, doc.DocumentByte.Length);
+                        DocumentString = "<img src='data:image/" + ext.Trim().Replace(".", "") + ";base64," + base64String + "' alt='" + name + "' class='img-thumbnail Imagecenter' style='margin-bottom:10px; margin-top:10px;' />";
+                    }
+                    if (PersonalDocumentDialogue != null) { await PersonalDocumentDialogue.ShowAsync(); }
+                }
+                else
+                {
+                    ErrorMessage = "The specified document was not found.";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message.ToString(); 
+        }
+    }
+}
