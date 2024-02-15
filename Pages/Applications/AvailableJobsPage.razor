@@ -228,108 +228,110 @@ else
 
     @*View Full Job Description*@
 
+    @if (SelectedJobsModel != null)
+    {
+        <div class="col-md-12">
+            <SfDialog Width="auto" ShowCloseIcon="true" @bind-Visible="Visibility" AllowDragging="true" EnableResize="true" IsModal="true">
+                <DialogEvents OnOpen="@DialogOpen" Closed="@DialogClose"></DialogEvents>
+                <DialogTemplates>
+                    <Header>Job Details</Header>
+                    <Content>
+                        @{
+                            var _jobdesc = JobDescriptionData.FirstOrDefault(o => o.JobDescriptionId == SelectedJobsModel.JobDescriptionId);
+                            var _jobtitle = JobTitleData.FirstOrDefault(o => o.JobTitleId == _jobdesc.JibTitleId);
+                            var _dept = DepartmentData.FirstOrDefault(o => o.DepartmentId == _jobdesc.DepartmentId);
+                            var _jobtype = JobTypeData.FirstOrDefault(o => o.JobTypeId == _jobdesc.JobTypeId);
+                            var _contractlength = ContractLengthTypeData.FirstOrDefault(o => o.ContractLengthTypeId == _jobdesc.ContractLengthTypeId);
 
-    <div class="col-md-12">
-        <SfDialog Width="auto" ShowCloseIcon="true" @bind-Visible="Visibility" AllowDragging="true" EnableResize="true" IsModal="true">
-            <DialogEvents OnOpen="@DialogOpen" Closed="@DialogClose"></DialogEvents>
-            <DialogTemplates>
-                <Header>Job Details</Header>
-                <Content>
+                            <div style="overflow-x:auto;">
+                                <table class="center" style="margin:10px;">
+                                    <tr>
+                                        <td colspan="2" style="text-align: center;font-size: large;font-weight: bold;">
+                                            <img src="/Image/logonhcc.png" width="40" height="25" /> NATIONAL HOUSING AND CONSTRUCTION COMPANY LIMITED
+                                        </td>
+                                    </tr>
+                                    <tr style="font-weight: bold;">
+                                        <td>Post:</td>
+                                        <td style="font-weight:bold">@_jobtitle.JobTitleDescription - @_jobdesc.Vacancies Post(s)</td>
+                                    </tr>
 
-                    @if (SelectedJobsModel != null)
-                    {
-                        var _jobdesc = JobDescriptionData.FirstOrDefault(o => o.JobDescriptionId == SelectedJobsModel.JobDescriptionId);
-                        var _jobtitle = JobTitleData.FirstOrDefault(o => o.JobTitleId == _jobdesc.JibTitleId);
-                        var _dept = DepartmentData.FirstOrDefault(o => o.DepartmentId == _jobdesc.DepartmentId);
-                        var _jobtype = JobTypeData.FirstOrDefault(o => o.JobTypeId == _jobdesc.JobTypeId);
-                        var _contractlength = ContractLengthTypeData.FirstOrDefault(o => o.ContractLengthTypeId == _jobdesc.ContractLengthTypeId);
+                                    <tr style="font-weight: bold;">
+                                        <td>Reference No:</td>
+                                        <td style="font-weight:bold">@SelectedJobsModel.ReferenceNumber </td>
+                                    </tr>
 
-                        <div style="overflow-x:auto;">
-                            <table class="center" style="margin:10px;">
-                                <tr>
-                                    <td colspan="2" style="text-align: center;font-size: large;font-weight: bold;">
-                                        <img src="/Image/logonhcc.png" width="40" height="25" /> NATIONAL HOUSING AND CONSTRUCTION COMPANY LIMITED
-                                    </td>
-                                </tr>
-                                <tr style="font-weight: bold;">
-                                    <td>Post:</td>
-                                    <td style="font-weight:bold">@_jobtitle.JobTitleDescription - @_jobdesc.Vacancies Post(s)</td>
-                                </tr>
+                                    <tr style="font-weight: bold;">
+                                        <td>Reports To:</td>
+                                        <td>@_jobtitle.ReportsTo</td>
+                                    </tr>
 
-                                <tr style="font-weight: bold;">
-                                    <td>Reference No:</td>
-                                    <td style="font-weight:bold">@SelectedJobsModel.ReferenceNumber </td>
-                                </tr>
+                                    <tr style="font-weight: bold;">
+                                        <td>Responsible For:</td>
+                                        <td>@_jobdesc.ResponsibleFor</td>
+                                    </tr>
 
-                                <tr style="font-weight: bold;">
-                                    <td>Reports To:</td>
-                                    <td>@_jobtitle.ReportsTo</td>
-                                </tr>
+                                    <tr style="font-weight: bold;">
+                                        <td>Job Purpose:</td>
+                                        <td>@_jobdesc.OtherRequirements</td>
+                                    </tr>
 
-                                <tr style="font-weight: bold;">
-                                    <td>Responsible For:</td>
-                                    <td>@_jobdesc.ResponsibleFor</td>
-                                </tr>
+                                    <tr style="font-weight: bold;">
+                                        <td>Key Duties and Responsibilities:</td>
+                                        <td>@((MarkupString)_jobdesc.JobDescription1)</td>
+                                    </tr>
 
-                                <tr style="font-weight: bold;">
-                                    <td>Job Purpose:</td>
-                                    <td>@_jobdesc.OtherRequirements</td>
-                                </tr>
+                                    <tr style="font-weight: bold;">
+                                        <td>Relevant Competencies:</td>
+                                        <td> @_jobdesc.RequiredWorkExperience</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        }        
 
-                                <tr style="font-weight: bold;">
-                                    <td>Key Duties and Responsibilities:</td>
-                                    <td>@((MarkupString)_jobdesc.JobDescription1)</td>
-                                </tr>
+                    </Content>
+                    <FooterTemplate>
+                        <button @onclick="@ApplyBtnclicked" class="btn btn-success" data-ripple="true">Apply</button>
+                        <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel</button>
+                    </FooterTemplate>
+                </DialogTemplates>
+                <DialogPositionData X="center" Y="center"></DialogPositionData>
+            </SfDialog>
+        </div>
 
-                                <tr style="font-weight: bold;">
-                                    <td>Relevant Competencies:</td>
-                                    <td> @_jobdesc.RequiredWorkExperience</td>
-                                </tr>
-                            </table>
+
+        <div class="col-md-12">
+
+            <SfDialog @ref="@ConfirmationRecallDialogue" Width="90%" Target=".mainbody" ShowCloseIcon="true" Visible="false" IsModal="true">
+                <DialogTemplates>
+                    <Content>
+                        <div class="row">
+                            <HCMIS.Pages.Applications.PartialPages.ApplicationSubmissionPage NonstaffId="@Credentials.StaffId"
+                                                                                             GenderData="@GenderData"
+                                                                                             NonStaffData="@NonStaffData"
+                                                                                             CountryData="@CountryData"
+                                                                                             IdentificationTypeData="@IdentificationTypeData"
+                                                                                             NonStaffQualificationData="@NonStaffQualificationData"
+                                                                                             NonStaffWorkExperienceData="@NonStaffWorkExperienceData"
+                                                                                             NonStaffSkillsData="@NonStaffSkillsData"
+                                                                                             NonStaffLanguagesKnownData="@NonStaffLanguagesKnownData"
+                                                                                             NonStaffQualificationAttachmentData="@NonStaffQualificationAttachmentData"
+                                                                                             JobRefereesData="@JobRefereesData"
+                                                                                             LevelofEducationData="@LevelofEducationData"
+                                                                                             DegreeClassData="@DegreeClassData"
+                                                                                             LanguagesData="@LanguagesData"
+                                                                                             LanguageProlificData="@LanguageProlificData"
+                                                                                             SkillLevelData="@SkillLevelData"
+                                                                                             JobOpeningId="@SelectedJobsModel.JobOpeningId">
+                            </HCMIS.Pages.Applications.PartialPages.ApplicationSubmissionPage>
                         </div>
-                    }
+                    </Content>
+                </DialogTemplates>
+            </SfDialog>
+
+        </div>
+    }
 
 
-                </Content>
-                <FooterTemplate>
-                    <button @onclick="@ApplyBtnclicked" class="btn btn-success" data-ripple="true">Apply</button>
-                    <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel</button>
-                </FooterTemplate>
-            </DialogTemplates>
-            <DialogPositionData X="center" Y="center"></DialogPositionData>
-        </SfDialog>
-    </div>
-
-
-    <div class="col-md-12">
-
-        <SfDialog @ref="@ConfirmationRecallDialogue" Width="90%" Target=".mainbody" ShowCloseIcon="true" Visible="false" IsModal="true">
-            <DialogTemplates>
-                <Content>
-                    <div class="row">
-                        <HCMIS.Pages.Applications.PartialPages.ApplicationSubmissionPage NonstaffId="@Credentials.StaffId"
-                                                                                         GenderData="@GenderData"
-                                                                                         NonStaffData="@NonStaffData"
-                                                                                         CountryData="@CountryData"
-                                                                                         IdentificationTypeData="@IdentificationTypeData"
-                                                                                         NonStaffQualificationData="@NonStaffQualificationData"
-                                                                                         NonStaffWorkExperienceData="@NonStaffWorkExperienceData"
-                                                                                         NonStaffSkillsData="@NonStaffSkillsData"
-                                                                                         NonStaffLanguagesKnownData="@NonStaffLanguagesKnownData"
-                                                                                         NonStaffQualificationAttachmentData="@NonStaffQualificationAttachmentData"
-                                                                                         JobRefereesData="@JobRefereesData"
-                                                                                         LevelofEducationData="@LevelofEducationData"
-                                                                                         DegreeClassData="@DegreeClassData"
-                                                                                         LanguagesData="@LanguagesData"
-                                                                                         LanguageProlificData="@LanguageProlificData"
-                                                                                         SkillLevelData="@SkillLevelData">
-                        </HCMIS.Pages.Applications.PartialPages.ApplicationSubmissionPage>
-                    </div>
-                </Content>
-            </DialogTemplates>
-        </SfDialog>
-
-    </div>
 
 }
 
@@ -361,7 +363,7 @@ else
     NonStaff? applicationModel { get; set; } = new NonStaff();
     SfDialog ConfirmationRecallDialogue;
 
-    NonStaff NonStaffData { get; set; } = new();
+     NonStaff NonStaffData { get; set; } = new();
     List<NonStaffQualification> NonStaffQualificationData { get; set; } = new();
     List<NonStaffWorkExperience> NonStaffWorkExperienceData { get; set; } = new();
     List<NonStaffSkills> NonStaffSkillsData { get; set; } = new();
@@ -369,6 +371,9 @@ else
     List<NonStaffQualificationAttachment> NonStaffQualificationAttachmentData { get; set; } = new();
     List<AppliedForJobReferees> JobRefereesData { get; set; } = new();
     List<ASkillLevel>? SkillLevelData{ get; set; }
+    //List<NonStaff>? NonStaffData { get; set; }
+
+
     bool isloading { get; set; } = true;
 
     private void DialogOpen(Object args)
@@ -537,6 +542,7 @@ else
                     if (response.IsSuccessStatusCode)
                     {
                         NonStaffData = JsonSerializer.Deserialize<NonStaff>(content, _options);
+                        //NonStaffData = JsonSerializer.Deserialize<List<NonStaff>>(content, _options);
 
                     }
                 }));

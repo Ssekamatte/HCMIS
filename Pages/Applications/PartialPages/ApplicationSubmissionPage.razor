@@ -1,8 +1,13 @@
 ﻿@* <h3>ApplicationSubmissionPage</h3> *@
 
+@using HCMIS.Interface
+@using HCMIS.SHARED.Data
+@using System.Text.Json
 @inject IToastService toast;
-
-
+@inject HttpClient Http;
+@inject IAuthenticationService AuthService;
+@inject NavigationManager navManager;
+@inject IToastService toastService;
 
 
 @if (NonStaffData != null)
@@ -334,7 +339,7 @@
             @if (AppliedForJobsData.InformationAcknowledgement == true)
             {                
                 <button class="btn btn-danger" style="float: right;">Cancel</button>
-                <button class="btn btn-success" style="float: right;margin-right: 10px;">Apply</button>
+                <button class="btn btn-success" style="float: right;margin-right: 10px;"  @onclick="@onSubmitApplication">Apply</button>
             }
             else
             {
@@ -376,6 +381,9 @@
     public int NonstaffId { get; set; }
 
     [Parameter]
+    public int JobOpeningId { get; set; }
+
+    [Parameter]
     public List<AGender>? GenderData { get; set; }
 
     [Parameter]
@@ -394,4 +402,43 @@
     public List<ASkillLevel>? SkillLevelData { get; set; }
 
     private AppliedForJobs? AppliedForJobsData { get; set; } = new();
+    private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+    public async Task onSubmitApplication()
+    {
+        try
+        {
+            string? error = string.Empty;
+            string? _baseurl = navManager.BaseUri;
+
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(NonStaffData);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            
+            var result = await Http.PostAsync($"HumanResource/SaveAppliedForJobs?_baseurl={_baseurl}&JobOpeningId={JobOpeningId}", httpContent);
+            if (result.IsSuccessStatusCode)
+            {
+                navManager.NavigateTo("/SuccessfulSubmissionPage");
+                // var content = await result.Content.ReadAsStringAsync();
+                // var _data = JsonSerializer.Deserialize<Response>(content, _options);
+                // if (_data != null)
+                // {
+                //     if (_data.IsSuccess)
+                //     {                        
+                //         toastService.ClearAll();
+                //         toastService.ShowSuccess(_data.Message);
+                //     }                    
+                // }
+            }
+        }
+        catch (Exception ex)
+        {
+
+        }
+        finally
+        {
+            
+        }
+
+    
+    }
 }
