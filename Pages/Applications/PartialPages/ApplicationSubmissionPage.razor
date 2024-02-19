@@ -339,7 +339,7 @@
             @if (AppliedForJobsData.InformationAcknowledgement == true)
             {                
                 <button class="btn btn-danger" style="float: right;">Cancel</button>
-                <button class="btn btn-success" style="float: right;margin-right: 10px;"  @onclick="@onSubmitApplication">Apply</button>
+                <button class="btn btn-success" style="float: right;margin-right: 10px;" disabled="@applydisabled"  @onclick="@onSubmitApplication">Apply</button>
             }
             else
             {
@@ -404,16 +404,20 @@
     private AppliedForJobs? AppliedForJobsData { get; set; } = new();
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
+    bool applydisabled = false;
+
     public async Task onSubmitApplication()
     {
         try
         {
+            applydisabled = true;
+
             string? error = string.Empty;
             string? _baseurl = navManager.BaseUri;
 
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(NonStaffData);
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-            
+
             var result = await Http.PostAsync($"HumanResource/SaveAppliedForJobs?_baseurl={_baseurl}&JobOpeningId={JobOpeningId}", httpContent);
             if (result.IsSuccessStatusCode)
             {
@@ -436,7 +440,7 @@
         }
         finally
         {
-            
+            applydisabled = false;
         }
 
     

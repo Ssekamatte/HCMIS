@@ -1,0 +1,175 @@
+﻿@* <h3>JobDescriptionSearchPage</h3> *@
+
+@using HCMIS.Data;
+@using HCMIS.SHARED.Models;
+
+@inject IToastService toastService;
+
+<div class="form-row">
+    <div class="form-group col-md-12">
+        <div class="form-group col-md-12">
+            <EditForm Model="@searchpanel" OnValidSubmit="@OnLoadRecords">
+                <DataAnnotationsValidator />
+                <div class="row" style="margin-bottom:10px;">
+
+                    <div class="col-md-6">
+                        <p>Department</p>
+                        <SfMultiSelect @bind-Value="@searchpanel.DepartmentId"
+                                       TValue="int?[]" TItem="ADepartment"
+                                       AllowFiltering="true"
+                                       FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                                       Mode="@VisualMode.CheckBox"
+                                       DataSource="@DepartmentData"
+                                       ShowSelectAll="true"
+                                       EnableSelectionOrder="true"
+                                       ShowDropDownIcon="true"
+                                       FilterBarPlaceholder="Year"
+                                       FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+                            <MultiSelectFieldSettings Value="@nameof(ADepartment.DepartmentId)"
+                                                      Text="@nameof(ADepartment.DepartmentDescription)">
+                            </MultiSelectFieldSettings>
+                            <MultiSelectEvents TValue="int?[]" TItem="ADepartment" ValueChange="OnDepartmentChange"></MultiSelectEvents>
+                        </SfMultiSelect>
+                    </div>
+
+                    <div class="col-md-6">
+                        <p>Job Title</p>
+                        <SfMultiSelect @bind-Value="@searchpanel.JobTitleId"
+                                       TValue="int?[]" TItem="AJobTitle"
+                                       AllowFiltering="true"
+                                       FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                                       Mode="@VisualMode.CheckBox"
+                                       DataSource="@JobTitleData"
+                                       ShowSelectAll="true"
+                                       EnableSelectionOrder="true"
+                                       ShowDropDownIcon="true"
+                                       FilterBarPlaceholder="Year"
+                                       FloatLabelType="FloatLabelType.Never" PopupHeight="350px"
+                                       Query="@LocalDataQuery"
+                                       EnableVirtualization="true"
+                                       Enabled="@(searchpanel.DepartmentId == null ? false : true)">
+                            <MultiSelectFieldSettings Value="@nameof(AJobTitle.JobTitleId)"
+                                                      Text="@nameof(AJobTitle.JobTitleDescription)">
+                            </MultiSelectFieldSettings>
+                        </SfMultiSelect>
+                    </div>
+
+                    <div class="col col-md-12" style="margin-top:20px">
+                        <button class="btn btn-success" data-ripple="true" style="margin-right:10px;">Load Records</button>
+                        <button @onclick="@ClearSearchBtnClick" class="btn btn-danger" data-ripple="true" style="margin-right:10px;">Clear Search</button>
+                    </div>
+                </div>
+                <ValidationSummary />
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    public AppraisalSearch searchpanel { get; set; } = new AppraisalSearch();
+    [Parameter]
+    public List<AJobTitle>? JobTitleData { get; set; }
+
+    [Parameter]
+    public List<ADepartment>? DepartmentData { get; set; }
+
+    public Query MainQuery = new Query();
+    [Parameter]
+    public EventCallback<Query?> onsearchtoggle { get; set; }
+    [Parameter]
+    public int? listid { get; set; }
+    public Query LocalDataQuery  = new Query().Take(15);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // List<int?> _listid = new List<int?>();
+            // _listid.Add(listid);
+            // searchpanel.ShortlistId = _listid.ToArray();
+        }
+        catch (Exception ex)
+        {
+
+        }
+    }
+
+    public void OnDepartmentChange(Syncfusion.Blazor.DropDowns.MultiSelectChangeEventArgs<int?[]> args)
+    {
+        if (args.Value != null)
+        {
+            List<WhereFilter> filterList = new List<WhereFilter>();
+            foreach (var item in args.Value)
+            {
+                filterList.Add(new WhereFilter() { Field = "DepartmentId", Operator = "equal", value = item, IgnoreCase = true });
+            }
+
+            var orWhere = WhereFilter.Or(filterList);
+            LocalDataQuery = new Query().Where(orWhere);
+        }
+        else
+        {
+            LocalDataQuery = new Query();
+        }
+    }
+
+    private async void OnLoadRecords()
+    {
+        try
+        {
+            string _JobTitleId = null;
+            if (searchpanel.JobTitleId != null)
+            {
+                _JobTitleId = string.Join(",", searchpanel.JobTitleId);
+            }
+
+            string _DepartmentId = null;
+            if (searchpanel.DepartmentId != null)
+            {
+                _DepartmentId = string.Join(",", searchpanel.DepartmentId);
+            }
+
+            string _ReferenceNumber = null;
+            if (searchpanel.ReferenceNumber != null)
+            {
+                _ReferenceNumber = searchpanel.ReferenceNumber;
+            }
+
+            MainQuery = new Query()
+            .AddParams("JobTitleId", _JobTitleId)
+            .AddParams("DepartmentId", _DepartmentId);
+            await onsearchtoggle.InvokeAsync(MainQuery);
+
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowWarning(ex.Message.ToString());
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async void ClearSearchBtnClick()
+    {
+        try
+        {
+            searchpanel = new AppraisalSearch();
+            MainQuery = new Query();
+            await onsearchtoggle.InvokeAsync(MainQuery);
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+}
+
+

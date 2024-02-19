@@ -1,0 +1,284 @@
+﻿@page "/MinimumQualificationandExperiencePage"
+
+@using HCMIS.Data
+@using HCMIS.Interface
+@using HCMIS.Model
+@using System.Text.Json
+@using HCMIS.SHARED.DTO
+@using HCMIS.SHARED.Data;
+@using HCMIS.SHARED.Models;
+@using HCMIS.ViewModel
+@using System.Collections;
+@inject HttpClient Http
+@inject AppState AppState
+@inject ApiConfig _ApiConfig;
+@inject NavigationManager navManager
+@inject DocumentUploadModel _DocumentUploadModel;
+@inject IToastService toastService;
+@inject IJSRuntime JSRuntime;
+@inject IAuthenticationService AuthService;
+
+<SfGrid @ref="@DataGrid" TValue="JobDescriptionKnowledge" DataSource="@datasource"
+        ID="DataGrid"
+        AllowPaging="false" AllowFiltering="false" AllowReordering="true" AllowResizing="true"
+        AllowGrouping="false"
+        AllowExcelExport="true"
+        AllowPdfExport="true"
+        AllowSelection="true"
+        AllowSorting="true"
+        AllowTextWrap="true"
+        Toolbar="@ToolbarMenu">
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog" ShowConfirmDialog="false"
+                      Dialog="DialogParams">
+        <Template Context="FormContext">
+            @{
+                ReactionData = (FormContext as JobDescriptionKnowledge);
+                @if (ReactionData != null)
+                {
+                    <div class="row">
+                        <div class="col-md-12" hidden>
+                            <SfNumericTextBox @bind-Value="@(ReactionData.JobDescriptionId)" Enabled="false" Placeholder="Id" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                        </div>
+
+                        <div class="form-group col-md-12">
+                            <p>Detail(s)<span style="color:red;">*</span></p>
+                            <SfTextBox Multiline=true Rows=4 @bind-Value="@(ReactionData.JobDescriptionDetails)" Width="100%" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                        </div>
+
+                        <div class="form-group col-md-12">
+                            <p>Required Field(s)</p>
+                            <SfMultiSelect @ref="@FieldDatasourceObj" TValue="int[]" TItem="AFieldOfStudy" AllowFiltering="true" Enabled="true" Mode="@VisualMode.CheckBox" DataSource="@FieldOfStudyData" ShowSelectAll="true"
+                                           EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Field" FloatLabelType="FloatLabelType.Never"
+                                           FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" PopupHeight="350px" Query="@LocalDataQuery" EnableVirtualization="true">
+                                <MultiSelectFieldSettings Value="@nameof(AFieldOfStudy.FieldOfStudyId)" Text="@nameof(AFieldOfStudy.FieldOfStudyDesc)"></MultiSelectFieldSettings>
+                                <MultiSelectEvents TValue="int[]" TItem="AFieldOfStudy" ValueChange="OnFieldDatasourceChange" DataBound="OnFieldDatasourceBound"></MultiSelectEvents>
+                            </SfMultiSelect>
+                        </div>
+
+                        <div class="form-group col-md-12">
+                            <p>Must Have</p>
+                            <SfRadioButton Disabled="false" Label="Yes" Name="options" Value="true" TChecked="bool?" ValueChange="OnValueChange" @bind-Checked="@(ReactionData.IsRequired)"></SfRadioButton>
+                            <SfRadioButton Disabled="false" Label="No" Name="options" Value="false" TChecked="bool?" ValueChange="OnValueChange" @bind-Checked="@(ReactionData.IsRequired)"></SfRadioButton>
+                        </div>
+                    </div>
+                }
+            }
+        </Template>
+
+    </GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.FilterBar"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
+    <GridEvents OnActionBegin="ActionBegin"
+                OnActionComplete="ActionComplete"
+                OnToolbarClick="@GridToolbarClick"
+                TValue="JobDescriptionKnowledge">
+    </GridEvents>
+
+    <GridColumns>
+        <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
+        <GridColumn HeaderText="Edit"
+                    Width="20"
+                    CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"
+                    TextAlign="TextAlign.Left">
+            <GridCommandColumns>
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit"></GridCommandColumn>
+            </GridCommandColumns>
+        </GridColumn>
+
+        <GridColumn Field=@nameof(JobDescriptionKnowledge.KnowledgeId) 
+            HeaderText="Id" 
+            AllowEditing="false" 
+            Visible="false" 
+            IsPrimaryKey="true" 
+            Width="150">
+        </GridColumn>
+
+        <GridColumn Field=@nameof(JobDescriptionKnowledge.JobDescriptionDetails)
+                    HeaderText="Detail"
+                    TextAlign="TextAlign.Justify"
+                    AllowEditing="true"
+                    ValidationRules="@(new ValidationRules { Required = false })"
+                    Width="60"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+        </GridColumn>
+
+        <GridColumn Field=@nameof(JobDescriptionKnowledge.FieldofStudyId) HeaderText="Field(s) of Study" TextAlign="TextAlign.Justify" Width="60">
+            <Template Context="divisionContext">
+                @{
+                    string ouputText = string.Empty;
+                    var data = (divisionContext as JobDescriptionKnowledge);
+                    if (data != null && FieldOfStudyData != null)
+                    {
+                        if (!string.IsNullOrEmpty(data.FieldofStudyId))
+                        {
+                            var Organ = data.FieldofStudyId.Split(",");
+                            foreach (var item in Organ)
+                            {
+                                int b = 0;
+                                if (int.TryParse(item, out b))
+                                {
+                                    var exists = FieldOfStudyData.FirstOrDefault(o => o.FieldOfStudyId == b);
+                                    if (exists != null)
+                                    {
+                                        if (string.IsNullOrEmpty(ouputText))
+                                        {
+                                            ouputText = exists.FieldOfStudyDesc;
+                                        }
+                                        else
+                                        {
+                                            ouputText += ", " + exists.FieldOfStudyDesc;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+                    <p>@ouputText</p>
+                }
+            </Template>
+        </GridColumn>
+
+        <GridColumn Field=@nameof(JobDescriptionKnowledge.IsRequired)
+                    HeaderText="Must Have"
+                    AllowEditing="false"
+                    Visible="true"
+                    Width="30">
+        </GridColumn>
+    </GridColumns>
+</SfGrid>
+
+@code {
+    SfGrid<JobDescriptionKnowledge> DataGrid { get; set; }
+
+    [Parameter]
+    public int JobDescriptionId { get; set; }
+    [Parameter]
+    public List<JobDescriptionKnowledge>? suspectedreactiondata { get; set; }
+    [Parameter]
+    public EventCallback<List<JobDescriptionKnowledge>?> onsuspectedreactiontoggle { get; set; }
+    List<JobDescriptionKnowledge>? datasource { get; set; }
+    [Parameter]
+    public List<AFieldOfStudy>? FieldOfStudyData { get; set; }
+    int? previousJobDescriptionId { get; set; }
+    private static JobDescriptionKnowledge? ReactionData { get; set; }
+    public bool? radiovalue;
+    int random = -9999;
+    [Parameter]
+    public bool OnSubmitButtonsBool { get; set; }
+    private SfMultiSelect<int[], AFieldOfStudy>? FieldDatasourceObj;
+    public Query LocalDataQuery = new Query().Take(15);
+    private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "80%" };
+
+    /// <summary>
+    /// Event for Toolbar click for Grid Exporting
+    /// </summary>
+    public void GridToolbarClick(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Id == "Grid1_excelexport")
+        {
+            this.DataGrid.ExportToExcelAsync();
+        }
+        if (args.Item.Id == "Grid1_pdfexport")
+        {
+            this.DataGrid.ExportToPdfAsync();
+        }
+        if (args.Item.Id == "Grid1_csvexport")
+        {
+            this.DataGrid.ExportToCsvAsync();
+        }
+    }
+
+    private List<object> ToolbarMenu = new List<object>()
+    {
+            new ItemModel() { Text = "Add Details", PrefixIcon = "e-add", Id = "DataGrid_add"}
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (previousJobDescriptionId != JobDescriptionId)
+        {
+            int countid = -10000;
+            previousJobDescriptionId = JobDescriptionId;
+            datasource = new List<JobDescriptionKnowledge>();
+            if (suspectedreactiondata != null && suspectedreactiondata.Count() > 0)
+            {
+                datasource.AddRange(suspectedreactiondata);
+            }
+        }
+    }
+
+    public async void ActionBegin(ActionEventArgs<JobDescriptionKnowledge> Args)
+    {
+        var data = Args.Data;
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+        {
+            if (string.IsNullOrEmpty(Args.Data.JobDescriptionDetails))
+            {
+                toastService.ShowWarning("Please enter the details.");
+                Args.Cancel = true;
+            }
+
+            else
+            {
+                Args.Data.IsRequired = radiovalue;
+            }
+        }
+
+        if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
+        {
+            Args.Data.KnowledgeId = random;
+            random++;
+
+            //Reset IsRequired to false each time they are adding
+            Args.Data.IsRequired = false;
+        }
+    }
+
+    public async void ActionComplete(ActionEventArgs<JobDescriptionKnowledge> args)
+    {
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) ||
+        args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
+        {
+            DataGrid.PreventRender(false);
+        }
+
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+        {
+            await onsuspectedreactiontoggle.InvokeAsync(datasource);
+        }
+    }
+
+
+    public void OnFieldDatasourceBound(Syncfusion.Blazor.DropDowns.DataBoundEventArgs args)
+    {
+        if (!string.IsNullOrEmpty(ReactionData.FieldofStudyId))
+        {
+            var a = ReactionData.FieldofStudyId.Split(',');
+            List<int> c = new List<int>();
+            foreach (var n in a)
+            {
+                int b = Convert.ToInt32(n.Trim());
+                c.Add(b);
+            }
+            FieldDatasourceObj.Value = c.ToArray();
+        }
+    }
+    public void OnFieldDatasourceChange(Syncfusion.Blazor.DropDowns.MultiSelectChangeEventArgs<int[]> args)
+    {
+        if (args.Value != null)
+        {
+            ReactionData.FieldofStudyId = string.Join(",", args.Value);
+        }
+        else
+        {
+            ReactionData.FieldofStudyId = null;
+        }
+    }
+
+    private void OnValueChange(ChangeArgs<bool?> args)
+    {
+        radiovalue = args.Value;
+    }
+}

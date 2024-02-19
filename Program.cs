@@ -75,6 +75,7 @@ using static HCMIS.Pages.Utilities.DepartmentPage;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.FileProviders;
 using static HCMIS.Pages.NonStaff.NonStaffRefereesPage;
+using static HCMIS.Pages.Applications.MyApplicationsPage;
 
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -170,6 +171,7 @@ builder.Services.AddScoped<MaximumYearAdapter>();
 builder.Services.AddScoped<NonStaffQualificationAttachmentAdapter>();
 builder.Services.AddScoped<LoginLogAdapter>();
 builder.Services.AddScoped<RefereesAdapter>();
+builder.Services.AddScoped<MyApplicationsAdapter>();
 
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IReportService, ReportService>();

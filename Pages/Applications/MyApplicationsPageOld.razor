@@ -1,0 +1,298 @@
+﻿@page "/MyApplicationsPage"
+@using HCMIS.DTOs;
+@using HCMIS.Interface;
+@using HCMIS.Model;
+@using System.Text.Json
+@inject IToastService toastService;
+@inject IJobApplications JobRepo;
+@inject IAuthenticationService AuthService;
+@inject NavigationManager navManager;
+@inject HttpClient Http
+
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="color: brown;">
+        <strong>
+            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
+        </strong>| MY APPLICATIONS
+    </li>
+</ol>
+
+@*<h3>MyApplicationsPage</h3>*@
+@if(LoadingPageComplete)
+{
+    if(MyApplicationData != null && MyApplicationData.Count > 0)
+    {
+        var listData = MyApplicationData.Skip(SkipValue).Take(TakeValue).ToList();
+        <div class="row">
+            <div class="col-md-12">
+            <SfListView TValue="AppliedForJobs" DataSource="@listData" EnableVirtualization="false" CssClass="e-list-template">
+                @* <ListViewFieldSettings Id="AppliedForJobsId" Text="JobTitleDescription" GroupBy="DepartmentDescription" TValue="AppliedForJobs" /> *@
+                <ListViewFieldSettings Id="AppliedForJobsId" Text="JobTitleDescription" TValue="AppliedForJobs" />
+                <ListViewTemplates TValue="AppliedForJobs">
+                    <Template>
+                        @{
+                            var data = (context as AppliedForJobs);
+
+                                List<string?> _jobtypelist = new List<string?>();
+                                string repto = string.Empty;
+
+                                var _jobopening = JobOpeningData.FirstOrDefault(o => o.JobOpeningId == data.JobOpeningId);
+                                var _jobdesc = JobDescriptionData.FirstOrDefault(o => o.JobDescriptionId == _jobopening.JobDescriptionId);
+                                var _jobtitle = JobTitleData.FirstOrDefault(o => o.JobTitleId == _jobdesc.JibTitleId);
+                                var _dept = DepartmentData.FirstOrDefault(o => o.DepartmentId == _jobdesc.DepartmentId);
+                                var _jobtype = JobTypeData.FirstOrDefault(o => o.JobTypeId == _jobdesc.JobTypeId);
+                                
+                                <div class="row" style="margin:10px; border-color:gray; border-style:solid; border-width:1px;">
+                                    <div class="col-md-9" style="padding:10px;">
+                                        @* <h5>@data.ReferenceNumber @data.JobTitleDescription?.Replace("(1)","")</h5> *@
+                                        <h5>@data.JobReferenceNo @data.AppliedForJobsId)</h5>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                @* Original *@
+                                                @* <p>Department: @data.DepartmentDescription</p>
+                                                    <p>Reports To: @data.ReportsToDesc</p>
+                                                    <p>Job Type: @data.TypeDescription</p> *@
+                                                @* Original *@
+
+                                                <p>Department: @_dept.DepartmentDescription</p>
+
+                                                @if (_jobtitle != null && !string.IsNullOrEmpty(_jobtitle.ReportsTo))
+                                                {
+                                                    string[] splitReportsTo = _jobtitle.ReportsTo.Split(",");
+                                                    @foreach (var n in splitReportsTo)
+                                                    {
+                                                        var _jobtt = JobTitleData.FirstOrDefault(o => o.JobTitleId == Convert.ToInt32(n));
+                                                        _jobtypelist.Add(_jobtt.JobTitleDescription);
+                                                    }
+                                                    repto = String.Join(",", _jobtypelist);
+
+                                                    <p>Reports To: @repto</p>
+                                                }
+                                                else
+                                                {
+                                                    <p>Reports To: None</p>
+                                                }
+
+                                                <p>Job Type: @_jobtype.TypeDescription</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                @if (_jobdesc.JobTypeId == 3)
+                                                {
+                                                    if(_jobdesc.ContractLength != null && _jobdesc.ContractLengthTypeId != null)
+                                                    {
+                                                        var _contractlengthtype = ContractLengthTypeData.FirstOrDefault(o => o.ContractLengthTypeId == _jobdesc.ContractLengthTypeId);
+                                                        <p>Contract length: @_jobdesc.ContractLength @_contractlengthtype.ContractLengthTypeDesc</p>
+                                                    }                                                    
+                                                }
+
+                                                @if(_jobdesc.SalaryScaleId != null)
+                                                {
+                                                    var _salaryscale = SalaryScaleData.FirstOrDefault(o => o.SalaryScaleId == _jobdesc.SalaryScaleId);
+                                                    <p>Salary Scale: @_salaryscale.SalaryScaleDescription</p>
+                                                }
+
+                                                @if (_jobdesc.Vacancies != null)
+                                                {
+                                                    <p>Vacancies: @_jobdesc.Vacancies</p>                                                    
+                                                }
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                    <div class="col-md-3" style="padding:10px;">
+                                        @if (data.ApplicationStatusId == 4)
+                                        {
+                                            <button class="btn btn-primary" @onclick=@(()=>{StartAmptituddeTest(_jobdesc.JibTitleId,data.AppliedForJobsId);})><i class="oi oi-eye"></i> Start Aptitudde Test</button>
+                                        }
+                                    </div>
+                                </div>
+
+                        }
+                        
+                    </Template>
+                    <GroupTemplate>
+                        <div>
+                            <span class="category">@context.Text</span>
+                        </div>
+                    </GroupTemplate>
+                </ListViewTemplates>
+            </SfListView>
+            </div>
+            <div class="col-md-12">
+                <SfPager @ref="@Page" PageSize=5 NumericItemsCount=4 TotalItemsCount=@MyApplicationData.Count ItemClick="PaggerClick">
+                </SfPager>
+            </div>
+        </div>
+
+    }
+    else
+    {
+
+        <p class="alert-info" style="padding:10px;">You have not yet applied for any job on this platform.</p>
+    }
+}
+else{
+    <div class="col-md-12">
+        <div class="loader">
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--text"></div>
+        </div>
+    </div>
+}
+@code {
+    SfPager? Page;
+    List<AppliedForJobs>? MyApplicationData{ get; set; }
+    bool LoadingPageComplete { get; set; } = false;
+    private int SkipValue { get; set; }
+    private int pageSize { get; set; }
+    private int TakeValue { get; set; } = 5;
+    LoginResultModel? Credentials { get; set; }
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    List<AJobType>? JobTypeData { get; set; }
+    List<AJobTitle>? JobTitleData { get; set; }
+    List<ADepartment>? DepartmentData { get; set; }
+    List<JobDescription>? JobDescriptionData { get; set; }
+    List<ViewJobDescOpening2024>? JobOpeningData { get; set; }
+    List<ViewEmployeeDropDown>? EmployeeData { get; set; }
+    List<AContractLengthType>? ContractLengthTypeData { get; set; }
+    List<ASalaryScale>? SalaryScaleData { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        try
+        {
+            LoadingPageComplete = false;
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
+            {
+                navManager.NavigateTo("/LoginPage", true);
+            }
+            else
+            {
+                Credentials = await AuthService.GetUserCredentials();
+                List<Task> t = new List<Task>();
+
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetEmployeeDD");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(content, _options);
+                    }
+                }));
+
+
+                t.Add(Task.Run(async () =>
+                {
+                    MyApplicationData = await JobRepo.GetMyApplicationsAsync("null", Credentials.StaffId.ToString());
+
+                }));
+                
+                t.Add(Task.Run(async () =>
+               {
+
+                   var response = await Http.GetAsync($"HumanResource/GetJobOpening");
+                   var content = await response.Content.ReadAsStringAsync();
+                   if (response.IsSuccessStatusCode)
+                   {
+                       JobOpeningData = JsonSerializer.Deserialize<List<ViewJobDescOpening2024>>(content, _options);
+                   }
+               }));
+
+                t.Add(Task.Run(async () =>
+               {
+
+                   var response = await Http.GetAsync($"HumanResource/GetJobDescription");
+                   var content = await response.Content.ReadAsStringAsync();
+                   if (response.IsSuccessStatusCode)
+                   {
+                       JobDescriptionData = JsonSerializer.Deserialize<List<JobDescription>>(content, _options);
+                   }
+               }));
+                
+                t.Add(Task.Run(async () =>
+               {
+
+                   var response = await Http.GetAsync($"HumanResource/GetJobTitle");
+                   var content = await response.Content.ReadAsStringAsync();
+                   if (response.IsSuccessStatusCode)
+                   {
+                       JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
+                   }
+               }));
+
+                t.Add(Task.Run(async () =>
+               {
+
+                   var response = await Http.GetAsync($"Utilities/GetDepartment");
+                   var content = await response.Content.ReadAsStringAsync();
+                   if (response.IsSuccessStatusCode)
+                   {
+                       DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
+                   }
+               }));
+
+                t.Add(Task.Run(async () =>
+                {
+
+                    var response = await Http.GetAsync($"Utilities/GetContractLengthType");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        ContractLengthTypeData = JsonSerializer.Deserialize<List<AContractLengthType>>(content, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+
+                    var response = await Http.GetAsync($"Utilities/GetSalaryScale");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        SalaryScaleData = JsonSerializer.Deserialize<List<ASalaryScale>>(content, _options);
+                    }
+                }));
+                
+                t.Add(Task.Run(async () =>
+                 {
+
+                     var response = await Http.GetAsync($"Utilities/GetJobType");
+                     var content = await response.Content.ReadAsStringAsync();
+                     if (response.IsSuccessStatusCode)
+                     {
+                         JobTypeData = JsonSerializer.Deserialize<List<AJobType>>(content, _options);
+                     }
+                 }));
+
+                Task _t = Task.WhenAll(t);
+                await _t;
+            }            
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message);
+        }
+        finally{
+            LoadingPageComplete = true;
+            //StateHasChanged();
+        }
+    }
+    public void PaggerClick(Syncfusion.Blazor.Navigations.PagerItemClickEventArgs args)
+    {
+        SkipValue = (args.CurrentPage * Page.PageSize) - Page.PageSize;
+        TakeValue = Page.PageSize;
+        //StateHasChanged();
+    }
+    private void StartAmptituddeTest(int? JobTitleId, int? AppliedForJobsId)
+    {
+        navManager.NavigateTo($"ApplicantAptituddeTestPage/{JobTitleId}/{AppliedForJobsId}");
+    }
+}

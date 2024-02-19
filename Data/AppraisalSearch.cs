@@ -18,5 +18,7 @@
         public int?[] DepartmentId { get; set; }
 
         public string? ReferenceNumber { get; set; }
+
+        public int?[] JobTitleId { get; set; }
     }
 }

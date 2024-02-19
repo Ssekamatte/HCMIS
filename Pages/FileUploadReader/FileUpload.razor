@@ -1,0 +1,246 @@
+﻿@page "/fileupload"
+@using System.Text
+@using System.Text.RegularExpressions
+@using HCMIS.SHARED.DTO
+@using HCMIS.ViewModel
+@using iTextSharp.text.pdf;
+@using iTextSharp.text.pdf.parser
+@inject DocumentUploadModel _DocumentUploadModel;
+
+@* https://www.c-sharpcorner.com/blogs/reading-contents-from-pdf-word-text-files-in-c-sharp1 *@
+
+@* @using iTextSharp.text.pdf
+ *@
+<h3>File Upload and Text Display</h3>
+
+<div class="form-group col-md-12">
+    <p class="alert-info" style="padding:10px;">Ensure that the document does not exceed 5 Mega Bytes (MB) and is of the following formats (Microsoft Word, PDF or an Image (png,gif,jpeg and jpg))</p>
+    <InputFile class="form-control" OnChange="@SingleUpload" />
+    <div>
+        @* <SfSpinner @ref="UploadAttachmentSpinner" CssClass="SpinnerClass" Visible="false" Size="30" Label="Saving document Please wait......."> </SfSpinner> *@
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(fileContent))
+{
+    <div>
+        <h4>File Content:</h4>
+        <textarea class="form-control" rows="5" @bind="fileContent"></textarea>
+
+        <h4>Extracted First Name:</h4>
+        <input type="text" class="form-control" @bind="firstName"/>
+    </div>
+}
+
+@code {
+    private string fileContent;
+    private string firstName;
+    long maxFileSize = 5242880/* 1024L * 1024L * 1024L * 2L */;//5 Megabytes
+    string? ImageString { get; set; }
+
+
+    private async Task SingleUpload(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            MemoryStream ms = new MemoryStream();
+
+            if (e.File.Size <= maxFileSize)
+            {
+                await e.File.OpenReadStream(maxFileSize).CopyToAsync(ms);
+                ms.Position = 0;
+                System.IO.FileInfo info = new System.IO.FileInfo(e.File.Name);
+
+                if (info.Extension.ToLower().Contains("pdf") || info.Extension.ToLower().Contains("doc"))
+                {
+                    string fileName = string.Empty;
+                    if (info.Extension.ToLower().Contains("doc"))
+                    {
+
+                    }
+                    else
+                    {
+                        fileName = "HCMISCV_" + 1 + ".pdf";
+
+                        ms.Position = 0;
+                        byte[] bytes = ms.ToArray();
+                        string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+
+                        DocumentBytes m = new DocumentBytes()
+                            {
+                                DocumentName = fileName,
+                                DocumentExt = info.Extension.Trim().Replace(".", ""),
+                                DocumentByte = bytes,
+                                DocumentFolder = "HCMISCV"
+                            };
+
+                        await _DocumentUploadModel.UploadDocument(m);
+                        var result = "data:application/pdf;base64," + base64;
+                        // AttachmentData.AttachmentUrl = fileName;
+                        // AttachmentData.AttachmentExt = info.Extension.Trim().Replace(".", "");
+                        ImageString = result;
+                        bytes = null;
+
+                        ImageString = await GetImageString(m.DocumentName, m.DocumentExt, "HCMISCV");
+
+                        using (var stream = ms)
+                        {
+                            await ProcessPdfFile(stream);
+                        }
+                    }
+                }
+            }
+
+        }
+        catch (Exception ex)
+        {
+
+        }
+        finally
+        {
+
+        }
+    }
+
+    private async Task<string> GetImageString(string imageUrl, string ext, string DocumentFolder)
+    {
+        string result = null;
+        try
+        {
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                var a = await _DocumentUploadModel.GetDocument(imageUrl, DocumentFolder);
+
+                if (a != null && !string.IsNullOrEmpty(a.DocumentExt))
+                {
+                    if (a.DocumentExt.Contains("pdf"))
+                    {
+                        string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                        result = "data:application/pdf;base64," + base64String;
+                    }
+                    else
+                    {
+                        string base64String = Convert.ToBase64String(a.DocumentByte, 0, a.DocumentByte.Length);
+                        result = "data:image/" + a.DocumentExt + ";base64," + base64String;
+                    }
+
+                }
+                else
+                {
+                    //toasterservice.ShowError("Attachment Not Found");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // toasterservice.ClearAll();
+            // toasterservice.ShowError(ex.Message.ToString());
+        }
+        return result;
+    }
+
+    private async Task ProcessPdfFile(Stream stream)
+    {
+        try
+        {
+            using (PdfReader pdfReader = new PdfReader(stream))
+            {
+                var text = new StringBuilder();
+
+                for (var page = 1; page <= pdfReader.NumberOfPages; page++)
+                {
+                    var strategy = new SimpleTextExtractionStrategy();
+                    var currentText = PdfTextExtractor.GetTextFromPage(pdfReader, page, strategy);
+
+                    text.Append(currentText);
+                }
+
+                fileContent = text.ToString();
+
+                string toBeSearched = "First Name";
+                int ix = fileContent.IndexOf(toBeSearched);
+
+                if (ix != -1)
+                {
+                    string nextWord = fileContent.Substring(ix + toBeSearched.Length);
+
+
+                    // char[] nextWord = _nextWord
+                    // .Where(c => !Char.IsPunctuation(c) && !Char.IsWhiteSpace(c))
+                    // .ToArray();
+
+
+                    var punctuation = nextWord.Where(Char.IsPunctuation).Distinct().ToArray();
+                    var words1 = nextWord.Split().Select(x => x.Trim(punctuation)).ToArray();
+                    string[] words = nextWord.Split().Select(x => x.Trim(punctuation)).ToArray();
+                    words = words.Where(o => !string.IsNullOrEmpty(o)).ToArray();
+
+                    firstName = words[0].ToString();
+
+                    //firstName = nextWord.Substring(0, 4);
+                    //firstName = words;
+                    //string _nextWord = GetNextWordAfterTarget(fileContent, targetWord);
+                }
+
+                //Original One
+
+                // Example: Extracting the first name (assuming some pattern in the text)
+                // var match = Regex.Match(fileContent, @"First Name: (.+)");
+                // if (match.Success)
+                // {
+                //     firstName = match.Groups[1].Value.Trim();
+                // }
+
+                //Chat GPT
+
+                // if (fileContent.Contains("First Name"))
+                // {
+                //     string targetWord = "First Name";
+                //     string nextWord = GetNextWordAfterTarget(fileContent, targetWord);
+
+                //     firstName = nextWord;
+
+                //     Console.WriteLine($"The next word after '{targetWord}' is: {nextWord}");
+
+                // }
+            }
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            
+        }
+       
+    }
+
+
+    static string GetNextWordAfterTarget(string fileContent, string targetWord)
+    {
+        // Find the position of the target word in the text
+        int targetIndex = fileContent.IndexOf(targetWord);
+
+        if (targetIndex != -1)
+        {
+            // Find the position of the next space after the target word
+            int spaceIndex = fileContent.IndexOf(' ', targetIndex);
+
+            // Extract the next word based on the positions
+            if (spaceIndex != -1)
+            {
+                return fileContent.Substring(targetIndex + targetWord.Length, spaceIndex - (targetIndex + targetWord.Length));
+            }
+            else
+            {
+                // If no space is found, return the remaining text after the target word
+                return fileContent.Substring(targetIndex + targetWord.Length);
+            }
+        }
+
+        // If the target word is not found, return an empty string or handle as needed
+        return string.Empty;
+    }
+
+}

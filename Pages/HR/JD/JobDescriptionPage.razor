@@ -37,7 +37,29 @@
     </li>
 </ol>
 
-<SfGrid @ref="@JobDescriptionGrid" TValue="JobDescription" ID="Grid1" AllowPaging="true" AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
+<div class="form-row">
+    <div class="form-group col-md-12">
+        <SfAccordion ExpandMode="@ExpandMode.Single">
+            <AccordionItems>
+                <AccordionItem Expanded="false" CssClass="const">
+                    <HeaderTemplate>Search Panel</HeaderTemplate>
+                    <ContentTemplate>
+                        <HCMIS.Pages.HR.JD.PartialView.JobDescriptionSearchPage JobTitleData="@JobTitleData"
+                                                                                DepartmentData="@DepartmentData"
+                                                                                onsearchtoggle="@ToggleSearchQuery">
+                        </HCMIS.Pages.HR.JD.PartialView.JobDescriptionSearchPage>
+                    </ContentTemplate>
+                </AccordionItem>
+            </AccordionItems>
+        </SfAccordion>
+    </div>
+</div>
+
+
+<SfGrid @ref="@JobDescriptionGrid" TValue="JobDescription" ID="Grid1" AllowPaging="true" AllowFiltering="true" AllowReordering="true" 
+    AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" 
+    Toolbar="@(new List<string>() {"Add", "Cancel", "Update","ExcelExport","PdfExport","CsvExport"})" Query="@MainQuery" Height="600"
+        EnableVirtualMaskRow="true" EnableVirtualization="true" EnableColumnVirtualization="false">
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
     <GridPageSettings PageSizes="true"></GridPageSettings>
         <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
@@ -73,7 +95,9 @@
                                                     <div class="col-md-6">
                                                          <p>Post:<span style="color:red;">*</span></p>
                                                           @*Query="@(JobTitleChildQuery)" *@
-                                                        <SfDropDownList @ref="JobTitleObj" @bind-Value="@(JobDescriptionReviewData.JibTitleId)"TItem="AJobTitle" TValue="int?" Width="100%" PopupHeight="230px" AllowFiltering=true IgnoreAccent=true DataSource="@JobTitleData"  Placeholder="Please Select" @onclick="@((args) => OnClick(JobTitleObj.ID))">
+                                                        <SfDropDownList @ref="JobTitleObj" @bind-Value="@(JobDescriptionReviewData.JibTitleId)"TItem="AJobTitle" TValue="int?" Width="100%" PopupHeight="350px" 
+                                                        AllowFiltering=true IgnoreAccent=true DataSource="@JobTitleData"  Placeholder="Please Select" 
+                                                        @onclick="@((args) => OnClick(JobTitleObj.ID))" Query="@LocalDataQuery"  EnableVirtualization="true">
                                                             <DropDownListFieldSettings Value="JobTitleId" Text="@(nameof(AJobTitle.JobTitleDescription))"></DropDownListFieldSettings>
                                                             <DropDownListEvents TItem="AJobTitle" TValue="int?" ValueChange="@JobTitleValueChangeHandler" OnOpen="@((e)=>OnOpenHandler(JobTitleObj.ID))" ></DropDownListEvents>
                                                         </SfDropDownList>
@@ -98,21 +122,38 @@
 
                                                      <div class="col-md-6">
                                                          <p>Salary Scale:</p>
-                                                        <SfDropDownList @bind-Value="@(JobDescriptionReviewData.SalaryScaleId)" TItem="ASalaryScale" TValue="int?" Width="100%" PopupHeight="230px" DataSource="@SalaryScaleData"  Placeholder="Please Select">
+                                                        <SfDropDownList @bind-Value="@(JobDescriptionReviewData.SalaryScaleId)" TItem="ASalaryScale" TValue="int?" Width="100%" PopupHeight="350px" DataSource="@SalaryScaleData"  Placeholder="Please Select"  
+                                                        Query="@LocalDataQuery"  EnableVirtualization="true">
                                                             <DropDownListFieldSettings Text="SalaryScaleDescription" Value="SalaryScaleId"></DropDownListFieldSettings>
                                                         </SfDropDownList>
                                                      </div>                                                    
 
                                                     <div class="col-md-6">
                                                         <p>Minimum Level of Education:<span style="color:red;">*</span></p>
-                                                        <SfDropDownList @bind-Value="@(JobDescriptionReviewData.MinimumLevelOfEducationId)" TItem="ALevelofEducation" TValue="int?" Width="100%" PopupHeight="230px" DataSource="@LevelofEducationData" Placeholder="Please Select">
+                                                        <SfDropDownList @bind-Value="@(JobDescriptionReviewData.MinimumLevelOfEducationId)" TItem="ALevelofEducation" TValue="int?" Width="100%" PopupHeight="350px" DataSource="@LevelofEducationData" 
+                                                        Placeholder="Please Select"  Query="@LocalDataQuery"  EnableVirtualization="true">
                                                             <DropDownListFieldSettings Text="LevelofEducationDesc" Value="LevelofEducationId"></DropDownListFieldSettings>
                                                         </SfDropDownList>
                                                     </div>
 
+                                                    @if(JobDescriptionReviewData.MinimumLevelOfEducationId == 1 || JobDescriptionReviewData.MinimumLevelOfEducationId == 4 || JobDescriptionReviewData.MinimumLevelOfEducationId == 5 || JobDescriptionReviewData.MinimumLevelOfEducationId == 6 ||
+                                                    JobDescriptionReviewData.MinimumLevelOfEducationId == 7 || JobDescriptionReviewData.MinimumLevelOfEducationId == 8)
+                                                    {
+                                                        <div class="col-md-6">
+                                                            <p>Field of Study:<span style="color:red;">*</span></p>
+                                                            <SfMultiSelect @ref="@FieldDatasourceObj" TValue="int[]" TItem="AFieldOfStudy" AllowFiltering="true" Enabled="true" Mode="@VisualMode.CheckBox" DataSource="@FieldOfStudyData" ShowSelectAll="true"
+                                                                           EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Field" FloatLabelType="FloatLabelType.Never"
+                                                                           FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" PopupHeight="350px" Query="@LocalDataQuery" EnableVirtualization="true">
+                                                                <MultiSelectFieldSettings Value="@nameof(AFieldOfStudy.FieldOfStudyId)" Text="@nameof(AFieldOfStudy.FieldOfStudyDesc)"></MultiSelectFieldSettings>
+                                                                <MultiSelectEvents TValue="int[]" TItem="AFieldOfStudy" ValueChange="OnFieldDatasourceChange" DataBound="OnFieldDatasourceBound"></MultiSelectEvents>
+                                                            </SfMultiSelect>
+                                                        </div>
+                                                    }                                                    
+
                                                     <div class="col-md-6">
                                                         <p>Minimum Years of Experience:<span style="color:red;">*</span></p>
-                                                        <SfDropDownList @bind-Value="@(JobDescriptionReviewData.MinimumYearsofExperience)" TItem="AYearsofExperience" TValue="double?" Width="100%" PopupHeight="230px" DataSource="@YearsofExperienceData" Placeholder="Please Select">
+                                                        <SfDropDownList @bind-Value="@(JobDescriptionReviewData.MinimumYearsofExperience)" TItem="AYearsofExperience" TValue="double?" Width="100%" PopupHeight="350px" DataSource="@YearsofExperienceData"
+                                                                Placeholder="Please Select" Query="@LocalDataQuery" EnableVirtualization="true">
                                                             <DropDownListFieldSettings Text="YearsofExperienceDesc" Value="YearsofExperienceId"></DropDownListFieldSettings>
                                                         </SfDropDownList>
                                                     </div> 
@@ -146,8 +187,29 @@
 
                                                     <div class="col-md-12">
                                                         <h6 style="background-color:#268cff; color:ghostwhite;font-weight:bolder;font-size:large; text-align:center;margin-top: 10px;height: 30px;vertical-align: middle;">Minimum Qualification and Experience:<span style="color:red;">*</span></h6>
+                                                        
+                                                        <HCMIS.Pages.HR.JD.PartialView.MinimumQualificationandExperiencePage 
+                                                                                                                     FieldOfStudyData="@FieldOfStudyData" 
+                                                                                                                     JobDescriptionId="@JobDescriptionReviewData.JobDescriptionId" 
+                                                                                                                     onsuspectedreactiontoggle="@ToggleMinimumQualificationsData"
+                                                                                                                     suspectedreactiondata="@JobDescriptionReviewData.JobDescriptionKnowledge.ToList()">                                                        
+                                                        </HCMIS.Pages.HR.JD.PartialView.MinimumQualificationandExperiencePage>
 
-                                                        <SfTextBox Multiline=true rows="6" @bind-Value="@(JobDescriptionReviewData.Qualification)" Placeholder="Type Here ...." Width="100%" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                                        @*<div class="col-md-6">
+                                                            <p>Type Here<span style="color:red;">*</span></p>
+                                                            <SfTextBox Multiline=true rows="6" @bind-Value="@(JobDescriptionReviewData.Qualification)" Placeholder="Type Here ...." Width="100%" FloatLabelType="FloatLabelType.Never"></SfTextBox>                                                        
+                                                        </div>
+                                                        
+                                                        <div class="col-md-6">
+                                                            <p>Must Have Requirements</p>
+
+                                                            <SfMultiSelect @ref="@FieldDatasourceObj" TValue="int[]" TItem="AFieldOfStudy" AllowFiltering="true" Enabled="true" Mode="@VisualMode.CheckBox" DataSource="@FieldOfStudyData" ShowSelectAll="true"
+                                                                           EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Field" FloatLabelType="FloatLabelType.Never"
+                                                                           FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" PopupHeight="350px" Query="@LocalDataQuery" EnableVirtualization="true">
+                                                                <MultiSelectFieldSettings Value="@nameof(AFieldOfStudy.FieldOfStudyId)" Text="@nameof(AFieldOfStudy.FieldOfStudyDesc)"></MultiSelectFieldSettings>
+                                                                <MultiSelectEvents TValue="int[]" TItem="AFieldOfStudy" ValueChange="OnFieldDatasourceChange" DataBound="OnFieldDatasourceBound"></MultiSelectEvents>
+                                                            </SfMultiSelect>
+                                                        </div>*@
                                                     </div>
 
                                                     <div class="col-md-12">
@@ -299,6 +361,9 @@
     int random = -9999;
     private DialogSettings AttachmentDialog = new DialogSettings { Height = "auto", MinHeight = "5vh", Width = "80%" };
     bool attachmentnamebool = false;
+    private SfMultiSelect<int[], AFieldOfStudy>? FieldDatasourceObj;
+    public Query LocalDataQuery = new Query().Take(15);
+    public Query MainQuery = new Query();
 
     private ToolbarType Tooltype = ToolbarType.MultiRow;
     private List<ToolbarItemModel> Tools = new List<ToolbarItemModel>()
@@ -337,6 +402,26 @@
         new LinkToolbarItemModel() { Command = LinkToolbarCommand.Edit },
         new LinkToolbarItemModel() { Command = LinkToolbarCommand.UnLink }
     };
+
+    private void ToggleSearchQuery(Query? DetailData)
+    {
+        try
+        {
+            if (DetailData != null)
+            {
+                MainQuery = DetailData;
+            }
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+
+    }
 
     private void DepartmentValueChangeHandler(ChangeEventArgs<int?, ADepartment> args)
     {
@@ -432,6 +517,18 @@
     }
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "60vh", Width = "96%" };
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+    private void ToggleMinimumQualificationsData(List<JobDescriptionKnowledge>? ReactionChange)
+    {
+        if (JobDescriptionReviewData != null && ReactionChange != null)
+        {
+            if (JobDescriptionReviewData.JobDescriptionKnowledge == null)
+            {
+                JobDescriptionReviewData.JobDescriptionKnowledge = new List<JobDescriptionKnowledge>();
+            }
+            JobDescriptionReviewData.JobDescriptionKnowledge = ReactionChange;
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -561,7 +658,7 @@
             System.IO.FileInfo info = new System.IO.FileInfo(e.File.Name);
             if (info.Extension.ToLower().Contains("png") || info.Extension.ToLower().Contains("gif") || info.Extension.ToLower().Contains("jpeg") || info.Extension.ToLower().Contains("jpg"))
             {
-                fileName = _jobtitle.JobTitleDescription + "_" + DateTime.Now.ToString("dd_MM_yyyy_HH_mm_ss") + info.Extension;
+                fileName = _jobtitle.JobTitleDescription.Trim() + "_" + DateTime.Now.ToString("dd_MM_yyyy_HH_mm_ss") + info.Extension;
 
                 byte[] bytes = ms.ToArray();
                 //byte[] bytes = file.Stream.ToArray();
@@ -589,7 +686,7 @@
                 if (info.Extension.ToLower().Contains("doc"))
                 {
                     ms.Position = 0;
-                    fileName = _jobtitle.JobTitleDescription + "_" + DateTime.Now.ToString("dd_MM_yyyy_HH_mm_ss") + ".pdf";
+                    fileName = _jobtitle.JobTitleDescription.Trim() + "_" + DateTime.Now.ToString("dd_MM_yyyy_HH_mm_ss") + ".pdf";
 
                     //Create a new document
                     Syncfusion.DocIO.DLS.WordDocument document;
@@ -629,7 +726,7 @@
 
                 else
                 {
-                    fileName = _jobtitle.JobTitleDescription + "_" + DateTime.Now.ToString("dd_MM_yyyy_HH_mm_ss") + ".pdf";
+                    fileName = _jobtitle.JobTitleDescription.Trim() + "_" + DateTime.Now.ToString("dd_MM_yyyy_HH_mm_ss") + ".pdf";
 
                     ms.Position = 0;
                     byte[] bytes = ms.ToArray();
@@ -697,7 +794,26 @@
             var data = new List<JobDescription>();
             try
             {
-                var response = await Http.GetAsync($"HumanResource/GetJobDescription");
+                string? _DepartmentId = null;
+                string? _JobTitleId = null;
+
+                if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
+                {
+                    var val = dataManagerRequest.Params;
+
+                    if (val.FirstOrDefault(o => o.Key == "DepartmentId").Value != null)
+                    {
+                        _DepartmentId = val.FirstOrDefault(o => o.Key == "DepartmentId").Value.ToString();
+                    }
+
+                    if (val.FirstOrDefault(o => o.Key == "JobTitleId").Value != null)
+                    {
+                        _JobTitleId = val.FirstOrDefault(o => o.Key == "JobTitleId").Value.ToString();
+                    }
+
+                }
+                
+                var response = await Http.GetAsync($"HumanResource/GetJobDescription?DepartmentId={_DepartmentId}&JobTitleId={_JobTitleId}");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
@@ -1151,13 +1267,13 @@
                     await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
                 }
 
-                else if (string.IsNullOrEmpty(args.Data.Qualification))
-                {
-                    toastService.ClearAll();
-                    toastService.ShowWarning("Please enter the minimum qualification and experience!");
-                    args.Cancel = true;
-                    await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
-                }
+                // else if (string.IsNullOrEmpty(args.Data.Qualification))
+                // {
+                //     toastService.ClearAll();
+                //     toastService.ShowWarning("Please enter the minimum qualification and experience!");
+                //     args.Cancel = true;
+                //     await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
+                // }
 
                 else if (string.IsNullOrEmpty(args.Data.RequiredWorkExperience))
                 {
@@ -1263,6 +1379,32 @@
                 }
             }
             return "Edit Details for " + Desc;
+        }
+    }
+
+    public void OnFieldDatasourceBound(Syncfusion.Blazor.DropDowns.DataBoundEventArgs args)
+    {
+        if (!string.IsNullOrEmpty(JobDescriptionReviewData.FieldofStudyId))
+        {
+            var a = JobDescriptionReviewData.FieldofStudyId.Split(',');
+            List<int> c = new List<int>();
+            foreach (var n in a)
+            {
+                int b = Convert.ToInt32(n.Trim());
+                c.Add(b);
+            }
+            FieldDatasourceObj.Value = c.ToArray();
+        }
+    }
+    public void OnFieldDatasourceChange(Syncfusion.Blazor.DropDowns.MultiSelectChangeEventArgs<int[]> args)
+    {
+        if (args.Value != null)
+        {
+            JobDescriptionReviewData.FieldofStudyId = string.Join(",", args.Value);
+        }
+        else
+        {
+            JobDescriptionReviewData.FieldofStudyId = null;
         }
     }
 

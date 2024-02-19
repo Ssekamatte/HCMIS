@@ -137,12 +137,20 @@ else
                 string JobTitleDesc = string.Empty;
                 string JobTypeDesc = string.Empty;
                 string _imageurl = string.Empty;
+                string _applicationstatus = string.Empty;
+                bool appliedfor = false;
+
+                var today = DateTime.Now;
+
+                var diffOfDates = data.ApplicationClosingDate - today;
+                //double diffOfDates = (data.ApplicationClosingDate - today).Value.TotalDays;
 
                 var _jobdesc = JobDescriptionData.FirstOrDefault(o => o.JobDescriptionId == data.JobDescriptionId);
                 var _jobtitle = JobTitleData.FirstOrDefault(o => o.JobTitleId == _jobdesc.JibTitleId);
                 var _dept = DepartmentData.FirstOrDefault(o => o.DepartmentId == _jobdesc.DepartmentId);
                 var _jobtype = JobTypeData.FirstOrDefault(o => o.JobTypeId == _jobdesc.JobTypeId);
                 var _contractlength = ContractLengthTypeData.FirstOrDefault(o => o.ContractLengthTypeId == _jobdesc.ContractLengthTypeId);
+
 
                 if (_jobtitle != null)
                 {
@@ -193,18 +201,52 @@ else
                     _imageurl = "/image/NHCC8.jpg";
                 }
 
+                @if (AppliedForJobsData != null && Credentials != null)
+                {
+                    //For non staff
+                    if (Credentials.UserRole == "Non-Staff")
+                    {
+                        var nonstaffjobs = AppliedForJobsData.FirstOrDefault(o => o.NonStaffid == Credentials.StaffId && o.JobOpeningId == data.JobOpeningId);
+                        if (nonstaffjobs != null)
+                        {
+                            appliedfor = true;
+                        }
+                    }
+                    //For continuing employees
+                    else
+                    {                        
+                        var nonstaffjobs = AppliedForJobsData.FirstOrDefault(o => o.Employeeid == Credentials.StaffId && o.JobOpeningId == data.JobOpeningId);
+                        if (nonstaffjobs != null)
+                        {
+                            appliedfor = true;
+                        }
+                    }
+                }
                 <div class="col-lg-3 col-md-3 col-sm-6" style="margin-top:10px;">
                     <MudCard>
                         <MudCardMedia Image="@_imageurl" Height="60" />
                         <MudCardContent>
-                            <MudText Typo="Typo.h5" Style="font-size:0.9rem; font-weight:bolder;"><i class="fa fa-briefcase"></i> @JobTitleDesc</MudText>
-                                <MudText Typo="Typo.body2" Style="font-size:0.7rem;text-align: center;"><i class="fa fa-list-ol"></i> @data.ReferenceNumber</MudText>
-                                <MudText Typo="Typo.body2" Style="font-size:0.7rem;text-align: center;"><i class="fa fa-share-square-o"></i> @JobTypeDesc</MudText>
-                                @if (_jobdesc.ContractLength != null)
+                            @if(appliedfor == true)
                             {
-                                <MudText Typo="Typo.body2" Style="font-size:0.7rem;text-align: center;"><i class="fa fa-google-wallet"></i> @_jobdesc.ContractLength @ContractLengthTypeDesc</MudText>
+                                <MudText Typo="Typo.body2" Style="font-size:0.7rem;text-align: center;color: red;">Applied For Arleady</MudText>
                             }
+                            else
+                            {
+                                <MudText Typo="Typo.body2" Style="font-size:0.7rem;text-align: center;color: forestgreen;">Not Yet Applied</MudText>
+                            }
+                            
+                            <MudText Typo="Typo.h5" Style="font-size:0.9rem; font-weight:bolder;margin-top: 10px;"><i class="fa fa-briefcase"></i> @JobTitleDesc</MudText>
+                                <MudText Typo="Typo.body2" Style="font-size:0.7rem;text-align: center;margin-top: 10px;color: limegreen;"><i class="fa fa-renren"></i> @data.ReferenceNumber</MudText>
+                                <MudText Typo="Typo.body2" Style="font-size:0.7rem;text-align: center;margin-top: 10px;color: mediumpurple;"><i class="fa fa-share-square-o"></i> @JobTypeDesc</MudText>
 
+                                <MudText Typo="Typo.body2" Style="font-size:0.7rem;text-align: center;margin-top: 10px;color: mediumpurple;"><i class="fa fa-toggle-on"></i> @_jobdesc.Vacancies Position(s)</MudText>
+
+                                @if (_jobdesc.ContractLength != null)
+                                {
+                                    <MudText Typo="Typo.body2" Style="font-size:0.7rem;text-align: center;color: orangered;"><i class="fa fa-google-wallet"></i> @_jobdesc.ContractLength @ContractLengthTypeDesc</MudText>
+                                }
+
+                                <MudText Typo="Typo.body2" Style="font-size:0.8rem;text-align: center;margin-top: 10px;color: mediumvioletred;font-weight:bold;"><i class="fa fa-clock-o"></i> Closes in : @diffOfDates.Value.Days Days</MudText>
                         </MudCardContent>
                         <MudCardActions>
                             <MudButton Variant="Variant.Text" Color="Color.Primary" @onclick=@(()=>{downloadJobClick(data);})>Download</MudButton>
@@ -243,6 +285,20 @@ else
                             var _jobtype = JobTypeData.FirstOrDefault(o => o.JobTypeId == _jobdesc.JobTypeId);
                             var _contractlength = ContractLengthTypeData.FirstOrDefault(o => o.ContractLengthTypeId == _jobdesc.ContractLengthTypeId);
 
+                            @if (IsApplyHidden == true)
+                            {
+                                <div col-md-12>
+                                    <MudAlert Severity="Severity.Error" Elevation="3">
+                                        You have already applied for this job.
+                                    </MudAlert>
+                                </div>
+                            
+                            }
+                            else
+                            {
+
+                            }
+
                             <div style="overflow-x:auto;">
                                 <table class="center" style="margin:10px;">
                                     <tr>
@@ -252,7 +308,7 @@ else
                                     </tr>
                                     <tr style="font-weight: bold;">
                                         <td>Post:</td>
-                                        <td style="font-weight:bold">@_jobtitle.JobTitleDescription - @_jobdesc.Vacancies Post(s)</td>
+                                        <td style="font-weight:bold">@_jobtitle.JobTitleDescription</td>
                                     </tr>
 
                                     <tr style="font-weight: bold;">
@@ -289,9 +345,13 @@ else
                         }        
 
                     </Content>
+
                     <FooterTemplate>
-                        <button @onclick="@ApplyBtnclicked" class="btn btn-success" data-ripple="true">Apply</button>
-                        <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel</button>
+                        @if (IsApplyHidden == false)
+                        {
+                            <button @onclick="@ApplyBtnclicked" class="btn btn-success" data-ripple="true">Apply</button>
+                            <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel</button>
+                        }                        
                     </FooterTemplate>
                 </DialogTemplates>
                 <DialogPositionData X="center" Y="center"></DialogPositionData>
@@ -372,9 +432,11 @@ else
     List<AppliedForJobReferees> JobRefereesData { get; set; } = new();
     List<ASkillLevel>? SkillLevelData{ get; set; }
     //List<NonStaff>? NonStaffData { get; set; }
-
+    List<AppliedForJobs>? AppliedForJobsData { get; set; }
 
     bool isloading { get; set; } = true;
+
+    bool IsApplyHidden = false;
 
     private void DialogOpen(Object args)
     {
@@ -648,6 +710,31 @@ else
                     }
                 }));
 
+                t.Add(Task.Run(async () =>
+                 {
+                     //Get Non Staff
+                     if (Credentials.UserRole == "Non-Staff")
+                     {
+                         var response = await Http.GetAsync($"HumanResource/GetAppliedForJobsForNonStaffApplicant/{Credentials.StaffId}");
+                         if (response.IsSuccessStatusCode)
+                         {
+                             var content = await response.Content.ReadAsStringAsync();
+                             AppliedForJobsData = JsonSerializer.Deserialize<List<AppliedForJobs>>(content, _options);
+                         }
+                     }
+                     //Get Continuing Staff
+                     else
+                     {
+                         var response = await Http.GetAsync($"HumanResource/GetAppliedForJobsForEmployeeApplicant/{Credentials.StaffId}");
+                         if (response.IsSuccessStatusCode)
+                         {
+                             var content = await response.Content.ReadAsStringAsync();
+                             AppliedForJobsData = JsonSerializer.Deserialize<List<AppliedForJobs>>(content, _options);
+                         }
+                     }
+
+                 }));
+
                 Task _t = Task.WhenAll(t);
                 await _t;
 
@@ -670,6 +757,36 @@ else
         {
             SelectedJobsModel = value;
             this.Visibility = true;
+
+            @if (AppliedForJobsData != null && Credentials != null)
+            {
+                //For non staff
+                if (Credentials.UserRole == "Non-Staff")
+                {
+                    var nonstaffjobs = AppliedForJobsData.FirstOrDefault(o => o.NonStaffid == Credentials.StaffId && o.JobOpeningId == value.JobOpeningId);
+                    if (nonstaffjobs != null)
+                    {
+                        IsApplyHidden = true;
+                    }
+                    else
+                    {
+                        IsApplyHidden = false;                        
+                    }
+                }
+                //For continuing employees
+                else
+                {
+                    var nonstaffjobs = AppliedForJobsData.FirstOrDefault(o => o.Employeeid == Credentials.StaffId && o.JobOpeningId == value.JobOpeningId);
+                    if (nonstaffjobs != null)
+                    {
+                        IsApplyHidden = true;
+                    }
+                    else
+                    {
+                        IsApplyHidden = false;
+                    }
+                }
+            }
         }
         catch (Exception ex)
         {
