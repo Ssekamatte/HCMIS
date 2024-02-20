@@ -80,6 +80,7 @@
             @* CellSaved="CellSavedHandler" *@
             
             <GridEvents 
+                        OnCellEdit="CellEditHandler"
                         CellSelected="CellSelectHandler"
                         CellSaved="CellSavedHandler"
                         OnBatchAdd="BatchAddHandler"
@@ -182,10 +183,23 @@
                 <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>
                 
                 <GridColumn Field=@nameof(NonStaffQualification.QualificationId) HeaderText="PatientId" TextAlign="TextAlign.Left" IsPrimaryKey="true" IsIdentity="true" Visible="false" Width="60"></GridColumn>
-                <GridColumn Field=@nameof(NonStaffQualification.StartDate) Format="dd/MM/yyyy" HeaderText="From" Width="50" EditType="EditType.DatePickerEdit" Type="ColumnType.DateOnly"></GridColumn>
-                <GridColumn Field=@nameof(NonStaffQualification.EndDate) Format="dd/MM/yyyy" HeaderText="To" Width="50"></GridColumn>
+                <GridColumn Field=@nameof(NonStaffQualification.StartDate) Format="dd/MM/yyyy" HeaderText="From" Width="50" EditType="EditType.DatePickerEdit" Type="ColumnType.DateOnly">
+                    <EditTemplate Context="StartDateContext">
+                        <SfDatePicker @bind-Value="@((StartDateContext as NonStaffQualification).StartDate)" Placeholder="Select Date" Format="dd/MM/yyyy" FloatLabelType="FloatLabelType.Never" AllowEdit="false" ShowClearButton="true"></SfDatePicker>
+                    </EditTemplate>                
+                </GridColumn>
+
+                <GridColumn Field=@nameof(NonStaffQualification.EndDate) Format="dd/MM/yyyy" HeaderText="To" Width="50">
+
+                    <EditTemplate Context="EndDateContext">
+                        <SfDatePicker @bind-Value="@((EndDateContext as NonStaffQualification).EndDate)" Placeholder="Select Date" Format="dd/MM/yyyy" FloatLabelType="FloatLabelType.Never" AllowEdit="false" ShowClearButton="true"></SfDatePicker>
+                    </EditTemplate>
+                </GridColumn>
                 
-                <GridForeignColumn Field=@nameof(NonStaffQualification.LevelofEducationId) HeaderText="Level of Education" Width="80" ForeignKeyField="@(nameof(ALevelofEducation.LevelofEducationId))" ForeignKeyValue="@(nameof(ALevelofEducation.LevelofEducationDesc))" ForeignDataSource="@LevelofEducationData"></GridForeignColumn>
+                <GridForeignColumn Field=@nameof(NonStaffQualification.LevelofEducationId) HeaderText="Level of Education" Width="80" ForeignKeyField="@(nameof(ALevelofEducation.LevelofEducationId))" ForeignKeyValue="@(nameof(ALevelofEducation.LevelofEducationDesc))" ForeignDataSource="@LevelofEducationData">
+
+
+                </GridForeignColumn>
                                 
                 @* <GridForeignColumn Field=@nameof(NonStaffQualification.DegreeClassId) HeaderText="Degree Class" Width="80" ForeignKeyField="@(nameof(ADegreeClass.DegreeClassId))" ForeignKeyValue="@(nameof(ADegreeClass.DegreeClassDesc))" ForeignDataSource="@DegreeClassData" AllowEditing="degreeclassenabled"></GridForeignColumn> *@
                 
@@ -217,7 +231,7 @@
                                    ForeignDataSource="@UniversityData">
                     <EditTemplate Context="FieldOfStudyContext">
                         <SfDropDownList ID="InstitutionId" @bind-Value="@((FieldOfStudyContext as NonStaffQualification).InstitutionId)" Enabled="true" TItem="AUniversities" TValue="int?" Placeholder="Please Select" DataSource="@UniversityData" 
-                            AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Query="@LocalDataQuery" EnableVirtualization="true" PopupWidth="180%">
+                            AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Query="@LocalDataQuery" EnableVirtualization="true" PopupWidth="180%" FilterBarPlaceholder="Type to search">
                             <DropDownListFieldSettings Text="UniversityName" Value="UniversityId"></DropDownListFieldSettings>
                             <DropDownListTemplates TItem="AUniversities">
                                 <ItemTemplate Context="StatusContext">
@@ -248,17 +262,17 @@
                     ForeignKeyValue="@(nameof(AFieldOfStudy.FieldOfStudyDesc))" 
                     ForeignDataSource="@FieldOfStudyData">
                     <EditTemplate Context ="FieldOfStudyContext">
-                        <SfDropDownList @bind-Value="@((FieldOfStudyContext as NonStaffQualification).FieldOfStudyId)" Enabled="true" TItem="AFieldOfStudy" TValue="int?" DataSource="@FieldOfStudyData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
-                                        Query="@LocalDataQuery" EnableVirtualization="true" PopupWidth="180%">
+                        <SfDropDownList @bind-Value="@((FieldOfStudyContext as NonStaffQualification).FieldOfStudyId)" Enabled="true" TItem="AFieldOfStudy" TValue="int?" DataSource="@FieldOfStudyData" Placeholder="Type to search" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                                        Query="@LocalDataQuery" EnableVirtualization="true" PopupWidth="180%" FilterBarPlaceholder="Type to search">
                             <DropDownListFieldSettings Value="@nameof(AFieldOfStudy.FieldOfStudyId)" Text="@nameof(AFieldOfStudy.FieldOfStudyDesc)"></DropDownListFieldSettings>
                         </SfDropDownList>
                     </EditTemplate>
                 </GridForeignColumn>
                  
-                <GridColumn Field=@nameof(EmployeeQualification.QualificationAttained)
+                <GridColumn Field=@nameof(EmployeeQualification.OtherFieldOfStudy)
                             HeaderText="Other Field of Study"
                             Width="80"
-                            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+                            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">                                
                 </GridColumn>
 
                 @*<GridColumn Field=@nameof(EmployeeQualification.QualificationDocumentName) HeaderText="Upload" Width="80">
@@ -290,7 +304,7 @@
                             CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
                     <GridCommandColumns>
                         @*<GridCommandColumn Title="Edit" Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { IconCss = "e-icons e-edit", CssClass = "e-flat" })"></GridCommandColumn>*@
-                        <GridCommandColumn Title="Save" ButtonOption="@(new CommandButtonOptions() {IconCss="e-icons e-save", CssClass="e-flat mibtnclas"})" ID="Save"></GridCommandColumn>
+                        @* <GridCommandColumn Title="Save" ButtonOption="@(new CommandButtonOptions() {IconCss="e-icons e-save", CssClass="e-flat mibtnclas"})" ID="Save"></GridCommandColumn> *@
                         <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-delete", CssClass = "e-flat"})" ID="Delete"></GridCommandColumn>
                     </GridCommandColumns>
                 </GridColumn>
@@ -396,7 +410,7 @@
     SfDialog SavingDialog { get; set; }
     SfDropDownList<int?, ALevelofEducation> Dropdown;
     bool degreeclassenabled = false;
-    bool otherinstitutionenabled = false;
+    bool otherinstitutionenabled = true;
     public int IndexValue { get; set; }
     LoginResultModel? Credentials { get; set; }
     int random = -9999;
@@ -913,26 +927,73 @@
     public async Task CellEditHandler(CellEditArgs<NonStaffQualification> args)
     {
         IndexValue = await QualificationGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.QualificationId);
+
+        if ((args.ColumnName == nameof(NonStaffQualification.InstitutionName)))
+        {
+            //Enable Other Institution Column
+            if (args.RowData.InstitutionId == 9392)
+            {
+
+            }
+            //Disable for those that are not others
+            else
+            {
+
+                toasterservice.ClearAll();
+                toasterservice.ShowWarning("Cannot update this cell if you have not selected the other option in institution section");
+                args.Cancel = true;
+            }
+        }
+
+        if ((args.ColumnName == nameof(NonStaffQualification.OtherFieldOfStudy)))
+        {
+            //Enable Other Field of Study Column
+            if (args.RowData.FieldOfStudyId == 2)
+            {
+
+            }
+            //Disable for those that are not others
+            else
+            {
+                toasterservice.ClearAll();
+                toasterservice.ShowWarning("Cannot update this cell if you have not selected the other option in field of study section");
+                args.Cancel = true;
+            }
+        }
     }
 
     private async Task CellSavedHandler(CellSaveArgs<NonStaffQualification> args)
     {
         try
         {
-            var index = await QualificationGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.QualificationId);
+            //Clear other institution name column if not other selected
+             var index = await QualificationGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.QualificationId);
             if (args.Value != null && (args.ColumnName == nameof(NonStaffQualification.InstitutionId)))
             {
-                //Enable Other Institution Column
                 if (args.Data.InstitutionId == 9392)
                 {
-                    this.otherinstitutionenabled = true;
+                    
                 }
                 else
                 {
-                    this.otherinstitutionenabled = false;
+                    await QualificationGrid.UpdateCellAsync(index, nameof(NonStaffQualification.InstitutionName), string.Empty);
                 }                
             }
 
+            //Clear other field of study column if not other selected 
+            if (args.Value != null && (args.ColumnName == nameof(NonStaffQualification.FieldOfStudyId)))
+            {               
+                if (args.Data.FieldOfStudyId == 2)
+                {
+                    
+                }
+                else
+                {
+                    await QualificationGrid.UpdateCellAsync(index, nameof(NonStaffQualification.OtherFieldOfStudy), string.Empty);
+                }                
+            }
+
+            //For Level of Education - Bachelor
             // if (args.Value != null && (args.ColumnName == nameof(NonStaffQualification.LevelofEducationId)))
             // {
             //     //Enable Degree Class Column for Bachelors only
@@ -956,7 +1017,7 @@
         }
         finally
         {
-            //await QualificationGrid.EndEditAsync();
+            await QualificationGrid.EndEditAsync();
         }
     }
 
