@@ -11,6 +11,9 @@ using static System.Net.WebRequestMethods;
 using HCMIS.SHARED;
 using HCMIS.SHARED.Models;
 using HCMIS.SHARED.Data;
+using System.Net.Http.Json;
+using System.Net.Http;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace HCMIS.Repository
 {
@@ -67,6 +70,53 @@ namespace HCMIS.Repository
                 if (response.IsSuccessStatusCode)
                 {
                     data = JsonSerializer.Deserialize<List<Image>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(response.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
+
+        public async Task<AFieldOfStudy> AddFieldOfStudy(AFieldOfStudy data)
+        {
+
+            try
+            {
+                var val = (data);
+                var response = await _httpClient.PostAsJsonAsync<AFieldOfStudy>("Utilities/CreateFieldOfStudy", data);
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<AFieldOfStudy>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(response.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message.ToString());
+            }
+            return data;
+        }
+
+        public async Task<List<AFieldOfStudy>?> GetFieldOfStudy()
+        {
+            List<AFieldOfStudy>? data = new List<AFieldOfStudy>();
+            try
+            {
+                var response = await _httpClient.GetAsync($"Utilities/GetFieldOfStudy");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    data = JsonSerializer.Deserialize<List<AFieldOfStudy>>(content, _options);
                 }
                 else
                 {

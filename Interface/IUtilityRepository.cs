@@ -9,5 +9,8 @@ namespace HCMIS.Interface
     {
         Task<List<ViewEmployeeDropDown>?> GetEmployees();
         Task<List<Image>> GetLocalLogos();
+        Task<AFieldOfStudy> AddFieldOfStudy(AFieldOfStudy data);
+
+        Task<List<AFieldOfStudy>?> GetFieldOfStudy();
     }
 }

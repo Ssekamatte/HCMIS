@@ -314,6 +314,7 @@
     </SfDialog>
 </div>
 
+
 @code {
 
     #region Toasters
@@ -642,96 +643,30 @@
         StateHasChanged();
     }
 
+
     private async Task SingleUpload(InputFileChangeEventArgs e)
     {
         try
         {
-            IsSaveDisabled = true;
-            await UploadAttachmentSpinner.ShowAsync();
-            MemoryStream ms = new MemoryStream();
-            await e.File.OpenReadStream(maxFileSize).CopyToAsync(ms);
-
-            var _jobtitle = JobTitleData.FirstOrDefault(o=>o.JobTitleId ==JobDescriptionReviewData.JibTitleId);
-
-            ms.Position = 0;
-
-            System.IO.FileInfo info = new System.IO.FileInfo(e.File.Name);
-            if (info.Extension.ToLower().Contains("png") || info.Extension.ToLower().Contains("gif") || info.Extension.ToLower().Contains("jpeg") || info.Extension.ToLower().Contains("jpg"))
+            if (e.File.Size <= maxFileSize)
             {
-                fileName = _jobtitle.JobTitleDescription.Trim() + "_" + DateTime.Now.ToString("dd_MM_yyyy_HH_mm_ss") + info.Extension;
+                IsSaveDisabled = true;
+                await UploadAttachmentSpinner.ShowAsync();
+                MemoryStream ms = new MemoryStream();
+                await e.File.OpenReadStream(maxFileSize).CopyToAsync(ms);
 
-                byte[] bytes = ms.ToArray();
-                //byte[] bytes = file.Stream.ToArray();
-                string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
-                DocumentBytes m = new DocumentBytes()
-                    {
-                        DocumentName = fileName,
-                        DocumentExt = info.Extension.Trim(),
-                        DocumentByte = bytes,
-                        DocumentFolder = "JobDescription"
-                    };
+                var _jobtitle = JobTitleData.FirstOrDefault(o => o.JobTitleId == JobDescriptionReviewData.JibTitleId);
 
-                await _DocumentUploadModel.UploadDocument(m);
-                var result = "data:application/pdf;base64," + base64;
-                JobDescriptionReviewData.DocumentName = fileName;
-                JobDescriptionReviewData.DocumentExt = info.Extension.Trim();
-                ImageString = result;
-                bytes = null;
+                ms.Position = 0;
 
-            }
-
-            else if (info.Extension.ToLower().Contains("pdf") || info.Extension.ToLower().Contains("doc"))
-            {
-                string fileName = string.Empty;
-                if (info.Extension.ToLower().Contains("doc"))
+                System.IO.FileInfo info = new System.IO.FileInfo(e.File.Name);
+                if (info.Extension.ToLower().Contains("png") || info.Extension.ToLower().Contains("gif") || info.Extension.ToLower().Contains("jpeg") || info.Extension.ToLower().Contains("jpg"))
                 {
-                    ms.Position = 0;
-                    fileName = _jobtitle.JobTitleDescription.Trim() + "_" + DateTime.Now.ToString("dd_MM_yyyy_HH_mm_ss") + ".pdf";
+                    fileName = _jobtitle.JobTitleDescription.Trim() + "_" + DateTime.Now.ToString("dd_MM_yyyy_HH_mm_ss") + info.Extension;
 
-                    //Create a new document
-                    Syncfusion.DocIO.DLS.WordDocument document;
-                    if (info.Extension.Contains("doc") && !info.Extension.Contains("docx"))
-                    {
-                        document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Doc);
-                    }
-                    else
-                    {
-                        document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Docx);
-                    }
-                    //Creates an instance of the DocToPDFConverter
-                    DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
-                    PdfDocument pdfDocument = render.ConvertToPDF(document);
-
-                    MemoryStream _ms = new MemoryStream();
-                    pdfDocument.Save(_ms);
-                    _ms.Position = 0;
-
-
-                    DocumentBytes m = new DocumentBytes();
-                    m.DocumentName = fileName;
-                    m.DocumentFolder = "JobDescription";
-                    m.DocumentByte = _ms.ToArray();
-                    m.DocumentExt = "pdf";
-
-                    await _DocumentUploadModel.UploadDocument(m);
-                    _ms.Position = 0;
-                    byte[] _bytes = _ms.ToArray();
-                    string base64 = Convert.ToBase64String(_bytes, 0, _bytes.Length);
-
-                    var result = "data:application/pdf;base64," + base64;
-                    JobDescriptionReviewData.DocumentName = fileName;
-                    JobDescriptionReviewData.DocumentExt = "pdf";
-                    ImageString = result;
-                }
-
-                else
-                {
-                    fileName = _jobtitle.JobTitleDescription.Trim() + "_" + DateTime.Now.ToString("dd_MM_yyyy_HH_mm_ss") + ".pdf";
-
-                    ms.Position = 0;
                     byte[] bytes = ms.ToArray();
+                    //byte[] bytes = file.Stream.ToArray();
                     string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
-
                     DocumentBytes m = new DocumentBytes()
                         {
                             DocumentName = fileName,
@@ -746,14 +681,90 @@
                     JobDescriptionReviewData.DocumentExt = info.Extension.Trim();
                     ImageString = result;
                     bytes = null;
+
                 }
 
+                else if (info.Extension.ToLower().Contains("pdf") || info.Extension.ToLower().Contains("doc"))
+                {
+                    string fileName = string.Empty;
+                    if (info.Extension.ToLower().Contains("doc"))
+                    {
+                        ms.Position = 0;
+                        fileName = _jobtitle.JobTitleDescription.Trim() + "_" + DateTime.Now.ToString("dd_MM_yyyy_HH_mm_ss") + ".pdf";
+
+                        //Create a new document
+                        Syncfusion.DocIO.DLS.WordDocument document;
+                        if (info.Extension.Contains("doc") && !info.Extension.Contains("docx"))
+                        {
+                            document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Doc);
+                        }
+                        else
+                        {
+                            document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Docx);
+                        }
+                        //Creates an instance of the DocToPDFConverter
+                        DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
+                        PdfDocument pdfDocument = render.ConvertToPDF(document);
+
+                        MemoryStream _ms = new MemoryStream();
+                        pdfDocument.Save(_ms);
+                        _ms.Position = 0;
+
+
+                        DocumentBytes m = new DocumentBytes();
+                        m.DocumentName = fileName;
+                        m.DocumentFolder = "JobDescription";
+                        m.DocumentByte = _ms.ToArray();
+                        m.DocumentExt = "pdf";
+
+                        await _DocumentUploadModel.UploadDocument(m);
+                        _ms.Position = 0;
+                        byte[] _bytes = _ms.ToArray();
+                        string base64 = Convert.ToBase64String(_bytes, 0, _bytes.Length);
+
+                        var result = "data:application/pdf;base64," + base64;
+                        JobDescriptionReviewData.DocumentName = fileName;
+                        JobDescriptionReviewData.DocumentExt = "pdf";
+                        ImageString = result;
+                    }
+
+                    else
+                    {
+                        fileName = _jobtitle.JobTitleDescription.Trim() + "_" + DateTime.Now.ToString("dd_MM_yyyy_HH_mm_ss") + ".pdf";
+
+                        ms.Position = 0;
+                        byte[] bytes = ms.ToArray();
+                        string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+
+                        DocumentBytes m = new DocumentBytes()
+                            {
+                                DocumentName = fileName,
+                                DocumentExt = info.Extension.Trim(),
+                                DocumentByte = bytes,
+                                DocumentFolder = "JobDescription"
+                            };
+
+                        await _DocumentUploadModel.UploadDocument(m);
+                        var result = "data:application/pdf;base64," + base64;
+                        JobDescriptionReviewData.DocumentName = fileName;
+                        JobDescriptionReviewData.DocumentExt = info.Extension.Trim();
+                        ImageString = result;
+                        bytes = null;
+                    }
+
+                }
+                else
+                {
+                    //<MudAlert Severity="Severity.Warning">Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg) or pdf or word document (doc,docx).</MudAlert>
+                    toastService.ShowWarning("Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg) or pdf or word document (doc,docx).");
+                }
             }
             else
             {
-                //<MudAlert Severity="Severity.Warning">Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg) or pdf or word document (doc,docx).</MudAlert>
-                toastService.ShowWarning("Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg) or pdf or word document (doc,docx).");
-            }
+                IsSaveDisabled = true;
+                toastService.ClearAll();
+                toastService.ShowWarning("File Too Large (Maximum Size 1 MB)");
+            }            
         }
         catch (Exception ex)
 
@@ -1316,6 +1327,22 @@
             }
             if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
             {
+                var tasks = new List<Task>();
+
+                tasks.Add(Task.Run(async () =>
+                {
+
+                    var response = await Http.GetAsync($"Utilities/GetFieldOfStudy");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        FieldOfStudyData = JsonSerializer.Deserialize<List<AFieldOfStudy>>(content, _options);
+                    }
+                }));
+
+                Task t = Task.WhenAll(tasks);
+                await t;
+
                 SavingDialog.HideAsync();
             }
         }

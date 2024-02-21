@@ -17,6 +17,7 @@
 @inject IToastService toastService;
 @inject IJSRuntime JSRuntime;
 @inject IAuthenticationService AuthService;
+@inject IUtilityRepository _utilityService
 
 <SfGrid @ref="@DataGrid" TValue="JobDescriptionKnowledge" DataSource="@datasource"
         ID="DataGrid"
@@ -46,17 +47,19 @@
                         </div>
 
                         <div class="form-group col-md-12">
-                            <p>Required Field(s)</p>
+                            <p>Required Field(s)<span style="color:red;">*</span></p>
                             <SfMultiSelect @ref="@FieldDatasourceObj" TValue="int[]" TItem="AFieldOfStudy" AllowFiltering="true" Enabled="true" Mode="@VisualMode.CheckBox" DataSource="@FieldOfStudyData" ShowSelectAll="true"
-                                           EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Search Field" FloatLabelType="FloatLabelType.Never"
-                                           FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" PopupHeight="350px" Query="@LocalDataQuery" EnableVirtualization="true">
+                                           EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Type to Search" FloatLabelType="FloatLabelType.Never"
+                                           FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" PopupHeight="220px" Query="@LocalDataQuery" EnableVirtualization="true">
                                 <MultiSelectFieldSettings Value="@nameof(AFieldOfStudy.FieldOfStudyId)" Text="@nameof(AFieldOfStudy.FieldOfStudyDesc)"></MultiSelectFieldSettings>
                                 <MultiSelectEvents TValue="int[]" TItem="AFieldOfStudy" ValueChange="OnFieldDatasourceChange" DataBound="OnFieldDatasourceBound"></MultiSelectEvents>
                             </SfMultiSelect>
+
+                            <button class="btn btn-primary" style="width:100%; margin-top:5px;" hidden="@focusareahiddenbutton" @onclick="@AddNewFocusAreabtnClick">Add Field (if not existing in dropdown)</button>
                         </div>
 
                         <div class="form-group col-md-12">
-                            <p>Must Have</p>
+                            <p>Must Have<span style="color:red;">*</span></p>
                             <SfRadioButton Disabled="false" Label="Yes" Name="options" Value="true" TChecked="bool?" ValueChange="OnValueChange" @bind-Checked="@(ReactionData.IsRequired)"></SfRadioButton>
                             <SfRadioButton Disabled="false" Label="No" Name="options" Value="false" TChecked="bool?" ValueChange="OnValueChange" @bind-Checked="@(ReactionData.IsRequired)"></SfRadioButton>
                         </div>
@@ -149,6 +152,62 @@
     </GridColumns>
 </SfGrid>
 
+
+@*Focus Area Dialog*@
+
+<div class="form-group col-md-12">
+    <SfDialog @ref="@FocusAreaDialog" Height="auto" Width="50%" AllowDragging="true" Target=".mainbody" ShowCloseIcon="true" IsModal="true" Visible="false">
+        <DialogTemplates>
+            <Header>
+                <div id="template" title="New Focus Area" class="e-icon-settings">Field of Study</div>
+            </Header>
+            <Content>
+                <div style="padding:10px">
+                    <EditForm Model="@NewFocusModel">
+                        <div class="form-row">
+                            <div class="form-group col-md-12" hidden>
+                                <MudText>Focus Area Id</MudText>
+                                <SfNumericTextBox ID="FieldOfStudyId" @bind-Value="@(NewFocusModel.FieldOfStudyId)" Enabled="false" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
+                            </div>
+                            <div class="form-group col-md-12">
+                                <p>Field of Study<span style="color:red;">*</span></p>
+                                <SfTextBox Multiline="false" Rows=5 @bind-Value="@(NewFocusModel.FieldOfStudyDesc)" Enabled="true" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                            </div>
+                        </div>
+                    </EditForm>
+                </div>
+            </Content>
+            <FooterTemplate>
+                <button @onclick="@SaveNewFocusAreabtnClick" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Save</button>
+            </FooterTemplate>
+        </DialogTemplates>
+    </SfDialog>
+</div>
+
+@*Saving Dialogue*@
+<div class="form-group col-md-12">
+    <SfDialog Width="80%" Height="20vh" AllowDragging=true EnableResize=true
+              CloseOnEscape=false IsModal=true ShowCloseIcon=false
+              Target=".mainbody" @ref=@SavingDialog Visible=false>
+        <DialogTemplates>
+            <Content>
+                <div class="dialogContent">
+                    <div class="loader">
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader--dot"></div>
+                        <div class="loader-Saving-text"></div>
+                    </div>
+                    @*<p>Saving Record please wait......</p>*@
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+</div>
+
 @code {
     SfGrid<JobDescriptionKnowledge> DataGrid { get; set; }
 
@@ -170,6 +229,10 @@
     private SfMultiSelect<int[], AFieldOfStudy>? FieldDatasourceObj;
     public Query LocalDataQuery = new Query().Take(15);
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "85vh", Width = "80%" };
+    SfDialog? FocusAreaDialog;
+    AFieldOfStudy NewFocusModel { get; set; } = new AFieldOfStudy();
+    bool focusareahiddenbutton = false;
+    SfDialog SavingDialog { get; set; }
 
     /// <summary>
     /// Event for Toolbar click for Grid Exporting
@@ -216,10 +279,22 @@
         {
             if (string.IsNullOrEmpty(Args.Data.JobDescriptionDetails))
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please enter the details.");
                 Args.Cancel = true;
             }
-
+            else if (string.IsNullOrEmpty(Args.Data.FieldofStudyId))
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please select the required field(s).");
+                Args.Cancel = true;
+            }
+            else if (Args.Data.IsRequired == null)
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Select an option in the must have field");
+                Args.Cancel = true;
+            }
             else
             {
                 Args.Data.IsRequired = radiovalue;
@@ -231,8 +306,9 @@
             Args.Data.KnowledgeId = random;
             random++;
 
-            //Reset IsRequired to false each time they are adding
-            Args.Data.IsRequired = false;
+            //Reset IsRequired to null each time they are adding
+            Args.Data.IsRequired = null;
+            //Args.Data.IsRequired = false;
         }
     }
 
@@ -281,4 +357,64 @@
     {
         radiovalue = args.Value;
     }
+
+
+    #region Add Field of Study
+
+    private async Task SaveNewFocusAreabtnClick()
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(NewFocusModel.FieldOfStudyDesc))
+            {
+                var exist = FieldOfStudyData.FirstOrDefault(o => o.FieldOfStudyDesc.ToLower() == NewFocusModel.FieldOfStudyDesc.ToLower());
+                if (exist != null)
+                {
+                    toastService.ShowWarning("This field of study already exists");
+                }
+                else
+                {
+                    SavingDialog.ShowAsync();
+
+                    var a = await _utilityService.AddFieldOfStudy(NewFocusModel);
+                    
+                    FieldOfStudyData = (await _utilityService.GetFieldOfStudy()).OrderByDescending(o=>o.FieldOfStudyId).ToList();
+                    var _nn = FieldOfStudyData.OrderByDescending(o => o.FieldOfStudyId).FirstOrDefault();
+                    //ReactionData.FieldofStudyId = _nn.FieldOfStudyId.ToString();
+                    //OnFieldDatasourceChange(_nn.FieldOfStudyId.ToString());
+                    await FocusAreaDialog.HideAsync();
+
+                    StateHasChanged();
+                }
+            }
+            else
+            {
+                toastService.ShowError("Please enter a field of study");
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            SavingDialog.HideAsync();
+        }
+    }
+
+    private async Task AddNewFocusAreabtnClick()
+    {
+        try
+        {
+            NewFocusModel = new AFieldOfStudy();
+            await FocusAreaDialog.ShowAsync();
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+    }
+
+    #endregion Add Field of Study
+
 }
