@@ -189,6 +189,6 @@ builder.Services.AddScoped<IAuthenticationService,AuthenticationService>();
 
 
 //builder.Services.AddSyncfusionBlazor(options => { options.IgnoreScriptIsolation = false; });
-Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Mjk5OTUxOEAzMjM0MmUzMDJlMzBqNjMyUXFBTTB0OEh1N1NmUlZHZTZlVzc4amo1ZCtQWHZadnF0dTBnKy9rPQ==");
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("MzEzMTkwNkAzMjM0MmUzMDJlMzBDTWo5NVlJZUFyQUt3dkpDUGJWbnRCa1VxbzBkWktHeEFvOUlhTUdVZndBPQ==");
 await builder.Build().RunAsync();
 
