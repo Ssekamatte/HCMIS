@@ -95,10 +95,10 @@
             <p>Review Date Range</p>
             <div class="row">
                 <div class="col-md-4">
-                    <SfDatePicker @bind-Value="@(InputModel.StartDate)" Enabled="true" Placeholder="Start Date" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                    <SfDatePicker @bind-Value="@(InputModel.StartDate)" Enabled="true" Placeholder="Start Date" AllowEdit="false" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
                 </div>
                 <div class="col-md-4">
-                    <SfDatePicker @bind-Value="@(InputModel.EndDate)" Enabled="true" Placeholder="End Date" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                    <SfDatePicker @bind-Value="@(InputModel.EndDate)" Enabled="true" Placeholder="End Date" AllowEdit="false" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
                 </div>
             </div>
         </div>
@@ -106,10 +106,13 @@
         <div class="form-group col-md-12">
             <SfSpinner @ref="DownloadingSpinner" Label="Downloading Report Please Wait....." Size="50"></SfSpinner>
         </div>
+
         @if (!string.IsNullOrEmpty(InputModel.Response))
         {
             <div class="col col-md-12" style="margin-top:10px;">
-                <div class="alert alert-success">@InputModel.Response</div>
+                <MudAlert Severity="Severity.Info" Elevation="3">
+                    @InputModel.Response
+                </MudAlert>
             </div>
         }
 
@@ -157,7 +160,8 @@
     string imagepath;
     private string? JMSLogo { get; set; }
     private string? JMSLogoName { get; set; }
-
+    List<ViewTargetSettingTotals>? TargetSettingTotalData { get; set; }
+    List<ViewBehavioralTotals>? BehavioralTotalData { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -274,6 +278,27 @@
                         CompetenceData = JsonSerializer.Deserialize<List<ABehavioralCompetencies>>(contentcompetence, _options);
                     }
                 }));
+
+
+        t.Add(Task.Run(async () =>
+                {
+                    var responsetargettotal = await Http.GetAsync($"BalanceScoreCard/GetTargetTotal");
+                    if (responsetargettotal.IsSuccessStatusCode)
+                    {
+                        var contenttargettotal = await responsetargettotal.Content.ReadAsStringAsync();
+                        TargetSettingTotalData = JsonSerializer.Deserialize<List<ViewTargetSettingTotals>>(contenttargettotal, _options);
+                    }
+                }));
+
+        t.Add(Task.Run(async () =>
+        {
+            var responsebehavioraltotal = await Http.GetAsync($"BalanceScoreCard/GetBehavioralTotal");
+            if (responsebehavioraltotal.IsSuccessStatusCode)
+            {
+                var contentbehavioraltotal = await responsebehavioraltotal.Content.ReadAsStringAsync();
+                BehavioralTotalData = JsonSerializer.Deserialize<List<ViewBehavioralTotals>>(contentbehavioraltotal, _options);
+            }
+        }));
 
         Task _t = Task.WhenAll(t);
         await _t;
@@ -708,7 +733,7 @@
             worksheet.Range["B" + row].HorizontalAlignment = ExcelHAlign.HAlignLeft;
 
 
-            row ++;
+            row++;
 
             worksheet.Range["A" + row].Text = "Employee Number:";
             worksheet.Range["A" + row].ColumnWidth = 15;
@@ -723,7 +748,7 @@
             worksheet.Range["B" + row].HorizontalAlignment = ExcelHAlign.HAlignLeft;
 
 
-            row ++;
+            row++;
 
             worksheet.Range["A" + row].Text = "Employee's JobTitle:";
             worksheet.Range["A" + row].ColumnWidth = 15;
@@ -738,7 +763,7 @@
             worksheet.Range["B" + row].HorizontalAlignment = ExcelHAlign.HAlignLeft;
 
 
-            row ++;
+            row++;
 
             worksheet.Range["A" + row].Text = "Department:";
             worksheet.Range["A" + row].ColumnWidth = 15;
@@ -752,7 +777,7 @@
             worksheet.Range["B" + row].VerticalAlignment = ExcelVAlign.VAlignTop;
             worksheet.Range["B" + row].HorizontalAlignment = ExcelHAlign.HAlignLeft;
 
-            row ++;
+            row++;
 
             worksheet.Range["A" + row].Text = "Unit/Section:";
             worksheet.Range["A" + row].ColumnWidth = 15;
@@ -766,7 +791,7 @@
             worksheet.Range["B" + row].VerticalAlignment = ExcelVAlign.VAlignTop;
             worksheet.Range["B" + row].HorizontalAlignment = ExcelHAlign.HAlignLeft;
 
-            row ++;
+            row++;
 
             worksheet.Range["A" + row].Text = "Date Joined:";
             worksheet.Range["A" + row].ColumnWidth = 15;
@@ -785,7 +810,7 @@
 
             }
 
-            row ++;
+            row++;
 
             worksheet.Range["A" + row].Text = "Date of Last Promotion:";
             worksheet.Range["A" + row].ColumnWidth = 15;
@@ -799,7 +824,7 @@
             worksheet.Range["B" + row].VerticalAlignment = ExcelVAlign.VAlignTop;
             worksheet.Range["B" + row].HorizontalAlignment = ExcelHAlign.HAlignLeft;
 
-            row ++;
+            row++;
 
             worksheet.Range["A" + row].Text = "Date of Review:";
             worksheet.Range["A" + row].ColumnWidth = 15;
@@ -813,7 +838,7 @@
             worksheet.Range["B" + row].VerticalAlignment = ExcelVAlign.VAlignTop;
             worksheet.Range["B" + row].HorizontalAlignment = ExcelHAlign.HAlignLeft;
 
-            row ++;
+            row++;
 
             worksheet.Range["A" + row].Text = "Duration in Organization - Yrs:";
             worksheet.Range["A" + row].ColumnWidth = 15;
@@ -831,7 +856,7 @@
 
             }
 
-            row ++;
+            row++;
 
             worksheet.Range["A" + row].Text = "Reason for Appraisal Describe as Appropriate:";
             worksheet.Range["A" + row].ColumnWidth = 15;
@@ -845,7 +870,7 @@
             worksheet.Range["B" + row].VerticalAlignment = ExcelVAlign.VAlignTop;
             worksheet.Range["B" + row].HorizontalAlignment = ExcelHAlign.HAlignLeft;
 
-            row ++;
+            row++;
 
             //Table on Right
 
@@ -863,7 +888,7 @@
             worksheet.Range["G" + row].VerticalAlignment = ExcelVAlign.VAlignTop;
             worksheet.Range["G" + row].HorizontalAlignment = ExcelHAlign.HAlignLeft;
 
-            row ++;
+            row++;
 
             worksheet.Range["F" + row].Text = "Appraiser's Job Title:";
             worksheet.Range["F" + row].ColumnWidth = 15;
@@ -879,12 +904,12 @@
 
             row++;
 
-            row = 17;
+            row = 16;
 
             worksheet.Range[row, 1].Text = "SECTION 2. TARGET SETTING AND EVALUATION /  EXPECTED  ROLE KPIs or DELIVERABLES";
             worksheet.Range[row, 1, row, 11].Merge();
             worksheet.Range[row, 1, row, 11].WrapText = true;
-            worksheet.Range[row, 1, row, 11].RowHeight = 15;
+            worksheet.Range[row, 1, row, 11].RowHeight = 19;
             worksheet.Range[row, 1, row, 11].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 255, 255);
             worksheet.Range[row, 1, row, 11].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.Black;
             worksheet.Range[row, 1, row, 11].CellStyle.Font.FontName = "cambria";
@@ -981,7 +1006,7 @@
 
             row++;
 
-            row = 21;
+            row = 20;
 
             int balancescorecard = data[0].BalanceScoreCardId;
 
@@ -996,6 +1021,7 @@
 
             foreach (var n in data)
             {
+                //Section 2
                 if (datatarget.Count > 0)
                 {
                     var _datatarget = datatarget.Where(o => o.BalanceScoreCardId == n.BalanceScoreCardId);
@@ -1107,24 +1133,527 @@
                         perspectivetypestartrow = perspectivetypeendrow;
                     }
                 }
+
+                row++;
+                row = 34;
+
+                string tv = "0";
+                string bv = "0";
+                double? tvvalue = 0;
+                double? bvvalue = 0;
+
+                if (TargetSettingTotalData.Count > 0 && BehavioralTotalData.Count > 0)
+                {
+                    var _targetvalue = TargetSettingTotalData.FirstOrDefault(o => o.BalanceScoreCardId == n.BalanceScoreCardId);
+                    var _behaviourvalue = BehavioralTotalData.FirstOrDefault(o => o.BalanceScoreCardId == n.BalanceScoreCardId);
+
+                    tv = _targetvalue.TotalIndividualTargetObjectiveScore + "%";
+                    tvvalue = _targetvalue.TotalIndividualTargetObjectiveScore;
+
+                    bv = _behaviourvalue.TotalSupervisorAssessment + "%";
+                    bvvalue = _behaviourvalue.TotalSupervisorAssessment;
+                }
+
+
+                worksheet.Range[row, 1].Text = "Overall 70% Maximum as a Technical Target Score ";
+                worksheet.Range[row, 1, row, 8].Merge();
+                worksheet.Range[row, 1, row, 8].WrapText = true;
+                worksheet.Range[row, 1, row, 8].RowHeight = 18;
+                worksheet.Range[row, 1, row, 8].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(230, 126, 34);
+                worksheet.Range[row, 1, row, 8].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.Black;
+                worksheet.Range[row, 1, row, 8].CellStyle.Font.FontName = "cambria";
+                worksheet.Range[row, 1, row, 8].CellStyle.Font.Size = 14;
+                worksheet.Range[row, 1, row, 8].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+
+                worksheet.Range[row, 9].Text = "70%";
+                //worksheet.Range[row, 9].CellStyleName = "headerStyle";
+                worksheet.Range[row, 9].ColumnWidth = 15;
+                worksheet.Range[row, 9].WrapText = true;
+
+                worksheet.Range[row, 10].Text = "";
+                //worksheet.Range[row, 10].CellStyleName = "headerStyle";
+                worksheet.Range[row, 10].ColumnWidth = 15;
+                worksheet.Range[row, 10].WrapText = true;
+
+                worksheet.Range[row, 11].Text = tv /* _targetvalue.TotalIndividualTargetObjectiveScore + "%" */;
+                //worksheet.Range[row, 11].CellStyleName = "headerStyle";
+                worksheet.Range[row, 11].ColumnWidth = 15;
+                worksheet.Range[row, 11].WrapText = true;
+
+                row++;
+
+                worksheet.Range[row, 1].Text = "Values & Behavioral Competency";
+                worksheet.Range[row, 1].ColumnWidth = 15;
+                worksheet.Range[row, 1].WrapText = true;
+                worksheet.Range[row, 1].RowHeight = 84.8;
+
+                worksheet.Range[row, 2].Text = "30%";
+                worksheet.Range[row, 2].ColumnWidth = 10;
+                worksheet.Range[row, 2].WrapText = true;
+
+                worksheet.Range[row, 3].Text = "Overall 30% Score as NH & CC Values / Behavior Competencies";
+                worksheet.Range[row, 3, row, 8].Merge();
+                worksheet.Range[row, 3, row, 8].WrapText = true;
+                worksheet.Range[row, 3, row, 8].RowHeight = 44.5;
+                //worksheet.Range[row, 1, row, 11].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 255, 255);
+                worksheet.Range[row, 2, row, 8].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.Black;
+                worksheet.Range[row, 2, row, 8].CellStyle.Font.FontName = "cambria";
+                worksheet.Range[row, 2, row, 8].CellStyle.Font.Size = 14;
+                worksheet.Range[row, 2, row, 8].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+
+                worksheet.Range[row, 9].Text = "30%";
+                worksheet.Range[row, 9].ColumnWidth = 10;
+                worksheet.Range[row, 9].WrapText = true;
+                worksheet.Range[row, 9].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(230, 126, 34);
+
+                worksheet.Range[row, 10].Text = "";
+                worksheet.Range[row, 10].ColumnWidth = 10;
+                worksheet.Range[row, 10].WrapText = true;
+
+                worksheet.Range[row, 11].Text = bv/* _behaviourvalue.TotalSupervisorAssessment + "%" */;
+                worksheet.Range[row, 11].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(230, 126, 34);
+                worksheet.Range[row, 11].ColumnWidth = 15;
+                worksheet.Range[row, 11].WrapText = true;
+
+                row++;
+
+
+                worksheet.Range[row, 1].Text = "OVERALL SCORE 100% ( TECHNICAL 70%  + VALUES /  BEHAVIOUR 30%)";
+                worksheet.Range[row, 1, row, 8].Merge();
+                worksheet.Range[row, 1, row, 8].WrapText = true;
+                worksheet.Range[row, 1, row, 8].RowHeight = 18;
+                worksheet.Range[row, 1, row, 8].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(230, 126, 34);
+                worksheet.Range[row, 1, row, 8].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.Black;
+                worksheet.Range[row, 1, row, 8].CellStyle.Font.FontName = "cambria";
+                worksheet.Range[row, 1, row, 8].CellStyle.Font.Size = 14;
+                worksheet.Range[row, 1, row, 8].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+
+                worksheet.Range[row, 9].Text = "100%";
+                worksheet.Range[row, 9].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(230, 126, 34);
+                worksheet.Range[row, 9].ColumnWidth = 10;
+                worksheet.Range[row, 9].WrapText = true;
+
+                worksheet.Range[row, 10].Text = "";
+                worksheet.Range[row, 10].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(230, 126, 34);
+                worksheet.Range[row, 10].ColumnWidth = 10;
+                worksheet.Range[row, 10].WrapText = true;
+
+                worksheet.Range[row, 11].Text = Convert.ToDouble(tvvalue + bvvalue) + "%";
+                worksheet.Range[row, 11].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(245, 205, 121);
+                worksheet.Range[row, 11].ColumnWidth = 10;
+                worksheet.Range[row, 11].WrapText = true;
+
+                row++;
+                row = 38;
+
+                worksheet.Range[row, 1, (row + 1), 6].Text = "";
+
+                worksheet.Range[row, 1, (row + 1), 4].Merge();
+                worksheet.Range[row, 1, (row + 1), 4].WrapText = true;
+                worksheet.Range[row, 1, (row + 1), 4].RowHeight = 15;
+                worksheet.Range[row, 1, (row + 1), 4].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                worksheet.Range[row, 1, (row + 1), 4].CellStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+                //worksheet.Range[row, 1, (row + 1), 4].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(230, 126, 34);
+                worksheet.Range[row, 1, (row + 1), 4].CellStyle.Font.Size = 12f;
+                worksheet.Range[row, 1, (row + 1), 4].CellStyle.Font.Bold = true;
+                worksheet.Range[row, 1, (row + 1), 4].CellStyle.Font.Color = ExcelKnownColors.White;
+
+
+                worksheet.Range[row, 5].Text = "OVERALL RATING ( TECHNICAL + VALUES /  BEHAVIOUR)";
+                worksheet.Range[row, 5, row, 8].Merge();
+                worksheet.Range[row, 5, row, 8].WrapText = true;
+                worksheet.Range[row, 5, row, 8].RowHeight = 40.5;
+                worksheet.Range[row, 5, row, 8].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(230, 126, 34);
+                worksheet.Range[row, 5, row, 8].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.Black;
+                worksheet.Range[row, 5, row, 8].CellStyle.Font.FontName = "cambria";
+                worksheet.Range[row, 5, row, 8].CellStyle.Font.Size = 11;
+                worksheet.Range[row, 5, row, 8].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+
+                worksheet.Range[row, 9].Text = Convert.ToDouble(tvvalue + bvvalue) + "%";
+                worksheet.Range[row, 9, row, 10].Merge();
+                worksheet.Range[row, 9, row, 10].WrapText = true;
+                worksheet.Range[row, 9, row, 10].RowHeight = 19;
+                worksheet.Range[row, 9, row, 10].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(211, 84, 0);
+                worksheet.Range[row, 9, row, 10].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.Black;
+                worksheet.Range[row, 9, row, 10].CellStyle.Font.FontName = "cambria";
+                worksheet.Range[row, 9, row, 10].CellStyle.Font.Size = 18;
+                worksheet.Range[row, 9, row, 10].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+
+                worksheet.Range[row, 11].Text = "";
+                //worksheet.Range[row, 11].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(230, 126, 34);
+                worksheet.Range[row, 11].ColumnWidth = 10;
+                worksheet.Range[row, 11].WrapText = true;
+
+
+                row++;
+
+                double? scoredmark = tvvalue + bvvalue;
+                string resultdescription = string.Empty;
+
+                var _finaldesc = ScaleData.FirstOrDefault(o => scoredmark >= o.MinimumMark && scoredmark <= o.MaximumMark);
+
+                if (_finaldesc != null && !string.IsNullOrEmpty(_finaldesc.PerformanceDescription))
+                {
+                    resultdescription = _finaldesc.PerformanceDescription;
+
+                    //Poor Performance
+                    if (_finaldesc.ScaleId == 1)
+                    {
+                        worksheet.Range[row, 5, row, 11].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(234, 32, 39);
+                    }
+                    //Fair Performance
+                    else if (_finaldesc.ScaleId == 2)
+                    {
+                        worksheet.Range[row, 5, row, 11].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(6, 82, 221);
+                    }
+                    //Good Performance
+                    else if (_finaldesc.ScaleId == 4)
+                    {
+                        worksheet.Range[row, 5, row, 11].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(111, 30, 81);
+                    }
+                    //Very Good Performance
+                    else if (_finaldesc.ScaleId == 5)
+                    {
+                        worksheet.Range[row, 5, row, 11].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(95, 39, 205);
+                    }
+                    //Outstanding Performance
+                    else if (_finaldesc.ScaleId == 6)
+                    {
+                        worksheet.Range[row, 5, row, 11].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 148, 50);
+                    }
+                }
+
                 
+                worksheet.Range[row, 5].Text = resultdescription.ToUpper();
+                worksheet.Range[row, 5, row, 11].Merge();
+                worksheet.Range[row, 5, row, 11].WrapText = true;
+                worksheet.Range[row, 5, row, 11].RowHeight = 19;
+                //worksheet.Range[row, 5, row, 11].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(211, 84, 0);
+                worksheet.Range[row, 5, row, 11].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.Black;
+                worksheet.Range[row, 5, row, 11].CellStyle.Font.FontName = "cambria";
+                worksheet.Range[row, 5, row, 11].CellStyle.Font.Size = 18;
+                worksheet.Range[row, 5, row, 11].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+
+                
+                row++;
+                row = 40;
+
+
+                worksheet.Range[row, 1, (row + 1), 6].Text = "Please note the Overall Assessment is derived from the Performance Descriptors below in relation to the Appraise Performance Achievement";
+
+                worksheet.Range[row, 1, (row + 1), 6].Merge();
+                worksheet.Range[row, 1, (row + 1), 6].WrapText = true;
+                worksheet.Range[row, 1, (row + 1), 6].RowHeight = 15;
+                worksheet.Range[row, 1, (row + 1), 6].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                worksheet.Range[row, 1, (row + 1), 6].CellStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+                worksheet.Range[row, 1, (row + 1), 6].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(230, 126, 34);
+                worksheet.Range[row, 1, (row + 1), 6].CellStyle.Font.Size = 12f;
+                worksheet.Range[row, 1, (row + 1), 6].CellStyle.Font.Bold = true;
+                worksheet.Range[row, 1, (row + 1), 6].CellStyle.Font.Color = ExcelKnownColors.White;
+
+                //Enter The Score Dissaggregations
+
+                worksheet.Range[row, 7].Text = "Poor Performance";
+                //worksheet.Range[row, 7].CellStyleName = "headerStyle";
+                worksheet.Range[row, 7].ColumnWidth = 15;
+                worksheet.Range[row, 7].WrapText = true;
+
+                worksheet.Range[row, 8].Text = "Fair Performance";
+                //worksheet.Range[row, 8].CellStyleName = "headerStyle";
+                worksheet.Range[row, 8].ColumnWidth = 15;
+                worksheet.Range[row, 8].WrapText = true;
+
+                worksheet.Range[row, 9].Text = "Good Performance";
+                //worksheet.Range[row, 9].CellStyleName = "headerStyle";
+                worksheet.Range[row, 9].ColumnWidth = 15;
+                worksheet.Range[row, 9].WrapText = true;
+
+                worksheet.Range[row, 10].Text = "Very Good  Performance";
+                //worksheet.Range[row, 10].CellStyleName = "headerStyle";
+                worksheet.Range[row, 10].ColumnWidth = 15;
+                worksheet.Range[row, 10].WrapText = true;
+
+                worksheet.Range[row, 11].Text = "Outstanding Performance";
+                //worksheet.Range[row, 11].CellStyleName = "headerStyle";
+                worksheet.Range[row, 11].ColumnWidth = 15;
+                worksheet.Range[row, 11].WrapText = true;
+
+                row++;
+
+                var _poor = ScaleData.FirstOrDefault(o => o.ScaleId == 1);
+                var _fair = ScaleData.FirstOrDefault(o => o.ScaleId == 2);
+                var _good = ScaleData.FirstOrDefault(o => o.ScaleId == 3);
+                var _verygood = ScaleData.FirstOrDefault(o => o.ScaleId == 4);
+                var _outstanding = ScaleData.FirstOrDefault(o => o.ScaleId == 5);
+
+                worksheet.Range[row, 7].Text = "Below " + Convert.ToInt32(_poor.MaximumMark) + "%";
+                //worksheet.Range[row, 7].CellStyleName = "headerStyle";
+                worksheet.Range[row, 7].ColumnWidth = 15;
+                worksheet.Range[row, 7].WrapText = true;
+
+                worksheet.Range[row, 8].Text = Convert.ToInt32(_fair.MinimumMark) + "% - " + Convert.ToInt32(_fair.MaximumMark) + "%";
+                //worksheet.Range[row, 8].CellStyleName = "headerStyle";
+                worksheet.Range[row, 8].ColumnWidth = 15;
+                worksheet.Range[row, 8].WrapText = true;
+
+                worksheet.Range[row, 9].Text = Convert.ToInt32(_good.MinimumMark) + "% - " + Convert.ToInt32(_good.MaximumMark) + "%"; ;
+                //worksheet.Range[row, 9].CellStyleName = "headerStyle";
+                worksheet.Range[row, 9].ColumnWidth = 15;
+                worksheet.Range[row, 9].WrapText = true;
+
+                worksheet.Range[row, 10].Text = Convert.ToInt32(_verygood.MinimumMark) + "% - " + Convert.ToInt32(_verygood.MaximumMark) + "%"; ;
+                //worksheet.Range[row, 10].CellStyleName = "headerStyle";
+                worksheet.Range[row, 10].ColumnWidth = 15;
+                worksheet.Range[row, 10].WrapText = true;
+
+                worksheet.Range[row, 11].Text = Convert.ToInt32(_outstanding.MinimumMark) + "% - " + Convert.ToInt32(_outstanding.MaximumMark) + "%"; ;
+                //worksheet.Range[row, 11].CellStyleName = "headerStyle";
+                worksheet.Range[row, 11].ColumnWidth = 15;
+                worksheet.Range[row, 11].WrapText = true;
+
+                row++;
+                row = 42;
+
+                worksheet.Range[row, 1, (row + 1), 6].Text = "Please note each Value / Behavior  Assessment is derived from the Performance Descriptors selected from the Drop Down provided in Column F from 46 F - 55 F";
+
+                worksheet.Range[row, 1, (row + 1), 6].Merge();
+                worksheet.Range[row, 1, (row + 1), 6].WrapText = true;
+                worksheet.Range[row, 1, (row + 1), 6].RowHeight = 15;
+                worksheet.Range[row, 1, (row + 1), 6].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                worksheet.Range[row, 1, (row + 1), 6].CellStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+                // worksheet.Range[row, 1, (row + 1), 6].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(230, 126, 34);
+                worksheet.Range[row, 1, (row + 1), 6].CellStyle.Font.Size = 12f;
+                worksheet.Range[row, 1, (row + 1), 6].CellStyle.Font.Bold = true;
+                worksheet.Range[row, 1, (row + 1), 6].CellStyle.Font.Color = ExcelKnownColors.White;
+
+                worksheet.Range[row, 8].Text = "Fair Conduct ";
+                worksheet.Range[row, 8].CellStyleName = "headerStyle";
+                worksheet.Range[row, 8].ColumnWidth = 15;
+                worksheet.Range[row, 8].WrapText = true;
+
+                worksheet.Range[row, 9].Text = "Good Conduct";
+                worksheet.Range[row, 9].CellStyleName = "headerStyle";
+                worksheet.Range[row, 9].ColumnWidth = 15;
+                worksheet.Range[row, 9].WrapText = true;
+
+                worksheet.Range[row, 10].Text = "Outstanding Conduct";
+                worksheet.Range[row, 10].CellStyleName = "headerStyle";
+                worksheet.Range[row, 10].ColumnWidth = 15;
+                worksheet.Range[row, 10].WrapText = true;
+
+                row++;
+                row = 44;
+
+                worksheet.Range[row, 1].Text = "SECTION 3. VALUES & BEHAVIORAL COMPETENCIES ( RATING USING A SCALE OF  1- 3  AS PER THE COMPETENCE GUIDE)";
+                worksheet.Range[row, 1, row, 11].Merge();
+                worksheet.Range[row, 1, row, 11].WrapText = true;
+                worksheet.Range[row, 1, row, 11].RowHeight = 15;
+                worksheet.Range[row, 1, row, 11].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 255, 255);
+                worksheet.Range[row, 1, row, 11].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.Black;
+                worksheet.Range[row, 1, row, 11].CellStyle.Font.FontName = "cambria";
+                worksheet.Range[row, 1, row, 11].CellStyle.Font.Size = 18;
+                worksheet.Range[row, 1, row, 11].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+
+                row++;
+
+                worksheet.Range[row, 1].Text = "";
+                worksheet.Range[row, 1].CellStyleName = "headerStyle";
+                worksheet.Range[row, 1].ColumnWidth = 15;
+                worksheet.Range[row, 1].WrapText = true;
+
+                worksheet.Range[row, 2].Text = "";
+                worksheet.Range[row, 2].CellStyleName = "headerStyle";
+                worksheet.Range[row, 2].ColumnWidth = 15;
+                worksheet.Range[row, 2].WrapText = true;
+
+                worksheet.Range[row, 3].Text = "Performance Rating use Drop Down";
+                worksheet.Range[row, 3].CellStyleName = "headerStyle";
+                worksheet.Range[row, 3].ColumnWidth = 15;
+                worksheet.Range[row, 3].WrapText = true;
+
+                worksheet.Range[row, 4].Text = "Employee Self Assessment";
+                worksheet.Range[row, 4].CellStyleName = "headerStyle";
+                worksheet.Range[row, 4].ColumnWidth = 25;
+                worksheet.Range[row, 4].WrapText = true;
+
+                worksheet.Range[row, 5].Text = "Employee Comment";
+                worksheet.Range[row, 5].CellStyleName = "headerStyle";
+                worksheet.Range[row, 5].ColumnWidth = 15;
+                worksheet.Range[row, 5].WrapText = true;
+
+                worksheet.Range[row, 6].Text = "Supervisor Assessment";
+                worksheet.Range[row, 6].CellStyleName = "headerStyle";
+                worksheet.Range[row, 6].ColumnWidth = 10;
+                worksheet.Range[row, 6].WrapText = true;
+
+
+                worksheet.Range[row, 7].Text = "Supervisor Comment";
+                worksheet.Range[row, 7].CellStyleName = "headerStyle";
+                worksheet.Range[row, 7].ColumnWidth = 15;
+                worksheet.Range[row, 7].WrapText = true;
+
+
+                row++;
+                row = 46;
+
+                //Section 3
+
+                if (databehavioral.Count > 0)
+                {
+                    var _databehavioral = databehavioral.Where(o => o.BalanceScoreCardId == n.BalanceScoreCardId);
+                    foreach (var m in _databehavioral)
+                    {
+                        if (m.CompetenceId.HasValue)
+                        {
+                            var _competence = CompetenceData.FirstOrDefault(o => o.CompetenceId == m.CompetenceId);
+                            worksheet.Range[row, 1].Text = _competence.CompetenceDescription;
+                            worksheet.Range[row, 1].WrapText = true;
+                            worksheet.Range[row, 1].VerticalAlignment = ExcelVAlign.VAlignTop;
+                            worksheet.Range[row, 1].HorizontalAlignment = ExcelHAlign.HAlignJustify;
+                        }
+
+                        if (m.EmployeePerformanceDescriptorId.HasValue)
+                        {
+                            var _perf = PerformanceDescriptorData.FirstOrDefault(o => o.PerformanceDescriptorId == m.EmployeePerformanceDescriptorId);
+                            worksheet.Range[row, 2].Text = _perf.PerformanceDescriptor;
+                            worksheet.Range[row, 2].WrapText = true;
+                            worksheet.Range[row, 2].VerticalAlignment = ExcelVAlign.VAlignTop;
+                            worksheet.Range[row, 2].HorizontalAlignment = ExcelHAlign.HAlignRight;
+                        }
+
+                        if (m.EmployeeSelfAssessment.HasValue)
+                        {
+                            worksheet.Range[row, 3].Text = $"{Convert.ToDouble(m.EmployeeSelfAssessment)}%";
+                            worksheet.Range[row, 3].WrapText = true;
+                            worksheet.Range[row, 3].VerticalAlignment = ExcelVAlign.VAlignTop;
+                            worksheet.Range[row, 3].HorizontalAlignment = ExcelHAlign.HAlignRight;
+                        }
+
+                        worksheet.Range[row, 4].Text = m.EmployeeComment;
+                        worksheet.Range[row, 4].WrapText = true;
+                        worksheet.Range[row, 4].VerticalAlignment = ExcelVAlign.VAlignTop;
+                        worksheet.Range[row, 4].HorizontalAlignment = ExcelHAlign.HAlignRight;
+
+                        if (m.SupervisorPerformanceDescriptorId.HasValue)
+                        {
+                            var _perf = PerformanceDescriptorData.FirstOrDefault(o => o.PerformanceDescriptorId == m.SupervisorPerformanceDescriptorId);
+                            worksheet.Range[row, 5].Text = _perf.PerformanceDescriptor;
+                            worksheet.Range[row, 5].WrapText = true;
+                            worksheet.Range[row, 5].VerticalAlignment = ExcelVAlign.VAlignTop;
+                            worksheet.Range[row, 5].HorizontalAlignment = ExcelHAlign.HAlignRight;
+                        }
+
+                        if (m.SupervisorAssessment.HasValue)
+                        {
+                            worksheet.Range[row, 6].Text = $"{Convert.ToDouble(m.SupervisorAssessment)}%";
+                            worksheet.Range[row, 6].WrapText = true;
+                            worksheet.Range[row, 6].VerticalAlignment = ExcelVAlign.VAlignTop;
+                            worksheet.Range[row, 6].HorizontalAlignment = ExcelHAlign.HAlignRight;
+                        }
+
+                        worksheet.Range[row, 7].Text = m.SupervisorComment;
+                        worksheet.Range[row, 7].WrapText = true;
+                        worksheet.Range[row, 7].VerticalAlignment = ExcelVAlign.VAlignTop;
+                        worksheet.Range[row, 7].HorizontalAlignment = ExcelHAlign.HAlignRight;
+
+                        row += 1;
+                    }
+                }
+
+                row++;
+                row = 57;
+
+                worksheet.Range[row, 1].Text = "Record 2-3 Development goals for the next year in Section 4 below: These are individual learning needs to support one's  job Performance and Career development";
+                worksheet.Range[row, 1, row, 11].Merge();
+                worksheet.Range[row, 1, row, 11].WrapText = true;
+                worksheet.Range[row, 1, row, 11].RowHeight = 15;
+                //worksheet.Range[row, 1, row, 11].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 255, 255);
+                worksheet.Range[row, 1, row, 11].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.Black;
+                worksheet.Range[row, 1, row, 11].CellStyle.Font.FontName = "cambria";
+                worksheet.Range[row, 1, row, 11].CellStyle.Font.Size = 10;
+                worksheet.Range[row, 1, row, 11].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+
+                row++;
+                worksheet.Range[row, 1].Text = "SECTION 4: INDIVIDUAL DEVELOPMENT PLAN";
+                worksheet.Range[row, 1, row, 11].Merge();
+                worksheet.Range[row, 1, row, 11].WrapText = true;
+                worksheet.Range[row, 1, row, 11].RowHeight = 19;
+                worksheet.Range[row, 1, row, 11].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 255, 255);
+                worksheet.Range[row, 1, row, 11].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.Black;
+                worksheet.Range[row, 1, row, 11].CellStyle.Font.FontName = "cambria";
+                worksheet.Range[row, 1, row, 11].CellStyle.Font.Size = 18;
+                worksheet.Range[row, 1, row, 11].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+
+                row++;
+
+                worksheet.Range[row, 1].Text = "Number";
+                worksheet.Range[row, 1].CellStyleName = "headerStyle";
+                worksheet.Range[row, 1].ColumnWidth = 15;
+                worksheet.Range[row, 1].WrapText = true;
+
+                worksheet.Range[row, 2].Text = "Development Need ";
+                worksheet.Range[row, 2].CellStyleName = "headerStyle";
+                worksheet.Range[row, 2].ColumnWidth = 15;
+                worksheet.Range[row, 2].WrapText = true;
+
+                worksheet.Range[row, 3].Text = "Development Action ";
+                worksheet.Range[row, 3].CellStyleName = "headerStyle";
+                worksheet.Range[row, 3].ColumnWidth = 15;
+                worksheet.Range[row, 3].WrapText = true;
+
+                row ++;
+                row = 60;
+
+                int startrow = row;
+                int count = 1;
+
+                if (datadevelopmentplan.Count > 0)
+                {
+                        var _datadevelopmentplan = datadevelopmentplan.Where(o => o.BalanceScoreCardId == n.BalanceScoreCardId);
+                        foreach (var m in _datadevelopmentplan)
+                        {                            
+                            worksheet.Range[row, 1].Text = count.ToString();
+                            worksheet.Range[row, 1].VerticalAlignment = ExcelVAlign.VAlignTop;
+
+                            worksheet.Range[row, 2].Text = m.DevelopmentNeed;
+                            worksheet.Range[row, 2].WrapText = true;
+                            worksheet.Range[row, 2].VerticalAlignment = ExcelVAlign.VAlignTop;
+                            worksheet.Range[row, 2].HorizontalAlignment = ExcelHAlign.HAlignJustify;
+
+                            worksheet.Range[row, 3].Text = m.DevelopmentAction;
+                            worksheet.Range[row, 3].WrapText = true;
+                            worksheet.Range[row, 3].VerticalAlignment = ExcelVAlign.VAlignTop;
+                            worksheet.Range[row, 3].HorizontalAlignment = ExcelHAlign.HAlignJustify;
+
+                            row += 1;
+                            count++;
+                        }
+                    //}
+                }
+
+                row++;
+                
+                worksheet.Range[row, 1].Text = "SECTION 5: OVER ALL COMMENTS";
+                worksheet.Range[row, 1, row, 11].Merge();
+                worksheet.Range[row, 1, row, 11].WrapText = true;
+                worksheet.Range[row, 1, row, 11].RowHeight = 19;
+                worksheet.Range[row, 1, row, 11].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 255, 255);
+                worksheet.Range[row, 1, row, 11].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.Black;
+                worksheet.Range[row, 1, row, 11].CellStyle.Font.FontName = "cambria";
+                worksheet.Range[row, 1, row, 11].CellStyle.Font.Size = 18;
+                worksheet.Range[row, 1, row, 11].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+
+                worksheet.Range[row, 1].Text = "APPRAISEE’S COMMENTS";
+                worksheet.Range[row, 1, row, 11].Merge();
+                worksheet.Range[row, 1, row, 11].WrapText = true;
+                worksheet.Range[row, 1, row, 11].RowHeight = 19;
+                //worksheet.Range[row, 1, row, 11].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 255, 255);
+                worksheet.Range[row, 1, row, 11].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.Black;
+                worksheet.Range[row, 1, row, 11].CellStyle.Font.FontName = "cambria";
+                worksheet.Range[row, 1, row, 11].CellStyle.Font.Size = 18;
+                worksheet.Range[row, 1, row, 11].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+
             }
-
-            
-
-            row = 40;
-
-
-            worksheet.Range[row, 1].Text = "Please note the Overall Assessment is derived from the Performance Descriptors below in relation to the Appraise Performance Achievement ";
-            worksheet.Range[row, 1, row, 6].Merge();
-            worksheet.Range[row, 1, row, 6].WrapText = true;
-            worksheet.Range[row, 1, row, 6].RowHeight = 15;
-            worksheet.Range[row, 1, row, 6].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
-            worksheet.Range[row, 1, row, 6].CellStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
-            worksheet.Range[row, 1, row, 6].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(230, 126, 34);
-            worksheet.Range[row, 1, row, 6].CellStyle.Font.Size = 12f;
-            worksheet.Range[row, 1, row, 6].CellStyle.Font.Bold = true;
-            worksheet.Range[row, 1, row, 6].CellStyle.Font.Color = ExcelKnownColors.White;
         }
 
         catch (Exception ex)
