@@ -436,6 +436,7 @@
                                                                                               MeasurementUnitData="@MeasurementUnitData"
                                                                                               PopulatedData="@PopulatedData"
                                                                                               FinancialYearData="@FinancialYearData"
+                                                                                              PerspectivesDetailData="@PerspectivesDetailData"
                                                                                               finyearid="@finyearid"
                                                                                               IsSupervisorEnabledColumn="@IsSupervisorEnabledColumn"
                                                                                               IsEmployeeEnabledColumn="@IsEmployeeEnabledColumn"
@@ -531,12 +532,12 @@
                                                                     <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
                                                                 </SfDropDownList>
 
-                                                                @if (employeenohodchange != null && !string.IsNullOrEmpty(employeenohodchange.EmailAddress) && BscData.Hod != null)
+                                                                @if (employeenosupervisorchange != null && !string.IsNullOrEmpty(employeenosupervisorchange.EmailAddress) && BscData.AppraiserName != null)
                                                                 {
-                                                                    <p style="color:forestgreen; font-weight:bold">Email: @employeenohodchange.EmailAddress</p>
+                                                                    <p style="color:forestgreen; font-weight:bold">Email: @employeenosupervisorchange.EmailAddress</p>
                                                                 }
-                                                                else if (employeenohodchange != null && (BscData != null && BscData.Hod != null)
-                                                                && (employeenohodchange != null && string.IsNullOrEmpty(employeenohodchange.EmailAddress)))
+                                                                else if (employeenosupervisorchange != null && (BscData != null && BscData.Hod != null)
+                                                                && (employeenosupervisorchange != null && string.IsNullOrEmpty(employeenosupervisorchange.EmailAddress)))
                                                                 {
                                                                     <p style="color:red; font-weight:bold">Email Not Provided</p>
                                                                 }
@@ -565,6 +566,7 @@
                                                                 <p style="font-weight: bolder;">HOD:<span style="color:red;">*</span></p>
                                                                 <SfDropDownList @bind-Value="@(BscData.Hod)" Enabled="OnSubmitButtonsBool" TItem="ViewEmployeeDropDown" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                                                     <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
+                                                                    <DropDownListEvents TValue="int?" TItem="ViewEmployeeDropDown" ValueChange="OnHODChange"></DropDownListEvents>
                                                                 </SfDropDownList>
 
                                                                 @if (employeenohodchange != null && !string.IsNullOrEmpty(employeenohodchange.EmailAddress) && BscData.Hod != null)
@@ -601,6 +603,7 @@
                                                                 <p style="font-weight: bolder;">CEO:<span style="color:red;">*</span></p>
                                                                 <SfDropDownList @bind-Value="@(BscData.Ceo)" Enabled="OnSubmitButtonsBool" TItem="ViewEmployeeDropDown" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
                                                                     <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
+                                                                    <DropDownListEvents TValue="int?" TItem="ViewEmployeeDropDown" ValueChange="OnCEOChange"></DropDownListEvents>
                                                                 </SfDropDownList>
 
                                                                 @if (employeenoceochange != null && !string.IsNullOrEmpty(employeenoceochange.EmailAddress) && BscData.Hod != null)
@@ -1330,7 +1333,25 @@
                         BscData.CeoApprovalDate = DateTime.Now;
                     }
 
-                    
+                    //Rejected By Supervisor
+                    else if (BscData.LeaveApprovalStatusId == 4)
+                    {
+                        BscData.LeaveApprovalStatusId = 2;
+                        BscData.SupervisorReturnDate = DateTime.Now;
+                    }  
+
+                    //Rejected By HOD
+                    else if (BscData.LeaveApprovalStatusId == 7)
+                    {
+                        BscData.LeaveApprovalStatusId = 2;
+                        BscData.SupervisorReturnDate = DateTime.Now;
+                    }
+                    //Rejected By CEO
+                    else if (BscData.LeaveApprovalStatusId == 12)
+                    {
+                        BscData.LeaveApprovalStatusId = 2;
+                        BscData.SupervisorReturnDate = DateTime.Now;
+                    }
                 }   
 
                 await DataGrid.EndEditAsync();
@@ -1573,6 +1594,13 @@
                 {
                     BscData.LeaveApprovalStatusId = 4;
                     BscData.SupervisorRejectionDate = DateTime.Now;
+                }
+
+                //Supervisor Review after Employee Agrees to Comments 
+                else if (BscData.LeaveApprovalStatusId == 16)
+                {
+                    BscData.LeaveApprovalStatusId = 4;
+                    BscData.CeoRejectionDate = DateTime.Now;
                 }
 
                 //HOD Review
@@ -1866,6 +1894,16 @@
 
         }
 
+    }
+
+    public async void OnHODChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewEmployeeDropDown> args)
+    {
+        employeenohodchange = args.ItemData;
+    }
+
+    public async void OnCEOChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewEmployeeDropDown> args)
+    {
+        employeenoceochange = args.ItemData;
     }
 
     public void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewEmployeeDropDown> args)
@@ -2741,7 +2779,7 @@
                         ceogridenabled = false;
                         appraiseegridenabled = true;
                         developmentgridenabled = false;
-                        attachmentgridenabled = false;
+                        attachmentgridenabled = true;
                         SaveText  = "Submit Comments To Supervisor";
                     }
                     //For supervisor
@@ -2896,8 +2934,8 @@
 
             if(EmployeeData != null)
             {
-                employeenohodchange = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
-                employeenoceochange = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid);
+                employeenohodchange = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Hod);
+                employeenoceochange = EmployeeData.FirstOrDefault(o => o.Employeeid == Args.RowData.Ceo);
 
                 //Assign HOD on Add
                 if (employeenohodchange != null && employeenohodchange.HoDemployeeId != null)
@@ -2936,6 +2974,7 @@
             ceogridenabled = false;
             appraiseegridenabled = false;
             developmentgridenabled = true;
+            attachmentgridenabled = true;
 
             StateHasChanged();
         }
@@ -2949,7 +2988,7 @@
             {
                 Args.Cell.AddClass(new string[] { "Approved" });
             }
-            if (Args.Data.LeaveApprovalStatusId == 4)
+            if (Args.Data.LeaveApprovalStatusId == 4 || Args.Data.LeaveApprovalStatusId == 7)
             {
                 Args.Cell.AddClass(new string[] { "Rejected" });
             }
