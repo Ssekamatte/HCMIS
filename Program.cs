@@ -76,6 +76,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.FileProviders;
 using static HCMIS.Pages.NonStaff.NonStaffRefereesPage;
 using static HCMIS.Pages.Applications.MyApplicationsPage;
+using HCMIS.Data.AutoLogOut;
 
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -99,6 +100,8 @@ builder.Services.AddScoped<encrypt_decrypt_string>();
 builder.Services.AddScoped<ISettingsRepository, SettingsRepository>();
 builder.Services.AddScoped<IAptituddeTestReopsitory, AptituddeTestReopsitory>();
 builder.Services.AddScoped<DocumentUploadModel>();
+// Register UserStateService
+builder.Services.AddScoped<UserStateService>();
 builder.Services.AddScoped<IJobApplications, JobApplications>();
 
 builder.Services.AddScoped<NonStaffQualificationAdapter>();

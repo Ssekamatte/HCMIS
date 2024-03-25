@@ -112,6 +112,8 @@
 @* Url to bootstrap card formats *@
 @* https://ordinarycoders.com/blog/article/codepen-bootstrap-card-hovers *@
 
+<BreadCrumbPage Module="JOB OPENINGS" Submodule="AVAILABLE JOBS" />
+
 @if (isloading == true)
 {
     <div style="padding:25px">
@@ -380,7 +382,9 @@ else
                                                                                              DegreeClassData="@DegreeClassData"
                                                                                              LanguagesData="@LanguagesData"
                                                                                              LanguageProlificData="@LanguageProlificData"
-                                                                                             SkillLevelData="@SkillLevelData"
+                                                                                             SkillLevelData="@SkillLevelData" 
+                                                                                             FieldOfStudyData="@FieldOfStudyData" 
+                                                                                             UniversityData="@UniversityData"
                                                                                              JobOpeningId="@SelectedJobsModel.JobOpeningId">
                             </HCMIS.Pages.Applications.PartialPages.ApplicationSubmissionPage>
                         </div>
@@ -431,6 +435,8 @@ else
     List<NonStaffQualificationAttachment> NonStaffQualificationAttachmentData { get; set; } = new();
     List<AppliedForJobReferees> JobRefereesData { get; set; } = new();
     List<ASkillLevel>? SkillLevelData{ get; set; }
+    List<AUniversities>? UniversityData { get; set; }
+    List<AFieldOfStudy> FieldOfStudyData { get; set; }
     //List<NonStaff>? NonStaffData { get; set; }
     List<AppliedForJobs>? AppliedForJobsData { get; set; }
 
@@ -460,7 +466,8 @@ else
             NonStaffLanguagesKnownData = new();
             NonStaffQualificationAttachmentData = new();
             JobRefereesData = new();
-
+            UniversityData = new();
+            FieldOfStudyData = new();
 
             var isAuthenticated = await AuthService.CheckAuthenticationStatus();
             if (isAuthenticated == false)
@@ -471,45 +478,32 @@ else
             {
                 Credentials = await AuthService.GetUserCredentials();
 
-                List<Task> t = new List<Task>();
+                List<Task> t = new List<Task>();                               
 
                 t.Add(Task.Run(async () =>
                 {
-                    var responseIdentificationType = await Http.GetAsync($"Utilities/GetSkillLevel");
-                    if (responseIdentificationType.IsSuccessStatusCode)
-                    {
-                        var contentIdentificationType = await responseIdentificationType.Content.ReadAsStringAsync();
-                        SkillLevelData = JsonSerializer.Deserialize<List<ASkillLevel>>(contentIdentificationType, _options);
-                    }
-                }));
 
-                t.Add(Task.Run(async () =>
-                {
-                    var responseIdentificationType = await Http.GetAsync($"Utilities/GetLanguageProficiency");
-                    if (responseIdentificationType.IsSuccessStatusCode)
+                    var response = await Http.GetAsync($"NonStaff/GetRegistrationPrimartData");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
                     {
-                        var contentIdentificationType = await responseIdentificationType.Content.ReadAsStringAsync();
-                        LanguageProlificData = JsonSerializer.Deserialize<List<ALanguageProlific>>(contentIdentificationType, _options);
-                    }
-                }));
+                        var _ExternalRegistrationModel = JsonSerializer.Deserialize<ExternalRegistrationModel>(content, _options);
 
-                t.Add(Task.Run(async () =>
-                {
-                    var responseIdentificationType = await Http.GetAsync($"Utilities/GetLanguages");
-                    if (responseIdentificationType.IsSuccessStatusCode)
-                    {
-                        var contentIdentificationType = await responseIdentificationType.Content.ReadAsStringAsync();
-                        LanguagesData = JsonSerializer.Deserialize<List<ALanguages>>(contentIdentificationType, _options);
-                    }
-                }));
-
-                t.Add(Task.Run(async () =>
-                {
-                    var responseIdentificationType = await Http.GetAsync($"Utilities/GetIdentificationType");
-                    if (responseIdentificationType.IsSuccessStatusCode)
-                    {
-                        var contentIdentificationType = await responseIdentificationType.Content.ReadAsStringAsync();
-                        IdentificationTypeData = JsonSerializer.Deserialize<List<AIdentificationType>>(contentIdentificationType, _options);
+                        if (_ExternalRegistrationModel != null)
+                        {
+                            GenderData = _ExternalRegistrationModel.Gender;
+                            if (_ExternalRegistrationModel.Coutry != null)
+                            {
+                                CountryData = _ExternalRegistrationModel.Coutry.OrderBy(o => o.CountryDesc).ToList();
+                            }
+                            IdentificationTypeData = _ExternalRegistrationModel.IdentificationType;
+                            FieldOfStudyData = _ExternalRegistrationModel.FieldOfStudy;
+                            LevelofEducationData = _ExternalRegistrationModel.LevelofEducation;
+                            SkillLevelData = _ExternalRegistrationModel.SkillLevel;
+                            LanguageProlificData = _ExternalRegistrationModel.LanguageProlific;
+                            LanguagesData = _ExternalRegistrationModel.Languages;
+                            UniversityData = _ExternalRegistrationModel.Universities;
+                        }
                     }
                 }));
 
@@ -687,16 +681,6 @@ else
                     if (response.IsSuccessStatusCode)
                     {
                         JobRefereesData = JsonSerializer.Deserialize<List<AppliedForJobReferees>>(content, _options);
-                    }
-                }));
-
-                t.Add(Task.Run(async () =>
-                {
-                    var responseemployee = await Http.GetAsync($"Utilities/GetLevelofEducation");
-                    if (responseemployee.IsSuccessStatusCode)
-                    {
-                        var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-                        LevelofEducationData = JsonSerializer.Deserialize<List<ALevelofEducation>>(contentemployee, _options);
                     }
                 }));
 

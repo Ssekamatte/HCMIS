@@ -27,6 +27,10 @@
         word-wrap: break-word;
     }
 
+    .e-grid .e-groupcaption {
+        overflow: visible;
+    }
+
     /* .e-grid .e-gridcontent tr:first-child td {
         border-top-color: rgba(0,0,0,0);
         position: relative;
@@ -47,11 +51,6 @@
         top: 30px;
     } */
 </style>
-
-@{
-    var Div = (new string[] { "BscPerspectiveTypeId"});
-}
-
 
 @if (datasource != null
 && datasource.Count > 0)
@@ -145,6 +144,8 @@
             </GridEvents>
             <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
             <GridPageSettings PageSize="20"></GridPageSettings>
+
+            
             <GridAggregates>
                 <GridAggregate>
                     <GridAggregateColumns>
@@ -197,31 +198,45 @@
 
                 </GridAggregate>
             </GridAggregates>
+            
+             
             <GridEditSettings AllowAdding="false" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Batch" ShowConfirmDialog=false>
 
             </GridEditSettings>
-            <GridGroupSettings Columns="@Div" ShowDropArea="false">
+            <GridGroupSettings Columns="@Div">
                 <CaptionTemplate Context="HeaderCaptionTemplateContext">
                     @{
                         var dvn = (HeaderCaptionTemplateContext as CaptionTemplateContext);
 
                         string text = string.Empty;
-                        if (dvn.Field == "BscPerspectiveTypeId" && BscPerspectiveTypeData != null)
+                        string _perspweight = string.Empty;
+                        if (dvn.Field == "BscPerspectiveTypeId" && BscPerspectiveTypeData != null && PerspectivesDetailData != null)
                         {
                             var data = BscPerspectiveTypeData.FirstOrDefault(o => o.BscPerspectiveTypeId.ToString() == dvn.Key);
-                            if (data != null)
+                            var _perspectivetype = PerspectivesDetailData.FirstOrDefault(o=>o.BscPerspectiveTypeId == data.BscPerspectiveTypeId);
+
+                            if (_perspectivetype != null)
                             {
-                                text = data.BscPerspectiveTypeDescription;
+                                _perspweight = _perspectivetype.PerspectiveTotalWeight + "%";
+                            }
+
+                            if (data != null && _perspectivetype != null)
+                            {
+                                text = data.BscPerspectiveTypeDescription + " : " + _perspweight;
                             }
                         }
                         //if (dvn.Field == "PerspectiveTotalWeight")
                         //{
                         //    text = "Perspective Total Weight: " + dvn.Key;
                         //}
-                        <div><p class="pp"><strong>@text</strong></p></div>
+                        // <div><p class="pp"><strong>@text</strong></p></div>
+                        <div><p><strong>@text</strong></p></div>
                     }
                 </CaptionTemplate>
             </GridGroupSettings>
+
+           
+
             <GridColumns>
                 <GridColumn Type="ColumnType.CheckBox" Width="50" Visible=false></GridColumn>
                 <GridColumn Field=@nameof(BalanceScoreCardTargetSetting.TargetSettingId) HeaderText="TargetSettingId" Visible=false IsPrimaryKey="true" Width="150"></GridColumn>
@@ -245,6 +260,7 @@
                             EditType="EditType.NumericEdit"
                             IsFrozen="false"
                             Format="N1"
+                            Visible="false"
                             CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
                 </GridColumn>
 
@@ -429,6 +445,7 @@ else
     public ViewABscPerspectivesDetail? perspweightslearning { get; set; }
     [Parameter]
     public LoginResultModel? Credentials { get; set; }
+    public string[] Div = (new string[] { "BscPerspectiveTypeId" });
 
     protected override async Task OnInitializedAsync()
     {

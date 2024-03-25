@@ -1,5 +1,12 @@
-﻿@inherits LayoutComponentBase;
-@inject IJSRuntime JsRuntime;
+﻿@using System.Timers
+@using HCMIS.Data.AutoLogOut
+@using HCMIS.Interface
+@inherits LayoutComponentBase;
+@inject IJSRuntime JSRuntime
+@inject NavigationManager UriHelper
+@inject UserStateService UserState
+@inject IAuthenticationService IAuthService;
+@inject HttpClient Http;
 
 <style>
     /*Hide that thing asking users to drag if they want to group columns*/
@@ -24,6 +31,7 @@
     color: white;
     border-style: double;
     border-color: seagreen;
+    border-radius: 10rem;
 }
 
 .e-toolbar .e-toolbar-item .e-tbar-btn .e-tbar-btn-text {
@@ -42,6 +50,7 @@
     border-width: 0;
     border-radius: 0;
     color: white;
+            border-radius: 10rem;
 }
 
 .e-toolbar .e-toolbar-item .e-tbar-btn:hover .e-tbar-btn-text {
@@ -554,6 +563,7 @@
 <AuthorizeView>
     <Authorized>
         <MudLayout>
+            
             <AppBar OnSidebarToggled="ToggleSidebar" OnThemeToggled="ToggleTheme" />
             @*@if(_sidebarOpen== true)
             {
@@ -562,7 +572,10 @@
             <NavMenu SideBarOpen="@_sidebarOpen" />
             <MudMainContent Class="pt-16 px-16">
                 <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge">
-
+                    @* <div>
+                        <p>Last Activity: @UserState.LastActivity</p>
+                        <p>Inactivity Timer Status: @inactivityStatus</p>
+                    </div> *@
                     <BlazoredToasts Position="Blazored.Toast.Configuration.ToastPosition.TopRight"
                                     Timeout="10"
                                     IconType="Blazored.Toast.Configuration.IconType.FontAwesome"
@@ -614,6 +627,10 @@
 @code {
     private Boolean disable = true;
     public ElementReference ScrollToTop;
+    [CascadingParameter]
+    private Task<AuthenticationState> stateAuthenticate { get; set; }
+    //private Timer timerObj;
+    //private int remainingMinutes = 60000; // Initial countdown minutes
 
     Dictionary<string, object> HtmlAttribute = new Dictionary<string, object>()
     {
@@ -630,14 +647,125 @@
 
     private MudTheme _currentTheme = new MudTheme();
     private bool _sidebarOpen = false;
+    private string inactivityStatus = "Active";
 
 
+    protected override async Task OnInitializedAsync()
+    {
+        UserState.InactivityTimeout += HandleInactivityTimeout;
+
+        // UserState.LastActivity = DateTime.Now;
+        // SetLogoutTimer();
+
+
+        // // Set the Timer delay.
+        // timerObj = new Timer(remainingMinutes);
+        // timerObj.Elapsed += UpdateTimer;
+        // timerObj.AutoReset = false;
+        // // Identify whether the user is active or inactive using onmousemove and onkeypress in JS function.
+        // await JSRuntime.InvokeVoidAsync("timeOutCall", DotNetObjectReference.Create(this));
+    }
+
+    private void HandleInactivityTimeout()
+    {
+        // This method is called when inactivity timeout occurs
+        inactivityStatus = "Inactive";
+        StateHasChanged();
+    }
+
+    private void SetLogoutTimer()
+    {
+        var timer = new Timer();
+        timer.Elapsed += LogoutIfInactive;
+        timer.Interval = 60000; // Check every 60 seconds (adjust as needed)
+        timer.Enabled = true;
+    }
+
+
+    private void LogoutIfInactive(object sender, ElapsedEventArgs e)
+    {
+        if (!UserState.IsUserActive())
+        {
+            // Trigger JavaScript interop to update UI
+            JSRuntime.InvokeVoidAsync("showCountdown", UserState.RemainingInactivityTime1().TotalMinutes);
+            // Force a UI update to reflect the countdown changes
+            StateHasChanged();
+
+            // Perform logout or navigate to a logout page
+            //LogOut();
+        }
+        else
+        {
+            UserState.LastActivity = DateTime.Now;
+        }
+    }
+
+    private async Task LogOut()
+    {
+        try
+        {
+            // Save LogOut Log
+
+            var result = await Http.PutAsync($"Utilities/UpdateLoginLog", null);
+
+            await IAuthService.Logout();
+            UriHelper.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+
+        }
+
+    }
     private void ToggleTheme(MudTheme changedTheme) => _currentTheme = changedTheme;
 
     private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
 
+    // [JSInvokable]
+    // public void Logout()
+    // {
+    //     // Perform logout logic
+    //     // For example, navigate to the logout page
+    //     UriHelper.NavigateTo("LoginPage", true);
+    // }
+
     // private async void OnButtonClick()
     // {
     //     await JsRuntime.InvokeVoidAsync("OnScrollEvent");
+    // }
+
+    // [JSInvokable]
+    // public void TimerInterval()
+    // {
+    //     // Resetting the Timer if the user in active state.
+    //     timerObj.Stop();
+    //     // Call the TimeInterval to logout when the user is inactive.
+    //     timerObj.Start();
+    // }
+
+    // private void UpdateTimer(Object source, ElapsedEventArgs e)
+    // {
+    //     InvokeAsync(async () =>
+    //     {
+    //         // Decrement remaining minutes
+    //         remainingMinutes--;
+    //         // Check if the countdown has reached 0
+    //         if (remainingMinutes == 0)
+    //         {
+    //             // Timer can be stopped or additional actions can be taken
+    //             //timer.Change(System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
+    //         }
+
+    //         // Log out when the user is inactive.
+    //         var authstate = await stateAuthenticate;
+    //         if (authstate.User.Identity.IsAuthenticated)
+    //         {
+    //             UriHelper.NavigateTo("LoginPage", true);
+    //         }
+    //     });
     // }
 }

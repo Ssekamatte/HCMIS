@@ -7,6 +7,18 @@
 @inject NavigationManager Navigation;
 @inject HttpClient Http;
 
+@* Helps Me Push Account Holder Name Central *@
+<style>
+    .mud-typography-body1 {
+        font-size: var(--mud-typography-body1-size);
+        font-family: var(--mud-typography-body1-family);
+        font-weight: var(--mud-typography-body1-weight);
+        line-height: var(--mud-typography-body1-lineheight);
+        letter-spacing: var(--mud-typography-body1-letterspacing);
+        text-transform: var(--mud-typography-body1-text-transform);
+        padding-top: 12px;
+    }
+</style>
 
 @* <link href="https://use.fontawesome.com/releases/v5.14.0/css/all.css" rel="stylesheet"> *@
 
@@ -17,15 +29,30 @@
     <MudSpacer/>
 
     @*<MudIconButton Icon="@Icons.Material.Filled.Notifications" Color="Color.Error" Edge="Edge.End" />*@
-    @if(Credentials != null)
+    @* @if(Credentials != null)
     {
         <p style="color:ghostwhite">HELLO : @Credentials.AccountHolderName.ToUpper() </p>
-    }
+    } *@
     
-    <MudBadge Icon="@Icons.Material.Filled.Lock" Color="Color.Error" Overlap="true" Bordered="true" Class="mx-6 my-4">
+    @* <MudBadge Icon="@Icons.Material.Filled.Lock" Color="Color.Error" Overlap="true" Bordered="true" Class="mx-6 my-4">
         <MudButton Class="border-double border-4 mud-border-primary pa-4" Color="Color.Error" Variant="Variant.Filled" StartIcon="fa fa-sign-out" DisableElevation="true" OnClick="LogOut">LOG OUT</MudButton>
-    </MudBadge>
-    @* <MudButton Variant="Variant.Filled" StartIcon="fa fa-sign-out" Color="Color.Error" OnClick="LogOut">LOG OUT</MudButton> *@
+    </MudBadge> *@
+
+    @if (Credentials != null)
+    {
+        <MudMenu FullWidth="false" ActivationEvent="@MouseEvent.MouseOver" AnchorOrigin="Origin.BottomCenter"
+                 TransformOrigin="Origin.TopCenter" Style="float:right;" Icon="fa fa-user">
+            <ActivatorContent>
+                <MudIconButton Icon="fa fa-user" Color="Color.Inherit" />
+                <MudText Color="Color.Inherit" Style="color:white,padding-top: 12px;">@Credentials.AccountHolderName.ToUpper()</MudText>
+                </ActivatorContent>
+                <ChildContent>
+                    <MudMenuItem Disabled=true Icon="@Icons.Material.Filled.GppGood" Style="color:darkred;">@Credentials.UserRole</MudMenuItem>
+                    <MudMenuItem Icon="fa fa-key" OnClick="@(()=> {DropDownItemClick(1);})">Change Password</MudMenuItem>
+                    <MudMenuItem Icon="fa fa-sign-out" OnClick="LogOut">Sign Out</MudMenuItem>
+                </ChildContent>
+            </MudMenu>
+    }
 </MudAppBar>
 
 @code {
@@ -58,6 +85,19 @@
 
         }
 
+    }
+
+    private async void DropDownItemClick(int id)
+    {
+        if (id == 1)
+        {
+            Navigation.NavigateTo("/ChangePasswordPage");
+        }
+        else if (id == 2)
+        {
+            await IAuthService.Logout();
+            Navigation.NavigateTo("/LoginPage", true);
+        }
     }
 
     private async Task ToggleTheme()

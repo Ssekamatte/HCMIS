@@ -29,13 +29,26 @@
 
 </style>
 
-<ol class="breadcrumb" style="margin-top:5px;">
-    <li class="breadcrumb-item active" style="color: brown;">
-        <strong>
-            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
-        </strong>| JOB DESCRIPTION DETAILS
-    </li>
-</ol>
+<BreadCrumbPage Module="HCMIS" Submodule="JOB DESCRIPTION DETAILS" />
+
+@if (isloading == true)
+{
+    <div style="padding:25px">
+        <div class="loader">
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader-Loading-text"></div>
+        </div>
+    </div>
+}
+else
+{
+    
+}
 
 <div class="form-row">
     <div class="form-group col-md-12">
@@ -54,7 +67,6 @@
         </SfAccordion>
     </div>
 </div>
-
 
 <SfGrid @ref="@JobDescriptionGrid" TValue="JobDescription" ID="Grid1" AllowPaging="true" AllowFiltering="true" AllowReordering="true" 
     AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" 
@@ -78,7 +90,8 @@
         <Template Context="JobDescriptionContext">
             @{
                 JobDescriptionReviewData = (JobDescriptionContext as JobDescription);
-                if(JobDescriptionReviewData != null){
+                if(JobDescriptionReviewData != null)
+                {
                             <SfTab HeaderPlacement="HeaderPosition.Top" LoadOn="ContentLoad.Demand" OverflowMode="@OverflowMode.Scrollable" >
                                 <TabItems>
                                     <TabItem>
@@ -272,7 +285,7 @@
             </GridCommandColumns>
         </GridColumn>
       @*<GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>*@
-    	<GridColumn Field=@nameof(JobDescription.JobDescriptionId) Visible=false HeaderText="JobDescriptionId" AllowEditing="false" IsPrimaryKey="true" Width="150"></GridColumn>
+    	<GridColumn Field=@nameof(JobDescription.JobDescriptionId) Visible=true HeaderText="JobDescriptionId" AllowEditing="false" IsPrimaryKey="true" Width="150"></GridColumn>
         <GridForeignColumn Field=@nameof(JobDescription.JibTitleId) HeaderText="Job Title"  Width="150" ForeignKeyField="@(nameof(AJobTitle.JobTitleId))" ForeignKeyValue="@(nameof(AJobTitle.JobTitleDescription))" ForeignDataSource="@JobTitleData"></GridForeignColumn>
         <GridForeignColumn Field=@nameof(JobDescription.DepartmentId) HeaderText="Department" Width="150" ForeignKeyField="@(nameof(ADepartment.DepartmentId))" ForeignKeyValue="@(nameof(ADepartment.DepartmentDescription))" ForeignDataSource="@DepartmentData"></GridForeignColumn>
         <GridForeignColumn Field=@nameof(JobDescription.SalaryScaleId) HeaderText="Salary Scale" Width="150" ForeignKeyField="@(nameof(ASalaryScale.SalaryScaleId))" ForeignKeyValue="@(nameof(ASalaryScale.SalaryScaleDescription))" ForeignDataSource="@SalaryScaleData"></GridForeignColumn>
@@ -367,6 +380,8 @@
     public Query MainQuery = new Query();
 
     private ToolbarType Tooltype = ToolbarType.MultiRow;
+    bool isloading { get; set; } = true;
+
     private List<ToolbarItemModel> Tools = new List<ToolbarItemModel>()
     {
         new ToolbarItemModel() { Command = ToolbarCommand.Bold },
@@ -536,6 +551,7 @@
         try
         {
             await base.OnInitializedAsync();
+            // isloading = true;
             var isAuthenticated = await AuthService.CheckAuthenticationStatus();
             if (isAuthenticated == false)
             {
@@ -639,7 +655,10 @@
         {
             ErrorMessage=$"Error: {ex.Message}";
         }
-        await base.OnInitializedAsync();
+        finally
+        {
+            // isloading = false;
+        }
         StateHasChanged();
     }
 
@@ -1210,8 +1229,12 @@
         {
             if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
             {
+                //Show Spinner
+                // isloading = true;
+
                 ChildQuery = new();
                 ChildQuery.AddParams("JobDescriptionId", args.RowData.JobDescriptionId);
+                
                 //JobDescriptionGrid.PreventRender(false);
             }
             if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
@@ -1318,6 +1341,9 @@
         {
             if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
             {
+                //Hide Spinner
+                // isloading = false;
+
                 JobDescriptionGrid.PreventRender(false);
 
                 if (!string.IsNullOrEmpty(args.RowData.DocumentName) && !string.IsNullOrEmpty(args.RowData.DocumentExt))

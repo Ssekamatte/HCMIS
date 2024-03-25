@@ -12,19 +12,23 @@
 @inject IToastService toastService;
 @inject IJSRuntime JSRuntime;
 
-<ol class="breadcrumb" style="margin-top:5px;">
-    <li class="breadcrumb-item active" style="color: brown;">
-        <strong>
-            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
-        </strong>| JOB OPENING DETAILS
-    </li>
-</ol>
 
+<BreadCrumbPage Module="HCMIS" Submodule="JOB OPENING DETAILS"/>
 
-<SfGrid @ref="@DataGrid" TValue="JobOpening" ID="JobOpeningGrid" AllowPaging="true" AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" Toolbar="@(new List<string>() {"Add", "Delete", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
+<SfGrid @ref="@DataGrid" TValue="JobOpening" ID="JobOpeningGrid" AllowPaging="true" AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="true" 
+    AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" AllowTextWrap="true"
+    Toolbar="@(new List<string>() {"Add", "Delete", "Cancel", "Update","ExcelExport","PdfExport","CsvExport", "Search"})">
     <GridEvents OnActionComplete="@OnJobOpeningComplete" OnActionBegin="@OnJobOpeningActionBegin" OnToolbarClick="@GridToolbarClick" TValue="JobOpening"></GridEvents>
     
-    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog"   Dialog="AttachmentDialog">
+        <HeaderTemplate>
+            @{
+                var text = GetJobOpeningHeader((context as JobOpening));
+                <div class="headerbandimg">
+                    <span>@text</span>
+                </div>
+            }
+        </HeaderTemplate>
         <Template>
             @{
                 JobOpeningReviewData = (context as JobOpening);
@@ -33,29 +37,48 @@
                         <div class="col-md-12" hidden>
                             <SfNumericTextBox @bind-Value="@(JobOpeningReviewData.JobOpeningId)" ID="JobOpeningId" TValue="int" Width="100%" Format="N0" Placeholder="Job Description Id" Step="1" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
                         </div>
-                        <div class="col-md-12">
-                            <p>Job Title</p>
-                            <SfDropDownList @bind-Value="@(JobOpeningReviewData.JobDescriptionId)" TItem="ViewJobDescriptionOpening" TValue="int?" Width="100%" PopupHeight="230px" AllowFiltering=true IgnoreAccent=true DataSource="@JobDescriptionData">
+
+                        <div class="col-md-6">
+                            <p>Internal/External Advert ? : <span style="color:red;">*</span></p>
+                        </div>
+
+                        <div class="col-md-6">
+                            <SfRadioButton Disabled="OnRadioButtonSubmitbool" Label="Internal" Name="options" Value="1" TChecked="int?" ValueChange="OnValueChange" @bind-Checked="@(JobOpeningReviewData.AdvertTypeId)"></SfRadioButton>
+                            <SfRadioButton Disabled="OnRadioButtonSubmitbool" Label="External" Name="options" Value="2" TChecked="int?" ValueChange="OnValueChange" @bind-Checked="@(JobOpeningReviewData.AdvertTypeId)"></SfRadioButton>
+                        </div>
+
+                        <div class="col-md-6" style="margin-top: 20px;">
+                            <p>Job Title : <span style="color:red;">*</span></p>
+                        </div>
+
+                        <div class="col-md-6" style="margin-top: 20px;">
+                            <SfDropDownList @bind-Value="@(JobOpeningReviewData.JobDescriptionId)" TItem="ViewJobDescriptionOpening" TValue="int?" Width="100%" PopupHeight="230px" AllowFiltering=true
+                                            IgnoreAccent=true DataSource="@JobDescriptionData" Enabled="@jobtitledd" Query="@LocalDataQuery" EnableVirtualization="true">
                                 <DropDownListFieldSettings GroupBy="@(nameof(ViewJobDescriptionOpening.DepartmentDescription))" Text="@(nameof(ViewJobDescriptionOpening.JobTitleDescription))" Value="@(nameof(ViewJobDescriptionOpening.JobDescriptionId))"></DropDownListFieldSettings>
-                                @*<DropDownListEvents TItem="ViewJobDescriptionOpening" TValue="int?" ValueChange="@JobTitleValueChangeHandler"></DropDownListEvents>*@
-                                @if(_previousbool == true)
+                                @if (_previousbool == true)
                                 {
-                                    <DropDownListEvents TItem="ViewJobDescriptionOpening" TValue="int?" ValueChange="@JobTitleValueChangeHandler"></DropDownListEvents>                                    
+                                    <DropDownListEvents TItem="ViewJobDescriptionOpening" TValue="int?" ValueChange="@JobTitleValueChangeHandler"></DropDownListEvents>
                                 }
                             </SfDropDownList>
                         </div>
-                        <div  class="col-md-12">
-                            <p>Reference Number</p>
+                                               
+
+                        <div  class="col-md-6">
+                            <p>Reference Number <span style="color:red;">*</span></p>
+                        </div>
+
+                        <div  class="col-md-6">
                             <SfTextBox Multiline="false" @bind-Value="@(JobOpeningReviewData.ReferenceNumber)" Enabled="false" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                         </div>
+
                         <div class="col-md-6">
-                            <p>Applications Opening Date</p>
-                            <SfDateTimePicker @bind-Value="@(JobOpeningReviewData.ApplicationOpeningDate)" TValue="DateTime?" Placeholder="Choose a Date" Format="dd/MM/yyyy hh:mm:ss tt">
+                            <p>Opening Date <span style="color:red;">*</span></p>
+                            <SfDateTimePicker @bind-Value="@(JobOpeningReviewData.ApplicationOpeningDate)" TValue="DateTime?" Placeholder="Choose Date & Time" Format="dd/MM/yyyy hh:mm:ss tt" AllowEdit="false">
                             </SfDateTimePicker>
                         </div>
                         <div class="col-md-6">
-                            <p>Applications Closing Date</p>
-                            <SfDateTimePicker @bind-Value="@(JobOpeningReviewData.ApplicationClosingDate)" TValue="DateTime?" Placeholder="Choose a Date" Format="dd/MM/yyyy hh:mm:ss tt">
+                            <p>Closing Date <span style="color:red;">*</span></p>
+                            <SfDateTimePicker @bind-Value="@(JobOpeningReviewData.ApplicationClosingDate)" TValue="DateTime?" Placeholder="Choose Date & Time" Format="dd/MM/yyyy hh:mm:ss tt" AllowEdit="false">
                             </SfDateTimePicker>
                         </div>
                     </div>
@@ -77,11 +100,12 @@
             </GridCommandColumns>
         </GridColumn>
     	<GridColumn Field=@nameof(JobOpening.JobOpeningId) HeaderText="JobOpeningId" Visible=false AllowEditing="false" IsPrimaryKey="true" Width="150"></GridColumn>
-        <GridForeignColumn Field=@nameof(JobOpening.JobDescriptionId) HeaderText="Department" AllowEditing="false" Width="150" ForeignDataSource="@JobDescriptionData" ForeignKeyField="@nameof(ViewJobDescriptionOpening.JobDescriptionId)" ForeignKeyValue="@nameof(ViewJobDescriptionOpening.DepartmentDescription)"></GridForeignColumn>
-        <GridForeignColumn Field=@nameof(JobOpening.JobDescriptionId) HeaderText="Title" AllowEditing="false" Width="150" ForeignDataSource="@JobDescriptionData" ForeignKeyField="@nameof(ViewJobDescriptionOpening.JobDescriptionId)" ForeignKeyValue="@nameof(ViewJobDescriptionOpening.JobTitleDescription)"></GridForeignColumn>
-        <GridColumn Field=@nameof(JobOpening.ReferenceNumber) HeaderText="Reference Number" Visible=true AllowEditing="false" Width="150"></GridColumn>
-        <GridColumn Field=@nameof(JobOpening.ApplicationOpeningDate) HeaderText="Application Opening Date" AllowEditing="false"  Width="150" Format="dd/MM/yyyy hh:mm:ss tt"></GridColumn>
-        <GridColumn Field=@nameof(JobOpening.ApplicationClosingDate) HeaderText="Application Closing Date" AllowEditing="false"  Width="150" Format="dd/MM/yyyy hh:mm:ss tt"></GridColumn>
+        <GridForeignColumn Field=@nameof(JobOpening.JobDescriptionId) HeaderText="Department" AllowEditing="false" Width="80" ForeignDataSource="@JobDescriptionData" ForeignKeyField="@nameof(ViewJobDescriptionOpening.JobDescriptionId)" ForeignKeyValue="@nameof(ViewJobDescriptionOpening.DepartmentDescription)"></GridForeignColumn>
+        <GridForeignColumn Field=@nameof(JobOpening.JobDescriptionId) HeaderText="Title" AllowEditing="false" Width="80" ForeignDataSource="@JobDescriptionData" ForeignKeyField="@nameof(ViewJobDescriptionOpening.JobDescriptionId)" ForeignKeyValue="@nameof(ViewJobDescriptionOpening.JobTitleDescription)"></GridForeignColumn>
+        <GridColumn Field=@nameof(JobOpening.ReferenceNumber) HeaderText="Reference Number" Visible=true AllowEditing="false" Width="60"></GridColumn>
+        <GridColumn Field=@nameof(JobOpening.ApplicationOpeningDate) HeaderText="Application Opening Date" AllowEditing="false"  Width="60" Format="dd/MM/yyyy hh:mm:ss tt"></GridColumn>
+        <GridColumn Field=@nameof(JobOpening.ApplicationClosingDate) HeaderText="Application Closing Date" AllowEditing="false"  Width="60" Format="dd/MM/yyyy hh:mm:ss tt"></GridColumn>
+        <GridForeignColumn Field=@nameof(JobOpening.AdvertTypeId) HeaderText="Advert" AllowEditing="false" Width="60" ForeignDataSource="@AdvertTypeData" ForeignKeyField="@nameof(AAdvertType.AdvertTypeId)" ForeignKeyValue="@nameof(AAdvertType.AdvertDescription)"></GridForeignColumn>
     </GridColumns>
 </SfGrid>
 @if(ErrorMessage != null){
@@ -118,6 +142,9 @@
     Syncfusion.Blazor.Grids.Action _previous { get; set; }
     bool _previousbool;
     SfDialog SavingDialog { get; set; }
+    public bool OnRadioButtonSubmitbool { get; set; } = false;
+    public bool jobtitledd  { get; set; } = false;
+    private DialogSettings AttachmentDialog = new DialogSettings { Height = "auto", MinHeight = "auto", Width = "98%" };
 
     SfGrid<JobOpening>? DataGrid { get; set; }
     /// <summary>
@@ -143,7 +170,10 @@
     SfToast? ToastObj;
     private string ToastPosition = "Right";
     List<ViewJobDescriptionOpening>? JobDescriptionData{ get; set; }
+    List<AAdvertType>? AdvertTypeData { get; set; }
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    public int? radiovalue;
+    public Query LocalDataQuery = new Query().Take(15);
 
     protected override async Task OnInitializedAsync()
     {
@@ -160,6 +190,17 @@
                        JobDescriptionData = JsonSerializer.Deserialize<List<ViewJobDescriptionOpening>>(content, _options);
                    }
                }));
+
+            tasks.Add(Task.Run(async () =>
+            {
+
+                var response = await Http.GetAsync($"Utilities/GetAdvertType");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    AdvertTypeData = JsonSerializer.Deserialize<List<AAdvertType>>(content, _options);
+                }
+            }));
             Task t = Task.WhenAll(tasks);
             await t;
 
@@ -172,6 +213,18 @@
         StateHasChanged();
     }
 
+    private void OnValueChange(ChangeArgs<int?> args)
+    {
+        if (_previousbool == true)
+        {
+            JobOpeningReviewData.JobDescriptionId = null;
+            JobOpeningReviewData.ReferenceNumber = string.Empty;
+        }
+        
+        radiovalue = args.Value;
+        jobtitledd = true;
+    }
+
     private async void JobTitleValueChangeHandler(ChangeEventArgs<int?, ViewJobDescriptionOpening> args)
     {
         if (args.ItemData != null)
@@ -179,8 +232,13 @@
             var tasks = new List<Task>();
             tasks.Add(Task.Run(async () =>
            {
-
-               var response = await Http.GetAsync($"HumanResource/ReferenceNo?jobtitle={args.ItemData.JibTitleId}");
+               int? adverttypeid = 0;
+               if (JobOpeningReviewData != null)
+               {
+                   adverttypeid = JobOpeningReviewData.AdvertTypeId;
+               }
+               
+               var response = await Http.GetAsync($"HumanResource/ReferenceNo?jobtitle={args.ItemData.JibTitleId}&adverttypeid={adverttypeid}");
                var content = await response.Content.ReadAsStringAsync();
                if (response.IsSuccessStatusCode)
                {
@@ -646,7 +704,14 @@
             }
             if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
             {
-                if (args.Data.JobDescriptionId == null)
+                if (args.Data.AdvertTypeId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select whether this is an Internal/External advert !");
+                    args.Cancel = true;
+                    await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
+                }
+                else if (args.Data.JobDescriptionId == null)
                 {
                     toastService.ClearAll();
                     toastService.ShowWarning("Please select the job title !");
@@ -663,27 +728,28 @@
                 else if (args.Data.ApplicationOpeningDate == null)
                 {
                     toastService.ClearAll();
-                    toastService.ShowWarning("Please enter the application opening date!");
+                    toastService.ShowWarning("Please enter the opening date!");
                     args.Cancel = true;
                     await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
                 }
                 else if (args.Data.ApplicationClosingDate == null)
                 {
                     toastService.ClearAll();
-                    toastService.ShowWarning("Please enter the application closing date!");
+                    toastService.ShowWarning("Please enter the closing date!");
                     args.Cancel = true;
                     await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
                 }
                 else if (args.Data.ApplicationClosingDate < args.Data.ApplicationOpeningDate)
                 {
                     toastService.ClearAll();
-                    toastService.ShowWarning("The application opening date cannot be after the application closing date!");
+                    toastService.ShowWarning("The opening date cannot be after the closing date!");
                     args.Cancel = true;
                     await JSRuntime.InvokeVoidAsync("RequiredFieldFunction");
                 }
                 else
                 {
-                    SavingDialog.ShowAsync();
+                    args.Data.AdvertTypeId = radiovalue;
+                    await SavingDialog.ShowAsync();
                 }
             }
         }
@@ -694,6 +760,18 @@
         finally
         {
             
+        }
+    }
+
+    public string GetJobOpeningHeader(JobOpening Value)
+    {
+        if (Value.JobOpeningId == 0)
+        {
+            return "New Job Opening";
+        }
+        else
+        {
+            return "Editing Job Opening";
         }
     }
 }
