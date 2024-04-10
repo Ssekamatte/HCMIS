@@ -90,10 +90,21 @@ builder.Services.AddScoped<SystemSettings>();
 builder.Services.AddSubtleCrypto(opt =>
     opt.Key = builder.Configuration.GetSection("EncreptionKeys")["secretkey"] //Use another key
 );
+
+//Add Version No to BaseUrl so that each time it loads the latest files are loaded
+// Retrieve the base URL from appsettings.json
+string baseUrl = builder.Configuration.GetSection("ApiConfig")["BaseUrl"];
+
+// Append "?v=" + DateTime.UtcNow.Ticks to the base URL
+string modifiedBaseUrl = baseUrl + "?v=" + DateTime.UtcNow.Ticks;
+
 builder.Services.AddScoped(sp =>
     new HttpClient
     {
-        BaseAddress = new Uri(builder.Configuration.GetSection("ApiConfig")["BaseUrl"]),
+        //BaseAddress = new Uri(builder.Configuration.GetSection("ApiConfig")["BaseUrl"]),
+        //Timeout = TimeSpan.FromMinutes(10)
+
+        BaseAddress = new Uri(modifiedBaseUrl),
         Timeout = TimeSpan.FromMinutes(10)
     });
 builder.Services.AddScoped<encrypt_decrypt_string>();
@@ -194,4 +205,5 @@ builder.Services.AddScoped<IAuthenticationService,AuthenticationService>();
 //builder.Services.AddSyncfusionBlazor(options => { options.IgnoreScriptIsolation = false; });
 Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("MzEzMTkwNkAzMjM0MmUzMDJlMzBDTWo5NVlJZUFyQUt3dkpDUGJWbnRCa1VxbzBkWktHeEFvOUlhTUdVZndBPQ==");
 await builder.Build().RunAsync();
+
 

@@ -47,15 +47,8 @@
     }
 </style>
 
-<ol class="breadcrumb" style="margin-top:5px;">
-    <li class="breadcrumb-item active" style="color: brown;">
-        <strong>
-            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
-        </strong>| SUBMITTED APPLICATIONS
-    </li>
-</ol>
+<BreadCrumbPage Module="HCMIS" Submodule="SUBMITTED APPLICATIONS" />
 
-@* <BreadcrumbPage CategoryName="Applications" PageName="Newly Submitted"/> *@
 
 <MudOverlay @bind-Visible="@loadingspinner" DarkBackground="true" AutoClose="false" Absolute="true">
 <SfSpinner @bind-Visible="loadingspinner" Type="@Syncfusion.Blazor.Spinner.SpinnerType.Bootstrap" Size="70" Label="Page loading">
@@ -72,6 +65,7 @@
                         <HCMIS.Pages.HR.Applicants.PartialPages.SubmittedApplicationsSearchPage 
                             ShortlistDetailData="@ShortlistDetailData" 
                             DepartmentData="@DepartmentData"
+                            JobOpeningData="@JobOpeningData"
                             listid="@listid" 
                             onsearchtoggle="@ToggleSearchQuery">
                         </HCMIS.Pages.HR.Applicants.PartialPages.SubmittedApplicationsSearchPage>
@@ -82,10 +76,16 @@
     </div>
 </div>
 
+<div style="margin-bottom: 10px;;">
+    <MudAlert Severity="Severity.Warning" Elevation="3">
+        Kindly be aware that the screen below by default displays only the applicants who have been shortlisted. However you can also view  all applicants (successful and unsuccessful) by utilizing the search filters located above.
+    </MudAlert>
+</div>
+
 <div class="form-group col-md-12">
     <SfGrid @ref=@AppliedForJobGrid TValue="AppliedForJobs" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
             AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true"
-            Query="@MainQuery">
+            Query="@MainQuery" Height="600" EnableVirtualMaskRow="true" EnableVirtualization="true" EnableColumnVirtualization="false">
         <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
         <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
         <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
@@ -108,41 +108,36 @@
                             <div class="col-md-12">
                                 <SfTab>
                                     <TabItems>
-                                        <TabItem>
+                                        @*<TabItem>
                                             <ChildContent>
                                                 <TabHeader Text="Process Comments"></TabHeader>
                                             </ChildContent>
                                             <ContentTemplate>
                                                 <div style="margin:10px; width:100%;">
-                                                    @*<HCMIS.Pages.HR.Applicants.PartialPages.ApplicationCommentPartialPage ViewAppliedForJobsDetails2024Comment="@HeaderReviewData.ViewAppliedForJobsDetails2024Comment" />*@
+                                                    <HCMIS.Pages.HR.Applicants.PartialPages.ApplicationCommentPartialPage ViewAppliedForJobsDetails2024Comment="@HeaderReviewData.ViewAppliedForJobsDetails2024Comment" />
                                                 </div>
                                             </ContentTemplate>
-                                        </TabItem>
+                                        </TabItem>*@
                                         <TabItem>
                                             <ChildContent>
                                                 <TabHeader Text="Qualifications"></TabHeader>
                                             </ChildContent>
                                             <ContentTemplate>
                                                 @{
-                                                    List<NonStaffQualification> _nonstaffqualification = new List<NonStaffQualification>();
-                                                    List<EmployeeQualification> _employeequalification = new List<EmployeeQualification>();
+                                                    List<ApplicationNonStaffQualification> _nonstaffqualification = new List<ApplicationNonStaffQualification>();
+                                                    List<ApplicationNonStaffQualification> _employeequalification = new List<ApplicationNonStaffQualification>();
 
                                                     <div style="margin:10px; width:100%;">
                                                         @*Employee*@
-                                                        @if (HeaderReviewData != null && HeaderReviewData.Employeeid != null && HeaderReviewData.NonStaffid == null)
+                                                        @if (HeaderReviewData != null && HeaderReviewData.Employeeid != null && HeaderReviewData.NonStaffid == null && QualificationData != null)
                                                         {
-                                                            _employeequalification = EmployeeQualificationData.Where(o => o.Employeeid == HeaderReviewData.Employeeid).ToList();
+                                                            _employeequalification = QualificationData.Where(o => o.EmployeeId == HeaderReviewData.Employeeid).ToList();
                                                         }
                                                         @*NonStaff*@
-                                                        else if (HeaderReviewData != null && HeaderReviewData.NonStaffid != null && HeaderReviewData.Employeeid == null)
+                                                        else if (HeaderReviewData != null && HeaderReviewData.NonStaffid != null && HeaderReviewData.Employeeid == null && QualificationData != null)
                                                         {
-                                                            _nonstaffqualification = NonStaffQualificationData.Where(o => o.NonStaffid == HeaderReviewData.NonStaffid).ToList();
+                                                            _nonstaffqualification = QualificationData.Where(o => o.NonStaffid == HeaderReviewData.NonStaffid).ToList();
                                                         }
-
-                                                        
-                                                        @*<HCMIS.Pages.HR.Applicants.PartialPages.QualificationPartialPage QualificationData="@HeaderReviewData.NonStaff.NonStaffQualification.ToList()" FieldOfStudyData="@FieldOfStudyData"
-                                                            JobDescriptionKnowledgeData="@HeaderReviewData.JobOpening.JobDescription.JobDescriptionKnowledge.ToList()"
-                                                            LevelofEducationData="@LevelofEducationData" AccessToken="@AccessToken" />*@
 
                                                         <HCMIS.Pages.HR.Applicants.PartialPages.QualificationPartialPage QualificationData="_nonstaffqualification.ToList()"
                                                                                                                          FieldOfStudyData="@FieldOfStudyData"
@@ -157,11 +152,26 @@
                                                 <TabHeader Text="Work Experience"></TabHeader>
                                             </ChildContent>
                                             <ContentTemplate>
-                                                <div style="margin:10px; width:100%;">
-                                                    @*<HCMIS.Pages.HR.Applicants.PartialPages.WorkExperiencePatialPage JobDescriptionWorkExperienceRequirementData=@HeaderReviewData.JobOpening.JobDescription.JobDescriptionWorkExperienceRequirement.ToList()
-                                                                                                                     JobDescriptionResponsibilityData=@HeaderReviewData.JobOpening.JobDescription.JobDescriptionResponsibility.ToList()
-                                                       *@                                                              WorkExperienceData="@HeaderReviewData.NonStaff.NonStaffWorkExperience.ToList()" AccessToken="@AccessToken" />
-                                                </div>
+                                                @{
+                                                    List<ApplicationNonStaffWorkExperience> _nonstaffqualification = new List<ApplicationNonStaffWorkExperience>();
+                                                    List<ApplicationNonStaffWorkExperience> _employeequalification = new List<ApplicationNonStaffWorkExperience>();
+
+                                                    <div style="margin:10px; width:100%;">
+                                                        @*Employee*@
+                                                        @if (HeaderReviewData != null && HeaderReviewData.Employeeid != null && HeaderReviewData.NonStaffid == null && WorkExperienceData != null)
+                                                        {
+                                                            _employeequalification = WorkExperienceData.Where(o => o.EmployeeId == HeaderReviewData.Employeeid).ToList();
+                                                        }
+                                                        @*NonStaff*@
+                                                        else if (HeaderReviewData != null && HeaderReviewData.NonStaffid != null && HeaderReviewData.Employeeid == null && WorkExperienceData != null)
+                                                        {
+                                                            _nonstaffqualification = WorkExperienceData.Where(o => o.NonStaffid == HeaderReviewData.NonStaffid).ToList();
+                                                        }
+
+                                                        <HCMIS.Pages.HR.Applicants.PartialPages.WorkExperiencePatialPage 
+                                                        WorkExperienceData="@_nonstaffqualification.ToList()" />
+                                                    </div>
+                                                }
                                             </ContentTemplate>
                                         </TabItem>
                                         <TabItem>
@@ -169,11 +179,27 @@
                                                 <TabHeader Text="Skills"></TabHeader>
                                             </ChildContent>
                                             <ContentTemplate>
-                                                <div style="margin:10px; width:100%;">
-                                                    @*<HCMIS.Pages.HR.Applicants.PartialPages.SkillsPartialPage SkillsData="@HeaderReviewData.NonStaff.NonStaffSkills.ToList()"
-                                                                                                            SkillLevelData="@SkillLevelData" AccessToken="@AccessToken" />
-                                                                                                             *@ 
-                                                </div>
+                                                @{
+                                                    List<NonStaffSkills> _nonstaffskills = new List<NonStaffSkills>();
+                                                    // List<ApplicationNonStaffWorkExperience> _employeequalification = new List<ApplicationNonStaffWorkExperience>();
+
+                                                    <div style="margin:10px; width:100%;">
+                                                        @*Employee*@
+                                                        @if (HeaderReviewData != null && HeaderReviewData.Employeeid != null && HeaderReviewData.NonStaffid == null && NonStaffSkillsData != null)
+                                                        {
+                                                            // _nonstaffskills = NonStaffSkillsData.Where(o => o.NonStaffid == HeaderReviewData.Employeeid).ToList();
+                                                        }
+                                                        @*NonStaff*@
+                                                        else if (HeaderReviewData != null && HeaderReviewData.NonStaffid != null && HeaderReviewData.Employeeid == null && NonStaffSkillsData != null)
+                                                        {
+                                                            _nonstaffskills = NonStaffSkillsData.Where(o => o.NonStaffid == HeaderReviewData.NonStaffid).ToList();
+                                                        }
+
+                                                        <HCMIS.Pages.HR.Applicants.PartialPages.SkillsPartialPage SkillsData="@_nonstaffskills.ToList()"
+                                                                                                                  SkillLevelData="@SkillLevelData" 
+                                                                                                                  AccessToken="@AccessToken" />
+                                                    </div>
+                                                }
                                             </ContentTemplate>
                                         </TabItem>
                                         <TabItem>
@@ -181,6 +207,27 @@
                                                 <TabHeader Text="Languages Known"></TabHeader>
                                             </ChildContent>
                                             <ContentTemplate>
+                                                @{
+                                                    List<NonStaffLanguagesKnown> _nonstafflanguages = new List<NonStaffLanguagesKnown>();
+                                                    // List<ApplicationNonStaffWorkExperience> _employeequalification = new List<ApplicationNonStaffWorkExperience>();
+
+                                                    <div style="margin:10px; width:100%;">
+                                                        @*Employee*@
+                                                        @if (HeaderReviewData != null && HeaderReviewData.Employeeid != null && HeaderReviewData.NonStaffid == null && NonStaffSkillsData != null)
+                                                        {
+                                                            // _nonstaffskills = NonStaffSkillsData.Where(o => o.NonStaffid == HeaderReviewData.Employeeid).ToList();
+                                                        }
+                                                        @*NonStaff*@
+                                                        else if (HeaderReviewData != null && HeaderReviewData.NonStaffid != null && HeaderReviewData.Employeeid == null && NonStaffLanguagesKnownData != null)
+                                                        {
+                                                            _nonstafflanguages = NonStaffLanguagesKnownData.Where(o => o.NonStaffid == HeaderReviewData.NonStaffid).ToList();
+                                                        }
+
+                                                        <HCMIS.Pages.HR.Applicants.PartialPages.LanguageKnownPartialPage KnownLanguageData="@_nonstafflanguages.ToList()"
+                                                                                                                         LanguageProlificData="@LanguageProlificData" LanguagesData="@LanguagesData" />
+
+                                                    </div>
+                                                }
                                                 <div style="margin:10px; width:100%;">
                                                     @*<HCMIS.Pages.HR.Applicants.PartialPages.LanguageKnownPartialPage KnownLanguageData="@HeaderReviewData.NonStaff.NonStaffLanguagesKnown.ToList()"
                                                                                                                   LanguageProlificData="@LanguageProlificData" LanguagesData="@LanguagesData" />
@@ -277,8 +324,8 @@
             <GridColumn Field="@(nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId))" Visible=false IsPrimaryKey=true IsIdentity=true HeaderText="Ref Id" Width="120" AllowFiltering="true"></GridColumn>
             
             <GridForeignColumn Field=@nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId)
-                               HeaderText="Job Opening Ref No"
-                               Width="50"
+                               HeaderText="Ref No"
+                               Width="80"
                                AllowEditing="false"
                                ForeignKeyField="@(nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId))"
                                ForeignKeyValue="@(nameof(ViewAppliedForJobsDetails2024.JobOpeningReferenceNumber))"
@@ -299,7 +346,7 @@
             </GridForeignColumn>
 
             
-            <GridForeignColumn Field=@nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId)
+            @*<GridForeignColumn Field=@nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId)
                                HeaderText="Gender"
                                Width="40"
                                AllowEditing="false"
@@ -308,7 +355,7 @@
                                ForeignDataSource="@AppliedforJobsDetailData" AllowFiltering="false"
                                CustomAttributes="@(new Dictionary<string,
                     object>(){ { "class", "e-attr1" }})">
-            </GridForeignColumn>            
+            </GridForeignColumn>*@            
 
             <GridForeignColumn Field=@nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId)
                                HeaderText="Department"
@@ -323,7 +370,7 @@
 
             <GridForeignColumn Field=@nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId)
                                HeaderText="Application Date"
-                               Width="80"
+                               Width="60"
                                AllowEditing="true"
                                ForeignKeyField="@(nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId))"
                                ForeignKeyValue="@(nameof(ViewAppliedForJobsDetails2024.ApplicationDate))"
@@ -335,7 +382,7 @@
 
             <GridForeignColumn Field=@nameof(ViewAppliedForJobsDetails2024.MeetsRequirements)
                                HeaderText="Status"
-                               Width="60"
+                               Width="40"
                                AllowEditing="false"
                                ForeignKeyField="@(nameof(AShortlist.ShortlistId))"
                                ForeignKeyValue="@(nameof(AShortlist.ShortlistDescription))"
@@ -411,11 +458,18 @@
     List<AContractLengthType>? ContractLengthTypeData { get; set; }
     List<ViewEmployeeDropDown>? EmployeeData { get; set; }
     List<ViewNonStaffDropDown>? NonStaffData { get; set; }
+    List<NonStaffSkills>? NonStaffSkillsData { get; set; }
+    List<NonStaffLanguagesKnown>? NonStaffLanguagesKnownData { get; set; }
+    
     List<ADistrict>? DistrictData { get; set; }
     List<ViewAparish>? ParishData { get; set; }
     List<ASubCounty>? SubCountyData { get; set; }
     List<ViewAvillage>? VillageData { get; set; }
-    List<NonStaffQualification>? NonStaffQualificationData { get; set; }
+    List<ApplicationNonStaffQualification>? QualificationData { get; set; }
+    List<ApplicationAppliedForJobReferees>? JobRefereesData { get; set; }
+    List<ApplicationNonStaffQualificationAttachment>? QualificationAttachmentData { get; set; }
+    List<ApplicationNonStaffWorkExperience>? WorkExperienceData { get; set; }
+
     List<EmployeeQualification>? EmployeeQualificationData { get; set; }
     List<ViewAppliedForJobsDetails2024>? AppliedforJobsDetailData { get; set; }
 
@@ -608,16 +662,65 @@
                 }));
 
                 tasks.Add(Task.Run(async () =>
-             {
+                {
+                     var response = await Http.GetAsync($"HumanResource/GetApplicationQualification");
+                     var content = await response.Content.ReadAsStringAsync();
+                     if (response.IsSuccessStatusCode)
+                     {
+                         QualificationData = JsonSerializer.Deserialize<List<ApplicationNonStaffQualification>>(content, _options);
+                     }
+                }));
 
-                 var response = await Http.GetAsync($"HumanResource/GetNonStaffQualification");
-                 var content = await response.Content.ReadAsStringAsync();
-                 if (response.IsSuccessStatusCode)
-                 {
-                     NonStaffQualificationData = JsonSerializer.Deserialize<List<NonStaffQualification>>(content, _options);
-                 }
-             }));
+                tasks.Add(Task.Run(async () =>
+                {
+                     var response = await Http.GetAsync($"HumanResource/GetApplicationJobReferees");
+                     var content = await response.Content.ReadAsStringAsync();
+                     if (response.IsSuccessStatusCode)
+                     {
+                        JobRefereesData = JsonSerializer.Deserialize<List<ApplicationAppliedForJobReferees>>(content, _options);
+                     }
+                }));
 
+                tasks.Add(Task.Run(async () =>
+                {
+                     var response = await Http.GetAsync($"HumanResource/GetApplicationQualificationAttachment");
+                     var content = await response.Content.ReadAsStringAsync();
+                     if (response.IsSuccessStatusCode)
+                     {
+                        QualificationAttachmentData = JsonSerializer.Deserialize<List<ApplicationNonStaffQualificationAttachment>>(content, _options);
+                     }
+                }));
+
+                tasks.Add(Task.Run(async () =>
+                {
+                     var response = await Http.GetAsync($"HumanResource/GetApplicationWorkExperience");
+                     var content = await response.Content.ReadAsStringAsync();
+                     if (response.IsSuccessStatusCode)
+                     {
+                         WorkExperienceData = JsonSerializer.Deserialize<List<ApplicationNonStaffWorkExperience>>(content, _options);
+                     }
+                }));
+
+                tasks.Add(Task.Run(async () =>
+                {
+                     var response = await Http.GetAsync($"HumanResource/GetNonStaffSkills");
+                     var content = await response.Content.ReadAsStringAsync();
+                     if (response.IsSuccessStatusCode)
+                     {
+                         NonStaffSkillsData = JsonSerializer.Deserialize<List<NonStaffSkills>>(content, _options);
+                     }
+                }));
+
+                tasks.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"HumanResource/GetNonStaffLanguagesKnown");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        NonStaffLanguagesKnownData = JsonSerializer.Deserialize<List<NonStaffLanguagesKnown>>(content, _options);
+                    }
+                }));
+                
              // tasks.Add(Task.Run(async () =>
              // {
 
@@ -751,10 +854,28 @@
             string? _DepartmentId = null;
             string? _ReferenceNumber = null;
             string? _JobTitle = null;
+            DateTime? StartDate = null;
+            DateTime? EndDate = null;
 
             if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
             {
                 var val = dataManagerRequest.Params;
+                if (val.FirstOrDefault(o => o.Key == "StartDate").Value != null)
+                {
+                    DateTime date = DateTime.Now;
+                    if (DateTime.TryParseExact(val.FirstOrDefault(o => o.Key == "StartDate").Value.ToString(), "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.None, out date))
+                    {
+                        StartDate = date;
+                    }
+                }
+                if (val.FirstOrDefault(o => o.Key == "EndDate").Value != null)
+                {
+                    DateTime date = DateTime.Now;
+                    if (DateTime.TryParseExact(val.FirstOrDefault(o => o.Key == "EndDate").Value.ToString(), "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.None, out date))
+                    {
+                        EndDate = date;
+                    }
+                }
 
                 if (val.FirstOrDefault(o => o.Key == "MeetsRequirements").Value != null)
                 {
@@ -779,7 +900,7 @@
             var data = new List<AppliedForJobs>();
             try
             {
-                var response = await Http.GetAsync($"HumanResource/GetAppliedForJobsDetail?ListId={_ListId}&DepartmentId={_DepartmentId}&ReferenceNumber={_ReferenceNumber}&JobTitle={_JobTitle}");
+                var response = await Http.GetAsync($"HumanResource/GetAppliedForJobsDetail?ShortListId={_ListId}&DepartmentId={_DepartmentId}&ReferenceNumber={_ReferenceNumber}&JobTitle={_JobTitle}&StartDate={_JobTitle}&StartDate={EndDate}");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {

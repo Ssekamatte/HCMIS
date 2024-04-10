@@ -1,6 +1,7 @@
 ﻿@using System.Timers
 @using HCMIS.Data.AutoLogOut
 @using HCMIS.Interface
+@using HCMIS.Model
 @inherits LayoutComponentBase;
 @inject IJSRuntime JSRuntime
 @inject NavigationManager UriHelper
@@ -576,6 +577,8 @@
                         <p>Last Activity: @UserState.LastActivity</p>
                         <p>Inactivity Timer Status: @inactivityStatus</p>
                     </div> *@
+                                       
+
                     <BlazoredToasts Position="Blazored.Toast.Configuration.ToastPosition.TopRight"
                                     Timeout="10"
                                     IconType="Blazored.Toast.Configuration.IconType.FontAwesome"
@@ -591,8 +594,7 @@
                 </div>
             </MudMainContent>
         </MudLayout>
-
-        @* <UpdateAvailableDetector /> *@
+        
     </Authorized>
     <NotAuthorized>
         <BlazoredToasts Position="Blazored.Toast.Configuration.ToastPosition.TopRight"
@@ -607,7 +609,14 @@
     </NotAuthorized>
 </AuthorizeView>
 
-<UpdateAvailableDetector />
+@*<UpdateAvailableDetector />*@
+
+<!-- VersionDisplay.razor -->
+@* This is a sample Razor component to display the current version or timestamp. *@
+@* You can include this component in any of your Razor pages. *@
+
+<h3>Current Version</h3>
+<p>@DateTime.UtcNow.Ticks</p>
 
 @*Javascript Scroll to Top button*@
 @* <div class="row">
@@ -629,6 +638,8 @@
     public ElementReference ScrollToTop;
     [CascadingParameter]
     private Task<AuthenticationState> stateAuthenticate { get; set; }
+    LoginResultModel? Credentials { get; set; }
+
     //private Timer timerObj;
     //private int remainingMinutes = 60000; // Initial countdown minutes
 
@@ -652,19 +663,56 @@
 
     protected override async Task OnInitializedAsync()
     {
-        UserState.InactivityTimeout += HandleInactivityTimeout;
+        try
+        {
+            UserState.InactivityTimeout += HandleInactivityTimeout;
+            Credentials = await IAuthService.GetUserCredentials();
 
-        // UserState.LastActivity = DateTime.Now;
-        // SetLogoutTimer();
+            await CheckForNewVersion();
+        }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
 
+        }
 
-        // // Set the Timer delay.
-        // timerObj = new Timer(remainingMinutes);
-        // timerObj.Elapsed += UpdateTimer;
-        // timerObj.AutoReset = false;
-        // // Identify whether the user is active or inactive using onmousemove and onkeypress in JS function.
-        // await JSRuntime.InvokeVoidAsync("timeOutCall", DotNetObjectReference.Create(this));
     }
+
+    //Delete Old Cache Files
+
+    private async Task CheckForNewVersion()
+    {
+        //string currentVersion = "1.0.0"; // Get current version from your application
+        string currentVersion = UriHelper.BaseUri + "?v=" + DateTime.UtcNow.Ticks;
+        string cachedVersion = await GetCachedVersion(); // Retrieve cached version from local storage or IndexedDB
+
+        if (currentVersion != cachedVersion)
+        {
+            await DeleteOldCache();
+            await UpdateCachedVersion(currentVersion);
+        }
+    }
+
+    private async Task<string> GetCachedVersion()
+    {
+        return await JSRuntime.InvokeAsync<string>("blazorApp.getCachedVersion");
+    }
+
+    private async Task UpdateCachedVersion(string version)
+    {
+        await JSRuntime.InvokeVoidAsync("blazorApp.updateCachedVersion", version);
+    }
+
+    private async Task DeleteOldCache()
+    {
+        // Implement logic to delete old cache using Cache API
+        await JSRuntime.InvokeVoidAsync("deleteOldCache");
+    }
+
+    //Delete Old Cache Files
 
     private void HandleInactivityTimeout()
     {

@@ -5,6 +5,37 @@
 
 @inject IToastService toastService;
 
+<style>
+
+    .head, .item {
+        display: table;
+        width: 80%;
+        margin-left: 10px;
+    }
+
+    .head {
+        height: 40px;
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    .name, .city {
+        display: table-cell;
+        vertical-align: middle;
+        width: 50%;
+    }
+
+    .head .name {
+        text-indent: 16px;
+    }
+
+    .head .city {
+        text-indent: 10px;
+    }
+
+</style>
+
+
 <div class="form-row">
     <div class="form-group col-md-12">
         <div class="form-group col-md-12">
@@ -48,7 +79,29 @@
                             <MultiSelectFieldSettings Value="@nameof(ADepartment.DepartmentId)"
                                                       Text="@nameof(ADepartment.DepartmentDescription)">
                             </MultiSelectFieldSettings>
+                            <MultiSelectEvents TValue="int?[]" TItem="ADepartment" ValueChange="OnDepartmentChange"></MultiSelectEvents>
                         </SfMultiSelect>
+                    </div>
+
+                    <div class="col-md-4">
+                        <p>Job Title</p>
+                         <SfMultiSelect TValue="int?[]" TItem="ViewJobDescOpening2024" AllowFiltering="true" Mode="@VisualMode.CheckBox"  Enabled="JobTitleDD"
+                                       DataSource="@JobOpeningData" ShowSelectAll="true" SelectAllText="Select All"
+                                        UnSelectAllText="Unselect All" EnableSelectionOrder="true" ShowDropDownIcon="true"
+                                        FilterBarPlaceholder="--Select Job---" FloatLabelType="FloatLabelType.Never" PopupHeight="350px"
+                                       PopupWidth="500px" EnableVirtualization="true" Query="@IndicatorQuery" @bind-Value="@(@searchpanel.JobTitleId)">
+                             <MultiSelectTemplates TItem="ViewJobDescOpening2024">
+                                 <ItemTemplate Context="ItemTemplateContext">
+                                    <span class='item'><span class='name'>@((ItemTemplateContext as ViewJobDescOpening2024).JobTitleDescription)</span><span class='city'>@((ItemTemplateContext as ViewJobDescOpening2024).ReferenceNumber)</span></span>
+                                 </ItemTemplate>
+                                 <HeaderTemplate>
+                                     <span class='head'><span class='name'>Job Title</span><span class='city'>Reference No.</span></span>
+                                 </HeaderTemplate>
+                             </MultiSelectTemplates>
+                            <MultiSelectFieldSettings Value="@nameof(ViewJobDescOpening2024.JibTitleId)" Text="@nameof(ViewJobDescOpening2024.JobTitleDescription)"></MultiSelectFieldSettings>
+                            @*<MultiSelectEvents TValue="int[]" TItem="ViewJobDescOpening2024" ValueChange="OnBatchSelectionChanged"
+                                                DataBound="OnBatchSelectionBound"></MultiSelectEvents> *@
+                         </SfMultiSelect>
                     </div>
 
                     <div class="col-md-4">
@@ -60,6 +113,18 @@
                             FloatLabelType="FloatLabelType.Never">
                         </SfTextBox>
                         
+                    </div>
+
+                    <div class="col-md-4">
+                        <p>Application Date</p>
+                        <div class="row">
+                            <div class="col-md-6" style="margin-left: -25px;">
+                                <SfDatePicker @bind-Value="@(searchpanel.StartDate)" Enabled="true" Placeholder="Start Date" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                            </div>
+                            <div class="col-md-6">
+                                <SfDatePicker @bind-Value="@(searchpanel.EndDate)" Enabled="true" Placeholder="End Date" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="col col-md-12" style="margin-top:20px">
@@ -82,12 +147,17 @@
     [Parameter]
     public List<ADepartment>? DepartmentData { get; set; }
 
+    [Parameter]
+    public List<ViewJobDescOpening2024>? JobOpeningData { get; set; }
+
     public Query MainQuery = new Query();
     [Parameter]
     public EventCallback<Query?> onsearchtoggle { get; set; }
     [Parameter]
     public int? listid { get; set; }
     public Query LocalDataQuery  = new Query().Take(15);
+    public bool JobTitleDD = false;
+    Query? IndicatorQuery { get; set; }  = new Query().Take(15);
 
     protected override async Task OnInitializedAsync()
     {
@@ -125,10 +195,31 @@
                 _ReferenceNumber = searchpanel.ReferenceNumber;
             }
 
+            string _JobTitleId = null;
+            if (searchpanel.JobTitleId != null)
+            {
+                _JobTitleId = string.Join(",", searchpanel.JobTitleId);
+            }
+            string sdate = null;
+            if (searchpanel.StartDate != null)
+            {
+                sdate = searchpanel.StartDate.Value.ToString("dd/MM/yyyy");
+            }
+            
+            string edate = null;
+            if (searchpanel.EndDate != null)
+            {
+                edate = searchpanel.EndDate.Value.ToString("dd/MM/yyyy");
+            }
+
             MainQuery = new Query()
             .AddParams("MeetsRequirements", _listId)
             .AddParams("DepartmentId", _DepartmentId)
-            .AddParams("ReferenceNumber", _ReferenceNumber);
+            .AddParams("ReferenceNumber", _ReferenceNumber)
+            .AddParams("JobTitleId", _JobTitleId)
+            .AddParams("ReferenceNumber", _ReferenceNumber)
+            .AddParams("StartDate", sdate)
+            .AddParams("EndDate", edate);
             await onsearchtoggle.InvokeAsync(MainQuery);
 
         }
@@ -160,6 +251,26 @@
         }
     }
 
+    private void OnDepartmentChange(Syncfusion.Blazor.DropDowns.MultiSelectChangeEventArgs<int?[]> args)
+    {
+        if (args.Value != null)
+        {
+            JobTitleDD = true;
+            IndicatorQuery = new Query();
+            List<WhereFilter> filterList = new List<WhereFilter>();
+            foreach (var item in args.Value)
+            {
+                filterList.Add(new WhereFilter() { Field = "DepartmentId", Operator = "equal", value = item, IgnoreCase = true });
+            }
+
+            var orWhere = WhereFilter.Or(filterList);
+            IndicatorQuery = new Query().Where(orWhere);
+        }
+        else
+        {
+            IndicatorQuery = new Query();
+        }
+    }
 }
 
 

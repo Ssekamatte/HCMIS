@@ -22,13 +22,12 @@
     }
 </style>
 
-<ol class="breadcrumb" style="margin-top:5px;">
-    <li class="breadcrumb-item active" style="color: brown;">
-        <strong>
-            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
-        </strong>| ATTENDANCE SUMMARY REPORT - EMPLOYEE
-    </li>
-</ol>
+<MudOverlay @bind-Visible="@loadingspinner" DarkBackground="true" AutoClose="false" Absolute="true">
+<SfSpinner @bind-Visible="loadingspinner" Type="@Syncfusion.Blazor.Spinner.SpinnerType.Bootstrap" Size="70" Label="Page loading">
+</SfSpinner>
+</MudOverlay>
+
+<BreadCrumbPage Module="HCMIS" Submodule="ATTENDANCE SUMMARY REPORT - EMPLOYEE" />
 
 <EditForm Model="@InputModel" OnValidSubmit="@OnSearchSubmit">
     <DataAnnotationsValidator />
@@ -124,155 +123,169 @@
     public static int PublicHolidays { get; set; } = 0;
     public static int numberOfDays2 { get; set; } = 0;
     List<EmployeeLeaveHeader>? LeaveDataSource { get; set; }
+    public bool loadingspinner { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        await base.OnInitializedAsync();
-        var isAuthenticated = await AuthService.CheckAuthenticationStatus();
-        if (isAuthenticated == false)
+        try
         {
-            Navigation.NavigateTo("/LoginPage", true);
-        }
-        else
-        {
-            Credentials = await AuthService.GetUserCredentials();
-
-            List<Task> t = new List<Task>();
-
-            t.Add(Task.Run(async () =>
-                {
-                    var response = await Http.GetAsync($"EmployeeLeave/GetEmployeeLeaveData");
-                    if (response.IsSuccessStatusCode)
-                    {
-                        var content = await response.Content.ReadAsStringAsync();
-                        LeaveDataSource = JsonSerializer.Deserialize<List<EmployeeLeaveHeader>>(content, _options);
-                    }
-                }));
-
-            t.Add(Task.Run(async () =>
-                {
-                    var response = await Http.GetAsync($"Utilities/GetPublicHoliday");
-                    if (response.IsSuccessStatusCode)
-                    {
-                        var content = await response.Content.ReadAsStringAsync();
-                        PublicHolidaysData = JsonSerializer.Deserialize<List<APublicHolidays>>(content, _options);
-                    }
-                }));
-
-            t.Add(Task.Run(async () =>
-                {
-                    var response = await Http.GetAsync($"Utilities/GetYears");
-                    if (response.IsSuccessStatusCode)
-                    {
-                        var content = await response.Content.ReadAsStringAsync();
-                        YearData = JsonSerializer.Deserialize<List<AYears>>(content, _options);
-                    }
-                }));
-
-            t.Add(Task.Run(async () =>
-                {
-                    var response = await Http.GetAsync($"Utilities/GetMonth");
-                    if (response.IsSuccessStatusCode)
-                    {
-                        var content = await response.Content.ReadAsStringAsync();
-                        MonthData = JsonSerializer.Deserialize<List<AMonth>>(content, _options);
-                    }
-                }));
-
-
-            t.Add(Task.Run(async () =>
-                {
-                    var response = await Http.GetAsync($"Utilities/GetEmployeeDD");
-                    if (response.IsSuccessStatusCode)
-                    {
-                        var content = await response.Content.ReadAsStringAsync();
-                        EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(content, _options);
-                    }
-                }));
-
-            t.Add(Task.Run(async () =>
+            await base.OnInitializedAsync();
+            loadingspinner = true;
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
             {
-                var responsegender = await Http.GetAsync($"Utilities/GetGender");
-                if (responsegender.IsSuccessStatusCode)
-                {
-                    var contentemployeegender = await responsegender.Content.ReadAsStringAsync();
-                    GenderData = JsonSerializer.Deserialize<List<AGender>>(contentemployeegender, _options);
-                }
-            }));
-
-            t.Add(Task.Run(async () =>
-            {
-                var response = await Http.GetAsync($"Utilities/GetDepartment");
-                if (response.IsSuccessStatusCode)
-                {
-                    var content = await response.Content.ReadAsStringAsync();
-                    DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
-                }
-            }));
-
-            t.Add(Task.Run(async () =>
-           {
-               var response = await Http.GetAsync($"Utilities/GetLeaveType");
-               if (response.IsSuccessStatusCode)
-               {
-                   var content = await response.Content.ReadAsStringAsync();
-                   LeaveTypeData = JsonSerializer.Deserialize<List<ALeaveType>>(content, _options);
-               }
-           }));
-
-            t.Add(Task.Run(async () =>
-                 {
-                     var response = await Http.GetAsync($"Utilities/GetLeaveApprovalStatus");
-                     if (response.IsSuccessStatusCode)
-                     {
-                         var content = await response.Content.ReadAsStringAsync();
-                         ApprovalStatusData = JsonSerializer.Deserialize<List<ALeaveApprovalStatus>>(content, _options);
-                     }
-                 }));
-
-            t.Add(Task.Run(async () =>
-                 {
-                     var response = await Http.GetAsync($"Utilities/GetJobTitle");
-                     if (response.IsSuccessStatusCode)
-                     {
-                         var content = await response.Content.ReadAsStringAsync();
-                         JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
-                     }
-                 }));
-
-
-            Task _t = Task.WhenAll(t);
-            await _t;
-
-            if (Credentials != null && (!string.IsNullOrEmpty(Credentials.UserRole) &&
-            Credentials.UserRole.Contains("Administrator") || Credentials.JobTitleId == 44))
-            {
-                EmployeeDD = true;
-                DepartmentDD = true;
+                Navigation.NavigateTo("/LoginPage", true);
             }
             else
             {
-                EmployeeDD = false;
-                DepartmentDD = false;
+                Credentials = await AuthService.GetUserCredentials();
 
-                if (Credentials != null && EmployeeData != null)
+                List<Task> t = new List<Task>();
+
+                t.Add(Task.Run(async () =>
+                    {
+                        var response = await Http.GetAsync($"EmployeeLeave/GetEmployeeLeaveData");
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var content = await response.Content.ReadAsStringAsync();
+                            LeaveDataSource = JsonSerializer.Deserialize<List<EmployeeLeaveHeader>>(content, _options);
+                        }
+                    }));
+
+                t.Add(Task.Run(async () =>
+                    {
+                        var response = await Http.GetAsync($"Utilities/GetPublicHoliday");
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var content = await response.Content.ReadAsStringAsync();
+                            PublicHolidaysData = JsonSerializer.Deserialize<List<APublicHolidays>>(content, _options);
+                        }
+                    }));
+
+                t.Add(Task.Run(async () =>
+                    {
+                        var response = await Http.GetAsync($"Utilities/GetYears");
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var content = await response.Content.ReadAsStringAsync();
+                            YearData = JsonSerializer.Deserialize<List<AYears>>(content, _options);
+                        }
+                    }));
+
+                t.Add(Task.Run(async () =>
+                    {
+                        var response = await Http.GetAsync($"Utilities/GetMonth");
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var content = await response.Content.ReadAsStringAsync();
+                            MonthData = JsonSerializer.Deserialize<List<AMonth>>(content, _options);
+                        }
+                    }));
+
+
+                t.Add(Task.Run(async () =>
+                    {
+                        var response = await Http.GetAsync($"Utilities/GetEmployeeDD");
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var content = await response.Content.ReadAsStringAsync();
+                            EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(content, _options);
+                        }
+                    }));
+
+                t.Add(Task.Run(async () =>
                 {
-                    var _employeedetails = EmployeeData.FirstOrDefault(o => o.Employeeid == Credentials.StaffId);
+                    var responsegender = await Http.GetAsync($"Utilities/GetGender");
+                    if (responsegender.IsSuccessStatusCode)
+                    {
+                        var contentemployeegender = await responsegender.Content.ReadAsStringAsync();
+                        GenderData = JsonSerializer.Deserialize<List<AGender>>(contentemployeegender, _options);
+                    }
+                }));
 
-                    List<int?> _employeeid = new List<int?>();
-                    List<int?> _departmentid = new List<int?>();
-                    List<int?> _jobtitleid = new List<int?>();
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetDepartment");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
+                    }
+                }));
 
-                    _employeeid.Add(Credentials.StaffId);
-                    _departmentid.Add(_employeedetails.DepartmentId);
-                    _jobtitleid.Add(_employeedetails.JibTitleId);
+                t.Add(Task.Run(async () =>
+               {
+                   var response = await Http.GetAsync($"Utilities/GetLeaveType");
+                   if (response.IsSuccessStatusCode)
+                   {
+                       var content = await response.Content.ReadAsStringAsync();
+                       LeaveTypeData = JsonSerializer.Deserialize<List<ALeaveType>>(content, _options);
+                   }
+               }));
 
-                    InputModel.Employeeid = _employeeid.ToArray();
-                    InputModel.DepartmentId = _departmentid.ToArray();
-                    InputModel.JobTitleId = _jobtitleid.ToArray();
+                t.Add(Task.Run(async () =>
+                     {
+                         var response = await Http.GetAsync($"Utilities/GetLeaveApprovalStatus");
+                         if (response.IsSuccessStatusCode)
+                         {
+                             var content = await response.Content.ReadAsStringAsync();
+                             ApprovalStatusData = JsonSerializer.Deserialize<List<ALeaveApprovalStatus>>(content, _options);
+                         }
+                     }));
+
+                t.Add(Task.Run(async () =>
+                     {
+                         var response = await Http.GetAsync($"Utilities/GetJobTitle");
+                         if (response.IsSuccessStatusCode)
+                         {
+                             var content = await response.Content.ReadAsStringAsync();
+                             JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
+                         }
+                     }));
+
+
+                Task _t = Task.WhenAll(t);
+                await _t;
+
+                if (Credentials != null && (!string.IsNullOrEmpty(Credentials.UserRole) &&
+                Credentials.UserRole.Contains("Administrator") || Credentials.JobTitleId == 44))
+                {
+                    EmployeeDD = true;
+                    DepartmentDD = true;
+                }
+                else
+                {
+                    EmployeeDD = false;
+                    DepartmentDD = false;
+
+                    if (Credentials != null && EmployeeData != null)
+                    {
+                        var _employeedetails = EmployeeData.FirstOrDefault(o => o.Employeeid == Credentials.StaffId);
+
+                        List<int?> _employeeid = new List<int?>();
+                        List<int?> _departmentid = new List<int?>();
+                        List<int?> _jobtitleid = new List<int?>();
+
+                        _employeeid.Add(Credentials.StaffId);
+                        _departmentid.Add(_employeedetails.DepartmentId);
+                        _jobtitleid.Add(_employeedetails.JibTitleId);
+
+                        InputModel.Employeeid = _employeeid.ToArray();
+                        InputModel.DepartmentId = _departmentid.ToArray();
+                        InputModel.JobTitleId = _jobtitleid.ToArray();
+                    }
                 }
             }
         }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            loadingspinner = false;
+        }
+        
     }
 
     private void OnDepartmentChange(Syncfusion.Blazor.DropDowns.MultiSelectChangeEventArgs<int?[]> args)
@@ -689,8 +702,8 @@
                             row += 1;
 
                             foreach (var m in _month)
-                            {   
-                                var _monthname = MonthData.FirstOrDefault(o=>o.MonthId == m);
+                            {
+                                var _monthname = MonthData.FirstOrDefault(o => o.MonthId == m);
 
                                 worksheet.Range["A" + row].Text = "Month : " + _monthname.MonthDesc;
                                 worksheet.Range["A" + row + ":L" + row].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(71, 44, 76);
@@ -702,13 +715,13 @@
                                 worksheet.Range["A" + row + ":L" + row].RowHeight = 15;
                                 worksheet.Range["A" + row + ":L" + row].Merge();
 
-                                row+=1;
+                                row += 1;
 
                                 // row += 2;
 
                                 if (y.HasValue && m.HasValue)
                                 {
-                                    var _yeardesc = YearData.FirstOrDefault(o=>o.YearDesc== y);
+                                    var _yeardesc = YearData.FirstOrDefault(o => o.YearDesc == y);
 
                                     int ndays = DateTime.DaysInMonth(y.Value, m.Value);
                                     int expectedworkhours = 0;
@@ -761,93 +774,51 @@
 
 
                                             //Total Hours absent from Work
-                                            if (expectedworkhours - item.TotalHoursWorked < 1)
-                                            {
-                                                worksheet.Range[row, 7].Number = 0;
-                                                hoursabsent = 0;
-                                            }
-                                            else
-                                            {
-                                                worksheet.Range[row, 7].Number = Convert.ToDouble(expectedworkhours - item.TotalHoursWorked);
-                                                hoursabsent = Convert.ToInt32(expectedworkhours - item.TotalHoursWorked);
-                                            }
+                                            worksheet.Range[row, 7].Number = Convert.ToDouble(item.TotalHoursAbsentfromWork);
 
                                             //Total Days -Abscent from duty
-                                            if (hoursabsent <= 7)
-                                            {
-                                                worksheet.Range[row, 8].Number = 0;
-                                                daysabsentfromduty = 0;
-                                            }
-                                            else
-                                            {
-                                                double hhvalue = Math.Round((double)(hoursabsent / (double)8), 1);
-                                                worksheet.Range[row, 8].Number = Convert.ToDouble(hhvalue);
-                                                daysabsentfromduty = hhvalue;
-                                            }
+                                            worksheet.Range[row, 8].Number = Convert.ToDouble(item.TotalDaysAbscentfromDuty);
+
 
                                             //Total Days on Leave
-                                            if (getutilizeddays != null && getutilizeddays.TotalDays.HasValue)
-                                            {
-                                                worksheet.Range[row, 9].Number = getutilizeddays.TotalDays.Value;
-                                                daysonleave = getutilizeddays.TotalDays.Value;
-                                            }
-                                            else
-                                            {
-                                                worksheet.Range[row, 9].Number = 0;
-                                                daysonleave = 0;
-                                            }
+                                            worksheet.Range[row, 9].Number = Convert.ToDouble(item.TotalDaysOnLeave);
 
                                             //Total days on Official duty
-                                            worksheet.Range[row, 10].Number = 0;
-                                            daysonofficialduty = 0;
+                                            worksheet.Range[row, 10].Number = Convert.ToDouble(item.TotalDaysOnOfficialDuty);
 
                                             //Total Days / Hrs Due/Uncounted for
+                                            worksheet.Range[row, 11].Number = Convert.ToDouble(item.TotalDaysHrsDueUncountedFor);
 
-                                            if (daysabsentfromduty - daysonleave - daysonofficialduty >= 0.1)
-                                            {
-                                                daysunaccountedfor = daysabsentfromduty - daysonleave - daysonofficialduty;
-                                                worksheet.Range[row, 11].Number = daysunaccountedfor;
-                                            }
-                                            else
-                                            {
-                                                worksheet.Range[row, 11].Number = 0;
-                                                daysunaccountedfor = 0;
-                                            }
 
                                             //Remarks/Recommendations
-                                            if (daysunaccountedfor != 0)
+                                            if (item.TotalDaysHrsDueUncountedFor.HasValue)
                                             {
+                                                daysunaccountedfor = Convert.ToDouble(item.TotalDaysHrsDueUncountedFor);
                                                 worksheet.Range[row, 12].Text = "Officer has to account for " + Math.Truncate(daysunaccountedfor) + " days";
                                             }
                                             else
                                             {
                                                 worksheet.Range[row, 12].Text = "";
                                             }
-                                            
-                                            // //Year
-                                            // worksheet.Range[row, 13].Number = Convert.ToDouble(item.ReportYear);
-
-                                            // //Month
-                                            // worksheet.Range[row, 14].Number = Convert.ToDouble(item.ReportMonth);
 
                                             worksheet.Range[row, 1, row, 12].CellStyle = Style;
 
                                             row += 1;
-                                            count+=1;
+                                            count += 1;
                                         }
                                     }
                                     else
                                     {
-                                        
-                                    }  
-                                    
+
+                                    }
+
                                 }
 
                                 row += 1;
                                 count++;
-                            }       
-                            
-                            row+=1;
+                            }
+
+                            row += 1;
                         }
 
                         // row++;
@@ -859,7 +830,7 @@
                         ms.Position = 0;
                         string _filename = "Attendance Summary Report.xlsx";
                         filename = _filename;
-                        JS.InvokeAsync<object>("saveAsFile", filename, Convert.ToBase64String(ms.ToArray()));
+                        await JS.InvokeAsync<object>("saveAsFile", filename, Convert.ToBase64String(ms.ToArray()));
                         ms.Dispose();
                         workbook.Close();
                         Downloadreport = false;
@@ -887,6 +858,562 @@
             StateHasChanged();
         }
     }
+
+    // private async Task OnSearchSubmit()
+    // {
+    //     filename = null;
+    //     Downloadreport = true;
+    //     await DownloadingSpinner.ShowAsync();
+
+    //     try
+    //     {
+    //         if (InputModel.Year == null)
+    //         {
+    //             toastService.ClearAll();
+    //             toastService.ShowWarning("Please select the Year(s)");
+    //         }
+    //         else if (InputModel.MonthId == null)
+    //         {
+    //             toastService.ClearAll();
+    //             toastService.ShowWarning("Please select the Month(s)");
+    //         }
+    //         else
+    //         {
+    //             //var data = await reportservice.GetBiometricRawData(InputModel);
+    //             var data = await reportservice.GetAttendanceData(InputModel);
+
+    //             if (data.Count > 0)
+    //             {
+    //                 using (ExcelEngine excelEngine = new ExcelEngine())
+    //                 {
+    //                     IApplication application = excelEngine.Excel;
+    //                     application.DefaultVersion = ExcelVersion.Excel2013;
+    //                     IWorkbook workbook = application.Workbooks.Create(1);
+    //                     IWorksheet worksheet = workbook.Worksheets[0];
+    //                     worksheet.Name = "Attendance Summary Report";
+
+    //                     #region Styles
+    //                     var headerStyle = workbook.Styles.Add("headerStyle");
+
+    //                     headerStyle.BeginUpdate();
+    //                     headerStyle.Color = Syncfusion.Drawing.Color.Black;
+    //                     headerStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+    //                     headerStyle.Font.Bold = true;
+    //                     headerStyle.Font.FontName = "Arial";
+    //                     headerStyle.Font.Size = 10f;
+    //                     headerStyle.Font.Color = ExcelKnownColors.White;
+
+    //                     headerStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+    //                     headerStyle.Borders.Color = ExcelKnownColors.White;
+    //                     headerStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+    //                     headerStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+    //                     headerStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+
+    //                     headerStyle.WrapText = true;
+
+    //                     headerStyle.EndUpdate();
+
+    //                     var Style = workbook.Styles.Add("bodyStyle");
+
+    //                     Style.BeginUpdate();
+    //                     Style.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+    //                     Style.VerticalAlignment = ExcelVAlign.VAlignTop;
+    //                     Style.Font.Bold = false;
+    //                     Style.Font.FontName = "Arial";
+    //                     Style.Font.Size = 10f;
+    //                     Style.Font.Color = ExcelKnownColors.Black;
+    //                     Style.WrapText = true;
+    //                     Style.Borders.Color = ExcelKnownColors.Black;
+    //                     Style.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+    //                     Style.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+    //                     Style.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+    //                     Style.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
+    //                     Style.EndUpdate();
+
+
+    //                     var CategoryStyle = workbook.Styles.Add("CategoryStyle");
+
+    //                     CategoryStyle.BeginUpdate();
+    //                     CategoryStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+    //                     CategoryStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 204, 0);
+    //                     CategoryStyle.Font.Bold = true;
+    //                     CategoryStyle.Font.FontName = "Arial";
+    //                     CategoryStyle.Font.Size = 20f;
+    //                     CategoryStyle.Font.Color = ExcelKnownColors.Brown;
+    //                     CategoryStyle.WrapText = true;
+    //                     CategoryStyle.Borders.Color = ExcelKnownColors.White;
+    //                     CategoryStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+    //                     CategoryStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+    //                     CategoryStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+    //                     CategoryStyle.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
+    //                     CategoryStyle.EndUpdate();
+
+    //                     var DivisionStyle = workbook.Styles.Add("DivisionStyle");
+
+    //                     DivisionStyle.BeginUpdate();
+    //                     DivisionStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+    //                     DivisionStyle.Color = Syncfusion.Drawing.Color.FromArgb(95, 39, 205); //NASU PURPLE
+    //                     DivisionStyle.Font.Bold = true;
+    //                     DivisionStyle.Font.FontName = "Arial";
+    //                     DivisionStyle.Font.Size = 15f;
+    //                     DivisionStyle.Font.Color = ExcelKnownColors.White;
+    //                     DivisionStyle.WrapText = true;
+    //                     DivisionStyle.Borders.Color = ExcelKnownColors.White;
+    //                     DivisionStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.None;
+    //                     DivisionStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.None;
+    //                     DivisionStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.None;
+    //                     DivisionStyle.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.None;
+    //                     DivisionStyle.EndUpdate();
+
+    //                     #endregion
+
+    //                     //Logo
+
+    //                     worksheet.Range["A1"].ColumnWidth = 9;
+    //                     worksheet.Range["A1:A2"].Merge();
+
+    //                     var images = await UtilityRepo.GetLocalLogos();
+    //                     byte[]? _imagebyte = null;
+    //                     if (images != null && images.Count > 0)
+    //                     {
+    //                         var JMS = images.FirstOrDefault(o => o.ImageName.Contains("logonhcc"));
+    //                         if (JMS != null)
+    //                         {
+
+    //                             JMSLogo = JMS.ImageString;
+    //                             JMSLogoName = JMS.ImageName;
+    //                             if (!string.IsNullOrEmpty(JMS.ImageString))
+    //                             {
+    //                                 var a = JMS.ImageString.Split(";base64,");
+    //                                 _imagebyte = Convert.FromBase64String(a[1]);
+    //                             }
+
+    //                         }
+    //                     }
+    //                     if (_imagebyte != null && _imagebyte.Length > 0)
+    //                     {
+    //                         MemoryStream _ms = new MemoryStream(_imagebyte);
+
+    //                         IPictureShape shape = worksheet.Pictures.AddPicture(1, 1, _ms);
+    //                         //Re-sizing a Picture
+    //                         shape.Height = 60;
+    //                         shape.Width = 60;
+    //                         //shape.IsSizeWithCell = true;
+    //                         //shape.IsMoveWithCell = true;
+    //                         shape.Left = 5;
+    //                         shape.Top = 2;
+    //                     }
+    //                     //Logo
+
+    //                     worksheet.Range["B1"].Text = "NHCC";
+    //                     worksheet.Range["B1"].CellStyle = CategoryStyle;
+    //                     worksheet.Range["B1"].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+    //                     worksheet.Range["B1"].CellStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
+    //                     worksheet.Range["B1"].RowHeight = 30;
+    //                     worksheet.Range["B1:L1"].Merge();
+
+    //                     worksheet.Range["B2"].Text = "Attendance Summary Report";
+    //                     worksheet.Range["B2"].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(71, 44, 76);
+    //                     worksheet.Range["B2"].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
+    //                     worksheet.Range["B2"].CellStyle.Font.FontName = "cambria";
+    //                     worksheet.Range["B2"].CellStyle.Font.Size = 18;
+    //                     worksheet.Range["B2:L2"].Merge();
+
+    //                     int row = 1;
+    //                     row++;
+    //                     row++;
+
+    //                     #region Search Parameters
+
+    //                     int startingRange = row;
+    //                     worksheet.Range["A" + row].Text = "Search Parameters";
+    //                     worksheet.Range["A" + row + ":L" + row].CellStyle = DivisionStyle;
+    //                     worksheet.Range["A" + row + ":L" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+    //                     worksheet.Range["A" + row + ":L" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
+    //                     worksheet.Range["A" + row].RowHeight = 15;
+    //                     worksheet.Range["A" + row + ":L" + row].Merge();
+    //                     row++;
+
+    //                     //Employee
+    //                     worksheet.Range["A" + row].Text = "Employee:";
+    //                     worksheet.Range["A" + row].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 204, 0);
+    //                     worksheet.Range["A" + row].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
+    //                     worksheet.Range["A" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
+
+    //                     if (InputModel.Employeeid != null)
+    //                     {
+    //                         var empdesc = string.Join(", ", EmployeeData.Where(o => InputModel.Employeeid.Any(a => a == o.Employeeid)).Select(o => o.EmployeeDetails).ToArray());
+
+    //                         worksheet.Range["B" + row].Text = empdesc;
+    //                         worksheet.Range["B" + row].WrapText = true;
+
+    //                     }
+    //                     else
+    //                     {
+    //                         worksheet.Range["B" + row].Text = "None";
+    //                     }
+    //                     worksheet.Range["B" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
+
+    //                     //Department
+    //                     worksheet.Range["D" + row].Text = "Department:";
+    //                     worksheet.Range["D" + row].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 204, 0);
+    //                     worksheet.Range["D" + row].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
+    //                     worksheet.Range["D" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
+
+    //                     if (InputModel.DepartmentId != null)
+    //                     {
+    //                         var depdesc = string.Join(", ", DepartmentData.Where(o => InputModel.DepartmentId.Any(a => a == o.DepartmentId)).Select(o => o.DepartmentDescription).ToArray());
+
+    //                         worksheet.Range["E" + row].Text = depdesc;
+    //                         worksheet.Range["E" + row].WrapText = true;
+    //                     }
+    //                     else
+    //                     {
+    //                         worksheet.Range["E" + row].Text = "None";
+    //                     }
+    //                     worksheet.Range["E" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
+
+    //                     //Year
+
+    //                     worksheet.Range["G" + row].Text = "Year:";
+    //                     worksheet.Range["G" + row].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 204, 0);
+    //                     worksheet.Range["G" + row].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
+    //                     worksheet.Range["G" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
+
+    //                     if (InputModel.Year != null)
+    //                     {
+    //                         var yeardesc = string.Join(", ", YearData.Where(o => InputModel.Year.Any(a => a == o.YearId)).Select(o => o.YearDesc).ToArray());
+
+    //                         worksheet.Range["H" + row].Text = yeardesc;
+    //                         worksheet.Range["H" + row].WrapText = true;
+    //                     }
+    //                     else
+    //                     {
+    //                         worksheet.Range["H" + row].Text = "None";
+    //                     }
+    //                     worksheet.Range["H" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
+
+    //                     //Month
+
+    //                     worksheet.Range["J" + row].Text = "Month:";
+    //                     worksheet.Range["J" + row].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 204, 0);
+    //                     worksheet.Range["J" + row].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
+    //                     worksheet.Range["J" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
+
+    //                     if (InputModel.Year != null)
+    //                     {
+    //                         var monthdesc = string.Join(", ", MonthData.Where(o => InputModel.MonthId.Any(a => a == o.MonthId)).Select(o => o.MonthDesc).ToArray());
+
+    //                         worksheet.Range["K" + row].Text = monthdesc;
+    //                         worksheet.Range["K" + row].WrapText = true;
+    //                     }
+    //                     else
+    //                     {
+    //                         worksheet.Range["K" + row].Text = "None";
+    //                     }
+    //                     worksheet.Range["K" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
+
+    //                     row++;
+    //                     row++;
+    //                     row = row + 1;
+    //                     #endregion Search Parameters
+
+    //                     worksheet.Range[row, 1].Text = "#";
+    //                     worksheet.Range[row, 1].CellStyle = headerStyle;
+    //                     worksheet.Range[row, 1].ColumnWidth = 9;
+    //                     worksheet.Range[row, 1].WrapText = true;
+
+    //                     worksheet.Range[row, 2].Text = "Name of Staff";
+    //                     worksheet.Range[row, 2].CellStyle = headerStyle;
+    //                     worksheet.Range[row, 2].ColumnWidth = 20;
+    //                     worksheet.Range[row, 2].WrapText = true;
+
+    //                     worksheet.Range[row, 3].Text = "Job Position";
+    //                     worksheet.Range[row, 3].CellStyle = headerStyle;
+    //                     worksheet.Range[row, 3].ColumnWidth = 20;
+    //                     worksheet.Range[row, 3].WrapText = true;
+
+    //                     worksheet.Range[row, 4].Text = "Department";
+    //                     worksheet.Range[row, 4].CellStyle = headerStyle;
+    //                     worksheet.Range[row, 4].ColumnWidth = 20;
+    //                     worksheet.Range[row, 4].WrapText = true;
+
+    //                     worksheet.Range[row, 5].Text = "Expected Monthly Total Working Hours";
+    //                     worksheet.Range[row, 5].CellStyle = headerStyle;
+    //                     worksheet.Range[row, 5].ColumnWidth = 20;
+    //                     worksheet.Range[row, 5].WrapText = true;
+
+    //                     worksheet.Range[row, 6].Text = "Actual Monthly Total Hours Worked";
+    //                     worksheet.Range[row, 6].CellStyle = headerStyle;
+    //                     worksheet.Range[row, 6].ColumnWidth = 20;
+    //                     worksheet.Range[row, 6].WrapText = true;
+
+    //                     worksheet.Range[row, 7].Text = "Total Hours absent from Work";
+    //                     worksheet.Range[row, 7].CellStyle = headerStyle;
+    //                     worksheet.Range[row, 7].ColumnWidth = 20;
+    //                     worksheet.Range[row, 7].WrapText = true;
+
+    //                     worksheet.Range[row, 8].Text = "Total Days -Abscent from duty";
+    //                     worksheet.Range[row, 8].CellStyle = headerStyle;
+    //                     worksheet.Range[row, 8].ColumnWidth = 20;
+    //                     worksheet.Range[row, 8].WrapText = true;
+
+    //                     worksheet.Range[row, 9].Text = "Total Days on Leave";
+    //                     worksheet.Range[row, 9].CellStyle = headerStyle;
+    //                     worksheet.Range[row, 9].ColumnWidth = 20;
+    //                     worksheet.Range[row, 9].WrapText = true;
+
+    //                     worksheet.Range[row, 10].Text = "Total days on Official duty ";
+    //                     worksheet.Range[row, 10].CellStyle = headerStyle;
+    //                     worksheet.Range[row, 10].ColumnWidth = 20;
+    //                     worksheet.Range[row, 10].WrapText = true;
+
+    //                     worksheet.Range[row, 11].Text = "Total Days / Hrs Due/Uncounted for";
+    //                     worksheet.Range[row, 11].CellStyle = headerStyle;
+    //                     worksheet.Range[row, 11].ColumnWidth = 20;
+    //                     worksheet.Range[row, 11].WrapText = true;
+
+    //                     worksheet.Range[row, 12].Text = "Remarks/Recommendations";
+    //                     worksheet.Range[row, 12].CellStyle = headerStyle;
+    //                     worksheet.Range[row, 12].ColumnWidth = 30;
+    //                     worksheet.Range[row, 12].WrapText = true;
+
+    //                     // worksheet.Range[row, 13].Text = "Year";
+    //                     // worksheet.Range[row, 13].CellStyle = headerStyle;
+    //                     // worksheet.Range[row, 13].ColumnWidth = 20;
+    //                     // worksheet.Range[row, 13].WrapText = true;
+
+    //                     // worksheet.Range[row, 14].Text = "Month";
+    //                     // worksheet.Range[row, 14].CellStyle = headerStyle;
+    //                     // worksheet.Range[row, 14].ColumnWidth = 20;
+    //                     // worksheet.Range[row, 14].WrapText = true;
+
+    //                     row++;
+    //                     int count = 1;
+
+    //                     var _year = data.Select(o => o.ReportYear).ToList().Distinct().ToList();
+    //                     var _month = data.Select(o => o.ReportMonth).ToList().Distinct().ToList();
+    //                     var _employees = data.Select(o => new { o.HcmisemployeeId, o.EmployeeDetails }).ToList().Distinct().ToList();
+    //                     double totalhoursworked = 0;
+
+    //                     // var getutilizeddays = LeaveDataSource.OrderByDescending(x => x.TotalDays)
+    //                     // .FirstOrDefault(o => o.Employeeid == LeaveData.Employeeid &&
+    //                     //     o.LeaveTypeId == LeaveData.LeaveTypeId && o.LeaveApprovalStatusId == 9);
+
+    //                     foreach (var y in _year)
+    //                     {
+    //                         worksheet.Range["A" + row].Text = "Year : " + y;
+    //                         worksheet.Range["A" + row + ":L" + row].Merge();
+    //                         worksheet.Range["A" + row + ":L" + row].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 204, 0);
+    //                         worksheet.Range["A" + row + ":L" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+    //                         worksheet.Range["A" + row + ":L" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
+    //                         worksheet.Range["A" + row + ":L" + row].CellStyle.Font.FontName = "cambria";
+    //                         worksheet.Range["A" + row + ":L" + row].CellStyle.Font.Size = 12;
+    //                         worksheet.Range["A" + row + ":L" + row].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.Black;
+    //                         worksheet.Range["A" + row + ":L" + row].WrapText = true;
+    //                         worksheet.Range["A" + row + ":L" + row].Merge();
+
+    //                         row += 1;
+
+    //                         foreach (var m in _month)
+    //                         {   
+    //                             var _monthname = MonthData.FirstOrDefault(o=>o.MonthId == m);
+
+    //                             worksheet.Range["A" + row].Text = "Month : " + _monthname.MonthDesc;
+    //                             worksheet.Range["A" + row + ":L" + row].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(71, 44, 76);
+    //                             worksheet.Range["A" + row + ":L" + row].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+    //                             worksheet.Range["A" + row + ":L" + row].CellStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
+    //                             worksheet.Range["A" + row + ":L" + row].CellStyle.Font.FontName = "cambria";
+    //                             worksheet.Range["A" + row + ":L" + row].CellStyle.Font.Size = 12;
+    //                             worksheet.Range["A" + row + ":L" + row].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
+    //                             worksheet.Range["A" + row + ":L" + row].RowHeight = 15;
+    //                             worksheet.Range["A" + row + ":L" + row].Merge();
+
+    //                             row+=1;
+
+    //                             // row += 2;
+
+    //                             if (y.HasValue && m.HasValue)
+    //                             {
+    //                                 var _yeardesc = YearData.FirstOrDefault(o=>o.YearDesc== y);
+
+    //                                 int ndays = DateTime.DaysInMonth(y.Value, m.Value);
+    //                                 int expectedworkhours = 0;
+    //                                 int hoursabsent = 0;
+    //                                 double daysabsentfromduty = 0;
+    //                                 int daysonofficialduty = 0;
+    //                                 int daysonleave = 0;
+    //                                 double daysunaccountedfor = 0;
+
+
+    //                                 DateTime StartDate = new DateTime(y.Value, m.Value, 01);
+    //                                 DateTime EndDate = new DateTime(y.Value, m.Value, ndays);
+
+
+    //                                 PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDate);
+    //                                 numberOfDays2 = GetNumberOfDates(StartDate, EndDate);
+
+    //                                 int totaldays = numberOfDays2 - PublicHolidays;
+
+    //                                 // toastService.ShowWarning("Year:" + y.Value + "Month:" + m.Value + "Days:" + totaldays);
+
+    //                                 expectedworkhours = totaldays * 8;
+
+    //                                 var _data = data.Where(o => o.ReportYear == y && o.ReportMonth == m).ToList();
+
+    //                                 if (_data != null)
+    //                                 {
+    //                                     foreach (var item in _data)
+    //                                     {
+    //                                         var getutilizeddays = LeaveDataSource.OrderByDescending(x => x.TotalDays)
+    //                                         .FirstOrDefault(o => o.Employeeid == item.HcmisemployeeId &&
+    //                                             o.LeaveTypeId == 1 && o.FinancialYearId == _yeardesc.YearId && o.LeaveApprovalStatusId == 9);
+
+    //                                         worksheet.Range[row, 1].Number = count;
+
+    //                                         worksheet.Range[row, 2].Text = item.EmployeeDetails;
+
+    //                                         //Job Position
+    //                                         var _empdet = EmployeeData.FirstOrDefault(o => o.Employeeid == item.HcmisemployeeId);
+    //                                         worksheet.Range[row, 3].Text = _empdet.JobTitleDescription;
+
+    //                                         //Department
+    //                                         worksheet.Range[row, 4].Text = item.DepartmentDescription;
+
+    //                                         //Expected Monthly Total Working Hours(176)
+    //                                         worksheet.Range[row, 5].Number = expectedworkhours;
+
+    //                                         //Actual Monthly Total Hours Worked
+    //                                         worksheet.Range[row, 6].Number = Convert.ToDouble(item.TotalHoursWorked);
+
+
+    //                                         //Total Hours absent from Work
+    //                                         if (expectedworkhours - item.TotalHoursWorked < 1)
+    //                                         {
+    //                                             worksheet.Range[row, 7].Number = 0;
+    //                                             hoursabsent = 0;
+    //                                         }
+    //                                         else
+    //                                         {
+    //                                             worksheet.Range[row, 7].Number = Convert.ToDouble(expectedworkhours - item.TotalHoursWorked);
+    //                                             hoursabsent = Convert.ToInt32(expectedworkhours - item.TotalHoursWorked);
+    //                                         }
+
+    //                                         //Total Days -Abscent from duty
+    //                                         if (hoursabsent <= 7)
+    //                                         {
+    //                                             worksheet.Range[row, 8].Number = 0;
+    //                                             daysabsentfromduty = 0;
+    //                                         }
+    //                                         else
+    //                                         {
+    //                                             double hhvalue = Math.Round((double)(hoursabsent / (double)8), 1);
+    //                                             worksheet.Range[row, 8].Number = Convert.ToDouble(hhvalue);
+    //                                             daysabsentfromduty = hhvalue;
+    //                                         }
+
+    //                                         //Total Days on Leave
+    //                                         if (getutilizeddays != null && getutilizeddays.TotalDays.HasValue)
+    //                                         {
+    //                                             worksheet.Range[row, 9].Number = getutilizeddays.TotalDays.Value;
+    //                                             daysonleave = getutilizeddays.TotalDays.Value;
+    //                                         }
+    //                                         else
+    //                                         {
+    //                                             worksheet.Range[row, 9].Number = 0;
+    //                                             daysonleave = 0;
+    //                                         }
+
+    //                                         //Total days on Official duty
+    //                                         worksheet.Range[row, 10].Number = 0;
+    //                                         daysonofficialduty = 0;
+
+    //                                         //Total Days / Hrs Due/Uncounted for
+
+    //                                         if (daysabsentfromduty - daysonleave - daysonofficialduty >= 0.1)
+    //                                         {
+    //                                             daysunaccountedfor = daysabsentfromduty - daysonleave - daysonofficialduty;
+    //                                             worksheet.Range[row, 11].Number = daysunaccountedfor;
+    //                                         }
+    //                                         else
+    //                                         {
+    //                                             worksheet.Range[row, 11].Number = 0;
+    //                                             daysunaccountedfor = 0;
+    //                                         }
+
+    //                                         //Remarks/Recommendations
+    //                                         if (daysunaccountedfor != 0)
+    //                                         {
+    //                                             worksheet.Range[row, 12].Text = "Officer has to account for " + Math.Truncate(daysunaccountedfor) + " days";
+    //                                         }
+    //                                         else
+    //                                         {
+    //                                             worksheet.Range[row, 12].Text = "";
+    //                                         }
+                                            
+    //                                         // //Year
+    //                                         // worksheet.Range[row, 13].Number = Convert.ToDouble(item.ReportYear);
+
+    //                                         // //Month
+    //                                         // worksheet.Range[row, 14].Number = Convert.ToDouble(item.ReportMonth);
+
+    //                                         worksheet.Range[row, 1, row, 12].CellStyle = Style;
+
+    //                                         row += 1;
+    //                                         count+=1;
+    //                                     }
+    //                                 }
+    //                                 else
+    //                                 {
+                                        
+    //                                 }  
+                                    
+    //                             }
+
+    //                             row += 1;
+    //                             count++;
+    //                         }       
+                            
+    //                         row+=1;
+    //                     }
+
+    //                     // row++;
+
+    //                     MemoryStream ms = new MemoryStream();
+    //                     // Save and close the document.
+    //                     workbook.SaveAs(ms);
+    //                     //Reset the memory stream position.
+    //                     ms.Position = 0;
+    //                     string _filename = "Attendance Summary Report.xlsx";
+    //                     filename = _filename;
+    //                     await JS.InvokeAsync<object>("saveAsFile", filename, Convert.ToBase64String(ms.ToArray()));
+    //                     ms.Dispose();
+    //                     workbook.Close();
+    //                     Downloadreport = false;
+    //                     InputModel.Response = "Report Downloaded Successfully";
+
+    //                 }
+    //             }
+    //             else
+    //             {
+    //                 InputModel.Response = "There were no records found that match the given search parameters";
+    //                 Downloadreport = false;
+    //                 StateHasChanged();
+    //             }
+    //         }
+
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         toastService.ShowError(ex.ToString());
+    //     }
+    //     finally
+    //     {
+    //         await DownloadingSpinner.HideAsync();
+    //         Downloadreport = false;
+    //         StateHasChanged();
+    //     }
+    // }
 
     private void ClearSearchBtnClick()
     {

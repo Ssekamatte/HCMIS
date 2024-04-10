@@ -183,13 +183,12 @@
     }
 </style>
 
-<ol class="breadcrumb" style="margin-top:5px;">
-    <li class="breadcrumb-item active" style="color: brown;">
-        <strong>
-            <img src="/Image/logonhcc.png" width="40" height="25"/> HCMIS
-        </strong>| LEAVE APPLICATION FORM
-    </li>
-</ol>
+<MudOverlay @bind-Visible="@loadingspinner" DarkBackground="true" AutoClose="false" Absolute="true">
+    <SfSpinner @bind-Visible="loadingspinner" Type="@Syncfusion.Blazor.Spinner.SpinnerType.Bootstrap" Size="70" Label="Page loading">
+    </SfSpinner>
+</MudOverlay>
+
+<BreadCrumbPage Module="HCMIS" Submodule="LEAVE APPLICATION FORM"/>
 
 <div class="form-row">
     <div class="form-group col-md-12">
@@ -373,34 +372,29 @@
                                                     Telephone contact during Leave<span style="color:red;">*</span>
                                                 </td>
                                                 <td>
-                                                    @*<SfTextBox Multiline="false"
-                                                    @bind-Value="@(LeaveData.Telephone)"
-                                                               Enabled="@OnSubmitButtonsBool"
-                                                               FloatLabelType="FloatLabelType.Never">
-                                                    </SfTextBox>*@
+                                                    
+                                                      @if(!string.IsNullOrEmpty(imageSource))
+                                                      {
+                                                        <SfDropDownList TValue="int?" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" TItem="ACountry"
+                                                                        Width="50px" DataSource="CountryData" PopupWidth="300px" @bind-Value="@(LeaveData.CountryId)" Query="@LocalDataQuery" EnableVirtualization="true">
+                                                            <DropDownListTemplates TItem="ACountry">
+                                                                <ItemTemplate Context="itemcontext">
+                                                                    <div>
+                                                                        <p><img className="empImage" src="@imageSource/@((itemcontext as ACountry).Eimg).svg" height="11px" width="20px" alt="employee" />  @((itemcontext as ACountry).CountryDesc)  @((itemcontext as ACountry).CountryCode)</p>
+                                                                    </div>
+                                                                </ItemTemplate>
+                                                                <ValueTemplate Context="valuecontext">
+                                                                    <div>
+                                                                        <img className="empImage" src="@imageSource/@((valuecontext as ACountry).Eimg).svg" height="11px" width="20px" alt="employee" />
+                                                                    </div>
+                                                                </ValueTemplate>
+                                                            </DropDownListTemplates>
+                                                            <DropDownListFieldSettings Value="CoutryId" Text="CountryDesc"></DropDownListFieldSettings>
+                                                            <DropDownListEvents TValue="int?" TItem="ACountry" ValueChange="changeHandler"></DropDownListEvents>
+                                                        </SfDropDownList>
+                                                        <SfMaskedTextBox Mask="@maskvalue" @bind-Value="@(LeaveData.Telephone)" Width="150px" Enabled="@(LeaveData.CountryId == null ? false : true)"></SfMaskedTextBox>
 
-                                                    <SfDropDownList TValue="int?" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" TItem="ACountry" Width="50px" DataSource="CountryData" PopupWidth="300px" @bind-Value="@(LeaveData.CountryId)">
-                                                        <DropDownListTemplates TItem="ACountry">
-                                                            <ItemTemplate Context="itemcontext">
-                                                                <div>
-                                                                    <p><img className="empImage" src="https://flagcdn.com/16x12/@((itemcontext as ACountry).Eimg).png" height="11px" width="20px" alt="employee" />  @((itemcontext as ACountry).CountryDesc)  @((itemcontext as ACountry).CountryCode)</p>
-
-                                                                </div>
-                                                            </ItemTemplate>
-                                                            <ValueTemplate Context="valuecontext">
-                                                                <div>
-                                                                    <img className="empImage" src="https://flagcdn.com/16x12/@((valuecontext as ACountry).Eimg).png" height="11px" width="20px" alt="employee" />
-                                                                </div>
-                                                            </ValueTemplate>
-                                                        </DropDownListTemplates>
-                                                        <DropDownListFieldSettings Value="CoutryId" Text="CountryDesc"></DropDownListFieldSettings>
-                                                        <DropDownListEvents TValue="int?" TItem="ACountry" ValueChange="changeHandler"></DropDownListEvents>
-                                                    </SfDropDownList>
-
-                                                    @*<SfTextBox Multiline="false" ID="DialCode" @bind-Value="@(LeaveData.DialCode)" FloatLabelType="FloatLabelType.Never" Enabled="false" Width="50px"></SfTextBox>*@
-
-                                                    <SfMaskedTextBox Mask="@maskvalue" @bind-Value="@(LeaveData.Telephone)" Width="150px" Enabled="@(LeaveData.CountryId == null ? false : true)"></SfMaskedTextBox>
-
+                                                      }                                                   
 
                                                 </td>
                                             </tr>
@@ -410,7 +404,7 @@
                                                     6.
                                                 </td>
                                                 <td>
-                                                    Financial Year
+                                                    Calender Year
                                                 </td>
                                                 <td>
                                                     <SfDropDownList @bind-Value="@(LeaveData.FinancialYearId)" TItem="AYears" TValue="int?"
@@ -518,14 +512,14 @@
                                                 
                                                 <div class="col-md-4">
                                                     <p>Commencement Date:<span style="color:red;">*</span></p>
-                                                    <SfDatePicker @bind-Value="@(LeaveData.CommencementDate)" Enabled="OnSubmitButtonsBool" ID="ScheduledStartDate" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never" Min="MinDate">
+                                                    <SfDatePicker @bind-Value="@(LeaveData.CommencementDate)" Enabled="OnSubmitButtonsBool" ID="ScheduledStartDate" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never" Min="MinDate" AllowEdit="false">
                                                         <DatePickerEvents TValue="DateTime?" ValueChange="OnMaternityDateChange"></DatePickerEvents>                                                       
                                                     </SfDatePicker>
                                                 </div>
 
                                                 <div class="col-md-4">
                                                     <p>End Date:<span style="color:red;">*</span></p>
-                                                    <SfDatePicker @bind-Value="@(LeaveData.EndDate)" Enabled="EndDateEnablerBool" ID="ScheduledEndDate" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never" Min="MinDate" Max='@MaxDate'>
+                                                    <SfDatePicker @bind-Value="@(LeaveData.EndDate)" Enabled="EndDateEnablerBool" ID="ScheduledEndDate" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never" Min="MinDate" Max='@MaxDate' AllowEdit="false">
                                                         <DatePickerEvents TValue="DateTime?" ValueChange="OnEndDateChange"></DatePickerEvents>
                                                     </SfDatePicker>
                                                 </div>
@@ -537,7 +531,8 @@
                                                     </div>
                                                 }
 
-                                                else if (leavetypedays != null && (LeaveData.LeaveTypeId != 2 && LeaveData.LeaveTypeId != 4) &&
+                                                else if (leavetypedays != null && (LeaveData.LeaveTypeId != 2 && LeaveData.LeaveTypeId != 3 
+                                                    && LeaveData.LeaveTypeId != 4 && LeaveData.LeaveTypeId != 7  && LeaveData.LeaveTypeId != 8) &&
                                                     (LeaveData.TotalDays > @leavetypedays.LeaveDaysPerYear))
                                                 {
                                                     <h6 style="margin-top: 10px;">
@@ -551,14 +546,35 @@
                                                     <div class="col-md-3">
                                                         <p style="margin-top:10px;">Days Entitled:</p>
                                                         @*@if (leavetypedays != null && leavetypedays.LeaveTypeId != 4)*@
-                                                        @if (leavetypedays != null)
+
+                                                        @if (leavetypedays != null && (leavetypedays.LeaveTypeId != 3 && leavetypedays.LeaveTypeId != 4  && leavetypedays.LeaveTypeId != 7))
+                                                        {
+                                                            <p style="font-weight: bolder;">@leavetypedays.LeaveDaysPerYear</p>
+                                                        }
+                                                        //Sick Leave
+                                                        else if (leavetypedays != null && leavetypedays.LeaveTypeId == 3)
+                                                        {
+                                                            <p style="font-weight: bolder;">Sick Leave Is Not Restricted</p>
+                                                        }
+                                                        //Paternity Leave
+                                                        else if (leavetypedays != null && leavetypedays.LeaveTypeId == 4)
+                                                        {
+                                                            <p style="font-weight: bolder;">@leavetypedays.LeaveDaysPerYear Days</p>
+                                                        }
+                                                        //Study Leave                                                        
+                                                        else if (leavetypedays != null && leavetypedays.LeaveTypeId == 7)
+                                                        {
+                                                            <p style="font-weight: bolder;">@leavetypedays.LeaveDaysPerYear Days (Can select more days) </p>
+                                                        }
+
+                                                        @*@if (leavetypedays != null)
                                                         {
                                                             @leavetypedays.LeaveDaysPerYear
                                                         }
                                                         else if (leavetypedays != null && leavetypedays.LeaveTypeId == 4)
                                                         {
                                                             <p>@leavetypedays.LeaveDaysPerYear Days</p>
-                                                        }
+                                                        }*@
                                                     </div>
 
                                                     <div class="col-md-3">
@@ -579,7 +595,7 @@
                                                     </div>
 
                                                     <div class="col-md-3">
-                                                        <p style="margin-top:10px;">Total Annual Days:</p>
+                                                        <p style="margin-top:10px;">Total Days Taken:</p>
                                                         <SfNumericTextBox @bind-Value="@(LeaveData.TotalDays)" Enabled="false" Format="N0" FloatLabelType="FloatLabelType.Never"></SfNumericTextBox>
                                                     </div>
 
@@ -598,17 +614,27 @@
                                                 }                                                
                                             }
                                             
-                                            @if (LeaveData != null && LeaveData.LeaveTypeId == 3)
+                                            @if (LeaveData != null && (LeaveData.LeaveTypeId == 3 || LeaveData.LeaveTypeId == 8))
                                             {
                                                  <div class="col-md-12">
-                                                    <p style="margin-top:10px;">Any further explanation can be given here:</p>
+                                                    @if (LeaveData.LeaveTypeId == 3)
+                                                    {
+                                                        <p style="margin-top:10px;">Any further explanation can be given here:</p>
+                                                    }
+                                                    else if (LeaveData.LeaveTypeId == 8)
+                                                    {
+                                                        <p style="margin-top:10px;">Reason (Type Here): <span style="color:red;">*</span></p>
+                                                    }
+                                                    @*<p style="margin-top:10px;">Any further explanation can be given here:</p>*@
                                                     <SfTextBox Multiline="true" rows="4"
                                                                @bind-Value="@(LeaveData.OtherDetails)"
                                                                Enabled="@OnSubmitButtonsBool"
                                                                FloatLabelType="FloatLabelType.Never">
                                                     </SfTextBox>
-
-                                                    <h6 style="background-color:#2c3e50; color:ghostwhite;margin-top: 10px;">NB: YOU ARE REQUIRED TO UPLOAD EVIDENCE FOR SICK LEAVE APPLICATION.OTHERWISE IT MIGHT NOT BE GRANTED</h6>
+                                                    @if(LeaveData.LeaveTypeId == 3)
+                                                    {
+                                                        <h6 style="background-color:#2c3e50; color:ghostwhite;margin-top: 10px;">NB: YOU ARE REQUIRED TO UPLOAD EVIDENCE FOR SICK LEAVE APPLICATION.OTHERWISE IT MIGHT NOT BE GRANTED</h6>
+                                                    }                                                    
                                                  </div>
                                                 
                                             }
@@ -1040,7 +1066,7 @@
 
                                                     <td colspan="2">
                                                         <p>Recall Date:<span style="color:red;">*</span></p>
-                                                         <SfDatePicker @bind-Value="@(LeaveData.RecallDate)" Enabled="true" ID="RecallDate" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never" Min="MinDate" Max='@MaxRecallDate'>
+                                                         <SfDatePicker @bind-Value="@(LeaveData.RecallDate)" Enabled="true" ID="RecallDate" Format="dd-MM-yyyy" FloatLabelType="FloatLabelType.Never" Min="MinDate" Max='@MaxRecallDate' AllowEdit="false">
                                                             <DatePickerEvents TValue="DateTime?" ValueChange="OnRecallDateChange"></DatePickerEvents>
                                                         </SfDatePicker>
                                                     </td>
@@ -1187,7 +1213,9 @@
     int _recallnewtotaldays = 0;
     public string maskvalue { get; set; } = "000 000 000 0";
     List<ACountry>? CountryData { get; set; }
-
+    public Query LocalDataQuery = new Query().Take(15);
+    private string? imageSource = $"Image/flags/1x1/";
+    public bool loadingspinner { get; set; }
 
     private List<object> ToolbarMenu = new List<object>()
     {
@@ -1304,6 +1332,7 @@
         try
         {
             await base.OnInitializedAsync();
+            loadingspinner = true;
             var isAuthenticated = await AuthService.CheckAuthenticationStatus();
             if (isAuthenticated == false)
             {
@@ -1414,7 +1443,7 @@
         }
         finally
         {
-
+            loadingspinner = false;
         }
 
     }
@@ -1488,6 +1517,11 @@
             else if (LeaveData.LeaveTypeId == 3 && LeaveData.EmployeeLeaveHeaderAttachment.Count <= 0)
             {
                 toastService.ShowWarning("Please provide evidence for sick leave in the attachment section");
+            }
+
+            else if (LeaveData.LeaveTypeId == 8 &&string.IsNullOrEmpty(LeaveData.OtherDetails))
+            {
+                toastService.ShowWarning("Please provide reason(s) for this official duty application");
             }
 
             else if(LeaveData.CommencementDate == null)
@@ -1646,7 +1680,16 @@
                 //Supervisor Review
                 if (LeaveData.LeaveApprovalStatusId == 2)
                 {
-                    LeaveData.LeaveApprovalStatusId = 5;
+                    //For Official Leave - Supervisor Approves the request
+                    if(LeaveData.LeaveTypeId == 8)
+                    {
+                        LeaveData.LeaveApprovalStatusId = 3;
+                    }
+                    else
+                    {
+                        LeaveData.LeaveApprovalStatusId = 5;
+                    }
+
                     LeaveData.SupervisorApprovalDate = DateTime.Now;
                 }
 
@@ -1967,65 +2010,74 @@
         leavetypedays = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == LeaveData.LeaveTypeId);
         StartDate = Convert.ToDateTime(args.Value);
 
-        //Annual
-        if (LeaveData.LeaveTypeId == 1 || LeaveData.LeaveTypeId == 5)
+        if(LeaveData != null)
         {
-            EndDateEnablerBool = true;
-            LeaveData.EndDate = null;
-            TotalDaysTakenPrior = 0;
-            LeaveData.NoDaysAppliedFor = 0;
-            LeaveData.TotalDays = 0;
-        }
-        //Compassionate and Maternity and Sick Leave
-        else if(LeaveData.LeaveTypeId == 2 || LeaveData.LeaveTypeId == 3/*  || LeaveData.LeaveTypeId == 5  */)
-        {                        
-            DateTime EndDateWeekDays = GetWeekDaysOnly(StartDate, leavetypedays.LeaveDaysPerYear.Value).AddDays(0); // Subtract one day inorder to get end date as the actual date the leave ends
-
-            PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDateWeekDays);
-            LeaveData.EndDate = EndDateWeekDays.AddDays(PublicHolidays);
-
-            numberOfDays2 = GetNumberOfDates(StartDate, EndDateWeekDays);
-            datesselectedd = GetDatesBetween(StartDate, EndDateWeekDays).ToArray();
-
-            LeaveData.TotalDays = leavetypedays.LeaveDaysPerYear.Value;
-
-            //Below is to assign the total days applied for
-            //Maternity leave
-            if(LeaveData.LeaveTypeId == 2)
-            {
-                EndDateEnablerBool = false;
-                LeaveData.NoDaysAppliedFor = leavetypedays.LeaveDaysPerYear.Value;
-            }
-            //Sick leave
-            else if(LeaveData.LeaveTypeId == 3)
+            //Annual and Compassionate and Sick Leave and Study Leave
+            if (LeaveData.LeaveTypeId == 1 || LeaveData.LeaveTypeId == 3 || LeaveData.LeaveTypeId == 5  || LeaveData.LeaveTypeId == 7)
             {
                 EndDateEnablerBool = true;
-                LeaveData.NoDaysAppliedFor = leavetypedays.LeaveDaysPerYear.Value;
-            }   
+                LeaveData.EndDate = null;
+                TotalDaysTakenPrior = 0;
+                LeaveData.NoDaysAppliedFor = 0;
+                LeaveData.TotalDays = 0;
+            }
+            //Maternity and Special Leave
+            else if (LeaveData.LeaveTypeId == 2 || LeaveData.LeaveTypeId == 6 /* || LeaveData.LeaveTypeId == 3 *//*  || LeaveData.LeaveTypeId == 5  */)
+            {
+                DateTime EndDateWeekDays = GetWeekDaysOnly(StartDate, leavetypedays.LeaveDaysPerYear.Value).AddDays(0); // Subtract one day inorder to get end date as the actual date the leave ends
 
-            //Compassionate leave
-            // else if(LeaveData.LeaveTypeId == 5)
-            // {
-            //     EndDateEnablerBool = false;
-            //     LeaveData.NoDaysAppliedFor = leavetypedays.LeaveDaysPerYear.Value;
-            // }             
+                PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDateWeekDays);
+                LeaveData.EndDate = EndDateWeekDays.AddDays(PublicHolidays);
+
+                numberOfDays2 = GetNumberOfDates(StartDate, EndDateWeekDays);
+                datesselectedd = GetDatesBetween(StartDate, EndDateWeekDays).ToArray();
+
+                LeaveData.TotalDays = leavetypedays.LeaveDaysPerYear.Value;
+
+                //Below is to assign the total days applied for
+                //Maternity leave
+                if (LeaveData.LeaveTypeId == 2)
+                {
+                    EndDateEnablerBool = false;
+                    LeaveData.NoDaysAppliedFor = leavetypedays.LeaveDaysPerYear.Value;
+                }
+                //Sick leave
+                // else if (LeaveData.LeaveTypeId == 3)
+                // {
+                //     EndDateEnablerBool = true;
+                //     LeaveData.NoDaysAppliedFor = leavetypedays.LeaveDaysPerYear.Value;
+                // }
+
+                //Special Leave
+                else if (LeaveData.LeaveTypeId == 6)
+                {
+                    EndDateEnablerBool = false;
+                    LeaveData.NoDaysAppliedFor = leavetypedays.LeaveDaysPerYear.Value;
+                }
+
+                //Compassionate leave
+                // else if(LeaveData.LeaveTypeId == 5)
+                // {
+                //     EndDateEnablerBool = false;
+                //     LeaveData.NoDaysAppliedFor = leavetypedays.LeaveDaysPerYear.Value;
+                // }
+            }
+
+            //Parternity
+            else if (LeaveData.LeaveTypeId == 4)
+            {
+                EndDateEnablerBool = false;
+                TotalPaternalDays = leavetypedays.LeaveDaysPerYear.Value;
+                // TotalPaternalDays = (leavetypedays.LeaveDaysPerYear.Value * Convert.ToInt32(LeaveData.NoChildren));
+
+                DateTime EndDateWeekDays = GetWeekDaysOnly(StartDate, TotalPaternalDays).AddDays(0);
+
+                LeaveData.TotalDays = TotalPaternalDays;
+                PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDateWeekDays);
+                LeaveData.EndDate = EndDateWeekDays.AddDays(PublicHolidays);
+                LeaveData.NoDaysAppliedFor = TotalPaternalDays;
+            }
         }
-
-        //Parternity
-        else if(LeaveData.LeaveTypeId == 4 )
-        {
-            EndDateEnablerBool = false;
-            TotalPaternalDays = leavetypedays.LeaveDaysPerYear.Value;
-            // TotalPaternalDays = (leavetypedays.LeaveDaysPerYear.Value * Convert.ToInt32(LeaveData.NoChildren));
-
-            DateTime EndDateWeekDays = GetWeekDaysOnly(StartDate, TotalPaternalDays).AddDays(0);
-
-            LeaveData.TotalDays = TotalPaternalDays;
-            PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDateWeekDays);
-            LeaveData.EndDate = EndDateWeekDays.AddDays(PublicHolidays);
-            LeaveData.NoDaysAppliedFor = TotalPaternalDays;
-        }
-
 
         StateHasChanged();
     }
