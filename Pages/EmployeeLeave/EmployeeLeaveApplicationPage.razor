@@ -17,6 +17,7 @@
 @using HCMIS.Interface;
 @inject IAuthenticationService AuthService;
 @using Microsoft.AspNetCore.Components;
+@inject IReportService reportservice;
 
 <style>
 
@@ -533,10 +534,11 @@
 
                                                 else if (leavetypedays != null && (LeaveData.LeaveTypeId != 2 && LeaveData.LeaveTypeId != 3 
                                                     && LeaveData.LeaveTypeId != 4 && LeaveData.LeaveTypeId != 7  && LeaveData.LeaveTypeId != 8) &&
-                                                    (LeaveData.TotalDays > @leavetypedays.LeaveDaysPerYear))
+                                                    (LeaveData.TotalDays > (Convert.ToDouble(@leavetypedays.LeaveDaysPerYear) - daysunaccountedfor) /* @leavetypedays.LeaveDaysPerYear */))
                                                 {
                                                     <h6 style="margin-top: 10px;">
-                                                        You have exceeded the @leavetypedays.LeaveDaysPerYear working days allocated.
+                                                        @*@leavetypedays.LeaveDaysPerYear*@
+                                                        You have exceeded the (Convert.ToDouble(@leavetypedays.LeaveDaysPerYear) - daysunaccountedfor) working days allocated.
                                                         Kindly reduce on the number of days.
                                                     </h6>
                                                 }
@@ -546,10 +548,18 @@
                                                     <div class="col-md-3">
                                                         <p style="margin-top:10px;">Days Entitled:</p>
                                                         @*@if (leavetypedays != null && leavetypedays.LeaveTypeId != 4)*@
-
+                                                        @{
+                                                            double? daysentitled = 0;
+                                                            if (leavetypedays != null)
+                                                            {                                                                
+                                                                daysentitled = (Convert.ToDouble(@leavetypedays.LeaveDaysPerYear) - daysunaccountedfor);
+                                                            }                                                            
+                                                        }
                                                         @if (leavetypedays != null && (leavetypedays.LeaveTypeId != 3 && leavetypedays.LeaveTypeId != 4  && leavetypedays.LeaveTypeId != 7))
                                                         {
-                                                            <p style="font-weight: bolder;">@leavetypedays.LeaveDaysPerYear</p>
+                                                            @*<p style="font-weight: bolder;">@leavetypedays.LeaveDaysPerYear</p>*@
+                                                            <p style="font-weight: bolder;">@daysentitled</p>
+                                                            <p style="font-weight: bolder;">UnAccounted are: @daysunaccountedfor</p>
                                                         }
                                                         //Sick Leave
                                                         else if (leavetypedays != null && leavetypedays.LeaveTypeId == 3)
@@ -1176,6 +1186,7 @@
     DateTime StartDate = DateTime.Now;
     DateTime EndDate = DateTime.Now;
     private static ALeaveType? leavetypedays { get; set; }
+    double? daysunaccountedfor = 0;
     public static int PublicHolidays { get; set; } = 0;
     public static int numberOfDays2 { get; set; } = 0;
     public static DateTime[]? datesselectedd = null;
@@ -1220,9 +1231,11 @@
     int _recallnewtotaldays = 0;
     public string maskvalue { get; set; } = "000 000 000 0";
     List<ACountry>? CountryData { get; set; }
+    List<ViewTimeandAttendanceSummary>? AttendanceData { get; set; }
     public Query LocalDataQuery = new Query().Take(15);
     private string? imageSource = $"Image/flags/1x1/";
     public bool loadingspinner { get; set; }
+    private UtilitiesSearchPanel InputModel = new UtilitiesSearchPanel();
 
     private List<object> ToolbarMenu = new List<object>()
     {
@@ -1352,6 +1365,11 @@
                 MainQuery = new Query();
 
                 List<Task> t = new List<Task>();
+
+                t.Add(Task.Run(async () =>
+                {
+                    AttendanceData = await reportservice.GetAttendanceData(InputModel);
+                }));
 
                 t.Add(Task.Run(async () =>
                 {
@@ -1981,6 +1999,12 @@
 
     public void OnLeaveTypeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ALeaveType> args)
     {
+        // if(AttendanceData != null)
+        // {
+        //     double? _daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == LeaveData.FinancialYearId && o.HcmisemployeeId == LeaveData.Employeeid).Sum(o => o.TotalDaysHrsDueUncountedFor);        
+        //     daysunaccountedfor = Math.Truncate(Convert.ToDouble(_daysunaccountedfor));
+        // }
+        
         leavetypedays = args.ItemData;
         int? leavetypeId = args.ItemData.LeaveTypeId;
         EndDateEnablerBool = true;
@@ -2239,6 +2263,12 @@
         {
             if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
             {
+                //Get Unacountedfordaysfromtimeandattendance
+                if (AttendanceData != null)
+                {
+                    double? _daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == Args.RowData.FinancialYearId && o.HcmisemployeeId == Args.RowData.Employeeid).Sum(o => o.TotalDaysHrsDueUncountedFor);
+                    daysunaccountedfor = Math.Truncate(Convert.ToDouble(_daysunaccountedfor));
+                }
                 _previous = Args.RequestType;
                 leavetypedays = new();
                 LeaveData = null;
@@ -2309,6 +2339,13 @@
 
             if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
             {
+                //Get Un accounted for days from time and attendance
+                if (AttendanceData != null)
+                {
+                    double? _daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == Args.RowData.FinancialYearId && o.HcmisemployeeId == Args.RowData.Employeeid).Sum(o => o.TotalDaysHrsDueUncountedFor);
+                    daysunaccountedfor = Math.Truncate(Convert.ToDouble(_daysunaccountedfor));
+                }
+
                 _previous = Args.RequestType;
                 var _employeedetail = EmployeeData.FirstOrDefault(o=>o.Employeeid == Credentials.StaffId);
 
