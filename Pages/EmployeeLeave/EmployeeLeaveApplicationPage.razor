@@ -532,13 +532,10 @@
                                                     </div>
                                                 }
 
-                                                else if (leavetypedays != null && (LeaveData.LeaveTypeId != 2 && LeaveData.LeaveTypeId != 3 
-                                                    && LeaveData.LeaveTypeId != 4 && LeaveData.LeaveTypeId != 7  && LeaveData.LeaveTypeId != 8) &&
-                                                    (LeaveData.TotalDays > (Convert.ToDouble(@leavetypedays.LeaveDaysPerYear) - daysunaccountedfor) /* @leavetypedays.LeaveDaysPerYear */))
+                                                else if (leavetypedays != null && LeaveData.LeaveTypeId == 1 && (LeaveData.TotalDays > @leavetypedays.LeaveDaysPerYear ))
                                                 {
                                                     <h6 style="margin-top: 10px;">
-                                                        @*@leavetypedays.LeaveDaysPerYear*@
-                                                        You have exceeded the (Convert.ToDouble(@leavetypedays.LeaveDaysPerYear) - daysunaccountedfor) working days allocated.
+                                                        You have exceeded the @leavetypedays.LeaveDaysPerYear working days allocated.
                                                         Kindly reduce on the number of days.
                                                     </h6>
                                                 }
@@ -546,45 +543,41 @@
                                                 else
                                                 {
                                                     <div class="col-md-3">
-                                                        <p style="margin-top:10px;">Days Entitled:</p>
-                                                        @*@if (leavetypedays != null && leavetypedays.LeaveTypeId != 4)*@
-                                                        @{
-                                                            double? daysentitled = 0;
-                                                            if (leavetypedays != null)
-                                                            {                                                                
-                                                                daysentitled = (Convert.ToDouble(@leavetypedays.LeaveDaysPerYear) - daysunaccountedfor);
-                                                            }                                                            
-                                                        }
-                                                        @if (leavetypedays != null && (leavetypedays.LeaveTypeId != 3 && leavetypedays.LeaveTypeId != 4  && leavetypedays.LeaveTypeId != 7))
-                                                        {
-                                                            @*<p style="font-weight: bolder;">@leavetypedays.LeaveDaysPerYear</p>*@
-                                                            <p style="font-weight: bolder;">@daysentitled</p>
-                                                            <p style="font-weight: bolder;">UnAccounted are: @daysunaccountedfor</p>
-                                                        }
-                                                        //Sick Leave
-                                                        else if (leavetypedays != null && leavetypedays.LeaveTypeId == 3)
-                                                        {
-                                                            <p style="font-weight: bolder;">Sick Leave Is Not Restricted</p>
-                                                        }
-                                                        //Paternity Leave
-                                                        else if (leavetypedays != null && leavetypedays.LeaveTypeId == 4)
-                                                        {
-                                                            <p style="font-weight: bolder;">@leavetypedays.LeaveDaysPerYear Days</p>
-                                                        }
-                                                        //Study Leave                                                        
-                                                        else if (leavetypedays != null && leavetypedays.LeaveTypeId == 7)
-                                                        {
-                                                            <p style="font-weight: bolder;">@leavetypedays.LeaveDaysPerYear Days (Can select more days) </p>
-                                                        }
+                                                    @{
+                                                            int? daysentitled = 0;
+                                                            double? availabledays = 0;
 
-                                                        @*@if (leavetypedays != null)
-                                                        {
-                                                            @leavetypedays.LeaveDaysPerYear
+                                                            //Annual Leave Days
+                                                            @if (leavetypedays != null && leavetypedays.LeaveTypeId == 1)
+                                                            {
+                                                                daysentitled = @leavetypedays.LeaveDaysPerYear;
+                                                                availabledays = (daysentitled - daysunaccountedfor);
+
+                                                                <p style="margin-top:10px;">Days Entitled : @daysentitled</p>
+                                                                <p style="margin-top:10px;color:red;font-size:small;">Time &amp; Attendance Unaccounted Days : @daysunaccountedfor</p>
+                                                                <p style="margin-top:10px;font-weight:bolder;">Available Days : @(availabledays)</p>
+                                                            }
+
+                                                            //Sick Leave
+                                                            else if (leavetypedays != null && leavetypedays.LeaveTypeId == 3)
+                                                            {
+                                                                <p style="margin-top:10px;font-weight:bolder;">Available Days : Sick Leave Is Not Restricted</p>
+                                                            }
+                                                            //Paternity Leave
+                                                            else if (leavetypedays != null && leavetypedays.LeaveTypeId == 4)
+                                                            {
+                                                                <p style="margin-top:10px;font-weight:bolder;">Available Days : @leavetypedays.LeaveDaysPerYear Days</p>
+                                                            }
+                                                            //Study Leave
+                                                            else if (leavetypedays != null && leavetypedays.LeaveTypeId == 7)
+                                                            {
+                                                                <p style="margin-top:10px;font-weight:bolder;">Available Days : @leavetypedays.LeaveDaysPerYear Days (Can select more days)</p>
+                                                            }   
+                                                            else
+                                                            {
+                                                                <p style="margin-top:10px;font-weight:bolder;">Available Days : @leavetypedays.LeaveDaysPerYear Days</p>                                                                
+                                                            }
                                                         }
-                                                        else if (leavetypedays != null && leavetypedays.LeaveTypeId == 4)
-                                                        {
-                                                            <p>@leavetypedays.LeaveDaysPerYear Days</p>
-                                                        }*@
                                                     </div>
 
                                                     <div class="col-md-3">
@@ -2263,10 +2256,12 @@
         {
             if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
             {
+                // toastService.ShowError("FinYear" + finyearid);
+                // toastService.ShowError("Employee" + Credentials.StaffId);
                 //Get Unacountedfordaysfromtimeandattendance
-                if (AttendanceData != null)
+                if (AttendanceData != null && Credentials != null)
                 {
-                    double? _daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == Args.RowData.FinancialYearId && o.HcmisemployeeId == Args.RowData.Employeeid).Sum(o => o.TotalDaysHrsDueUncountedFor);
+                    double? _daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == finyearid && o.HcmisemployeeId == Credentials.StaffId).Sum(o => o.TotalDaysHrsDueUncountedFor);
                     daysunaccountedfor = Math.Truncate(Convert.ToDouble(_daysunaccountedfor));
                 }
                 _previous = Args.RequestType;
@@ -2338,14 +2333,14 @@
             }
 
             if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
-            {
+            {                
                 //Get Un accounted for days from time and attendance
                 if (AttendanceData != null)
                 {
                     double? _daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == Args.RowData.FinancialYearId && o.HcmisemployeeId == Args.RowData.Employeeid).Sum(o => o.TotalDaysHrsDueUncountedFor);
                     daysunaccountedfor = Math.Truncate(Convert.ToDouble(_daysunaccountedfor));
                 }
-
+                
                 _previous = Args.RequestType;
                 var _employeedetail = EmployeeData.FirstOrDefault(o=>o.Employeeid == Credentials.StaffId);
 
