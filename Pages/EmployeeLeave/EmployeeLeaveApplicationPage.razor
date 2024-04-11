@@ -200,6 +200,7 @@
                     <ContentTemplate>
                         <SearchLeaveRequestPage 
                             YearData="@YearData" 
+                            EmployeeData="@EmployeeData"
                             finyearid="@finyearid" 
                             onsearchtoggle="@ToggleSearchQuery">
                         </SearchLeaveRequestPage>
@@ -547,36 +548,39 @@
                                                             int? daysentitled = 0;
                                                             double? availabledays = 0;
 
-                                                            //Annual Leave Days
-                                                            @if (leavetypedays != null && leavetypedays.LeaveTypeId == 1)
+                                                            @if (leavetypedays != null)
                                                             {
-                                                                daysentitled = @leavetypedays.LeaveDaysPerYear;
-                                                                availabledays = (daysentitled - daysunaccountedfor);
+                                                                //Annual Leave Days
+                                                                @if (leavetypedays.LeaveTypeId == 1)
+                                                                {
+                                                                    daysentitled = @leavetypedays.LeaveDaysPerYear;
+                                                                    availabledays = (daysentitled - daysunaccountedfor);
 
-                                                                <p style="margin-top:10px;">Days Entitled : @daysentitled</p>
-                                                                <p style="margin-top:10px;color:red;font-size:small;">Time &amp; Attendance Unaccounted Days : @daysunaccountedfor</p>
-                                                                <p style="margin-top:10px;font-weight:bolder;">Available Days : @(availabledays)</p>
-                                                            }
+                                                                    <p style="margin-top:10px;">Days Entitled : @daysentitled</p>
+                                                                    <p style="margin-top:10px;color:red;font-size:small;">Time &amp; Attendance Unaccounted Days : @daysunaccountedfor</p>
+                                                                    <p style="margin-top:10px;font-weight:bolder;">Available Days : @(availabledays)</p>
+                                                                }
 
-                                                            //Sick Leave
-                                                            else if (leavetypedays != null && leavetypedays.LeaveTypeId == 3)
-                                                            {
-                                                                <p style="margin-top:10px;font-weight:bolder;">Available Days : Sick Leave Is Not Restricted</p>
-                                                            }
-                                                            //Paternity Leave
-                                                            else if (leavetypedays != null && leavetypedays.LeaveTypeId == 4)
-                                                            {
-                                                                <p style="margin-top:10px;font-weight:bolder;">Available Days : @leavetypedays.LeaveDaysPerYear Days</p>
-                                                            }
-                                                            //Study Leave
-                                                            else if (leavetypedays != null && leavetypedays.LeaveTypeId == 7)
-                                                            {
-                                                                <p style="margin-top:10px;font-weight:bolder;">Available Days : @leavetypedays.LeaveDaysPerYear Days (Can select more days)</p>
-                                                            }   
-                                                            else
-                                                            {
-                                                                <p style="margin-top:10px;font-weight:bolder;">Available Days : @leavetypedays.LeaveDaysPerYear Days</p>                                                                
-                                                            }
+                                                                //Sick Leave
+                                                                else if (leavetypedays.LeaveTypeId == 3)
+                                                                {
+                                                                    <p style="margin-top:10px;font-weight:bolder;">Available Days : Sick Leave Is Not Restricted</p>
+                                                                }
+                                                                //Paternity Leave
+                                                                else if (leavetypedays.LeaveTypeId == 4)
+                                                                {
+                                                                    <p style="margin-top:10px;font-weight:bolder;">Available Days : @leavetypedays.LeaveDaysPerYear Days</p>
+                                                                }
+                                                                //Study Leave
+                                                                else if (leavetypedays.LeaveTypeId == 7)
+                                                                {
+                                                                    <p style="margin-top:10px;font-weight:bolder;">Available Days : @leavetypedays.LeaveDaysPerYear Days (Can select more days)</p>
+                                                                }
+                                                                else if (@leavetypedays.LeaveDaysPerYear.HasValue)
+                                                                {
+                                                                    <p style="margin-top:10px;font-weight:bolder;">Available Days : @leavetypedays.LeaveDaysPerYear</p>
+                                                                }
+                                                            }                                                            
                                                         }
                                                     </div>
 
@@ -646,20 +650,22 @@
                                     </ContentTemplate>
                                 </AccordionItem>
 
-                                @if(LeaveComputation == true)
+                                <AccordionItem Expanded="true">
+                                    <HeaderTemplate><strong>PART II: LEAVE COMPUTATION: Completed by the Head-HR & Administration</strong></HeaderTemplate>
+                                    <ContentTemplate>
+                                        <LeaveComputationPage AppliedDays="@LeaveData.NoDaysAppliedFor"
+                                                              daysunaccountedfor="@daysunaccountedfor"
+                                                              LeaveTypeData="@LeaveTypeData"
+                                                              TotalDaysTakenPrior="@TotalDaysTakenPrior"
+                                                              EmployeeLeaveId="@LeaveData.EmployeeLeaveId">
+                                        </LeaveComputationPage>
+                                    </ContentTemplate>
+                                </AccordionItem>
+
+                                @*@if(LeaveComputation == true)
                                 {
-                                    <AccordionItem Expanded="true">
-                                        <HeaderTemplate><strong>PART II: LEAVE COMPUTATION: Completed by the Head-HR & Administration</strong></HeaderTemplate>
-                                        <ContentTemplate>
-                                            <LeaveComputationPage 
-                                                AppliedDays="@LeaveData.NoDaysAppliedFor" 
-                                                LeaveTypeData="@LeaveTypeData" 
-                                                TotalDaysTakenPrior="@TotalDaysTakenPrior"
-                                                EmployeeLeaveId="@LeaveData.EmployeeLeaveId">
-                                            </LeaveComputationPage>
-                                        </ContentTemplate>
-                                    </AccordionItem>
-                                }
+                                    
+                                }*@
 
                                 <AccordionItem Expanded="true">
                                     <HeaderTemplate><strong>PART III: RECOMMENDATION</strong></HeaderTemplate>
@@ -2812,6 +2818,8 @@
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         {
             string? _YearId = null;
+            string? _Employeeid = null;
+            string? _ReferenceNumber = null;
 
             if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
             {
@@ -2821,12 +2829,20 @@
                 {
                     _YearId = val.FirstOrDefault(o => o.Key == "YearId").Value.ToString();
                 }
+                if (val.FirstOrDefault(o => o.Key == "Employeeid").Value != null)
+                {
+                    _Employeeid = val.FirstOrDefault(o => o.Key == "Employeeid").Value.ToString();
+                }
+                if (val.FirstOrDefault(o => o.Key == "ReferenceNumber").Value != null)
+                {
+                    _ReferenceNumber = val.FirstOrDefault(o => o.Key == "ReferenceNumber").Value.ToString();
+                }                 
             }
-
+            
             var data = new List<EmployeeLeaveHeader>();
             try
             {
-                var response = await Http.GetAsync($"EmployeeLeave/GetEmployeeLeaveData?finyearid={_YearId}");
+                var response = await Http.GetAsync($"EmployeeLeave/GetEmployeeLeaveData?finyearid={_YearId}&Employeeid={_Employeeid}&ReferenceNumber={_ReferenceNumber}");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
