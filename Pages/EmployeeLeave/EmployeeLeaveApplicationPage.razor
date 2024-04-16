@@ -533,7 +533,7 @@
                                                     </div>
                                                 }
 
-                                                else if (leavetypedays != null && LeaveData.LeaveTypeId == 1 && (LeaveData.TotalDays > @leavetypedays.LeaveDaysPerYear ))
+                                                else if (leavetypedays != null && LeaveData.LeaveTypeId == 1 && (LeaveData.TotalDays > (@leavetypedays.LeaveDaysPerYear - daysunaccountedfor)))
                                                 {
                                                     <h6 style="margin-top: 10px;">
                                                         You have exceeded the @leavetypedays.LeaveDaysPerYear working days allocated.
@@ -740,42 +740,63 @@
                                 <AccordionItem Expanded="true">
                                     <HeaderTemplate><strong>PART IV: APPROVAL</strong></HeaderTemplate>
                                     <ContentTemplate>
-                                        @*If Official Duty*@
-                                        @if (LeaveData != null && LeaveData.LeaveTypeId == 8)
-                                        {
-                                            <h6 style="background-color:#2c3e50; color:ghostwhite;margin-top: 10px;">NB: OFFICIAL DUTY REQUESTS ARE APPROVED BY IMMEDIATE SUPERVISORS </h6>
-                                        }
-                                        else
-                                        {
-                                            <div class="col-md-12">
-                                                <h6 style="background-color: white;color: black;"> Leave Approved By : Chief Human Resource Officer</h6>
-                                            </div>
-
-                                            <div class="col-md-12">
-                                                @*<SfDropDownList @bind-Value="@(LeaveData.Chro)" TItem="ViewEmployeeDropDown" Enabled="OnSubmitButtonsBool" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                                <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
-                                                </SfDropDownList>*@
-
-                                                <SfDropDownList @bind-Value="@(LeaveData.Chro)" TItem="ViewEmployeeDropDown" Enabled="OnSubmitButtonsBool" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                                    <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
-                                                    <DropDownListEvents TValue="int?" TItem="ViewEmployeeDropDown" ValueChange="OnEmployeeCHROChange"></DropDownListEvents>
-                                                </SfDropDownList>
-
-                                                @if (employeenochrochange != null && !string.IsNullOrEmpty(employeenochrochange.EmailAddress) && LeaveData.Chro != null)
+                                     @{
+                                            int? JobTitleId = 0;
+                                            @if (_previous == Syncfusion.Blazor.Grids.Action.Add)
+                                            {
+                                                var _data = EmployeeData.FirstOrDefault(o => o.Employeeid == Credentials.StaffId);
+                                                if (_data != null)
                                                 {
-                                                    <p style="color:forestgreen; font-weight:bold">Email: @employeenochrochange.EmailAddress</p>
-                                                }
-                                                else if (employeenochrochange != null && (LeaveData != null && LeaveData.Chro != null)
-                                                && (employeenochrochange != null && string.IsNullOrEmpty(employeenochrochange.EmailAddress)))
+                                                    JobTitleId = _data.JibTitleId;
+                                                }                                                
+                                            }
+                                            else if(_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
+                                            {
+                                                var _data = EmployeeData.FirstOrDefault(o => o.Employeeid == LeaveData.Employeeid);
+                                                if (_data != null)
                                                 {
-                                                    <p style="color:red; font-weight:bold">Email Not Provided</p>
-                                                }
-                                                else
-                                                {
+                                                    JobTitleId = _data.JibTitleId;
+                                                }   
+                                            }                                            
 
-                                                }
-                                            </div>
-                                        }                                      
+                                            @*If Official Duty*@
+                                            @if (LeaveData != null && LeaveData.LeaveTypeId == 8)
+                                            {
+                                                <h6 style="background-color:#2c3e50; color:ghostwhite;margin-top: 10px;">NB: OFFICIAL DUTY REQUESTS ARE APPROVED BY IMMEDIATE SUPERVISORS </h6>
+                                            }
+                                            @*If CHRO Application*@
+                                            else if (JobTitleId == 44)
+                                            {
+                                                <h6 style="background-color: white;color: black;">CHRO LEAVE WILL BE APPROVED BY IMMEDIATE SUPERVISOR (CEO) SELECTED IN PART III</h6>
+                                            }
+                                            else
+                                            {
+                                                <div class="col-md-12">
+                                                    <h6 style="background-color: white;color: black;"> LEAVE APPROVED BY : CHIEF HUMAN RESOURCE OFFICER</h6>
+                                                </div>
+
+                                                <div class="col-md-12">
+                                                    <SfDropDownList @bind-Value="@(LeaveData.Chro)" TItem="ViewEmployeeDropDown" Enabled="OnSubmitButtonsBool" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                        <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
+                                                        <DropDownListEvents TValue="int?" TItem="ViewEmployeeDropDown" ValueChange="OnEmployeeCHROChange"></DropDownListEvents>
+                                                    </SfDropDownList>
+
+                                                    @if (employeenochrochange != null && !string.IsNullOrEmpty(employeenochrochange.EmailAddress) && LeaveData.Chro != null)
+                                                    {
+                                                        <p style="color:forestgreen; font-weight:bold">Email: @employeenochrochange.EmailAddress</p>
+                                                    }
+                                                    else if (employeenochrochange != null && (LeaveData != null && LeaveData.Chro != null)
+                                                    && (employeenochrochange != null && string.IsNullOrEmpty(employeenochrochange.EmailAddress)))
+                                                    {
+                                                        <p style="color:red; font-weight:bold">Email Not Provided</p>
+                                                    }
+                                                    else
+                                                    {
+
+                                                    }
+                                                </div>
+                                            }
+                                        }                                                                          
 
                                     </ContentTemplate>
                                 </AccordionItem>
@@ -1169,7 +1190,7 @@
     List<ALeaveApprovalStatus>? ApprovalStatusData { get; set; }
     List<EmployeeLeaveHeader>? LeaveDataSource { get; set; }
     EmployeeLeaveHeader? selecteddecision { get; set; }
-    private static EmployeeLeaveHeader? LeaveData { get; set; }
+    private EmployeeLeaveHeader? LeaveData { get; set; }
     List<APublicHolidays>? PublicHolidaysData { get; set; }
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     int currentMonth = DateTime.Now.Month;
@@ -1701,34 +1722,49 @@
             {
                 await LoadingDialogue.ShowAsync();
 
-                //Supervisor Review
-                if (LeaveData.LeaveApprovalStatusId == 2)
+                var _data = EmployeeData.FirstOrDefault(o => o.Employeeid == LeaveData.Employeeid);
+
+                //CHRO Approval
+                if(_data != null && _data.JibTitleId == 44)
                 {
-                    //For Official Leave - Supervisor Approves the request
-                    if(LeaveData.LeaveTypeId == 8)
+                    //Supervisor Review
+                    if (LeaveData.LeaveApprovalStatusId == 2)
                     {
                         LeaveData.LeaveApprovalStatusId = 3;
+                        LeaveData.SupervisorApprovalDate = DateTime.Now;
                     }
-                    else
+                }
+                else
+                {
+                    //Supervisor Review
+                    if (LeaveData.LeaveApprovalStatusId == 2)
                     {
-                        LeaveData.LeaveApprovalStatusId = 5;
+                        //For Official Leave - Supervisor Approves the request
+                        if (LeaveData.LeaveTypeId == 8)
+                        {
+                            LeaveData.LeaveApprovalStatusId = 3;
+                        }
+                        else
+                        {
+                            LeaveData.LeaveApprovalStatusId = 5;
+                        }
+
+                        LeaveData.SupervisorApprovalDate = DateTime.Now;
+                    }    
+                    
+                    //HOD Review
+                    else if (LeaveData.LeaveApprovalStatusId == 5)
+                    {
+                        LeaveData.LeaveApprovalStatusId = 8;
+                        LeaveData.HodapprovalDate = DateTime.Now;
                     }
 
-                    LeaveData.SupervisorApprovalDate = DateTime.Now;
-                }
-
-                //HOD Review
-                else if (LeaveData.LeaveApprovalStatusId == 5)
-                {
-                    LeaveData.LeaveApprovalStatusId = 8;
-                    LeaveData.HodapprovalDate = DateTime.Now;
-                }
-
-                //CHRO Review and Approval
-                else if (LeaveData.LeaveApprovalStatusId ==8)
-                {
-                    LeaveData.LeaveApprovalStatusId = 9;
-                    LeaveData.ChroapprovalDate = DateTime.Now;
+                    //CHRO Review and Approval
+                    else if (LeaveData.LeaveApprovalStatusId == 8)
+                    {
+                        LeaveData.LeaveApprovalStatusId = 9;
+                        LeaveData.ChroapprovalDate = DateTime.Now;
+                    }
                 }
 
                 await DataGrid.EndEditAsync();
@@ -2000,8 +2036,8 @@
     {
         // if(AttendanceData != null)
         // {
-        //     double? _daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == LeaveData.FinancialYearId && o.HcmisemployeeId == LeaveData.Employeeid).Sum(o => o.TotalDaysHrsDueUncountedFor);        
-        //     daysunaccountedfor = Math.Truncate(Convert.ToDouble(_daysunaccountedfor));
+            // daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == finyearid && o.HcmisemployeeId == Credentials.StaffId).Sum(o => Math.Truncate(Convert.ToDouble(o.TotalDaysHrsDueUncountedFor)));
+
         // }
         
         leavetypedays = args.ItemData;
@@ -2266,10 +2302,12 @@
                 // toastService.ShowError("Employee" + Credentials.StaffId);
                 //Get Unacountedfordaysfromtimeandattendance
                 if (AttendanceData != null && Credentials != null)
-                {
-                    double? _daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == finyearid && o.HcmisemployeeId == Credentials.StaffId).Sum(o => o.TotalDaysHrsDueUncountedFor);
-                    daysunaccountedfor = Math.Truncate(Convert.ToDouble(_daysunaccountedfor));
+                {                    
+                    daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == finyearid && o.HcmisemployeeId == Credentials.StaffId).Sum(o => Math.Truncate(Convert.ToDouble(o.TotalDaysHrsDueUncountedFor)));
+
+                    //toastService.ShowError("daysunaccountedfor" + daysunaccountedfor);
                 }
+
                 _previous = Args.RequestType;
                 leavetypedays = new();
                 LeaveData = null;
@@ -2343,13 +2381,13 @@
                 //Get Un accounted for days from time and attendance
                 if (AttendanceData != null)
                 {
-                    double? _daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == Args.RowData.FinancialYearId && o.HcmisemployeeId == Args.RowData.Employeeid).Sum(o => o.TotalDaysHrsDueUncountedFor);
-                    daysunaccountedfor = Math.Truncate(Convert.ToDouble(_daysunaccountedfor));
+                    daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == Args.RowData.FinancialYearId && o.HcmisemployeeId == Args.RowData.Employeeid).Sum(o => Math.Truncate(Convert.ToDouble(o.TotalDaysHrsDueUncountedFor)));
                 }
                 
                 _previous = Args.RequestType;
+                
                 var _employeedetail = EmployeeData.FirstOrDefault(o=>o.Employeeid == Credentials.StaffId);
-
+                
                 //Load the current data here
 
                 List<Task> t = new List<Task>();

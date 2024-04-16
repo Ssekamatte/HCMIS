@@ -1,0 +1,265 @@
+﻿@page "/AccountForMissedDaysPage"
+@using HCMIS.Data;
+@using HCMIS.Model
+@using HCMIS.SHARED;
+@using HCMIS.SHARED.Models;
+@using HCMIS.ViewModel
+@using System.Text.Json
+@using System.Text.RegularExpressions
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject NavigationManager navManager;
+@using System.Collections;
+@inject IToastService toastService;
+@using System.Globalization;
+@using HCMIS.SHARED.Data;
+@inject IJSRuntime JsRuntime;
+@using HCMIS.Interface;
+@inject IAuthenticationService AuthService;
+@using Microsoft.AspNetCore.Components;
+@inject IReportService reportservice;
+
+<BreadCrumbPage Module="HCMIS" Submodule="ACCOUNT FOR MISSED DAYS FORM"/>
+
+@*
+@if(LeaveData !=  null)
+{   
+    
+}
+*@
+
+<div style="margin:10px; padding:10px; background-color:aliceblue;">
+    <div class="row">
+        <div class="col-md-2">
+            <p>Search Filters</p>
+
+            <div class="row">
+                <div class="col-md-3">
+                    <p>Year</p>
+                </div>
+                <div class="col-md-9">
+                    <SfMultiSelect @bind-Value="@searchpanel.Year"
+                                   TValue="int?[]"
+                                   TItem="AYears"
+                                   AllowFiltering="true"
+                                   FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                                   Mode="@VisualMode.CheckBox"
+                                   DataSource="@YearData"
+                                   ShowSelectAll="true"
+                                   EnableSelectionOrder="true"
+                                   ShowDropDownIcon="true"
+                                   FilterBarPlaceholder="Year"
+                                   FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+                        <MultiSelectFieldSettings Value="@nameof(AYears.YearId)"
+                                                  Text="@nameof(AYears.YearDesc)">
+                        </MultiSelectFieldSettings>
+                        @*<MultiSelectEvents TValue="int?[]" TItem="AYears" ValueChange="OnDepartmentChange"></MultiSelectEvents>*@
+                    </SfMultiSelect>
+                </div>
+
+                <div class="col-md-3">
+                    <p>Employee</p>
+                </div>
+                <div class="col-md-9">
+                    <SfMultiSelect @bind-Value="@searchpanel.Employeeid" TValue="int?[]" Query="@IndicatorQuery"
+                                   TItem="ViewEmployeeDropDown" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                                   Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" ShowSelectAll="true" EnableSelectionOrder="true"
+                                   ShowDropDownIcon="true" FilterBarPlaceholder="Employee" FloatLabelType="FloatLabelType.Never" PopupHeight="350px" Enabled="EmployeeDD"
+                                   PopupWidth="400px">
+                        <MultiSelectFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></MultiSelectFieldSettings>
+                    </SfMultiSelect>
+                </div>
+            </div>              
+            
+            @if (Downloadreport == false)
+            {
+                <div class="col col-md-12" style="margin-top:10px;">
+                    <button @onclick="@OnSearchSubmit" class="btn btn-success" data-ripple="true" style="margin-right:10px;">View Records</button>
+                    <button @onclick="@ClearSearchBtnClick" class="btn btn-danger" data-ripple="true" style="margin-right:10px;">Clear Search</button>
+                </div>
+            }
+        </div>
+
+        <div class="col-md-5">
+            <p>Unaccounted For Days</p>
+
+            <SfGrid @ref="@DataGrid" TValue="ViewTimeandAttendanceSummary" ID="Grid1" AllowPaging="true" AllowFiltering="false" DataSource="@datasource"
+                AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" 
+                AllowSelection="true" AllowSorting="true" AllowTextWrap="true">
+                <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+                    
+                </GridEditSettings>
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.FilterBar"></GridFilterSettings>
+                <GridPageSettings PageSizes="true"></GridPageSettings>                
+                <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+                
+                <GridColumns>
+                    @*<GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>*@
+                    @*<GridColumn Field=@nameof(ViewTimeandAttendanceSummary.DistrictId) HeaderText="DistrictId" AllowEditing="false" IsPrimaryKey="true" Width="150" Visible="false"></GridColumn>*@
+                    <GridColumn Field=@nameof(ViewTimeandAttendanceSummary.EmployeeDetails) HeaderText="Employee" Width="80"></GridColumn>
+                    <GridForeignColumn Field=@nameof(ViewTimeandAttendanceSummary.ReportMonth)
+                                       HeaderText="Month"
+                                       Width="40"
+                                       AllowEditing="true"
+                                       ForeignKeyField="@(nameof(AMonth.MonthId))"
+                                       ForeignKeyValue="@(nameof(AMonth.MonthDesc))"
+                                       ForeignDataSource="@MonthData" AllowFiltering="false"
+                                       CustomAttributes="@(new Dictionary<string,
+                    object>(){ { "class", "e-attr1" }})">
+                    </GridForeignColumn>
+
+                    <GridColumn Field=@nameof(ViewTimeandAttendanceSummary.ReportYear)
+                        HeaderText="Year"
+                        AllowEditing="false"
+                        Width="40"
+                        Visible="true"
+                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+                    </GridColumn>
+
+                    <GridColumn Field=@nameof(ViewTimeandAttendanceSummary.TotalDaysHrsDueUncountedFor)
+                                HeaderText="Days"
+                                AllowEditing="false"
+                                Width="40"
+                                Visible="true"
+                                CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        
+        </div>
+
+        <div class="col-md-5">
+            <p>Update Details</p>
+        </div>
+    </div>
+</div>
+
+
+
+@code {
+    List<AYears>? YearData { get; set; }
+    List<ViewEmployeeDropDown>? EmployeeData { get; set; }
+    private ViewTimeandAttendanceSummary? LeaveData { get; set; }
+    LoginResultModel? Credentials { get; set; }
+    public bool EmployeeDD { get; set; } = true;
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    private UtilitiesSearchPanel searchpanel = new UtilitiesSearchPanel();
+    Query? IndicatorQuery { get; set; }
+    bool Downloadreport { get; set; } = false;
+    SfGrid<ViewTimeandAttendanceSummary>? DataGrid { get; set; }
+    List<AMonth>? MonthData { get; set; }
+    List<ViewTimeandAttendanceSummary>? datasource { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    { 
+        try
+        {
+            LeaveData = new ViewTimeandAttendanceSummary();
+            await base.OnInitializedAsync();
+
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
+            {
+                navManager.NavigateTo("/LoginPage", true);
+            }
+            else
+            {
+                Credentials = await AuthService.GetUserCredentials();
+                List<Task> t = new List<Task>();
+
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetYears");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        YearData = JsonSerializer.Deserialize<List<AYears>>(content, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetEmployeeDD");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(content, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetMonth");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        MonthData = JsonSerializer.Deserialize<List<AMonth>>(content, _options);
+                    }
+                }));
+
+                Task _t = Task.WhenAll(t);
+                await _t;
+
+            }
+        }
+        catch(Exception ex)
+        {
+
+        }
+        finally
+        {
+
+        }
+    }
+
+    private void OnDepartmentChange(Syncfusion.Blazor.DropDowns.MultiSelectChangeEventArgs<int?[]> args)
+    {
+        if (args.Value != null)
+        {
+            EmployeeDD = true;
+            IndicatorQuery = new Query();
+            List<WhereFilter> filterList = new List<WhereFilter>();
+            foreach (var item in args.Value)
+            {
+                filterList.Add(new WhereFilter() { Field = "ReportYearId", Operator = "equal", value = item, IgnoreCase = true });
+            }
+
+            var orWhere = WhereFilter.Or(filterList);
+            IndicatorQuery = new Query().Where(orWhere);
+        }
+        else
+        {
+            IndicatorQuery = new Query();
+        }
+    }
+
+    private async Task OnSearchSubmit()
+    { 
+        try
+        {
+            var data = await reportservice.GetAttendanceData(searchpanel);
+            datasource = new List<ViewTimeandAttendanceSummary>();
+
+            if (data != null && data.Count() > 0)
+            {
+                datasource.AddRange(data);
+            }
+
+            toastService.ShowError("Count is :" + data.Count());
+        }
+        catch(Exception ex)
+        {
+
+        }
+        finally
+        {
+
+        }
+    }
+
+    private void ClearSearchBtnClick()
+    {
+        searchpanel = new UtilitiesSearchPanel();
+        datasource = new List<ViewTimeandAttendanceSummary>();
+    }
+}

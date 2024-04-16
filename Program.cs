@@ -77,6 +77,9 @@ using Microsoft.Extensions.FileProviders;
 using static HCMIS.Pages.NonStaff.NonStaffRefereesPage;
 using static HCMIS.Pages.Applications.MyApplicationsPage;
 using HCMIS.Data.AutoLogOut;
+using ProtoBuf.Meta;
+using dymaptic.GeoBlazor.Core.Model;
+using dymaptic.GeoBlazor.Core;
 
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -200,7 +203,9 @@ builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, HCMISAuthStateProvider>();
 builder.Services.AddScoped<IUtilityRepository,UtilityRepository>();
 builder.Services.AddScoped<IAuthenticationService,AuthenticationService>();
-
+//builder.Services.AddScoped<AuthenticationManager>();
+//builder.Services.AddSingleton<IAppValidator, AppValidator>();
+builder.Services.AddGeoBlazor(builder.Configuration);
 
 //builder.Services.AddSyncfusionBlazor(options => { options.IgnoreScriptIsolation = false; });
 Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("MzEzMTkwNkAzMjM0MmUzMDJlMzBDTWo5NVlJZUFyQUt3dkpDUGJWbnRCa1VxbzBkWktHeEFvOUlhTUdVZndBPQ==");

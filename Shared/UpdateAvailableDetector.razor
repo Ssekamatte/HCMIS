@@ -29,72 +29,31 @@
 
 @*Code to automatically clear cache and update system*@
 
-@*
-@code {
-    protected override async Task OnInitializedAsync()
-    {
-        await RegisterForUpdateAvailableNotification();
-    }
-
-    private async Task RegisterForUpdateAvailableNotification()
-    {
-        await _jsRuntime.InvokeAsync<object>(
-            identifier: "registerForUpdateAvailableNotification",
-            DotNetObjectReference.Create(this),
-            nameof(OnUpdateAvailable));
-    }
-
-    [JSInvokable(nameof(OnUpdateAvailable))]
-    public Task OnUpdateAvailable()
-    {
-        uriHelper.NavigateTo(uriHelper.Uri, forceLoad: true);
-
-        StateHasChanged();
-
-        return Task.CompletedTask;
-    }
-}
-*@
-
-@*Code below to trigger reload button*@
-
-
-@if (_newVersionAvailable)
+@if (showUpdateNotification)
 {
-    <MudOverlay @bind-Visible="@loadingspinner" DarkBackground="true" AutoClose="false" Absolute="true">
-        <button type="button" class="btn btn-warning shadow floating-update-button" onclick="window.location.reload()">
-            A new version of the application is available. Click <u>here</u> to upgrade.
-        </button>
-    </MudOverlay>
+    <div style="position: fixed; bottom: 0; left: 0; width: 100%; background-color: #ffffff; padding: 10px; text-align: center;">
+        <p>A new version of the app is available!</p>
+        <button @onclick="RefreshApp">Refresh</button>
+    </div>
 }
 
-@code {
 
-    private bool _newVersionAvailable = false;
-    public bool loadingspinner { get; set; }
+<!-- UpdateNotification.razor -->
+@code {
+    bool showUpdateNotification = false;
 
     protected override async Task OnInitializedAsync()
     {
-        await RegisterForUpdateAvailableNotification();
+        // if (await _jsRuntime.InvokeAsync<bool>("navigator.serviceWorker.controller != null"))
+        // {
+        //     showUpdateNotification = true;
+        //     StateHasChanged(); // Notify Blazor to update UI
+        // }
     }
 
-    private async Task RegisterForUpdateAvailableNotification()
+    async Task RefreshApp()
     {
-        await _jsRuntime.InvokeAsync<object>(
-            identifier: "registerForUpdateAvailableNotification",
-            DotNetObjectReference.Create(this),
-            nameof(OnUpdateAvailable));
+        // Refresh the page to activate the new service worker
+        await _jsRuntime.InvokeVoidAsync("window.location.reload");
     }
-
-    [JSInvokable(nameof(OnUpdateAvailable))]
-    public Task OnUpdateAvailable()
-    {
-        _newVersionAvailable = true;
-        loadingspinner = true;
-
-        StateHasChanged();
-
-        return Task.CompletedTask;
-    }
-
 }

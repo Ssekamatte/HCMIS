@@ -609,7 +609,7 @@
     </NotAuthorized>
 </AuthorizeView>
 
-@*<UpdateAvailableDetector />*@
+<UpdateAvailableDetector />
 
 <!-- VersionDisplay.razor -->
 @* This is a sample Razor component to display the current version or timestamp. *@
@@ -665,10 +665,7 @@
     {
         try
         {
-            UserState.InactivityTimeout += HandleInactivityTimeout;
             Credentials = await IAuthService.GetUserCredentials();
-
-            await CheckForNewVersion();
         }
         catch(Exception ex)
         {
@@ -680,73 +677,7 @@
         }
 
     }
-
-    //Delete Old Cache Files
-
-    private async Task CheckForNewVersion()
-    {
-        //string currentVersion = "1.0.0"; // Get current version from your application
-        string currentVersion = UriHelper.BaseUri + "?v=" + DateTime.UtcNow.Ticks;
-        string cachedVersion = await GetCachedVersion(); // Retrieve cached version from local storage or IndexedDB
-
-        if (currentVersion != cachedVersion)
-        {
-            await DeleteOldCache();
-            await UpdateCachedVersion(currentVersion);
-        }
-    }
-
-    private async Task<string> GetCachedVersion()
-    {
-        return await JSRuntime.InvokeAsync<string>("blazorApp.getCachedVersion");
-    }
-
-    private async Task UpdateCachedVersion(string version)
-    {
-        await JSRuntime.InvokeVoidAsync("blazorApp.updateCachedVersion", version);
-    }
-
-    private async Task DeleteOldCache()
-    {
-        // Implement logic to delete old cache using Cache API
-        await JSRuntime.InvokeVoidAsync("deleteOldCache");
-    }
-
-    //Delete Old Cache Files
-
-    private void HandleInactivityTimeout()
-    {
-        // This method is called when inactivity timeout occurs
-        inactivityStatus = "Inactive";
-        StateHasChanged();
-    }
-
-    private void SetLogoutTimer()
-    {
-        var timer = new Timer();
-        timer.Elapsed += LogoutIfInactive;
-        timer.Interval = 60000; // Check every 60 seconds (adjust as needed)
-        timer.Enabled = true;
-    }
-
-
-    private void LogoutIfInactive(object sender, ElapsedEventArgs e)
-    {
-        if (!UserState.IsUserActive())
-        {
-            // Trigger JavaScript interop to update UI
-            JSRuntime.InvokeVoidAsync("showCountdown", UserState.RemainingInactivityTime1().TotalMinutes);
-            // Force a UI update to reflect the countdown changes
-            StateHasChanged();
-
-            // Perform logout or navigate to a logout page
-            //LogOut();
-        }
-        else
-        {
-            UserState.LastActivity = DateTime.Now;
-        }
-    }
+        
 
     private async Task LogOut()
     {
