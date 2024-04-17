@@ -21,12 +21,26 @@
 
 <BreadCrumbPage Module="HCMIS" Submodule="ACCOUNT FOR MISSED DAYS FORM"/>
 
-@*
-@if(LeaveData !=  null)
-{   
-    
+@if (isloading == true)
+{
+    <MudOverlay @bind-Visible="@loadingspinner" DarkBackground="true" AutoClose="false" Absolute="true">
+        @*<SfSpinner @bind-Visible="loadingspinner" Type="@Syncfusion.Blazor.Spinner.SpinnerType.Bootstrap" Size="70" Label="Page loading">
+    </SfSpinner>*@
+
+        <div style="padding:25px">
+            <div class="loader">
+                <div class="loader--dot"></div>
+                <div class="loader--dot"></div>
+                <div class="loader--dot"></div>
+                <div class="loader--dot"></div>
+                <div class="loader--dot"></div>
+                <div class="loader--dot"></div>
+                <div class="loader-Loading-text"></div>
+            </div>
+        </div>
+    </MudOverlay>
 }
-*@
+
 
 <div style="margin:10px; padding:10px; background-color:aliceblue;">
     <div class="row">
@@ -74,8 +88,8 @@
             @if (Downloadreport == false)
             {
                 <div class="col col-md-12" style="margin-top:10px;">
-                    <button @onclick="@OnSearchSubmit" class="btn btn-success" data-ripple="true" style="margin-right:10px;">View Records</button>
-                    <button @onclick="@ClearSearchBtnClick" class="btn btn-danger" data-ripple="true" style="margin-right:10px;">Clear Search</button>
+                    <button @onclick="@OnSearchSubmit" class="btn btn-success" data-ripple="true" style="margin-right:10px;">View</button>
+                    <button @onclick="@ClearSearchBtnClick" class="btn btn-danger" data-ripple="true" style="margin-right:10px;">Clear</button>
                 </div>
             }
         </div>
@@ -121,6 +135,7 @@
                                 AllowEditing="false"
                                 Width="40"
                                 Visible="true"
+                                Format="N1"
                                 CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
                     </GridColumn>
                 </GridColumns>
@@ -129,19 +144,186 @@
         </div>
 
         <div class="col-md-4">
-            <p>Update Details</p>
+            <p>Account for Days Here</p>
+
+            @if (LeaveData != null)
+            {
+                <div class="row">
+
+                    <div class="col-md-6">
+                        <p>Year:<span style="color:red;">*</span></p>
+
+                        <SfDropDownList @bind-Value="@(LeaveData.YearId)"
+                                        Enabled="true"
+                                        TItem="AYears"
+                                        TValue="int?"
+                                        DataSource="@YearData"
+                                        Placeholder="Please select"
+                                        FloatLabelType="FloatLabelType.Never"
+                                        AllowFiltering="true"
+                                        FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                                        ShowClearButton="true">
+                            <DropDownListFieldSettings Value="@nameof(AYears.YearId)"
+                                                       Text="@nameof(AYears.YearDesc)">
+                            </DropDownListFieldSettings>
+                            <DropDownListEvents TValue="int?"
+                                                TItem="AYears"
+                                                ValueChange="OnYearChange">
+                            </DropDownListEvents>
+                        </SfDropDownList>
+                    </div>
+
+                    <div class="col-md-6">
+                        <p>Employee:<span style="color:red;">*</span></p>
+                        
+                        <SfDropDownList @bind-Value="@(LeaveData.Employeeid)"
+                                        Enabled="EmployeeDDForm"
+                                        TItem="ViewEmployeeDropDown"
+                                        TValue="int?"
+                                        DataSource="@EmployeeData"
+                                        Placeholder="Please select"
+                                        FloatLabelType="FloatLabelType.Never"
+                                        AllowFiltering="true"
+                                        FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                                        ShowClearButton="true"
+                                        PopupWidth="400px"
+                                        Width="200px">
+                            <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)"
+                                                       Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)">
+                            </DropDownListFieldSettings>
+                            <DropDownListEvents TValue="int?"
+                                                TItem="ViewEmployeeDropDown"
+                                                ValueChange="OnEmployeeChange">
+                            </DropDownListEvents>
+                        </SfDropDownList>
+                    </div>
+
+                    @if (accountingform)
+                    {
+                        <h5 style="color:black;background-color: #bdc3c7;margin-top:10px;">
+                            Please account for your days here
+                        </h5>
+
+                        <div class="col-md-2" style="margin-right: -12px;">
+                            <p>From:<span style="color:red;">*</span></p>                           
+                        </div>
+
+                        <div class="col-md-4">
+                            <SfDatePicker @bind-Value="@(LeaveData.CommencementDate)" Enabled="DateBool" ID="ScheduledStartDate" Format="dd-MM-yyyy"
+                                          FloatLabelType="FloatLabelType.Never" Min="MinDate" AllowEdit="false" Width="110px;"  ShowClearButton="true">
+                                @*<DatePickerEvents TValue="DateTime?" ValueChange="OnMaternityDateChange"></DatePickerEvents>*@
+                            </SfDatePicker>
+                        </div>
+
+                        <div class="col-md-2" style="margin-left: 10px;margin-right: -30px;">
+                            <p>To:<span style="color:red;">*</span></p>
+                        </div>
+
+                        <div class="col-md-4">
+                            <SfDatePicker @bind-Value="@(LeaveData.EndDate)" Enabled="DateBool" ID="ScheduledEndDate" Format="dd-MM-yyyy" 
+                            FloatLabelType="FloatLabelType.Never" Min="MinDate" Max='@MaxDate' AllowEdit="false" Width="110px;" ShowClearButton="true">
+                                <DatePickerEvents TValue="DateTime?" ValueChange="OnEndDateChange"></DatePickerEvents>
+                            </SfDatePicker>
+                        </div>
+
+                        <div class="col-md-6" style="color:forestgreen;">
+                            <p>Selected : @TotalDays</p>
+                        </div>
+
+                        <div class="col-md-6" style="color:red;">
+                            <p>Unaccounted : @daysunaccountedfor</p>
+                        </div>
+
+                        <div class="col-md-6" style="color:red;">
+                            <p>Accounted : @daysaccountedfor</p>
+                        </div>
+
+                        <div class="col-md-6" style="color:red;">
+                            <p>Remaining Days : @daysremainingtoaccountedfor</p>
+                        </div>
+
+                        //To check if all dates have been account for
+                        if (daysremainingtoaccountedfor != 0)
+                        {
+                            //If days selected do not exceed the unaccounted for days
+                            @if (TotalDays <= daysunaccountedfor)
+                            {
+                                <div class="col col-md-12" style="margin-top:10px;">
+
+                                    <button @onclick="() => OnSaveAccount(LeaveData)" disabled=@IsSaveAccountDisabled class="btn btn-info" data-ripple="true" style="margin-right:10px;">
+                                        @if (buttonspinner == true)
+                                        {
+                                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                        }
+                                        Save
+                                    </button>
+                                    <button @onclick="@OnClearForm" class="btn btn-danger" data-ripple="true" style="margin-right:10px;">Clear</button>
+                                </div>
+                            }
+                            
+                            //If enddate is earlier that start date
+                            else if (LeaveData.EndDate < LeaveData.CommencementDate)
+                            {
+                                <h6 style="margin-top: 10px; background-color:red; color:ghostwhite;">
+                                    The to cannot be before the from date.
+                                </h6>
+                            }
+                            else
+                            {
+                                <h6 style="margin-top: 10px; background-color:red; color:ghostwhite;">
+                                    You have exceeded the number of days you are supposed to account for.
+                                    Kindly check your from and end dates.
+                                </h6>
+                            }
+                        }
+                        else if (daysremainingtoaccountedfor == 0)
+                        {
+                            <h6 style="margin-top: 10px; background-color:red; color:ghostwhite;">
+                                You do not have any days to account for
+                            </h6>
+                        }
+                        else
+                        {
+
+                        }
+                    }
+                </div>
+
+                
+            }
+
         </div>
     </div>
 </div>
 
 
+<div class="form-group col-md-12">
+
+<SfDialog @ref="@ConfirmationRecallDialogue" Width="80%" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+    <DialogTemplates>
+        <Content>
+            <div class="form-row">
+                <div class="form-group col-md-12" style="font-weight:bolder;">
+                    @((MarkupString)@ConfirmationText)
+                </div>
+            </div>
+
+        </Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationAccountYes"/>
+        <DialogButton Content="No" OnClick="@ComfirmationAccountNo" />
+    </DialogButtons>
+</SfDialog>
+</div>
 
 @code {
     List<AYears>? YearData { get; set; }
     List<ViewEmployeeDropDown>? EmployeeData { get; set; }
-    private ViewTimeandAttendanceSummary? LeaveData { get; set; }
+    private AttendanceDaysAccounting? LeaveData { get; set; }
     LoginResultModel? Credentials { get; set; }
     public bool EmployeeDD { get; set; } = true;
+    public bool EmployeeDDForm { get; set; } = false;
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     private UtilitiesSearchPanel searchpanel = new UtilitiesSearchPanel();
     Query? IndicatorQuery { get; set; }
@@ -149,13 +331,39 @@
     SfGrid<ViewTimeandAttendanceSummary>? DataGrid { get; set; }
     List<AMonth>? MonthData { get; set; }
     List<ViewTimeandAttendanceSummary>? datasource { get; set; }
+    public DateTime MinDate { get; set; } = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
+    public DateTime MaxDate { get; set; } = new DateTime(DateTime.Now.Year, 12, 31); 
+    bool accountingform { get; set; } = false;
+    double? daysunaccountedfor = 0;
+    double? daysaccountedfor = 0;
+    double? daysremainingtoaccountedfor = 0;
+    List<ViewTimeandAttendanceSummary>? AttendanceData { get; set; }
+    List<AttendanceDaysAccounting>? AccountingDaysData { get; set; }
+    DateTime StartDate = DateTime.Now;
+    DateTime EndDate = DateTime.Now;
+    public static int PublicHolidays { get; set; } = 0;
+    public static int numberOfDays2 { get; set; } = 0;
+    public static DateTime[]? datesselectedd = null;
+    public static int LeaveDays { get; set; } = 0;
+    List<APublicHolidays>? PublicHolidaysData { get; set; }
+    public static int TotalDays { get; set; } = 0;
+    public bool loadingspinner { get; set; }
+    bool buttonspinner = false;
+    bool IsSaveAccountDisabled = false;
+    string ConfirmationText { get; set; }
+    SfDialog ConfirmationRecallDialogue;    
+    bool isloading { get; set; } = false;
+    public bool DateBool { get; set; } = true;   
+
 
     protected override async Task OnInitializedAsync()
     { 
         try
         {
-            LeaveData = new ViewTimeandAttendanceSummary();
+            LeaveData = new AttendanceDaysAccounting();
             await base.OnInitializedAsync();
+            //loadingspinner = true;
+            isloading = true;
 
             var isAuthenticated = await AuthService.CheckAuthenticationStatus();
             if (isAuthenticated == false)
@@ -179,6 +387,16 @@
 
                 t.Add(Task.Run(async () =>
                 {
+                    var response = await Http.GetAsync($"Utilities/GetPublicHoliday");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        PublicHolidaysData = JsonSerializer.Deserialize<List<APublicHolidays>>(content, _options);
+                    }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
                     var response = await Http.GetAsync($"Utilities/GetEmployeeDD");
                     if (response.IsSuccessStatusCode)
                     {
@@ -197,6 +415,17 @@
                     }
                 }));
 
+                t.Add(Task.Run(async () =>
+                {
+                    AttendanceData = await reportservice.GetAttendanceData(searchpanel);
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    AccountingDaysData = await reportservice.GetAttendanceDaysAccountingData(searchpanel);
+                }));
+
+                
                 Task _t = Task.WhenAll(t);
                 await _t;
 
@@ -208,8 +437,71 @@
         }
         finally
         {
+            isloading = true;
+        }
+    }
+
+    public async void OnYearChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, AYears> args)
+    {
+        EmployeeDDForm = true;
+        LeaveData = new AttendanceDaysAccounting();
+
+        if (args.ItemData != null && YearData != null)
+        {
+            var _year = YearData.FirstOrDefault(o => o.YearId == args.ItemData.YearId);
+            MinDate = new DateTime(Convert.ToInt32(_year.YearDesc), 01, 01);
+            MaxDate = new DateTime(Convert.ToInt32(_year.YearDesc), 12, 31);
+        }
+    }
+
+    public async void OnEmployeeChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ViewEmployeeDropDown> args)
+    {
+        accountingform = true;
+        if (AttendanceData != null && LeaveData != null)
+        {
+            daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == LeaveData.YearId && o.HcmisemployeeId == args.ItemData.Employeeid).Sum(o => Math.Truncate(Convert.ToDouble(o.TotalDaysHrsDueUncountedFor)));
+            daysaccountedfor = AccountingDaysData.Where(o => o.YearId == LeaveData.YearId && o.Employeeid == args.ItemData.Employeeid).Sum(o => Math.Truncate(Convert.ToDouble(o.TotalDays)));
+            daysremainingtoaccountedfor = (daysunaccountedfor - daysaccountedfor);
+
+            if(daysremainingtoaccountedfor == 0)
+            {
+                DateBool = false;
+            }
+            else
+            {
+                DateBool = true;
+            }
+            
+            //toastService.ShowError("daysunaccountedfor" + daysunaccountedfor);
+            // toastService.ShowError("daysaccountedfor" + daysaccountedfor);
+            // toastService.ShowError("daysremainingtoaccountedfor" + daysremainingtoaccountedfor);
+        }
+    }
+
+    protected async Task OnEndDateChange(ChangedEventArgs<DateTime?> value)
+    {
+        try
+        {
+            StartDate = Convert.ToDateTime(LeaveData.CommencementDate);
+            EndDate = Convert.ToDateTime(LeaveData.EndDate);
+            numberOfDays2 = GetNumberOfDates(StartDate, EndDate);
+            datesselectedd = GetDatesBetween(StartDate, EndDate).ToArray();
+            PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDate);
+            LeaveDays = numberOfDays2 - PublicHolidays;
+
+            TotalDays = LeaveDays;
 
         }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+
+        }
+
+        StateHasChanged();
     }
 
     private void OnDepartmentChange(Syncfusion.Blazor.DropDowns.MultiSelectChangeEventArgs<int?[]> args)
@@ -233,10 +525,74 @@
         }
     }
 
+    public int GetNumberOfPublicHolidays(DateTime from, DateTime to)
+    {
+        int publicHolidaysCount = 0;
+
+        // Iterate through each holiday and check if it falls on a weekday
+        foreach (var holiday in PublicHolidaysData.Where(o => o.HolidayDate >= from && o.HolidayDate <= to))
+        {
+            if (holiday.HolidayDate.Value.DayOfWeek != DayOfWeek.Saturday && holiday.HolidayDate.Value.DayOfWeek != DayOfWeek.Sunday)
+            {
+                publicHolidaysCount++;
+            }
+        }
+
+        return publicHolidaysCount;
+    }
+
+    //Function to return number of days minus weekends
+    static int GetNumberOfDates(DateTime from, DateTime to)
+    {
+        if (to < from)
+            throw new ArgumentException("To cannot be smaller than from.", nameof(to));
+
+
+        if ((to.Date == from.Date) && (from.DayOfWeek != DayOfWeek.Saturday && from.DayOfWeek != DayOfWeek.Sunday))
+        {
+            return 1;
+        }
+
+        else if ((to.Date == from.Date) && (from.DayOfWeek == DayOfWeek.Saturday && from.DayOfWeek == DayOfWeek.Sunday))
+        {
+            return 0;
+        }
+
+        int n = 0;
+        DateTime nextDate = from;
+        while(nextDate <= to.Date)
+        {
+            if (nextDate.DayOfWeek != DayOfWeek.Saturday && nextDate.DayOfWeek != DayOfWeek.Sunday)
+                n++;
+            nextDate = nextDate.AddDays(1);
+        }
+
+        return n;
+    }
+
+    //Function to get all dates between two dates
+    public List<DateTime> GetDatesBetween(DateTime startDate, DateTime endDate)
+    {
+        List<DateTime> allDates = new List<DateTime>();
+
+        for (DateTime date = startDate; date <= endDate; date = date.AddDays(1))
+        {
+            var countdata = PublicHolidaysData?.FirstOrDefault(o => o.HolidayDate == date);
+
+            if ((date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday) && (countdata == null))
+            {
+                allDates.Add(date.Date);
+            }            
+        }
+
+        return allDates;
+    }
+
     private async Task OnSearchSubmit()
     { 
         try
         {
+            isloading = true;
             var data = await reportservice.GetAttendanceData(searchpanel);
             datasource = new List<ViewTimeandAttendanceSummary>();
 
@@ -245,7 +601,6 @@
                 datasource.AddRange(data);
             }
 
-            toastService.ShowError("Count is :" + data.Count());
         }
         catch(Exception ex)
         {
@@ -253,7 +608,7 @@
         }
         finally
         {
-
+            isloading = false;
         }
     }
 
@@ -261,5 +616,108 @@
     {
         searchpanel = new UtilitiesSearchPanel();
         datasource = new List<ViewTimeandAttendanceSummary>();
+    }
+
+    private async Task OnSaveAccount(AttendanceDaysAccounting data)
+    {
+        try
+        {
+            buttonspinner = true;
+            isloading = true;
+            IsSaveAccountDisabled = true;
+            ConfirmationText = "<p>Are you sure you want to save this record! </p>";
+            await this.ConfirmationRecallDialogue.ShowAsync();
+
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            //buttonspinner = false;
+            IsSaveAccountDisabled = false;
+
+            AttendanceData = await reportservice.GetAttendanceData(searchpanel);
+            AccountingDaysData = await reportservice.GetAttendanceDaysAccountingData(searchpanel);
+
+            StateHasChanged();
+        }
+    }
+
+    private async void ComfirmationAccountYes()
+    {
+        try
+        { 
+            if(LeaveData.CommencementDate == null)
+            {
+                toastService.ShowWarning("Please select enter the from date");
+            }
+
+            else if(LeaveData.EndDate == null)
+            {
+                toastService.ShowWarning("Please select enter the to date");
+            }
+            else
+            {
+                isloading = true;
+                //buttonspinner = false;
+
+                LeaveData.TotalDays = TotalDays;
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(LeaveData);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await Http.PostAsync($"EmployeeLeave/CreateDaysAccounting", httpContent);
+
+                if (result.IsSuccessStatusCode)
+                {
+                    try
+                    {
+                        toastService.ShowSuccess("Record Successfully Saved");
+                        LeaveData = new AttendanceDaysAccounting();
+                        TotalDays = 0;
+                    }
+                    catch (Exception ex)
+                    {
+
+                    }
+                    finally
+                    {
+                        isloading = false;
+                        buttonspinner = false;
+                    }
+
+                }
+                else
+                {
+                    toastService.ShowError("An issue occurred. Record Not Saved.");
+                }
+
+                await this.ConfirmationRecallDialogue.HideAsync();
+
+            }
+
+            StateHasChanged();
+        }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            isloading = false;
+        }
+    }
+
+    private void ComfirmationAccountNo()
+    {
+        this.ConfirmationRecallDialogue.HideAsync();
+        buttonspinner = false;
+    }
+
+    private void OnClearForm()
+    {
+        LeaveData = new AttendanceDaysAccounting();
+        TotalDays = 0;
     }
 }

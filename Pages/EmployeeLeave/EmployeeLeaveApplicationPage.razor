@@ -309,7 +309,8 @@
                                                                     Placeholder="Please select"
                                                                     FloatLabelType="FloatLabelType.Never"
                                                                     AllowFiltering="true"
-                                                                    FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                                    FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                                                                    ShowClearButton="true">
                                                         <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)"
                                                                                    Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)">
                                                         </DropDownListFieldSettings>
@@ -1192,6 +1193,7 @@
     EmployeeLeaveHeader? selecteddecision { get; set; }
     private EmployeeLeaveHeader? LeaveData { get; set; }
     List<APublicHolidays>? PublicHolidaysData { get; set; }
+    List<AttendanceDaysAccounting>? AccountingDaysData { get; set; }
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     int currentMonth = DateTime.Now.Month;
     int currentYear = DateTime.Now.Year;
@@ -1256,6 +1258,7 @@
     private string? imageSource = $"Image/flags/1x1/";
     public bool loadingspinner { get; set; }
     private UtilitiesSearchPanel InputModel = new UtilitiesSearchPanel();
+    double? daysaccountedfor = 0;
 
     private List<object> ToolbarMenu = new List<object>()
     {
@@ -1469,6 +1472,11 @@
                         var content = await response.Content.ReadAsStringAsync();
                         ApprovalStatusData = JsonSerializer.Deserialize<List<ALeaveApprovalStatus>>(content, _options);
                     }
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    AccountingDaysData = await reportservice.GetAttendanceDaysAccountingData(InputModel);
                 }));
 
                 Task _t = Task.WhenAll(t);
@@ -1751,7 +1759,7 @@
 
                         LeaveData.SupervisorApprovalDate = DateTime.Now;
                     }    
-                    
+
                     //HOD Review
                     else if (LeaveData.LeaveApprovalStatusId == 5)
                     {
@@ -2036,10 +2044,10 @@
     {
         // if(AttendanceData != null)
         // {
-            // daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == finyearid && o.HcmisemployeeId == Credentials.StaffId).Sum(o => Math.Truncate(Convert.ToDouble(o.TotalDaysHrsDueUncountedFor)));
+        // daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == finyearid && o.HcmisemployeeId == Credentials.StaffId).Sum(o => Math.Truncate(Convert.ToDouble(o.TotalDaysHrsDueUncountedFor)));
 
         // }
-        
+
         leavetypedays = args.ItemData;
         int? leavetypeId = args.ItemData.LeaveTypeId;
         EndDateEnablerBool = true;
@@ -2180,11 +2188,20 @@
         return date.AddDays(extraDays);
     }
 
-    //Get number of public holidays
     public int GetNumberOfPublicHolidays(DateTime from, DateTime to)
     {
-        PublicHolidays = PublicHolidaysData.Where(o => o.HolidayDate >= from && o.HolidayDate <= to).Count();
-        return PublicHolidays;
+        int publicHolidaysCount = 0;
+
+        // Iterate through each holiday and check if it falls on a weekday
+        foreach (var holiday in PublicHolidaysData.Where(o => o.HolidayDate >= from && o.HolidayDate <= to))
+        {
+            if (holiday.HolidayDate.Value.DayOfWeek != DayOfWeek.Saturday && holiday.HolidayDate.Value.DayOfWeek != DayOfWeek.Sunday)
+            {
+                publicHolidaysCount++;
+            }
+        }
+
+        return publicHolidaysCount;
     }
 
     //Function to return number of days minus weekends
@@ -2237,31 +2254,43 @@
 
     protected async Task OnEndDateChange(ChangedEventArgs<DateTime?> value)
     {
-        StartDate = Convert.ToDateTime(LeaveData.CommencementDate);
-        EndDate = Convert.ToDateTime(LeaveData.EndDate);
-        numberOfDays2 = GetNumberOfDates(StartDate, EndDate);
-        datesselectedd = GetDatesBetween(StartDate, EndDate).ToArray();
-        PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDate);
-        LeaveDays = numberOfDays2 - PublicHolidays;
-
-        var getutilizeddays = LeaveDataSource.OrderByDescending(x => x.TotalDays)
-        .FirstOrDefault(o => o.Employeeid == LeaveData.Employeeid &&
-            o.LeaveTypeId == LeaveData.LeaveTypeId && (o.LeaveApprovalStatusId == 3 || 
-                o.LeaveApprovalStatusId == 9));
-
-        LeaveData.NoDaysAppliedFor = LeaveDays;
-
-        AppliedDays = LeaveData.TotalDays;
-        if(getutilizeddays != null)
+        try
         {
-            LeaveData.TotalDays = LeaveData.NoDaysAppliedFor + getutilizeddays.TotalDays.Value;
-            TotalDaysTakenPrior = getutilizeddays.TotalDays.Value;
-        }        
-        else
-        {
-            LeaveData.TotalDays = LeaveData.NoDaysAppliedFor + 0;
-            TotalDaysTakenPrior = 0;
+            StartDate = Convert.ToDateTime(LeaveData.CommencementDate);
+            EndDate = Convert.ToDateTime(LeaveData.EndDate);
+            numberOfDays2 = GetNumberOfDates(StartDate, EndDate);
+            datesselectedd = GetDatesBetween(StartDate, EndDate).ToArray();
+            PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDate);
+            LeaveDays = numberOfDays2 - PublicHolidays;
+
+            var getutilizeddays = LeaveDataSource.OrderByDescending(x => x.TotalDays)
+            .FirstOrDefault(o => o.Employeeid == LeaveData.Employeeid &&
+                o.LeaveTypeId == LeaveData.LeaveTypeId && (o.LeaveApprovalStatusId == 3 ||
+                    o.LeaveApprovalStatusId == 9));
+
+            LeaveData.NoDaysAppliedFor = LeaveDays;
+
+            AppliedDays = LeaveData.TotalDays;
+            if (getutilizeddays != null)
+            {
+                LeaveData.TotalDays = LeaveData.NoDaysAppliedFor + getutilizeddays.TotalDays.Value;
+                TotalDaysTakenPrior = getutilizeddays.TotalDays.Value;
+            }
+            else
+            {
+                LeaveData.TotalDays = LeaveData.NoDaysAppliedFor + 0;
+                TotalDaysTakenPrior = 0;
+            }
         }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+
+        }
+
         StateHasChanged();
     }
 
@@ -2298,15 +2327,26 @@
         {
             if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
             {
+                double? _daysunaccountedfor = 0;
+                double? _daysaccountedfor = 0;
+
                 // toastService.ShowError("FinYear" + finyearid);
                 // toastService.ShowError("Employee" + Credentials.StaffId);
                 //Get Unacountedfordaysfromtimeandattendance
                 if (AttendanceData != null && Credentials != null)
                 {                    
-                    daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == finyearid && o.HcmisemployeeId == Credentials.StaffId).Sum(o => Math.Truncate(Convert.ToDouble(o.TotalDaysHrsDueUncountedFor)));
+                    _daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == finyearid && o.HcmisemployeeId == Credentials.StaffId).Sum(o => Math.Truncate(Convert.ToDouble(o.TotalDaysHrsDueUncountedFor)));
 
                     //toastService.ShowError("daysunaccountedfor" + daysunaccountedfor);
                 }
+
+                //Get Days Accounted For By HR
+                if (AccountingDaysData != null && Credentials != null)
+                {                    
+                    _daysaccountedfor = AccountingDaysData.Where(o => o.YearId == finyearid && o.Employeeid == Credentials.StaffId).Sum(o => Math.Truncate(Convert.ToDouble(o.TotalDays)));
+                }
+
+                daysunaccountedfor = (_daysunaccountedfor - _daysaccountedfor);
 
                 _previous = Args.RequestType;
                 leavetypedays = new();
@@ -2377,13 +2417,24 @@
             }
 
             if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
-            {                
+            {    
+                double? _daysunaccountedfor = 0;
+                double? _daysaccountedfor = 0;
+
                 //Get Un accounted for days from time and attendance
                 if (AttendanceData != null)
                 {
-                    daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == Args.RowData.FinancialYearId && o.HcmisemployeeId == Args.RowData.Employeeid).Sum(o => Math.Truncate(Convert.ToDouble(o.TotalDaysHrsDueUncountedFor)));
+                    _daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == Args.RowData.FinancialYearId && o.HcmisemployeeId == Args.RowData.Employeeid).Sum(o => Math.Truncate(Convert.ToDouble(o.TotalDaysHrsDueUncountedFor)));
                 }
                 
+                //Get Days Accounted For By HR
+                if (AccountingDaysData != null && Credentials != null)
+                {
+                    _daysaccountedfor = AccountingDaysData.Where(o => o.YearId == Args.RowData.FinancialYearId && o.Employeeid == Args.RowData.Employeeid).Sum(o => Math.Truncate(Convert.ToDouble(o.TotalDays)));
+                }
+
+                daysunaccountedfor = (_daysunaccountedfor - _daysaccountedfor);
+
                 _previous = Args.RequestType;
                 
                 var _employeedetail = EmployeeData.FirstOrDefault(o=>o.Employeeid == Credentials.StaffId);

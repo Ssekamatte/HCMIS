@@ -28,5 +28,6 @@ namespace HCMIS.Interface
         Task<List<ViewEmployeeLeaveReport>> GetLeaveRequest(UtilitiesSearchPanel SearchModel);
         Task<List<ViewTimeandAttendance>> GetBiometricRawData(UtilitiesSearchPanel SearchModel);
         Task<List<ViewTimeandAttendanceSummary>> GetAttendanceData(UtilitiesSearchPanel SearchModel);
+        Task<List<AttendanceDaysAccounting>> GetAttendanceDaysAccountingData(UtilitiesSearchPanel SearchModel);
     }
 }
