@@ -14,6 +14,20 @@
 @* <button class="btn btn-primary" @onclick="@(async() => { await viewdocumentclick(DocumentName, DocumentExt, FolderName);})">
     View document
 </button> *@
+
+<MudOverlay Visible="@UploadingDocument" DarkBackground="true" Absolute="true" Style="z-index:100000;">
+    <div class="loader">
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--text" style="color:white;"></div>
+    </div>
+</MudOverlay>
+
+
 <a @onclick="@(async () => { await viewdocumentclick(DocumentName, DocumentExt, FolderName); })" style="color:dodgerblue; cursor:pointer;"><span class="fa fa-eye"></span><u> View Attachment</u></a>
 
 @if (!string.IsNullOrEmpty(ErrorMessage))
@@ -49,12 +63,13 @@
     string? DocumentString { get; set; }
     SfDialog? PersonalDocumentDialogue;
     string? ErrorMessage { get; set; }
-
+    bool UploadingDocument { get; set; } = false;
 
     private async Task viewdocumentclick(string? name, string? ext, string? location)
     {
         try
         {
+            UploadingDocument = true;
             ErrorMessage = null;
             if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(ext) && !string.IsNullOrEmpty(location))
             {
@@ -104,7 +119,10 @@
                         base64String = Convert.ToBase64String(doc.DocumentByte, 0, doc.DocumentByte.Length);
                         DocumentString = "<img src='data:image/" + ext.Trim().Replace(".", "") + ";base64," + base64String + "' alt='" + name + "' class='img-thumbnail Imagecenter' style='margin-bottom:10px; margin-top:10px;' />";
                     }
-                    if (PersonalDocumentDialogue != null) { await PersonalDocumentDialogue.ShowAsync(); }
+                    if (PersonalDocumentDialogue != null) 
+                    { 
+                        await PersonalDocumentDialogue.ShowAsync(); 
+                    }
                 }
                 else
                 {
@@ -115,6 +133,10 @@
         catch (Exception ex)
         {
             ErrorMessage = ex.Message.ToString(); 
+        }
+        finally
+        {
+            UploadingDocument = false;
         }
     }
 }

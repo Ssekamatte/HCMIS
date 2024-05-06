@@ -31,35 +31,30 @@
 
 <BreadCrumbPage Module="HCMIS" Submodule="JOB DESCRIPTION DETAILS" />
 
-@if (isloading == true)
-{
-    <div style="padding:25px">
-        <div class="loader">
-            <div class="loader--dot"></div>
-            <div class="loader--dot"></div>
-            <div class="loader--dot"></div>
-            <div class="loader--dot"></div>
-            <div class="loader--dot"></div>
-            <div class="loader--dot"></div>
-            <div class="loader-Loading-text"></div>
-        </div>
+<MudOverlay Visible="@isloading" DarkBackground="true" Absolute="true" Style="z-index:100000;">
+    <div class="loader">
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--text" style="color:white;"></div>
     </div>
-}
-else
-{
-    
-}
+</MudOverlay>
+
 
 <div class="form-row">
     <div class="form-group col-md-12">
         <SfAccordion ExpandMode="@ExpandMode.Single">
             <AccordionItems>
-                <AccordionItem Expanded="false" CssClass="const">
+                <AccordionItem Expanded="true" CssClass="const">
                     <HeaderTemplate>Search Panel</HeaderTemplate>
                     <ContentTemplate>
                         <HCMIS.Pages.HR.JD.PartialView.JobDescriptionSearchPage JobTitleData="@JobTitleData"
                                                                                 DepartmentData="@DepartmentData"
-                                                                                onsearchtoggle="@ToggleSearchQuery">
+                                                                                onsearchtoggle="@ToggleSearchQuery"
+                                                                                ParameterValues="@HandleValueChanged">
                         </HCMIS.Pages.HR.JD.PartialView.JobDescriptionSearchPage>
                     </ContentTemplate>
                 </AccordionItem>
@@ -69,15 +64,18 @@ else
 </div>
 
 <SfGrid @ref="@JobDescriptionGrid" TValue="JobDescription" ID="Grid1" AllowPaging="true" AllowFiltering="true" AllowReordering="true" 
-    AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true" 
-    Toolbar="@(new List<string>() {"Add", "Cancel", "Update","ExcelExport","PdfExport","CsvExport"})" Query="@MainQuery" Height="600"
+    AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true"
+        Toolbar="@ToolbarMenu" Query="@MainQuery" Height="600"
         EnableVirtualMaskRow="true" EnableVirtualization="true" EnableColumnVirtualization="false">
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
     <GridPageSettings PageSizes="true"></GridPageSettings>
         <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
-    <GridEvents OnToolbarClick="@GridToolbarClick" TValue="JobDescription"></GridEvents>
     <SfDataManager AdaptorInstance="@typeof(JobDescriptionAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-    <GridEvents OnActionComplete="@OnJobDescriptionActionComplete" OnActionBegin="@OnJobDescriptionActionBegin" TValue="JobDescription"></GridEvents>
+    <GridEvents OnActionComplete="@OnJobDescriptionActionComplete" 
+        OnActionBegin="@OnJobDescriptionActionBegin"
+        DataBound="DataBound"
+        TValue="JobDescription"
+        OnToolbarClick="@GridToolbarClick"></GridEvents>
     <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Dialog" Dialog="DialogParams">
         <HeaderTemplate>
             @{
@@ -90,6 +88,7 @@ else
         <Template Context="JobDescriptionContext">
             @{
                 JobDescriptionReviewData = (JobDescriptionContext as JobDescription);
+
                 if(JobDescriptionReviewData != null)
                 {
                             <SfTab HeaderPlacement="HeaderPosition.Top" LoadOn="ContentLoad.Demand" OverflowMode="@OverflowMode.Scrollable" >
@@ -109,8 +108,8 @@ else
                                                          <p>Post:<span style="color:red;">*</span></p>
                                                           @*Query="@(JobTitleChildQuery)" *@
                                                         <SfDropDownList @ref="JobTitleObj" @bind-Value="@(JobDescriptionReviewData.JibTitleId)"TItem="AJobTitle" TValue="int?" Width="100%" PopupHeight="350px" 
-                                                        AllowFiltering=true IgnoreAccent=true DataSource="@JobTitleData"  Placeholder="Please Select" 
-                                                        @onclick="@((args) => OnClick(JobTitleObj.ID))" Query="@LocalDataQuery"  EnableVirtualization="true">
+                                                        AllowFiltering=true IgnoreAccent=true DataSource="@JobTitleData"  Placeholder="Please Select" Enabled="JibTitleIdEnabled"
+                                                                @onclick="@((args) => OnClick(JobTitleObj.ID))" Query="@LocalDataQuery" EnableVirtualization="true">
                                                             <DropDownListFieldSettings Value="JobTitleId" Text="@(nameof(AJobTitle.JobTitleDescription))"></DropDownListFieldSettings>
                                                             <DropDownListEvents TItem="AJobTitle" TValue="int?" ValueChange="@JobTitleValueChangeHandler" OnOpen="@((e)=>OnOpenHandler(JobTitleObj.ID))" ></DropDownListEvents>
                                                         </SfDropDownList>
@@ -297,8 +296,8 @@ else
             </Template>
         </GridColumn>
         <GridForeignColumn Field=@nameof(JobDescription.JobTypeId) HeaderText="Job Type" Width="150" ForeignKeyField="@(nameof(AJobType.JobTypeId))" ForeignKeyValue="@(nameof(AJobType.TypeDescription))" ForeignDataSource="@JobTypeData"></GridForeignColumn>
-        <GridColumn Field=@nameof(JobDescription.Vacancies) HeaderText="Vacancies"  Width="150"></GridColumn>
-        <GridForeignColumn Field=@nameof(JobDescription.JobStatusId) HeaderText="Job Status" Width="150" ForeignKeyField="@(nameof(AJobStatus.JobStatusId))" ForeignKeyValue="@(nameof(AJobStatus.JobStatusDesc))" ForeignDataSource="@JobStatusData"></GridForeignColumn>
+        @*<GridColumn Field=@nameof(JobDescription.Vacancies) HeaderText="Vacancies"  Width="150"></GridColumn>*@
+        @*<GridForeignColumn Field=@nameof(JobDescription.JobStatusId) HeaderText="Job Status" Width="150" ForeignKeyField="@(nameof(AJobStatus.JobStatusId))" ForeignKeyValue="@(nameof(AJobStatus.JobStatusDesc))" ForeignDataSource="@JobStatusData"></GridForeignColumn>*@
     </GridColumns>
 </SfGrid>
 
@@ -380,7 +379,8 @@ else
     public Query MainQuery = new Query();
 
     private ToolbarType Tooltype = ToolbarType.MultiRow;
-    bool isloading { get; set; } = true;
+    bool isloading { get; set; } = false;
+    public int? jobtitleid { get; set; }
 
     private List<ToolbarItemModel> Tools = new List<ToolbarItemModel>()
     {
@@ -419,12 +419,30 @@ else
         new LinkToolbarItemModel() { Command = LinkToolbarCommand.UnLink }
     };
 
+    private List<object> ToolbarMenu = new List<object>();
+    // private List<ItemModel> ToolbarMenu = new List<ItemModel>();
+    // private List<ItemModel> Toolbaritems = new List<ItemModel>();
+    // private List<object> ToolbarMenu = new List<object>()
+    // {
+
+    // };
+
+    int jobtitlevalue;
+    public bool JibTitleIdEnabled { get; set; } = false;
+
+    // Event handler to receive the value from the partial page
+    void HandleValueChanged(int newValue)
+    {
+        jobtitlevalue = newValue;
+    }
+
     private void ToggleSearchQuery(Query? DetailData)
     {
         try
-        {
+        {            
             if (DetailData != null)
             {
+                isloading = true;
                 MainQuery = DetailData;
             }
         }
@@ -470,6 +488,7 @@ else
     /// </summary>
     public void GridToolbarClick(Syncfusion.Blazor.Navigations.ClickEventArgs args)
     {
+        //toastService.ShowError("Grid ToolBar Click");
         if (args.Item.Id == "Grid1_excelexport")
         {
             this.JobDescriptionGrid.ExportToExcelAsync();
@@ -551,7 +570,7 @@ else
         try
         {
             await base.OnInitializedAsync();
-            // isloading = true;
+            isloading = true;
             var isAuthenticated = await AuthService.CheckAuthenticationStatus();
             if (isAuthenticated == false)
             {
@@ -561,6 +580,7 @@ else
             {
                 Credentials = await AuthService.GetUserCredentials();
 
+                #region Tasks
                 var tasks = new List<Task>();
                 tasks.Add(Task.Run(async () =>
                {
@@ -648,6 +668,7 @@ else
 
                 Task t = Task.WhenAll(tasks);
                 await t;
+                #endregion Tasks
             }
 
         }
@@ -657,7 +678,7 @@ else
         }
         finally
         {
-            // isloading = false;
+            isloading = false;
         }
         StateHasChanged();
     }
@@ -775,6 +796,7 @@ else
                 else
                 {
                     //<MudAlert Severity="Severity.Warning">Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg) or pdf or word document (doc,docx).</MudAlert>
+                    toastService.ClearAll();
                     toastService.ShowWarning("Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg) or pdf or word document (doc,docx).");
                 }
             }
@@ -826,9 +848,11 @@ else
             {
                 string? _DepartmentId = null;
                 string? _JobTitleId = null;
+                bool parameterset = false;
 
                 if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
                 {
+                    parameterset = true;
                     var val = dataManagerRequest.Params;
 
                     if (val.FirstOrDefault(o => o.Key == "DepartmentId").Value != null)
@@ -842,14 +866,22 @@ else
                     }
 
                 }
-                
-                var response = await Http.GetAsync($"HumanResource/GetJobDescription?DepartmentId={_DepartmentId}&JobTitleId={_JobTitleId}");
-                var content = await response.Content.ReadAsStringAsync();
-                if (response.IsSuccessStatusCode)
-                {
-                    data = JsonSerializer.Deserialize<List<JobDescription>>(content, _options);
-                }
 
+                if(parameterset == true)
+                {
+                    var response = await Http.GetAsync($"HumanResource/GetJobDescription?DepartmentId={_DepartmentId}&JobTitleId={_JobTitleId}");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        data = JsonSerializer.Deserialize<List<JobDescription>>(content, _options);
+                    }
+                }
+                else
+                {
+                    //Do not load any data
+                }               
+
+                //toastService.ShowError("Par set is:" + parameterset);
             }
             catch (Exception ex)
             {
@@ -1230,12 +1262,35 @@ else
             if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
             {
                 //Show Spinner
-                // isloading = true;
+                isloading = true;
 
                 ChildQuery = new();
                 ChildQuery.AddParams("JobDescriptionId", args.RowData.JobDescriptionId);
-                
+
                 //JobDescriptionGrid.PreventRender(false);
+
+                if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add))
+                {
+                    args.RowData.JibTitleId = jobtitlevalue;
+                    //toastService.ShowError(jobtitlevalue.ToString());
+                    if(JobTitleData != null)
+                    {
+                        var a = JobTitleData.FirstOrDefault(o=>o.JobTitleId == jobtitlevalue);
+                        if(a != null)
+                        {
+                            args.RowData.DepartmentId = a.DepartmentId;
+                        }
+                    }
+
+                    if(jobtitlevalue == 0)
+                    {
+                        toastService.ClearAll();
+                        toastService.ShowWarning("Please select the job title in the filters above; and click load records");
+                        isloading = false;
+                        args.Cancel = true;
+                    }
+                }
+
             }
             if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
             {                
@@ -1321,7 +1376,7 @@ else
                     toastService.ShowWarning("Please upload a physical advert for the post!");
                     args.Cancel = true;
                 }      
-                
+
                 else
                 {
                     SavingDialog.ShowAsync();
@@ -1334,7 +1389,7 @@ else
         }
 
     }
-    
+
     public async Task OnJobDescriptionActionComplete(ActionEventArgs<JobDescription> args)
     {
         try
@@ -1342,8 +1397,7 @@ else
             if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
             {
                 //Hide Spinner
-                // isloading = false;
-
+                isloading = false;
                 JobDescriptionGrid.PreventRender(false);
 
                 if (!string.IsNullOrEmpty(args.RowData.DocumentName) && !string.IsNullOrEmpty(args.RowData.DocumentExt))
@@ -1371,6 +1425,13 @@ else
 
                 SavingDialog.HideAsync();
             }
+
+            if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Refresh))
+            {
+                //Hide Spinner
+                isloading = false;
+            }
+            //toastService.ShowInfo("Req Type is :" + args.RequestType);
         }
         catch(Exception ex)
         {
@@ -1378,7 +1439,45 @@ else
         }
 
     }
-   
+
+    public async void DataBound()
+    {
+        try
+        {
+            //Check if there are records arleady and only allow editing
+            if (JobDescriptionGrid != null && JobDescriptionGrid.CurrentViewData.Count() > 0)
+            {
+                ToolbarMenu = new List<object>()
+                {
+                    // new ItemModel(){ Text = "Edit Job", PrefixIcon= "e-edit", Id="Grid1_edit"},
+                    new ItemModel(){ Text = "Excel Export", PrefixIcon= "e-excelexport", Id="Grid1_excelexport"},
+                    new ItemModel() { Text = "CSV Export", PrefixIcon = "e-csvexport", Id = "Grid1_csvexport"},
+                    new ItemModel(){ Text = "PDF Export", PrefixIcon= "e-pdfexport", Id="Grid1_pdfexport"},
+                };
+            }
+            //Allow Adding of that missing job
+            else
+            {
+                ToolbarMenu = new List<object>()
+                {
+                    new ItemModel() { Text = "Add Job", PrefixIcon = "e-add", Id = "Grid1_add"},
+                    // new ItemModel(){ Text = "Edit Job", PrefixIcon= "e-edit", Id="Grid1_edit"},
+                    new ItemModel(){ Text = "Excel Export", PrefixIcon= "e-excelexport", Id="Grid1_excelexport"},
+                    new ItemModel() { Text = "CSV Export", PrefixIcon = "e-csvexport", Id = "Grid1_csvexport"},
+                    new ItemModel(){ Text = "PDF Export", PrefixIcon= "e-pdfexport", Id="Grid1_pdfexport"},
+                };
+            }
+        }
+        catch(Exception ex)
+        {
+            throw ex;
+        } 
+        finally
+        {
+            isloading = false;        
+        }
+    }
+
     private async Task<string> GetImageString(string imageUrl, string ext, string DocumentFolder)
     {
         string result = null;

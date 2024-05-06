@@ -71,14 +71,15 @@
         <div class="col-md-4">
             <p>Commencement Date Range</p>
             <div class="row">
-                <div class="col-md-4">
-                    <SfDatePicker @bind-Value="@(InputModel.StartDate)" Enabled="true" Placeholder="Start Date" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                <div class="col-md-5" style="margin-left: -30px;">
+                    <SfDatePicker @bind-Value="@(InputModel.StartDate)" AllowEdit="false" Enabled="true" Placeholder="Start Date" FloatLabelType="FloatLabelType.Never" Format="dd/MM/yyyy" Width="150px"></SfDatePicker>
                 </div>
-                <div class="col-md-4">
-                    <SfDatePicker @bind-Value="@(InputModel.EndDate)" Enabled="true" Placeholder="End Date" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
+                <div class="col-md-5" style="margin-left: 30px;">
+                    <SfDatePicker @bind-Value="@(InputModel.EndDate)" AllowEdit="false" Enabled="true" Placeholder="End Date" FloatLabelType="FloatLabelType.Never" Format="dd/MM/yyyy" Width="150px"></SfDatePicker>
                 </div>
             </div>
         </div>
+
         @if (Downloadreport == false)
         {
             <div class="col col-md-12" style="margin-top:10px;">
@@ -121,6 +122,14 @@
     public bool DepartmentDD = true;
     public bool JobTitleDD = false;
     Query? IndicatorQuery { get; set; }
+    string _textemployee = string.Empty;
+    string _textleavetype = string.Empty;
+    int _numericvalue = 0;
+    List<ViewTimeandAttendanceSummary>? AttendanceData { get; set; }
+    List<AttendanceDaysAccounting>? AccountingDaysData { get; set; }
+    private string? JMSLogo { get; set; }
+    private string? JMSLogoName { get; set; }
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -196,6 +205,15 @@
                      }
                  }));
 
+            t.Add(Task.Run(async () =>
+               {
+                   AttendanceData = await reportservice.GetAttendanceData(InputModel);
+               }));
+
+            t.Add(Task.Run(async () =>
+                {
+                    AccountingDaysData = await reportservice.GetAttendanceDaysAccountingData(InputModel);
+                }));
 
             Task _t = Task.WhenAll(t);
             await _t;
@@ -204,20 +222,20 @@
     }
 
     private void OnDepartmentChange(Syncfusion.Blazor.DropDowns.MultiSelectChangeEventArgs<int?[]> args)
-            {
+    {
         if (args.Value != null)
-            {
+        {
             JobTitleDD = true;
             IndicatorQuery = new Query();
             List<WhereFilter> filterList = new List<WhereFilter>();
             foreach (var item in args.Value)
-                {
+            {
                 filterList.Add(new WhereFilter() { Field = "DepartmentId", Operator = "equal", value = item, IgnoreCase = true });
-                }
+            }
 
             var orWhere = WhereFilter.Or(filterList);
             IndicatorQuery = new Query().Where(orWhere);
-            }
+        }
         else
         {
             IndicatorQuery = new Query();
@@ -232,7 +250,7 @@
 
         try
         {
-            var data = await reportservice.GetLeaveRequest(InputModel);
+            var data = await reportservice.GetLeaveRequestDepartmentalReport(InputModel);
             if (data.Count > 0)
             {
                 using (ExcelEngine excelEngine = new ExcelEngine())
@@ -318,19 +336,83 @@
 
                     #endregion
 
-                    var _data = data.Select(o => new { o.DepartmentId, o.DepartmentDescription }).ToList().Distinct().ToList();
-                    for (var i = 0; i <= (_data.Count - 1); i++)
+                    // #region Logo
+
+                    // worksheet.Range["A1"].ColumnWidth = 9;
+                    // worksheet.Range["A1:A2"].Merge();
+
+                    // var images = await UtilityRepo.GetLocalLogos();
+                    // byte[]? _imagebyte = null;
+                    // if (images != null && images.Count > 0)
+                    // {
+                    //     var JMS = images.FirstOrDefault(o => o.ImageName.Contains("logonhcc"));
+                    //     if (JMS != null)
+                    //     {
+
+                    //         JMSLogo = JMS.ImageString;
+                    //         JMSLogoName = JMS.ImageName;
+                    //         if (!string.IsNullOrEmpty(JMS.ImageString))
+                    //         {
+                    //             var a = JMS.ImageString.Split(";base64,");
+                    //             _imagebyte = Convert.FromBase64String(a[1]);
+                    //         }
+
+                    //     }
+                    // }
+                    // if (_imagebyte != null && _imagebyte.Length > 0)
+                    // {
+                    //     MemoryStream _ms = new MemoryStream(_imagebyte);
+
+                    //     IPictureShape shape = worksheet.Pictures.AddPicture(1, 1, _ms);
+                    //     //Re-sizing a Picture
+                    //     shape.Height = 60;
+                    //     shape.Width = 60;
+                    //     //shape.IsSizeWithCell = true;
+                    //     //shape.IsMoveWithCell = true;
+                    //     shape.Left = 5;
+                    //     shape.Top = 2;
+                    // }
+                    // #endregion Logo
+
+                    // worksheet.Range["B1"].Text = "NHCC";
+                    // worksheet.Range["B1"].CellStyle = CategoryStyle;
+                    // worksheet.Range["B1"].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+                    // worksheet.Range["B1"].CellStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
+                    // worksheet.Range["B1"].RowHeight = 30;
+                    // worksheet.Range["B1:P1"].Merge();
+
+                    // worksheet.Range["B2"].Text = "Leave Request Report By Department";
+                    // worksheet.Range["B2"].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(71, 44, 76);
+                    // worksheet.Range["B2"].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
+                    // worksheet.Range["B2"].CellStyle.Font.FontName = "cambria";
+                    // worksheet.Range["B2"].CellStyle.Font.Size = 18;
+                    // worksheet.Range["B2:P2"].Merge();
+
+                    var _data = (from d in data
+                                 join desc in DepartmentData
+                                 on d.DepartmentId equals desc.DepartmentId
+                                 select new
+                                 {
+                                     d.DepartmentId,
+                                     desc.DepartmentDescription
+                                 })
+                    .Distinct()
+                    .ToList();
+
+                    var orderedData = _data.OrderBy(d => d.DepartmentDescription).ToList();
+
+                    for (var i = 0; i <= (orderedData.Count - 1); i++)
                     {
 
                         string Pillarname = "Sheet 1";
-                        if (!string.IsNullOrEmpty(_data[i].DepartmentDescription) && _data[i].DepartmentDescription.Contains(":"))
+                        if (!string.IsNullOrEmpty(orderedData[i].DepartmentDescription) && orderedData[i].DepartmentDescription.Contains(":"))
                         {
-                            var a = _data[i].DepartmentDescription.Split(":");
+                            var a = orderedData[i].DepartmentDescription.Split(":");
                             Pillarname = a[1].Replace("/", ""); ;
                         }
-                        else if (!string.IsNullOrEmpty(_data[i].DepartmentDescription))
+                        else if (!string.IsNullOrEmpty(orderedData[i].DepartmentDescription))
                         {
-                            Pillarname = _data[i].DepartmentDescription.Replace("/", ""); ;
+                            Pillarname = orderedData[i].DepartmentDescription.Replace("/", ""); ;
                         }
                         if (i == 0)
                         {
@@ -350,8 +432,8 @@
                             }
 
                         }
-                        var mdata = data.Where(o => o.DepartmentId == _data[i].DepartmentId).ToList();
-                        
+                        var mdata = data.Where(o => o.DepartmentId == orderedData[i].DepartmentId).ToList();
+
                         CreateWorkSheet(workbook, worksheet, mdata, Pillarname);
 
                     }
@@ -393,25 +475,64 @@
         InputModel = new UtilitiesSearchPanel();
     }
 
-    private async void CreateWorkSheet(IWorkbook workbook, IWorksheet worksheet, List<ViewEmployeeLeaveReport> data, string name)
+    private async void CreateWorkSheet(IWorkbook workbook, IWorksheet worksheet, List<ViewEmployeeLeaveDepartmentalReport> data, string name)
     {
         try
         {
             worksheet.Name = name;
-            worksheet.Range["A1"].Text = "NHCC";
-            worksheet.Range["A1"].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(157, 206, 92);
-            worksheet.Range["A1"].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
-            worksheet.Range["A1"].CellStyle.Font.FontName = "cambria";
-            worksheet.Range["A1"].CellStyle.Font.Size = 26;
-            worksheet.Range["A1"].CellStyle.Font.Bold = true;
-            worksheet.Range["A1:O1"].Merge();
 
-            worksheet.Range["A2"].Text = "Leave Request Report - By Department";
-            worksheet.Range["A2"].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(71, 44, 76);
-            worksheet.Range["A2"].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
-            worksheet.Range["A2"].CellStyle.Font.FontName = "cambria";
-            worksheet.Range["A2"].CellStyle.Font.Size = 18;
-            worksheet.Range["A2:O2"].Merge();
+            // #region Logo
+
+            // worksheet.Range["A1"].ColumnWidth = 9;
+            // worksheet.Range["A1:A2"].Merge();
+
+            // var images = await UtilityRepo.GetLocalLogos();
+            // byte[]? _imagebyte = null;
+            // if (images != null && images.Count > 0)
+            // {
+            //     var JMS = images.FirstOrDefault(o => o.ImageName.Contains("logonhcc"));
+            //     if (JMS != null)
+            //     {                    
+            //         JMSLogo = JMS.ImageString;
+            //         JMSLogoName = JMS.ImageName;
+                    
+            //         if (!string.IsNullOrEmpty(JMS.ImageString))
+            //         {
+            //             var a = JMS.ImageString.Split(";base64,");
+            //             _imagebyte = Convert.FromBase64String(a[1]);
+            //         }
+
+            //     }
+            // }
+            // if (_imagebyte != null && _imagebyte.Length > 0)
+            // {
+            //     toastService.ShowError("Into image byte");
+            //     MemoryStream _ms = new MemoryStream(_imagebyte);
+
+            //     IPictureShape shape = worksheet.Pictures.AddPicture(1, 1, _ms);
+            //     //Re-sizing a Picture
+            //     shape.Height = 60;
+            //     shape.Width = 60;
+            //     shape.Left = 5;
+            //     shape.Top = 2;
+            // }
+            // #endregion Logo
+
+
+            worksheet.Range["B1"].Text = "NHCC";
+            worksheet.Range["B1"].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(157, 206, 92);
+            worksheet.Range["B1"].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
+            worksheet.Range["B1"].CellStyle.Font.FontName = "cambria";
+            worksheet.Range["B1"].CellStyle.Font.Size = 26;
+            worksheet.Range["B1"].CellStyle.Font.Bold = true;
+            worksheet.Range["B1:F1"].Merge();
+
+            worksheet.Range["B2"].Text = "Leave Request Report - By Department";
+            worksheet.Range["B2"].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(71, 44, 76);
+            worksheet.Range["B2"].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
+            worksheet.Range["B2"].CellStyle.Font.FontName = "cambria";
+            worksheet.Range["B2"].CellStyle.Font.Size = 18;
+            worksheet.Range["B2:F2"].Merge();
 
             int row = 1;
 
@@ -420,7 +541,7 @@
 
             int startingRange = row;
 
-            worksheet.Range["B" + row].Text = "Employees on Leave";
+            worksheet.Range["B" + row].Text = "Total Records";
             worksheet.Range["B" + row].ColumnWidth = 15;
             worksheet.Range["B" + row].CellStyleName = "headerStyle";
 
@@ -435,192 +556,131 @@
 
             worksheet.Range[row, 1].Text = "#";
             worksheet.Range[row, 1].CellStyleName = "headerStyle";
-            worksheet.Range[row, 1].ColumnWidth = 5;
+            worksheet.Range[row, 1].ColumnWidth = 9;
             worksheet.Range[row, 1].WrapText = true;
 
-            worksheet.Range[row, 2].Text = "Leave Number";
+            worksheet.Range[row, 2].Text = "Employee";
             worksheet.Range[row, 2].CellStyleName = "headerStyle";
             worksheet.Range[row, 2].ColumnWidth = 20;
             worksheet.Range[row, 2].WrapText = true;
 
-            worksheet.Range[row, 3].Text = "Employee";
+            worksheet.Range[row, 3].Text = "Leave Type";
             worksheet.Range[row, 3].CellStyleName = "headerStyle";
             worksheet.Range[row, 3].ColumnWidth = 20;
             worksheet.Range[row, 3].WrapText = true;
 
-            worksheet.Range[row, 4].Text = "Department";
+            worksheet.Range[row, 4].Text = "Total Days Taken";
             worksheet.Range[row, 4].CellStyleName = "headerStyle";
             worksheet.Range[row, 4].ColumnWidth = 20;
             worksheet.Range[row, 4].WrapText = true;
 
-            worksheet.Range[row, 5].Text = "Leave Type";
+            worksheet.Range[row, 5].Text = "Less Days Time and Attendance";
             worksheet.Range[row, 5].CellStyleName = "headerStyle";
             worksheet.Range[row, 5].ColumnWidth = 20;
             worksheet.Range[row, 5].WrapText = true;
 
-            worksheet.Range[row, 6].Text = "Commencement Date";
+            worksheet.Range[row, 6].Text = "Balance Leave Days";
             worksheet.Range[row, 6].CellStyleName = "headerStyle";
             worksheet.Range[row, 6].ColumnWidth = 20;
             worksheet.Range[row, 6].WrapText = true;
 
-            worksheet.Range[row, 7].Text = "End Date";
-            worksheet.Range[row, 7].CellStyleName = "headerStyle";
-            worksheet.Range[row, 7].ColumnWidth = 20;
-            worksheet.Range[row, 7].WrapText = true;
-
-            worksheet.Range[row, 8].Text = "Total Days Taken";
-            worksheet.Range[row, 8].CellStyleName = "headerStyle";
-            worksheet.Range[row, 8].ColumnWidth = 20;
-            worksheet.Range[row, 8].WrapText = true;
-
-            worksheet.Range[row, 9].Text = "Supervisor";
-            worksheet.Range[row, 9].CellStyleName = "headerStyle";
-            worksheet.Range[row, 9].ColumnWidth = 20;
-            worksheet.Range[row, 9].WrapText = true;
-
-            worksheet.Range[row, 10].Text = "Supervisor Approval Date";
-            worksheet.Range[row, 10].CellStyleName = "headerStyle";
-            worksheet.Range[row, 10].ColumnWidth = 20;
-            worksheet.Range[row, 10].WrapText = true;
-
-            worksheet.Range[row, 11].Text = "Head of Department";
-            worksheet.Range[row, 11].CellStyleName = "headerStyle";
-            worksheet.Range[row, 11].ColumnWidth = 20;
-            worksheet.Range[row, 11].WrapText = true;
-
-            worksheet.Range[row, 12].Text = "HOD Approval Date";
-            worksheet.Range[row, 12].CellStyleName = "headerStyle";
-            worksheet.Range[row, 12].ColumnWidth = 20;
-            worksheet.Range[row, 12].WrapText = true;
-
-            worksheet.Range[row, 13].Text = "CHRO";
-            worksheet.Range[row, 13].CellStyleName = "headerStyle";
-            worksheet.Range[row, 13].ColumnWidth = 20;
-            worksheet.Range[row, 13].WrapText = true;
-
-            worksheet.Range[row, 14].Text = "Approval Date";
-            worksheet.Range[row, 14].CellStyleName = "headerStyle";
-            worksheet.Range[row, 14].ColumnWidth = 20;
-            worksheet.Range[row, 14].WrapText = true;
-
-            worksheet.Range[row, 15].Text = "Leave Status";
-            worksheet.Range[row, 15].CellStyleName = "headerStyle";
-            worksheet.Range[row, 15].ColumnWidth = 20;
-            worksheet.Range[row, 15].WrapText = true;
-
             row++;
 
             int count = 1;
-            
-            foreach (var item in data)
-            {
-                worksheet.Range[row, 1].Text = count.ToString();
-                worksheet.Range[row, 2].Text = item.EmployeeLeaveNo;
-                worksheet.Range[row, 2].VerticalAlignment = ExcelVAlign.VAlignTop;
-                worksheet.Range[row, 2].HorizontalAlignment = ExcelHAlign.HAlignRight;
 
-                if (item.Hod != null)
+            foreach (var item in data)
+            {                
+
+                worksheet.Range[row, 1].Text = count.ToString();
+                worksheet.Range[row, 1].VerticalAlignment = ExcelVAlign.VAlignTop;
+                worksheet.Range[row, 1].HorizontalAlignment = ExcelHAlign.HAlignRight;
+
+                if (EmployeeData != null)
                 {
-                    var _resultdata = EmployeeData.FirstOrDefault(o => o.Employeeid == item.Employeeid);
-                    worksheet.Range[row, 3].Text = _resultdata.EmployeeDetails;
-                    worksheet.Range[row, 3].WrapText = true;
-                    worksheet.Range[row, 3].VerticalAlignment = ExcelVAlign.VAlignTop;
-                    worksheet.Range[row, 3].HorizontalAlignment = ExcelHAlign.HAlignRight;
+                    var _emp = EmployeeData.FirstOrDefault(o => o.Employeeid == item.Employeeid);
+                    if (_emp != null && !string.IsNullOrEmpty(_emp.EmployeeDetails))
+                    {
+                        _textemployee = _emp.EmployeeDetails;
+                    }                    
                 }
 
-                worksheet.Range[row, 4].Text = item.DepartmentDescription;
-                worksheet.Range[row, 4].WrapText = true;
-                worksheet.Range[row, 4].VerticalAlignment = ExcelVAlign.VAlignTop;
-                worksheet.Range[row, 4].HorizontalAlignment = ExcelHAlign.HAlignRight;
+                worksheet.Range[row, 2].Text = _textemployee;
+                worksheet.Range[row, 2].VerticalAlignment = ExcelVAlign.VAlignTop;
+                worksheet.Range[row, 2].HorizontalAlignment = ExcelHAlign.HAlignLeft;
 
-                if (item.LeaveTypeId != null)
+                if (LeaveTypeData != null)
                 {
-                    var _leavetype = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == item.LeaveTypeId);
-                    worksheet.Range[row, 5].Text = _leavetype.LeaveTypeDescription;
+                    var _emp = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == item.LeaveTypeId);
+                    if (_emp != null && !string.IsNullOrEmpty(_emp.LeaveTypeDescription))
+                    {
+                        _textleavetype = _emp.LeaveTypeDescription;
+                    }
+                }
+
+                worksheet.Range[row, 3].Text = _textleavetype;
+                worksheet.Range[row, 3].VerticalAlignment = ExcelVAlign.VAlignTop;
+                worksheet.Range[row, 3].HorizontalAlignment = ExcelHAlign.HAlignLeft;
+
+                if (item.TotalDaysonLeave.HasValue)
+                {
+                    worksheet.Range[row, 4].Number = item.TotalDaysonLeave.Value;
+                    worksheet.Range[row, 4].VerticalAlignment = ExcelVAlign.VAlignTop;
+                    worksheet.Range[row, 4].HorizontalAlignment = ExcelHAlign.HAlignRight;
+                }
+
+                //Time and Attendance
+                double? _daysunaccountedfor = 0;
+                double? _daysaccountedfor = 0;
+                double? daysunaccountedfor = 0;
+
+                //Time and Attendance Unaccounted Days
+                if (AttendanceData != null)
+                {
+                    _daysunaccountedfor = AttendanceData.Where(o => o.ReportYearId == item.FinancialYearId && o.HcmisemployeeId == item.Employeeid).Sum(o => Math.Truncate(Convert.ToDouble(o.TotalDaysHrsDueUncountedFor)));
+
+                    worksheet.Range[row, 5].Number = Convert.ToDouble(_daysunaccountedfor);
                     worksheet.Range[row, 5].VerticalAlignment = ExcelVAlign.VAlignTop;
                     worksheet.Range[row, 5].HorizontalAlignment = ExcelHAlign.HAlignRight;
-
                 }
 
-                if (item.CommencementDate.HasValue)
+                //Get Days Accounted For By HR
+                if (AccountingDaysData != null)
+                {                    
+                    _daysaccountedfor = AccountingDaysData.Where(o => o.YearId == item.FinancialYearId && o.Employeeid == item.Employeeid).Sum(o => Math.Truncate(Convert.ToDouble(o.TotalDays)));
+                }
+
+                daysunaccountedfor = (_daysunaccountedfor - _daysaccountedfor);
+
+                if (LeaveTypeData != null)
                 {
-                    worksheet.Range[row, 6].Text = item.CommencementDate.Value.ToString("dd/MM/yyyy");
+                    var _leavetype = LeaveTypeData.FirstOrDefault(o => o.LeaveTypeId == item.LeaveTypeId);
+                    if (_leavetype != null)
+                    {
+                        //Annual leave,Maternity Leave,Paternity Leave,Compassionate Leave ,Special Leave
+                        if (item.LeaveTypeId == 1 || item.LeaveTypeId == 2 || item.LeaveTypeId == 4 || item.LeaveTypeId == 5 || item.LeaveTypeId == 6)
+                        {
+                            if (item.LeaveTypeId == 1)
+                            {
+                                _numericvalue = Convert.ToInt32((_leavetype.LeaveDaysPerYear - daysunaccountedfor) - item.TotalDaysonLeave);
+                            }
+                            else if (item.LeaveTypeId == 2 || item.LeaveTypeId == 4 || item.LeaveTypeId == 5 || item.LeaveTypeId == 6)
+                            {
+                                _numericvalue = Convert.ToInt32(_leavetype.LeaveDaysPerYear - item.TotalDaysonLeave);
+                            }
+                            worksheet.Range[row, 6].Number = Convert.ToDouble(_numericvalue);
+                        }
+
+                        //Sick Leave ,Study Leave,Official Duty
+                        else
+                        {
+                            worksheet.Range[row, 6].Text = "N/A";
+                        }
+                    }
+                                        
                     worksheet.Range[row, 6].VerticalAlignment = ExcelVAlign.VAlignTop;
                     worksheet.Range[row, 6].HorizontalAlignment = ExcelHAlign.HAlignRight;
                 }
-
-                if (item.EndDate.HasValue)
-                {
-                    worksheet.Range[row, 7].Text = item.EndDate.Value.ToString("dd/MM/yyyy");
-                    worksheet.Range[row, 7].VerticalAlignment = ExcelVAlign.VAlignTop;
-                    worksheet.Range[row, 7].HorizontalAlignment = ExcelHAlign.HAlignRight;
-                }
-
-                if (item.NoDaysAppliedFor.HasValue)
-                {
-                    worksheet.Range[row, 8].Number = item.NoDaysAppliedFor.Value;
-                    worksheet.Range[row, 8].VerticalAlignment = ExcelVAlign.VAlignTop;
-                    worksheet.Range[row, 8].HorizontalAlignment = ExcelHAlign.HAlignRight;
-                }
-
-                if (item.ImmediateSupervisor != null)
-                {
-                    var _resultdata = EmployeeData.FirstOrDefault(o => o.Employeeid == item.ImmediateSupervisor);
-                    worksheet.Range[row, 9].Text = _resultdata.EmployeeDetails;
-                    worksheet.Range[row, 9].VerticalAlignment = ExcelVAlign.VAlignTop;
-                    worksheet.Range[row, 9].HorizontalAlignment = ExcelHAlign.HAlignRight;
-                }
-
-                if (item.SupervisorApprovalDate.HasValue)
-                {
-                    worksheet.Range[row, 10].Text = item.SupervisorApprovalDate.Value.ToString("dd/MM/yyyy  hh:mm:ss");
-                    worksheet.Range[row, 10].VerticalAlignment = ExcelVAlign.VAlignTop;
-                    worksheet.Range[row, 10].HorizontalAlignment = ExcelHAlign.HAlignRight;
-                }
-
-                if (item.Hod != null)
-                {
-                    var _resultdata = EmployeeData.FirstOrDefault(o => o.Employeeid == item.Hod);
-                    worksheet.Range[row, 11].Text = _resultdata.EmployeeDetails;
-                    worksheet.Range[row, 11].VerticalAlignment = ExcelVAlign.VAlignTop;
-                    worksheet.Range[row, 11].HorizontalAlignment = ExcelHAlign.HAlignRight;
-                }
-
-                if (item.HodapprovalDate.HasValue)
-                {
-                    worksheet.Range[row, 12].Text = item.HodapprovalDate.Value.ToString("dd/MM/yyyy  hh:mm:ss");
-                    worksheet.Range[row, 12].VerticalAlignment = ExcelVAlign.VAlignTop;
-                    worksheet.Range[row, 12].HorizontalAlignment = ExcelHAlign.HAlignRight;
-                }
-
-                if (item.Chro != null)
-                {
-                    var _resultdata = EmployeeData.FirstOrDefault(o => o.Employeeid == item.Chro);
-                    worksheet.Range[row, 13].Text = _resultdata.EmployeeDetails;
-                    worksheet.Range[row, 13].VerticalAlignment = ExcelVAlign.VAlignTop;
-                    worksheet.Range[row, 13].HorizontalAlignment = ExcelHAlign.HAlignRight;
-                }
-
-                if (item.ChroapprovalDate.HasValue)
-                {
-                    worksheet.Range[row, 14].Text = item.ChroapprovalDate.Value.ToString("dd/MM/yyyy  hh:mm:ss");
-                    worksheet.Range[row, 14].VerticalAlignment = ExcelVAlign.VAlignTop;
-                    worksheet.Range[row, 14].HorizontalAlignment = ExcelHAlign.HAlignRight;
-                }
-
-                var _leavetypestatus = ApprovalStatusData.FirstOrDefault(o => o.LeaveApprovalStatusId == item.LeaveApprovalStatusId);
-
-                if (_leavetypestatus != null)
-                {
-                    var color = Aspose.Svg.Drawing.Color.FromString(_leavetypestatus.LeaveApprovalStatusColor);
-                    int rgbColor = color.ToInt();
-                    worksheet.Range[row, 15].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(rgbColor);
-                    worksheet.Range[row, 15].Text = _leavetypestatus.LeaveApprovalStatus;
-                    worksheet.Range[row, 15].WrapText = true;
-                    worksheet.Range[row, 15].VerticalAlignment = ExcelVAlign.VAlignTop;
-                    worksheet.Range[row, 15].HorizontalAlignment = ExcelHAlign.HAlignRight;
-                }
-
+                
                 row += 1;
                 count++;
             }

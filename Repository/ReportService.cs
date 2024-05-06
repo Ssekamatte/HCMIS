@@ -318,6 +318,32 @@ namespace HCMIS.Repository
             return data;
         }
 
+        public async Task<List<ViewEmployeeLeaveDepartmentalReport>> GetLeaveRequestDepartmentalReport(UtilitiesSearchPanel SearchModel)
+        {
+            List<ViewEmployeeLeaveDepartmentalReport>? data = new List<ViewEmployeeLeaveDepartmentalReport>();
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(SearchModel);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var result = await _httpClient.PostAsync($"Reports/GetLeaveRequestDepartmentalReport", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    data = JsonSerializer.Deserialize<List<ViewEmployeeLeaveDepartmentalReport>>(content, _options);
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+            return data;
+        }
+
         #endregion Leave
 
 

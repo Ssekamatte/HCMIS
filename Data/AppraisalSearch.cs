@@ -13,6 +13,8 @@
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public int?[] YearId { get; set; }
+        public int?[] MonthId { get; set; }
+        public int?[] DayId { get; set; }
 
         public int?[] ShortlistId { get; set; }
         public int?[] DepartmentId { get; set; }

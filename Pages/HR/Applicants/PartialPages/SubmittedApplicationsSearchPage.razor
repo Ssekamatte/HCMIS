@@ -42,27 +42,31 @@
             <EditForm Model="@searchpanel" OnValidSubmit="@OnLoadRecords">
                 <DataAnnotationsValidator />
                 <div class="row" style="margin-bottom:10px;">
-                    <div class="col-md-4">
-                        <p>Shortlisted/Not-Shortlisted Status</p>
-                        <SfMultiSelect @bind-Value="@searchpanel.ShortlistId"
-                                       TValue="int?[]" TItem="AShortlist"
-                                       AllowFiltering="true"
-                                       FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
-                                       Mode="@VisualMode.CheckBox"
-                                       DataSource="@ShortlistDetailData"
-                                       ShowSelectAll="true"
-                                       EnableSelectionOrder="true"
-                                       ShowDropDownIcon="true"
-                                       FilterBarPlaceholder="Year"
-                                       FloatLabelType="FloatLabelType.Never" PopupHeight="350px"
-                                       Query="@LocalDataQuery"
-                                       EnableVirtualization="true">
-                            <MultiSelectFieldSettings Value="@nameof(AShortlist.ShortlistId)"
-                                                      Text="@nameof(AShortlist.ShortlistDescription)">
-                            </MultiSelectFieldSettings>
-                        </SfMultiSelect>
-                    </div>
 
+                    @if (ApplicationStageId == 1)
+                    {
+                        <div class="col-md-4">
+                            <p>Shortlisted/Not-Shortlisted Status</p>
+                            <SfMultiSelect @bind-Value="@searchpanel.ShortlistId"
+                                           TValue="int?[]" TItem="AShortlist"
+                                           AllowFiltering="true"
+                                           FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                                           Mode="@VisualMode.CheckBox"
+                                           DataSource="@ShortlistDetailData"
+                                           ShowSelectAll="true"
+                                           EnableSelectionOrder="true"
+                                           ShowDropDownIcon="true"
+                                           FilterBarPlaceholder="Year"
+                                           FloatLabelType="FloatLabelType.Never" PopupHeight="350px"
+                                           Query="@LocalDataQuery"
+                                           EnableVirtualization="true">
+                                <MultiSelectFieldSettings Value="@nameof(AShortlist.ShortlistId)"
+                                                          Text="@nameof(AShortlist.ShortlistDescription)">
+                                </MultiSelectFieldSettings>
+                            </SfMultiSelect>
+                        </div>
+                    }
+                    
                     <div class="col-md-4">
                         <p>Department</p>
                         <SfMultiSelect @bind-Value="@searchpanel.DepartmentId"
@@ -158,6 +162,16 @@
     public Query LocalDataQuery  = new Query().Take(15);
     public bool JobTitleDD = false;
     Query? IndicatorQuery { get; set; }  = new Query().Take(15);
+    [Parameter]
+    public int ApplicationStageId { get; set; }
+    // Define an event to pass the value to the parent component
+    [Parameter]
+    public EventCallback<string?> JobTitleValues { get; set; }
+    [Parameter]
+    public EventCallback<string?> DepartmentValues { get; set; }
+    string JobTitleIdParam = string.Empty;
+    string DeptIdParam = string.Empty;
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -166,6 +180,9 @@
             List<int?> _listid = new List<int?>();
             _listid.Add(listid);
             searchpanel.ShortlistId = _listid.ToArray();
+
+            JobTitleIdParam = null;
+            DeptIdParam = null;
         }
         catch (Exception ex)
         {
@@ -177,50 +194,59 @@
     {
         try
         {
-            string _listId = null;
-            if (searchpanel.ShortlistId != null)
+            if (searchpanel.DepartmentId != null && searchpanel.JobTitleId != null)
             {
-                _listId = string.Join(",", searchpanel.ShortlistId);
-            }
+                string _listId = null;
+                if (searchpanel.ShortlistId != null)
+                {
+                    _listId = string.Join(",", searchpanel.ShortlistId);
+                }
 
-            string _DepartmentId = null;
-            if (searchpanel.DepartmentId != null)
-            {
-                _DepartmentId = string.Join(",", searchpanel.DepartmentId);
-            }
+                string _DepartmentId = null;
+                if (searchpanel.DepartmentId != null)
+                {
+                    _DepartmentId = string.Join(",", searchpanel.DepartmentId);
+                    DeptIdParam = _DepartmentId;
+                }
 
-            string _ReferenceNumber = null;
-            if (searchpanel.ReferenceNumber != null)
-            {
-                _ReferenceNumber = searchpanel.ReferenceNumber;
-            }
+                string _ReferenceNumber = null;
+                if (searchpanel.ReferenceNumber != null)
+                {
+                    _ReferenceNumber = searchpanel.ReferenceNumber;
+                }
 
-            string _JobTitleId = null;
-            if (searchpanel.JobTitleId != null)
-            {
-                _JobTitleId = string.Join(",", searchpanel.JobTitleId);
-            }
-            string sdate = null;
-            if (searchpanel.StartDate != null)
-            {
-                sdate = searchpanel.StartDate.Value.ToString("dd/MM/yyyy");
-            }
-            
-            string edate = null;
-            if (searchpanel.EndDate != null)
-            {
-                edate = searchpanel.EndDate.Value.ToString("dd/MM/yyyy");
-            }
+                string _JobTitleId = null;
+                if (searchpanel.JobTitleId != null)
+                {
+                    _JobTitleId = string.Join(",", searchpanel.JobTitleId);
+                    JobTitleIdParam = _JobTitleId;
+                }
 
-            MainQuery = new Query()
-            .AddParams("MeetsRequirements", _listId)
-            .AddParams("DepartmentId", _DepartmentId)
-            .AddParams("ReferenceNumber", _ReferenceNumber)
-            .AddParams("JobTitleId", _JobTitleId)
-            .AddParams("ReferenceNumber", _ReferenceNumber)
-            .AddParams("StartDate", sdate)
-            .AddParams("EndDate", edate);
-            await onsearchtoggle.InvokeAsync(MainQuery);
+
+                string sdate = null;
+                if (searchpanel.StartDate != null)
+                {
+                    sdate = searchpanel.StartDate.Value.ToString("dd/MM/yyyy");
+                }
+
+                string edate = null;
+                if (searchpanel.EndDate != null)
+                {
+                    edate = searchpanel.EndDate.Value.ToString("dd/MM/yyyy");
+                }
+
+                MainQuery = new Query()
+                .AddParams("MeetsRequirements", _listId)
+                .AddParams("DepartmentId", _DepartmentId)
+                .AddParams("ReferenceNumber", _ReferenceNumber)
+                .AddParams("JobTitleId", _JobTitleId)
+                .AddParams("ReferenceNumber", _ReferenceNumber)
+                .AddParams("StartDate", sdate)
+                .AddParams("EndDate", edate);
+                await onsearchtoggle.InvokeAsync(MainQuery);
+                await JobTitleValues.InvokeAsync(JobTitleIdParam);
+                await DepartmentValues.InvokeAsync(DeptIdParam);
+            }
 
         }
         catch (Exception ex)
@@ -240,6 +266,11 @@
             searchpanel = new AppraisalSearch();
             MainQuery = new Query();
             await onsearchtoggle.InvokeAsync(MainQuery);
+
+            JobTitleIdParam = string.Empty;
+            DeptIdParam = string.Empty; 
+            await JobTitleValues.InvokeAsync(JobTitleIdParam);
+            await DepartmentValues.InvokeAsync(DeptIdParam);
         }
         catch (Exception ex)
         {

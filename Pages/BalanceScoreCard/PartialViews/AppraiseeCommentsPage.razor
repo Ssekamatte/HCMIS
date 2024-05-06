@@ -12,6 +12,7 @@
 @inject NavigationManager navigation;
 @inject SystemSettings _SystemSettings;
 @using HCMIS.ViewModel;
+@using Newtonsoft.Json
 @inject IToastService toastService;
 @inject IAuthenticationService AuthService;
 
@@ -65,14 +66,16 @@
 </SfGrid>
 
 @code {
-    [Parameter]
-    public List<BalanceScoreCardAppraiseeComments>? appraiseecommentsdata { get; set; }
+    // [Parameter]
+    // public List<BalanceScoreCardAppraiseeComments>? appraiseecommentsdata { get; set; }
     [Parameter]
     public int BalanceScoreCardId { get; set; }
     [Parameter]
     public EventCallback<List<BalanceScoreCardAppraiseeComments>?> onscorecardtoggle { get; set; }
     public SfGrid<BalanceScoreCardAppraiseeComments>? AppraiseeCommentsGrid { get; set; }
     List<BalanceScoreCardAppraiseeComments>? datasource { get; set; }
+    [Parameter]
+    public int selectebscid { get; set; }
 
     Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
     int? previousBalanceScoreCardId { get; set; }
@@ -84,15 +87,36 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (previousBalanceScoreCardId != BalanceScoreCardId)
+        ////toastService.ShowError(selectebscid.ToString());
+        if (selectebscid > 0)
         {
-            int countid = -10000;
-            previousBalanceScoreCardId = BalanceScoreCardId;
-            datasource = new List<BalanceScoreCardAppraiseeComments>();
-            if (appraiseecommentsdata != null && appraiseecommentsdata.Count() > 0)
-            {
-                datasource.AddRange(appraiseecommentsdata);
-            }
+            await LoadClientsForSelectedGroup();
+        }
+
+        // if (previousBalanceScoreCardId != BalanceScoreCardId)
+        // {
+        //     int countid = -10000;
+        //     previousBalanceScoreCardId = BalanceScoreCardId;
+        //     datasource = new List<BalanceScoreCardAppraiseeComments>();
+        //     if (appraiseecommentsdata != null && appraiseecommentsdata.Count() > 0)
+        //     {
+        //         datasource.AddRange(appraiseecommentsdata);
+        //     }
+        // }
+    }
+
+    private async Task LoadClientsForSelectedGroup()
+    {
+        var response = await Http.GetAsync($"BalanceScoreCard/GetAppraiseeCommentsData?selectebscid={selectebscid}");
+        if (response.IsSuccessStatusCode)
+        {
+            var responseData = await response.Content.ReadAsStringAsync();
+            datasource = JsonConvert.DeserializeObject<List<BalanceScoreCardAppraiseeComments>>(responseData);
+        }
+        else
+        {
+            // Handle API error
+            // You can display an error message or log the error
         }
     }
     //For Appraisee Comments Grid

@@ -20,6 +20,7 @@ using HCMIS.Repository;
 using static HCMIS.Pages.HR.Aptitudde.AptitudeTestPage;
 using HCMIS.Interface;
 using static HCMIS.Pages.HR.Applicants.SubmittedApplicationPage;
+using static HCMIS.Pages.HR.Applicants.ReviewedApplicationsPage;
 using static HCMIS.Pages.HR.Applicants.InterviewApplicationPage;
 using static HCMIS.Pages.HR.Applicants.FinalApplicationAssessmentPage;
 
@@ -189,6 +190,7 @@ builder.Services.AddScoped<NonStaffQualificationAttachmentAdapter>();
 builder.Services.AddScoped<LoginLogAdapter>();
 builder.Services.AddScoped<RefereesAdapter>();
 builder.Services.AddScoped<MyApplicationsAdapter>();
+builder.Services.AddScoped<ReviewedApplicationAdapter>();
 
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IReportService, ReportService>();

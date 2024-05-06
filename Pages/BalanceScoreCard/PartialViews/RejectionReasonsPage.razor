@@ -1,5 +1,7 @@
 ﻿@using HCMIS.SHARED.Models;
+@using Newtonsoft.Json
 @inject IToastService toastService;
+@inject HttpClient Http;
 
 <style>
     h6 {
@@ -85,18 +87,41 @@
     public bool AllowAddingValue { get; set; }
     [Parameter]
     public bool AllowEditingValue{ get; set; }
+    [Parameter]
+    public int selectebscid { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        if (previousBalanceScoreCardId != BalanceScoreCardId)
+        //toastService.ShowError(selectebscid.ToString());
+        if (selectebscid > 0)
         {
-            int countid = -10000;
-            previousBalanceScoreCardId = BalanceScoreCardId;
-            datasource = new List<BalanceScoreCardRejectionReasons>();
-            if (reasondata != null && reasondata.Count() > 0)
-            {
-                datasource.AddRange(reasondata);
-            }
+            await LoadClientsForSelectedGroup();
+        }
+
+        // if (previousBalanceScoreCardId != BalanceScoreCardId)
+        // {
+        //     int countid = -10000;
+        //     previousBalanceScoreCardId = BalanceScoreCardId;
+        //     datasource = new List<BalanceScoreCardRejectionReasons>();
+        //     if (reasondata != null && reasondata.Count() > 0)
+        //     {
+        //         datasource.AddRange(reasondata);
+        //     }
+        // }
+    }
+
+    private async Task LoadClientsForSelectedGroup()
+    {
+        var response = await Http.GetAsync($"BalanceScoreCard/GetRejectionReasonsData?selectebscid={selectebscid}");
+        if (response.IsSuccessStatusCode)
+        {
+            var responseData = await response.Content.ReadAsStringAsync();
+            datasource = JsonConvert.DeserializeObject<List<BalanceScoreCardRejectionReasons>>(responseData);
+        }
+        else
+        {
+            // Handle API error
+            // You can display an error message or log the error
         }
     }
 

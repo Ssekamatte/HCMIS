@@ -6,6 +6,7 @@ using HCMIS.SHARED.Models;
 using HCMIS.ViewModel;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using static SkiaSharp.HarfBuzz.SKShaper;
 
 namespace HCMIS.Repository
 {
@@ -80,6 +81,45 @@ namespace HCMIS.Repository
             {
                 toastService.ShowError(ex.Message);
             }
+        }
+
+        public async Task<List<AppliedForJobs>?> InviteApplicantsAsync(List<AppliedForJobs> data)
+        {
+            //List<AppliedForJobs> result = new List<AppliedForJobs>();
+            try
+            {
+                string? accessToken = await settingsRepo.GetAccessToken();
+
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(data);
+                StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                var result = await http.PostAsync($"HumanResource/InviteApplicants", httpContent);
+                if (result.IsSuccessStatusCode)
+                {
+                    var content = await result.Content.ReadAsStringAsync();
+                    var _data = JsonSerializer.Deserialize<Response>(content, _options);
+                    if (_data != null)
+                    {
+                        if (_data.IsSuccess)
+                        {
+                            toastService.ShowSuccess(_data.Message);
+                        }
+                        else
+                        {
+                            toastService.ShowError(_data.Message);
+                        }
+                    }
+                }
+                else
+                {
+                    toastService.ShowError(result.ReasonPhrase);
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError(ex.Message);
+            }
+
+            return null;
         }
 
         public async Task<List<AppliedForJobs>?> GetMyApplicationsAsync(string? ApplicationStatusId, string? ApplicantId)

@@ -5,10 +5,12 @@
 @using HCMIS.SHARED.DTO
 @using HCMIS.SHARED.Models;
 @using HCMIS.ViewModel;
+@using Newtonsoft.Json
 @using Syncfusion.DocIORenderer;
 @using Syncfusion.Pdf;
 @inject IToastService toasterservice;
 @inject DocumentUploadModel _DocumentUploadModel;
+@inject HttpClient Http
 
 @if(DataSource != null)
 {
@@ -132,25 +134,48 @@
     [Parameter]
     public bool attachmentgridenabled { get; set; }
     bool attachmentnamebool = false;
+    [Parameter]
+    public int selectebscid { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
         try
         {
-            if (PreviousBalanceScoreCardId != BalanceScoreCardId)
+            toasterservice.ShowError(selectebscid.ToString());
+            if (selectebscid > 0)
             {
-                PreviousBalanceScoreCardId = BalanceScoreCardId;
-                DataSource = new List<BalanceScoreCardAttachment>();
-                if (HeaderAttachmentData != null && HeaderAttachmentData.Count() > 0)
-                {
-                    DataSource.AddRange(HeaderAttachmentData);
-                }
+                await LoadClientsForSelectedGroup();
             }
+
+            // if (PreviousBalanceScoreCardId != BalanceScoreCardId)
+            // {
+            //     PreviousBalanceScoreCardId = BalanceScoreCardId;
+            //     DataSource = new List<BalanceScoreCardAttachment>();
+            //     if (HeaderAttachmentData != null && HeaderAttachmentData.Count() > 0)
+            //     {
+            //         DataSource.AddRange(HeaderAttachmentData);
+            //     }
+            // }
         }
         catch (Exception ex)
         {
 
+        }
+    }
+
+    private async Task LoadClientsForSelectedGroup()
+    {
+        var response = await Http.GetAsync($"BalanceScoreCard/GetBSCAttachmentData?selectebscid={selectebscid}");
+        if (response.IsSuccessStatusCode)
+        {
+            var responseData = await response.Content.ReadAsStringAsync();
+            DataSource = JsonConvert.DeserializeObject<List<BalanceScoreCardAttachment>>(responseData);
+        }
+        else
+        {
+            // Handle API error
+            // You can display an error message or log the error
         }
     }
 

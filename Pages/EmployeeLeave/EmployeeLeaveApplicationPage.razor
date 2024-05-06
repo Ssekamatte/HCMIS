@@ -555,7 +555,7 @@
                                                                 @if (leavetypedays.LeaveTypeId == 1)
                                                                 {
                                                                     daysentitled = @leavetypedays.LeaveDaysPerYear;
-                                                                    availabledays = (daysentitled - daysunaccountedfor);
+                                                                    availabledays = ((daysentitled - daysunaccountedfor)-TotalDaysTakenPrior);
 
                                                                     <p style="margin-top:10px;">Days Entitled : @daysentitled</p>
                                                                     <p style="margin-top:10px;color:red;font-size:small;">Time &amp; Attendance Unaccounted Days : @daysunaccountedfor</p>
@@ -742,61 +742,67 @@
                                     <HeaderTemplate><strong>PART IV: APPROVAL</strong></HeaderTemplate>
                                     <ContentTemplate>
                                      @{
-                                            int? JobTitleId = 0;
-                                            @if (_previous == Syncfusion.Blazor.Grids.Action.Add)
-                                            {
-                                                var _data = EmployeeData.FirstOrDefault(o => o.Employeeid == Credentials.StaffId);
-                                                if (_data != null)
+                                         if(EmployeeData != null)
+                                         {
+                                                int? JobTitleId = 0;
+                                                @if (_previous == Syncfusion.Blazor.Grids.Action.Add)
                                                 {
-                                                    JobTitleId = _data.JibTitleId;
-                                                }                                                
-                                            }
-                                            else if(_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
-                                            {
-                                                var _data = EmployeeData.FirstOrDefault(o => o.Employeeid == LeaveData.Employeeid);
-                                                if (_data != null)
+                                                    var _data = EmployeeData.FirstOrDefault(o => o.Employeeid == Credentials.StaffId);
+                                                    if (_data != null)
+                                                    {
+                                                        JobTitleId = _data.JibTitleId;
+                                                    }
+                                                }
+                                                else if (_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
                                                 {
-                                                    JobTitleId = _data.JibTitleId;
-                                                }   
-                                            }                                            
-
-                                            @*If Official Duty*@
-                                            @if (LeaveData != null && LeaveData.LeaveTypeId == 8)
-                                            {
-                                                <h6 style="background-color:#2c3e50; color:ghostwhite;margin-top: 10px;">NB: OFFICIAL DUTY REQUESTS ARE APPROVED BY IMMEDIATE SUPERVISORS </h6>
-                                            }
-                                            @*If CHRO Application*@
-                                            else if (JobTitleId == 44)
-                                            {
-                                                <h6 style="background-color: white;color: black;">CHRO LEAVE WILL BE APPROVED BY IMMEDIATE SUPERVISOR (CEO) SELECTED IN PART III</h6>
-                                            }
-                                            else
-                                            {
-                                                <div class="col-md-12">
-                                                    <h6 style="background-color: white;color: black;"> LEAVE APPROVED BY : CHIEF HUMAN RESOURCE OFFICER</h6>
-                                                </div>
-
-                                                <div class="col-md-12">
-                                                    <SfDropDownList @bind-Value="@(LeaveData.Chro)" TItem="ViewEmployeeDropDown" Enabled="OnSubmitButtonsBool" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                                        <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
-                                                        <DropDownListEvents TValue="int?" TItem="ViewEmployeeDropDown" ValueChange="OnEmployeeCHROChange"></DropDownListEvents>
-                                                    </SfDropDownList>
-
-                                                    @if (employeenochrochange != null && !string.IsNullOrEmpty(employeenochrochange.EmailAddress) && LeaveData.Chro != null)
+                                                    var _data = EmployeeData.FirstOrDefault(o => o.Employeeid == LeaveData.Employeeid);
+                                                    if (_data != null)
                                                     {
-                                                        <p style="color:forestgreen; font-weight:bold">Email: @employeenochrochange.EmailAddress</p>
+                                                        JobTitleId = _data.JibTitleId;
                                                     }
-                                                    else if (employeenochrochange != null && (LeaveData != null && LeaveData.Chro != null)
-                                                    && (employeenochrochange != null && string.IsNullOrEmpty(employeenochrochange.EmailAddress)))
-                                                    {
-                                                        <p style="color:red; font-weight:bold">Email Not Provided</p>
-                                                    }
-                                                    else
-                                                    {
+                                                }
 
-                                                    }
-                                                </div>
+                                                @*If Official Duty*@
+                                                @if (LeaveData != null && LeaveData.LeaveTypeId == 8)
+                                                {
+                                                    <h6 style="background-color:#2c3e50; color:ghostwhite;margin-top: 10px;">NB: OFFICIAL DUTY REQUESTS ARE APPROVED BY IMMEDIATE SUPERVISORS </h6>
+                                                }
+                                                @*If CHRO Application*@
+                                                else if (JobTitleId == 44)
+                                                {
+                                                    <h6 style="background-color: white;color: black;">CHRO LEAVE WILL BE APPROVED BY IMMEDIATE SUPERVISOR (CEO) SELECTED IN PART III</h6>
+                                                }
+                                                else
+                                                {
+                                                    <div class="col-md-12">
+                                                        <h6 style="background-color: white;color: black;"> LEAVE APPROVED BY : CHIEF HUMAN RESOURCE OFFICER</h6>
+                                                    </div>
+
+                                                    <div class="col-md-12">
+                                                        <SfDropDownList @bind-Value="@(LeaveData.Chro)" TItem="ViewEmployeeDropDown" Enabled="OnSubmitButtonsBool" TValue="int?" DataSource="@EmployeeData" Placeholder="Please select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                            <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></DropDownListFieldSettings>
+                                                            <DropDownListEvents TValue="int?" TItem="ViewEmployeeDropDown" ValueChange="OnEmployeeCHROChange"></DropDownListEvents>
+                                                        </SfDropDownList>
+
+                                                        @if (employeenochrochange != null && !string.IsNullOrEmpty(employeenochrochange.EmailAddress) && LeaveData.Chro != null)
+                                                        {
+                                                            <p style="color:forestgreen; font-weight:bold">Email: @employeenochrochange.EmailAddress</p>
+                                                        }
+                                                        else if (employeenochrochange != null && (LeaveData != null && LeaveData.Chro != null)
+                                                        && (employeenochrochange != null && string.IsNullOrEmpty(employeenochrochange.EmailAddress)))
+                                                        {
+                                                            <p style="color:red; font-weight:bold">Email Not Provided</p>
+                                                        }
+                                                        else
+                                                        {
+
+                                                        }
+                                                    </div>
+                                                }
                                             }
+                                                                             
+
+                                            
                                         }                                                                          
 
                                     </ContentTemplate>
@@ -1552,9 +1558,14 @@
                 toastService.ShowWarning("Please select the acting officer during the period of leave");
             }
 
-            else if(LeaveData.LeaveTypeId == null)
+            else if(LeaveData.ActingOfficerId == null)
             {
-                toastService.ShowWarning("Please select the leave type");
+                toastService.ShowWarning("Please select the acting officer during the period of leave");
+            }
+
+            else if(ActingOfficerBool == false)
+            {
+                toastService.ShowWarning("Please ensure you are not selecting the same acting officer during period of leave as the applicant of this leave");
             }
 
             // else if (LeaveData.LeaveTypeId == 4 && LeaveData.NoChildren == null)
@@ -2263,23 +2274,26 @@
             PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDate);
             LeaveDays = numberOfDays2 - PublicHolidays;
 
-            var getutilizeddays = LeaveDataSource.OrderByDescending(x => x.TotalDays)
-            .FirstOrDefault(o => o.Employeeid == LeaveData.Employeeid &&
+            if(LeaveDataSource != null)
+            {
+                var getutilizeddays = LeaveDataSource.OrderByDescending(x => x.TotalDays)
+                .FirstOrDefault(o => o.Employeeid == LeaveData.Employeeid &&
                 o.LeaveTypeId == LeaveData.LeaveTypeId && (o.LeaveApprovalStatusId == 3 ||
-                    o.LeaveApprovalStatusId == 9));
+                    o.LeaveApprovalStatusId == 9 || o.LeaveApprovalStatusId == 13));
 
-            LeaveData.NoDaysAppliedFor = LeaveDays;
+                LeaveData.NoDaysAppliedFor = LeaveDays;
 
-            AppliedDays = LeaveData.TotalDays;
-            if (getutilizeddays != null)
-            {
-                LeaveData.TotalDays = LeaveData.NoDaysAppliedFor + getutilizeddays.TotalDays.Value;
-                TotalDaysTakenPrior = getutilizeddays.TotalDays.Value;
-            }
-            else
-            {
-                LeaveData.TotalDays = LeaveData.NoDaysAppliedFor + 0;
-                TotalDaysTakenPrior = 0;
+                AppliedDays = LeaveData.TotalDays;
+                if (getutilizeddays != null && getutilizeddays.TotalDays.HasValue)
+                {
+                    LeaveData.TotalDays = LeaveData.NoDaysAppliedFor + getutilizeddays.TotalDays.Value;
+                    TotalDaysTakenPrior = getutilizeddays.TotalDays.Value;
+                }
+                else
+                {
+                    LeaveData.TotalDays = LeaveData.NoDaysAppliedFor + 0;
+                    TotalDaysTakenPrior = 0;
+                }
             }
         }
         catch(Exception ex)
@@ -2477,7 +2491,7 @@
 
                 Args.RowData.DateAdded = DateTime.Now;
 
-                if(Credentials.StaffId > 0)
+                if(Credentials != null && Credentials.StaffId > 0)
                 {
                     Args.RowData.AddedBy = Credentials.AccountHolderName;
 
@@ -2500,19 +2514,22 @@
                 PublicHolidays = GetNumberOfPublicHolidays(StartDate, EndDate);
                 LeaveDays = numberOfDays2 - PublicHolidays;
 
-                var getutilizeddays = LeaveDataSource.OrderByDescending(x => x.TotalDays)
+                if(LeaveDataSource != null)
+                {
+                    var getutilizeddays = LeaveDataSource.OrderByDescending(x => x.TotalDays)
                 .FirstOrDefault(o => o.Employeeid == Args.RowData.Employeeid &&
                     o.LeaveTypeId == Args.RowData.LeaveTypeId && o.LeaveApprovalStatusId == 9);
 
-                Args.RowData.NoDaysAppliedFor = LeaveDays;
+                    Args.RowData.NoDaysAppliedFor = LeaveDays;
 
 
-                if(getutilizeddays != null)
-                {
-                    Args.RowData.TotalDays = Args.RowData.NoDaysAppliedFor + getutilizeddays.TotalDays.Value;
-                    TotalDaysTakenPrior = getutilizeddays.TotalDays.Value;
+                    if (getutilizeddays != null)
+                    {
+                        Args.RowData.TotalDays = Args.RowData.NoDaysAppliedFor + getutilizeddays.TotalDays.Value;
+                        TotalDaysTakenPrior = getutilizeddays.TotalDays.Value;
 
-                }    
+                    }
+                }                
 
                 if (Args.RowData.EmployeeLeaveDetails == null)
                 {
@@ -2587,17 +2604,40 @@
                 //Approved By Supervisor
                 else if(Args.RowData.LeaveApprovalStatusId == 3)
                 {
-                    OnSubmitButtonsBool = false;
-                    EndDateEnablerBool = false;
-                    IsHiddenRecall = true;
+                    if(EmployeeData != null)
+                    {
+                        //Check if employee is chro
+                        var _emp = EmployeeData.FirstOrDefault(o=>o.Employeeid == Args.RowData.Employeeid);
+                        //Show recall button for immediate supervisors for chro applications
+                        if (_emp != null && _emp.JibTitleId == 44 && (Credentials !=  null && Args.RowData.ImmediateSupervisor == Credentials.StaffId))
+                        {
+                            OnSubmitButtonsBool = false;
+                            EndDateEnablerBool = false;
+                            IsHiddenRecall = false;
 
-                    //Buttons
-                    IsHiddenDraft = true;
-                    IsHiddenPersonSubmit = true;
-                    IsHiddenApprove = true;
-                    IsHiddenRejected = true;
+                            //Buttons
+                            IsHiddenDraft = true;
+                            IsHiddenPersonSubmit = true;
+                            IsHiddenApprove = true;
+                            IsHiddenRejected = true;
 
-                    LeaveComputation = false;
+                            LeaveComputation = false;
+                        }
+                        else
+                        {
+                            OnSubmitButtonsBool = false;
+                            EndDateEnablerBool = false;
+                            IsHiddenRecall = true;
+
+                            //Buttons
+                            IsHiddenDraft = true;
+                            IsHiddenPersonSubmit = true;
+                            IsHiddenApprove = true;
+                            IsHiddenRejected = true;
+
+                            LeaveComputation = false;
+                        }
+                    }        
                 }
 
                 //Rejected By Supervisor
@@ -2761,17 +2801,23 @@
                     IsHiddenPersonSubmit = true;
                     IsHiddenApprove = true;
                     IsHiddenRejected = true;
-                                        
-                    //Show recall button for CHRO and HOD for a particular application
-                    if ((_employeedetail != null && _employeedetail.JibTitleId == 44 ) || Args.RowData.Hod == Credentials.StaffId)
+
+                    if (DateTime.Now.Date <= Args.RowData.EndDate)
                     {
-                        IsHiddenRecall = false;
+                        //Show recall button for CHRO and HOD for a particular application
+                        if (((_employeedetail != null && _employeedetail.JibTitleId == 44) || Args.RowData.Hod == Credentials.StaffId))
+                        {
+                            IsHiddenRecall = false;
+                        }
+                        else
+                        {
+                            IsHiddenRecall = true;
+                        }
                     }
                     else
                     {
                         IsHiddenRecall = true;
-                    }
-
+                    }                    
                 }
 
                 //Rejected By CHRO

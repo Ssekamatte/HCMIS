@@ -9,9 +9,28 @@
 @inject NavigationManager navManager;
 @inject IToastService toastService;
 
+<BreadCrumbPage Module="HCMIS" Submodule="APPLICANT DETAILS" />
 
 @if (NonStaffData != null)
 {
+    @if ((NonStaffQualificationData != null && NonStaffQualificationData.Count == 0)
+          && (NonStaffWorkExperienceData != null && NonStaffWorkExperienceData.Count == 0)
+          && (NonStaffSkillsData != null && NonStaffSkillsData.Count == 0)
+          && (NonStaffLanguagesKnownData != null && NonStaffLanguagesKnownData.Count == 0)
+          && (JobRefereesData != null && JobRefereesData.Count == 0))
+    {
+        <div class="col-md-12">
+            <MudAlert Severity="Severity.Error" Elevation="3">
+                You cannot apply for this position since your profile is incomplete.
+                Kindly <a href="/NonStaffProfilePage" style="color: green;">click here</a> to update your profile in order to proceed.
+                @* <p>
+                    You cannot apply for this position since your profile is incomplete.
+                    Kindly <a href="/NonStaffProfilePage" style="color: green;">click here</a> to update your profile in order to proceed.
+                </p> *@
+            </MudAlert>
+        </div>
+    }
+
     string _firstname = string.Empty;
     string _middlename = string.Empty;
     string _lastname = string.Empty;
@@ -35,34 +54,55 @@
         _lastname = NonStaffData.LastName;
     }
 
-    if (NonStaffData.GenderId != null)
+    if (NonStaffData.GenderId != null && GenderData != null)
     {
         var gender = GenderData.FirstOrDefault(o => o.GenderId == NonStaffData.GenderId);
-        _gender = gender.GenderDesc;
+
+        if(gender != null && !string.IsNullOrEmpty(gender.GenderDesc))
+        {
+            _gender = gender.GenderDesc;
+        }        
     }
 
-    @if (NonStaffData.NationalityId != null)
+    @if(CountryData != null)
     {
-        var _country = CountryData.FirstOrDefault(o => o.CoutryId == NonStaffData.NationalityId);
-        _countrydesc = _country.CountryDesc;
-    }
+        @if (NonStaffData.NationalityId != null)
+        {
+            var _country = CountryData.FirstOrDefault(o => o.CoutryId == NonStaffData.NationalityId);
+            if (_country != null && !string.IsNullOrEmpty(_country.CountryDesc))
+            {
+                _countrydesc = _country.CountryDesc;
+            }
+            
+        }
 
-    @if (NonStaffData.CoutryId != null)
-    {
-        var _country = CountryData.FirstOrDefault(o => o.CoutryId == NonStaffData.CoutryId);
-        _countrycode = _country.CountryCode;
-    }
+        @if (NonStaffData.CoutryId != null)
+        {
+            var _country = CountryData.FirstOrDefault(o => o.CoutryId == NonStaffData.CoutryId);
+            if (_country != null && !string.IsNullOrEmpty(_country.CountryCode))
+            {
+                _countrycode = _country.CountryCode;
+            }            
+        }
 
-    @if (NonStaffData.OtherCoutryId != null)
-    {
-        var _country = CountryData.FirstOrDefault(o => o.CoutryId == NonStaffData.OtherCoutryId);
-        _othercountrycode = _country.CountryCode;
+        @if (NonStaffData.OtherCoutryId != null)
+        {
+            var _country = CountryData.FirstOrDefault(o => o.CoutryId == NonStaffData.OtherCoutryId);
+            if (_country != null && !string.IsNullOrEmpty(_country.CountryCode))
+            {
+                _othercountrycode = _country.CountryCode;
+            }            
+        }
     }
-
-    @if (NonStaffData.IdentificationTypeId != null)
+    
+    @if (NonStaffData.IdentificationTypeId != null && IdentificationTypeData != null)
     {
         var type = IdentificationTypeData.FirstOrDefault(o => o.IdentificationTypeId == NonStaffData.IdentificationTypeId);
-        _identtype = type.IdentificationTypeDesc;
+        if (type != null && !string.IsNullOrEmpty(type.IdentificationTypeDesc))
+        {
+            _identtype = type.IdentificationTypeDesc;
+        }
+        
     }
 
     @if (!string.IsNullOrEmpty(NonStaffData.IdentificationNumber))
@@ -120,12 +160,12 @@
 
         @*Qualifications*@
 
-        @if(NonStaffQualificationData != null)
-        {
-            <div class="col-md-12">
-                <h4>Qualifications</h4>
-            </div>
+        <div class="col-md-12">
+            <h4>Qualifications</h4>
+        </div>
 
+        @if(NonStaffQualificationData != null && NonStaffQualificationData.Count > 0)
+        {  
             <div class="col-md-12">
                 <SfGrid TValue="NonStaffQualification" DataSource="NonStaffQualificationData"
                     AllowGrouping="false" ShowColumnChooser="false" AllowTextWrap="true"
@@ -170,15 +210,22 @@
                 </SfGrid>
             </div>
         }
-
-        @*Work Experience*@
-        @if(NonStaffWorkExperienceData != null)
+        else
         {
-            
             <div class="col-md-12">
-                <h4>Work Experience</h4>
-            </div>
+                <MudAlert Severity="Severity.Error" Elevation="3">
+                    Please update your profile with your qualification details.
+                </MudAlert>
+            </div>            
+        }
+        @*Work Experience*@
 
+        <div class="col-md-12">
+            <h4>Work Experience</h4>
+        </div>
+
+        @if (NonStaffWorkExperienceData != null && NonStaffWorkExperienceData.Count > 0)
+        {
             <div class="col-md-12">
                 <SfGrid TValue="NonStaffWorkExperience" DataSource="NonStaffWorkExperienceData"
                          AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
@@ -198,15 +245,22 @@
                 </SfGrid>
             </div>
         }
+        else        
+        {
+            <div class="col-md-12">
+                <MudAlert Severity="Severity.Error" Elevation="3">
+                    Please update your profile with your work experience.
+                </MudAlert>
+            </div>
+        }
+        
+        <div class="col-md-12">
+            <h4>Skills</h4>
+        </div>
 
         @*Skills*@
-        @if (NonStaffSkillsData != null)
-        {
-            
-            <div class="col-md-12">
-                <h4>Skills</h4>
-            </div>
-
+        @if (NonStaffSkillsData != null && NonStaffSkillsData.Count > 0)
+        {           
             <div class="col-md-12">
                 <SfGrid TValue="NonStaffSkills" DataSource="NonStaffSkillsData"
                     AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true">
@@ -224,15 +278,22 @@
                 </SfGrid>
             </div>
         }
+        else
+        {
+            <div class="col-md-12">
+                <MudAlert Severity="Severity.Error" Elevation="3">
+                    Please update your profile with your skills.
+                </MudAlert>
+            </div>
+        }
+        
+        <div class="col-md-12">
+            <h4>Languages</h4>
+        </div>
 
         @*Languages*@
-        @if (NonStaffLanguagesKnownData != null)
-        {
-            
-            <div class="col-md-12">
-                <h4>Languages</h4>
-            </div>
-
+        @if (NonStaffLanguagesKnownData != null && NonStaffLanguagesKnownData.Count > 0)
+        {   
             <div class="col-md-12">
 
                 <SfGrid TValue="NonStaffLanguagesKnown" DataSource="NonStaffLanguagesKnownData"
@@ -252,14 +313,21 @@
             </div>
 
         }
-
-
-        @if (JobRefereesData != null)
+        else
         {
             <div class="col-md-12">
-                <h4>Referees</h4>
+                <MudAlert Severity="Severity.Error" Elevation="3">
+                    Please update your profile with your languages.
+                </MudAlert>
             </div>
+        }
 
+        <div class="col-md-12">
+            <h4>Referees</h4>
+        </div>
+
+        @if (JobRefereesData != null && JobRefereesData.Count > 0)
+        {
             <div class="col-md-12">
                 <SfGrid TValue="AppliedForJobReferees" DataSource="JobRefereesData"
                         AllowPaging="false" AllowFiltering="false" AllowReordering="false" AllowResizing="false" GridLines="GridLine.Both" Toolbar="@(new List<string>() {"Add","Cancel"})">
@@ -293,13 +361,21 @@
                 </SfGrid>
             </div>            
         }
-
-        @if (NonStaffQualificationAttachmentData != null)
+        else
         {
             <div class="col-md-12">
-                <h4>Supporting Documents</h4>
+                <MudAlert Severity="Severity.Error" Elevation="3">
+                    Please update your profile with your referee details.
+                </MudAlert>
             </div>
+        }
 
+        <div class="col-md-12">
+            <h4>Supporting Documents</h4>
+        </div>
+
+        @if (NonStaffQualificationAttachmentData != null && NonStaffQualificationAttachmentData.Count > 0)
+        {
             <div class="col-md-12">
                 <table style="width:100%;font-size:15px">
                     <tr>
@@ -328,6 +404,15 @@
             
         }
 
+        else
+        {
+            <div class="col-md-12">
+                <MudAlert Severity="Severity.Error" Elevation="3">
+                    You have not uploaded any attachment.
+                </MudAlert>
+            </div>
+        }
+
         <div class="col-md-12" style="margin-top: 20px;">
             
             <MudAlert Severity="Severity.Warning" Elevation="3">
@@ -344,14 +429,25 @@
         </div>
 
         <div class="col-md-12" style="float: right;margin-top: 20px;">
-            @if (AppliedForJobsData.InformationAcknowledgement == true)
+            @* @if (AppliedForJobsData.InformationAcknowledgement == true) *@
+            @if (AppliedForJobsData.InformationAcknowledgement == true 
+            && (NonStaffQualificationData != null && NonStaffQualificationData.Count > 0)
+           && (NonStaffWorkExperienceData != null && NonStaffWorkExperienceData.Count > 0)
+           && (NonStaffSkillsData != null && NonStaffSkillsData.Count > 0)
+           && (NonStaffLanguagesKnownData != null && NonStaffLanguagesKnownData.Count > 0)
+           && (JobRefereesData != null && JobRefereesData.Count > 0))
             {                
-                <button class="btn btn-danger" style="float: right;">Cancel</button>
+                @* <button class="btn btn-danger" style="float: right;" @onclick="@onCancelApplication">Cancel</button> *@
                 <button class="btn btn-success" style="float: right;margin-right: 10px;" disabled="@applydisabled"  @onclick="@onSubmitApplication">Apply</button>
             }
             else
             {
-                <button class="btn btn-danger" style="float: right;">Cancel</button>
+                @* <div class="col-md-12">
+                    <MudAlert Severity="Severity.Error" Elevation="3">
+                        You cannot apply for this position since your profile is incomplete.Kindly go back to complete your profile inorder to proceed.
+                    </MudAlert>
+                </div> *@
+                @* <button class="btn btn-danger" style="float: right;" @onclick="@onCancelApplication">Cancel</button> *@
             }
             
         </div>
@@ -459,5 +555,21 @@
         }
 
     
+    }
+
+    public async Task onCancelApplication()
+    {
+        try
+        {
+            NonStaffData = new NonStaff();
+        }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+        
+        }
     }
 }

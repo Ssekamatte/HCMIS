@@ -12,6 +12,7 @@
 @inject NavigationManager navigation;
 @inject SystemSettings _SystemSettings;
 @using HCMIS.ViewModel;
+@using Newtonsoft.Json
 @inject IToastService toastService;
 @inject IAuthenticationService AuthService;
 
@@ -83,18 +84,41 @@
     [Parameter]
     public bool ceogridenabled { get; set; }
     int random = -9999;
+    [Parameter]
+    public int selectebscid { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        if (previousBalanceScoreCardId != BalanceScoreCardId)
+        //toastService.ShowError(selectebscid.ToString());
+        if (selectebscid > 0)
         {
-            int countid = -10000;
-            previousBalanceScoreCardId = BalanceScoreCardId;
-            datasource = new List<BalanceScoreCardCeocomments>();
-            if (ceocommentsdata != null && ceocommentsdata.Count() > 0)
-            {
-                datasource.AddRange(ceocommentsdata);
-            }
+            await LoadClientsForSelectedGroup();
+        }
+
+        // if (previousBalanceScoreCardId != BalanceScoreCardId)
+        // {
+        //     int countid = -10000;
+        //     previousBalanceScoreCardId = BalanceScoreCardId;
+        //     datasource = new List<BalanceScoreCardCeocomments>();
+        //     if (ceocommentsdata != null && ceocommentsdata.Count() > 0)
+        //     {
+        //         datasource.AddRange(ceocommentsdata);
+        //     }
+        // }
+    }
+
+    private async Task LoadClientsForSelectedGroup()
+    {
+        var response = await Http.GetAsync($"BalanceScoreCard/GetCeocommentsData?selectebscid={selectebscid}");
+        if (response.IsSuccessStatusCode)
+        {
+            var responseData = await response.Content.ReadAsStringAsync();
+            datasource = JsonConvert.DeserializeObject<List<BalanceScoreCardCeocomments>>(responseData);
+        }
+        else
+        {
+            // Handle API error
+            // You can display an error message or log the error
         }
     }
 

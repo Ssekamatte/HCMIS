@@ -2,6 +2,7 @@
 @using HCMIS.Data;
 @using HCMIS.Model
 @using HCMIS.SHARED;
+@using HCMIS.SHARED.DTO
 @using HCMIS.SHARED.Models;
 @using HCMIS.ViewModel
 @using System.Text.Json
@@ -18,28 +19,26 @@
 @inject IAuthenticationService AuthService;
 @using Microsoft.AspNetCore.Components;
 @inject IReportService reportservice;
+@inject DocumentUploadModel _DocumentUploadModel;
 
 <BreadCrumbPage Module="HCMIS" Submodule="ACCOUNT FOR MISSED DAYS FORM"/>
 
-@if (isloading == true)
-{
-    <MudOverlay @bind-Visible="@loadingspinner" DarkBackground="true" AutoClose="false" Absolute="true">
-        @*<SfSpinner @bind-Visible="loadingspinner" Type="@Syncfusion.Blazor.Spinner.SpinnerType.Bootstrap" Size="70" Label="Page loading">
+<MudOverlay @bind-Visible="@loadingspinner" DarkBackground="true" AutoClose="false" Absolute="true" Style="z-index: 99999;">
+    @*<SfSpinner @bind-Visible="loadingspinner" Type="@Syncfusion.Blazor.Spinner.SpinnerType.Bootstrap" Size="70" Label="Page loading">
     </SfSpinner>*@
 
-        <div style="padding:25px">
-            <div class="loader">
-                <div class="loader--dot"></div>
-                <div class="loader--dot"></div>
-                <div class="loader--dot"></div>
-                <div class="loader--dot"></div>
-                <div class="loader--dot"></div>
-                <div class="loader--dot"></div>
-                <div class="loader-Loading-text"></div>
-            </div>
+    <div style="padding:25px">
+        <div class="loader">
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader-Loading-text"></div>
         </div>
-    </MudOverlay>
-}
+    </div>
+</MudOverlay>
 
 
 <div style="margin:10px; padding:10px; background-color:aliceblue;">
@@ -200,9 +199,9 @@
 
                     @if (accountingform)
                     {
-                        <h5 style="color:black;background-color: #bdc3c7;margin-top:10px;">
+                        <h8 style="color:black;background-color: #bdc3c7;margin-top:10px;">
                             Please account for your days here
-                        </h5>
+                        </h8>
 
                         <div class="col-md-2" style="margin-right: -12px;">
                             <p>From:<span style="color:red;">*</span></p>                           
@@ -242,11 +241,41 @@
                             <p>Remaining Days : @daysremainingtoaccountedfor</p>
                         </div>
 
+                        <h8 style="color:black;background-color: #bdc3c7;margin-top:10px;">
+                            Upload your evidence here
+                        </h8>
+
+                        <div class="form-group col-md-12">
+                            <p class="alert-info" style="padding:10px;">Ensure that the attachment does not exceed 5 Mega Bytes (MB) and is of the following formats (Microsoft Word, PDF or an Image (png,gif,jpeg and jpg))</p>
+                            <InputFile class="form-control" OnChange="@SingleUpload" />
+                            <div>
+                                <SfSpinner @ref="UploadAttachmentSpinner" CssClass="SpinnerClass" Visible="false" Size="30" Label="Saving document Please wait......."> </SfSpinner>
+                            </div>
+                        </div>
+
+                        <div class="form-group col-md-12">
+                            @if (!string.IsNullOrEmpty(ImageString))
+                            {
+                                @if (!string.IsNullOrEmpty(LeaveData.AttachmentName) && !string.IsNullOrEmpty(LeaveData.AttachmentExt))
+                                {
+                                    if (LeaveData.AttachmentExt.Contains("pdf") || LeaveData.AttachmentExt.Contains("doc") || LeaveData.AttachmentExt.Contains("docx"))
+                                    {
+                                        <embed src="@ImageString" width="100%" height="600px" style="border: none;" frameborder="0" allowfullscreen="true" />
+                                    }
+                                    else
+                                    {
+                                        <img src="@ImageString" alt="@LeaveData.AttachmentName" class="img-thumbnail Imagecenter" style="margin-bottom:10px; width:100%;" />
+                                    }
+                                }
+
+                            }
+                        </div>
+
                         //To check if all dates have been account for
                         if (daysremainingtoaccountedfor != 0)
                         {
                             //If days selected do not exceed the unaccounted for days
-                            @if (TotalDays <= daysunaccountedfor)
+                            @if (TotalDays <= daysremainingtoaccountedfor)
                             {
                                 <div class="col col-md-12" style="margin-top:10px;">
 
@@ -265,7 +294,7 @@
                             else if (LeaveData.EndDate < LeaveData.CommencementDate)
                             {
                                 <h6 style="margin-top: 10px; background-color:red; color:ghostwhite;">
-                                    The to cannot be before the from date.
+                                    The to date cannot be before the from date.
                                 </h6>
                             }
                             else
@@ -352,9 +381,11 @@
     bool IsSaveAccountDisabled = false;
     string ConfirmationText { get; set; }
     SfDialog ConfirmationRecallDialogue;    
-    bool isloading { get; set; } = false;
     public bool DateBool { get; set; } = true;   
-
+    SfSpinner? UploadAttachmentSpinner;
+    long maxFileSize = 5242880/* 1024L * 1024L * 1024L * 2L */;//5 Megabytes
+    string fileName = string.Empty;
+    string? ImageString { get; set; }
 
     protected override async Task OnInitializedAsync()
     { 
@@ -362,8 +393,7 @@
         {
             LeaveData = new AttendanceDaysAccounting();
             await base.OnInitializedAsync();
-            //loadingspinner = true;
-            isloading = true;
+            loadingspinner = true;
 
             var isAuthenticated = await AuthService.CheckAuthenticationStatus();
             if (isAuthenticated == false)
@@ -425,7 +455,7 @@
                     AccountingDaysData = await reportservice.GetAttendanceDaysAccountingData(searchpanel);
                 }));
 
-                
+
                 Task _t = Task.WhenAll(t);
                 await _t;
 
@@ -437,14 +467,14 @@
         }
         finally
         {
-            isloading = true;
+            loadingspinner = false;
         }
     }
 
     public async void OnYearChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, AYears> args)
     {
         EmployeeDDForm = true;
-        LeaveData = new AttendanceDaysAccounting();
+        LeaveData.Employeeid = null;
 
         if (args.ItemData != null && YearData != null)
         {
@@ -471,7 +501,7 @@
             {
                 DateBool = true;
             }
-            
+
             //toastService.ShowError("daysunaccountedfor" + daysunaccountedfor);
             // toastService.ShowError("daysaccountedfor" + daysaccountedfor);
             // toastService.ShowError("daysremainingtoaccountedfor" + daysremainingtoaccountedfor);
@@ -588,11 +618,146 @@
         return allDates;
     }
 
+    private async Task SingleUpload(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            // IsSaveDisabled = true;
+            await UploadAttachmentSpinner.ShowAsync();
+            MemoryStream ms = new MemoryStream();
+            
+            if (e.File.Size <= maxFileSize)
+            {
+                //IsSaveDisabled = false;
+                await e.File.OpenReadStream(maxFileSize).CopyToAsync(ms);
+
+                ms.Position = 0;
+
+                System.IO.FileInfo info = new System.IO.FileInfo(e.File.Name);
+                if (info.Extension.ToLower().Contains("png") || info.Extension.ToLower().Contains("gif") || info.Extension.ToLower().Contains("jpeg") || info.Extension.ToLower().Contains("jpg"))
+                {
+                    fileName = "MissedDaysAccount_" + LeaveData.AttachmentName + info.Extension.Trim();
+                    byte[] bytes = ms.ToArray();
+                    //byte[] bytes = file.Stream.ToArray();
+                    string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+                    DocumentBytes m = new DocumentBytes()
+                        {
+                            DocumentName = fileName,
+                            DocumentExt = info.Extension.Trim().Replace(".", ""),
+                            DocumentByte = bytes,
+                            DocumentFolder = "MissedDaysAccount"
+                        };
+
+                    await _DocumentUploadModel.UploadDocument(m);
+                    var result = "data:application/pdf;base64," + base64;
+                    LeaveData.AttachmentName = fileName;
+                    LeaveData.AttachmentExt = info.Extension.Trim().Replace(".", "");
+                    ImageString = result;
+                    bytes = null;
+
+                }
+
+                else if (info.Extension.ToLower().Contains("pdf") || info.Extension.ToLower().Contains("doc"))
+                {
+                    string fileName = string.Empty;
+                    if (info.Extension.ToLower().Contains("doc"))
+                    {
+                        ms.Position = 0;
+                        fileName = "MissedDaysAccount_" + LeaveData.AttachmentName + ".pdf";
+                        //Create a new document
+                        Syncfusion.DocIO.DLS.WordDocument document;
+                        if (info.Extension.Contains("doc") && !info.Extension.Contains("docx"))
+                        {
+                            document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Doc);
+                        }
+                        else
+                        {
+                            document = new Syncfusion.DocIO.DLS.WordDocument(ms, Syncfusion.DocIO.FormatType.Docx);
+                        }
+                        //Creates an instance of the DocToPDFConverter
+                        DocIORenderer render = new DocIORenderer();//Converts Word document into PDF document
+                        PdfDocument pdfDocument = render.ConvertToPDF(document);
+
+                        MemoryStream _ms = new MemoryStream();
+                        pdfDocument.Save(_ms);
+                        _ms.Position = 0;
+
+
+                        DocumentBytes m = new DocumentBytes();
+                        m.DocumentName = fileName;
+                        m.DocumentFolder = "MissedDaysAccount";
+                        m.DocumentByte = _ms.ToArray();
+                        m.DocumentExt = "pdf";
+
+                        await _DocumentUploadModel.UploadDocument(m);
+                        _ms.Position = 0;
+                        byte[] _bytes = _ms.ToArray();
+                        string base64 = Convert.ToBase64String(_bytes, 0, _bytes.Length);
+
+                        var result = "data:application/pdf;base64," + base64;
+                        LeaveData.AttachmentName = fileName;
+                        LeaveData.AttachmentExt = "pdf";
+                        ImageString = result;
+                    }
+
+                    else
+                    {
+                        fileName = "MissedDaysAccount_" + LeaveData.AttachmentName + ".pdf";
+
+                        ms.Position = 0;
+                        byte[] bytes = ms.ToArray();
+                        string base64 = Convert.ToBase64String(bytes, 0, bytes.Length);
+
+                        DocumentBytes m = new DocumentBytes()
+                            {
+                                DocumentName = fileName,
+                                DocumentExt = info.Extension.Trim().Replace(".", ""),
+                                DocumentByte = bytes,
+                                DocumentFolder = "MissedDaysAccount"
+                            };
+
+                        await _DocumentUploadModel.UploadDocument(m);
+                        var result = "data:application/pdf;base64," + base64;
+                        LeaveData.AttachmentName = fileName;
+                        LeaveData.AttachmentExt = info.Extension.Trim().Replace(".", "");
+                        ImageString = result;
+                        bytes = null;
+                    }
+
+                }
+                else
+                {
+                    toastService.ShowWarning("Please ensure that the uploaded document is an image(png/Jpeg/gif/jpg) or pdf or word document (doc,docx).");
+                }
+
+            }
+            else
+            {
+                //IsSaveDisabled = true;
+                toastService.ClearAll();
+                toastService.ShowWarning("File Too Large (Maximum Size 1 MB)");
+            }
+
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+
+        finally
+        {
+            //IsSaveDisabled = false;
+            await UploadAttachmentSpinner.HideAsync();
+            StateHasChanged();
+        }
+
+    }
+
     private async Task OnSearchSubmit()
     { 
         try
         {
-            isloading = true;
+            loadingspinner = true;
             var data = await reportservice.GetAttendanceData(searchpanel);
             datasource = new List<ViewTimeandAttendanceSummary>();
 
@@ -608,7 +773,7 @@
         }
         finally
         {
-            isloading = false;
+            loadingspinner = false;
         }
     }
 
@@ -623,7 +788,7 @@
         try
         {
             buttonspinner = true;
-            isloading = true;
+            loadingspinner = true;
             IsSaveAccountDisabled = true;
             ConfirmationText = "<p>Are you sure you want to save this record! </p>";
             await this.ConfirmationRecallDialogue.ShowAsync();
@@ -660,7 +825,7 @@
             }
             else
             {
-                isloading = true;
+                loadingspinner = true;
                 //buttonspinner = false;
 
                 LeaveData.TotalDays = TotalDays;
@@ -683,8 +848,14 @@
                     }
                     finally
                     {
-                        isloading = false;
+                        loadingspinner = false;
                         buttonspinner = false;
+
+                        //Clear the form
+                        LeaveData = new AttendanceDaysAccounting();
+                        //Update the datasource with saved data
+                        AccountingDaysData = await reportservice.GetAttendanceDaysAccountingData(searchpanel);
+                        accountingform = false;
                     }
 
                 }
@@ -705,7 +876,7 @@
         }
         finally
         {
-            isloading = false;
+            loadingspinner = false;
         }
     }
 

@@ -2,6 +2,7 @@
 @inject ApiConfig _ApiConfig;
 @inject HttpClient Http
 @using HCMIS.Data
+@using HCMIS.Interface
 @using HCMIS.Model
 @using System.Text.Json
 @using System.Collections;
@@ -12,6 +13,7 @@
 @inject SystemSettings _SystemSettings;
 @using HCMIS.ViewModel;
 @inject IToastService toastService;
+@inject IAuthenticationService AuthService;
 
 <style>
 
@@ -40,22 +42,103 @@
 
 </style>
 
-<ol class="breadcrumb" style="margin-top:5px;">
-    <li class="breadcrumb-item active" style="color: brown;">
-        <strong>
-            <img src="/Image/logonhcc.png" width="40" height="25" /> HCMIS
-        </strong>| PUBLIC HOLIDAYS
-    </li>
-</ol>
+<BreadCrumbPage Module="UTILITIES" Submodule="PUBLIC HOLIDAYS"/>
 
-<SfGrid @ref="@PublicHolidayGrid" ID="Grid" TValue="APublicHolidays" AllowPaging="false"
+<MudOverlay @bind-Visible="@loadingspinner" DarkBackground="true" AutoClose="false" Absolute="true">
+    @*<SfSpinner @bind-Visible="loadingspinner" Type="@Syncfusion.Blazor.Spinner.SpinnerType.Bootstrap" Size="70" Label="Page loading">
+    </SfSpinner>*@
+
+    <div style="padding:25px">
+        <div class="loader">
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader--dot"></div>
+            <div class="loader-Loading-text"></div>
+        </div>
+    </div>
+</MudOverlay>
+
+<MudExpansionPanels Style="margin-bottom:10px;">
+    <MudExpansionPanel Text="Search Here" MaxHeight="150">
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <MudText>Day</MudText>
+                <SfMultiSelect @bind-Value="@searchpanel.DayId"
+                               TValue="int?[]" TItem="ADays"
+                               AllowFiltering="true"
+                               FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                               Mode="@VisualMode.CheckBox"
+                               DataSource="@DaysData"
+                               ShowSelectAll="true"
+                               EnableSelectionOrder="true"
+                               ShowDropDownIcon="true"
+                               FilterBarPlaceholder="Type to search"
+                               FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+                    <MultiSelectFieldSettings Value="@nameof(ADays.DayId)"
+                                              Text="@nameof(ADays.Day)">
+                    </MultiSelectFieldSettings>
+                </SfMultiSelect>
+            </div>
+
+            <div class="form-group col-md-4">
+                <MudText>Month</MudText>
+                <SfMultiSelect @bind-Value="@searchpanel.MonthId"
+                               TValue="int?[]" TItem="AMonth"
+                               AllowFiltering="true"
+                               FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                               Mode="@VisualMode.CheckBox"
+                               DataSource="@MonthData"
+                               ShowSelectAll="true"
+                               EnableSelectionOrder="true"
+                               ShowDropDownIcon="true"
+                               FilterBarPlaceholder="Type to search"
+                               FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+                    <MultiSelectFieldSettings Value="@nameof(AMonth.MonthId)"
+                                              Text="@nameof(AMonth.MonthDesc)">
+                    </MultiSelectFieldSettings>
+                </SfMultiSelect>
+            </div>
+
+
+            <div class="form-group col-md-4">
+                <MudText>Year</MudText>
+                <SfMultiSelect @bind-Value="@searchpanel.YearId"
+                               TValue="int?[]" TItem="AYears"
+                               AllowFiltering="true"
+                               FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                               Mode="@VisualMode.CheckBox"
+                               DataSource="@YearData"
+                               ShowSelectAll="true"
+                               EnableSelectionOrder="true"
+                               ShowDropDownIcon="true"
+                               FilterBarPlaceholder="Type to search"
+                               FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+                    <MultiSelectFieldSettings Value="@nameof(AYears.YearDesc)"
+                                              Text="@nameof(AYears.YearDesc)">
+                    </MultiSelectFieldSettings>
+                </SfMultiSelect>
+            </div>
+
+            <div class="form-group col-md-4">
+                <button @onclick="@SearchRecords" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Load</button>
+                <button @onclick="@ClearSearchBtnClick" class="btn btn-danger" data-ripple="true">Close</button>
+            </div>
+        </div>
+    </MudExpansionPanel>
+    
+</MudExpansionPanels>
+
+<SfGrid @ref="@PublicHolidayGrid" ID="Grid" TValue="APublicHolidays" AllowPaging="true" Query="@MainQuery"
         AllowFiltering="true" AllowReordering="true" AllowResizing="true" AllowGrouping="false" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
         AllowSorting="true" Toolbar="@ToolbarMenu">
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
     <GridPageSettings PageSizes="true"></GridPageSettings>
     <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
     <SfDataManager AdaptorInstance="@typeof(PublicHolidayAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-    <GridEvents OnActionComplete="@HolidayActionComplete" OnActionBegin="@HolidayActionBegin" TValue="APublicHolidays"></GridEvents>
+    <GridEvents OnActionComplete="@HolidayActionComplete" OnActionBegin="@HolidayActionBegin" CommandClicked="OnCommandClicked" TValue="APublicHolidays"></GridEvents>
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog" Dialog="DialogParams">
         <HeaderTemplate>
             @{
@@ -102,7 +185,8 @@
                     CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"
                     TextAlign="TextAlign.Left">
             <GridCommandColumns>
-                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="Edit" })" Title="Edit/View"></GridCommandColumn>
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})"></GridCommandColumn>
+                <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-delete", CssClass = "e-flat"})" ID="Delete"></GridCommandColumn>
             </GridCommandColumns>
         </GridColumn>
         <GridColumn 
@@ -121,7 +205,7 @@
                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr1" }})">
         </GridColumn>
         <GridColumn Field=@nameof(APublicHolidays.HolidayDate)
-                    HeaderText="Application Date"
+                    HeaderText="Holiday Date"
                     Format="dd/MMMM/yyyy"
                     TextAlign="TextAlign.Justify"
                     Width="80"
@@ -132,37 +216,158 @@
     </GridColumns>
 </SfGrid>
 
+@*Confirm Deletion*@
+
+<div class="form-group col-md-12">
+    <SfDialog @ref="@ConfirmationDeleteDialogue" Width="400px" Target=".mainbody" ShowCloseIcon="false" Visible="false" IsModal="true">
+        <DialogTemplates>
+            <Content>
+                @((MarkupString)@ConfirmationText)
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Yes" IsPrimary="true" OnClick="@ComfirmationApproveYes" />
+            <DialogButton Content="No" OnClick="@ComfirmationApproveNo" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+
+@*Confirm Deletion*@
+
 @code {
     SfGrid<APublicHolidays>? PublicHolidayGrid;
     private static APublicHolidays? HolidayData { get; set; }
     public bool? radiovalue;
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "40vh", Width = "65%" };
     List<APublicHolidays>? HolidayCountData { get; set; }
-    
+    List<AMonth>? MonthData { get; set; }
+    List<AYears>? YearData { get; set; }
+    List<ADays>? DaysData { get; set; }
+
+    APublicHolidays selectedemployee { get; set; }
+    string ConfirmationText { get; set; }
+    SfDialog ConfirmationDeleteDialogue;
+    public bool loadingspinner { get; set; }
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    public AppraisalSearch searchpanel { get; set; } = new AppraisalSearch();
+    public Query MainQuery = new Query();
+
     private List<object> ToolbarMenu = new List<object>()
     {
-        new ItemModel() { Text = "Add Holiday", PrefixIcon = "e-add", Id = "Grid_add"},
-        //new ItemModel(){ Text = "Edit Holiday", PrefixIcon= "e-edit", Id="Grid_edit"},
+        new ItemModel() { Text = "Add Holiday", PrefixIcon = "e-add", Id = "Grid_add"}
+        //,new ItemModel(){ Text = "Edit Holiday", PrefixIcon= "e-edit", Id="Grid_edit"},
         //new ItemModel(){ Text = "Delete Training Plan", PrefixIcon= "e-delete", Id="Grid_delete"},
-        new ItemModel(){ Text = "Update Holiday", PrefixIcon= "e-update", Id="Grid_update"},
-        new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
+        // new ItemModel(){ Text = "Update Holiday", PrefixIcon= "e-update", Id="Grid_update"},
+        // new ItemModel(){ Text = "Cancel Changes", PrefixIcon= "e-cancel", Id="Grid_cancel"}
     };
 
     protected override async Task OnInitializedAsync()
     {
-        
-        
-
-        var responseholidaycount = await Http.GetAsync($"Utilities/GetPublicHolidayCount");
-        var holidaycount = await responseholidaycount.Content.ReadAsStringAsync();
-       
-        if (responseholidaycount.IsSuccessStatusCode)
+        await base.OnInitializedAsync();
+        var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+        if (isAuthenticated == false)
         {
-            HolidayCountData = await Http.GetFromJsonAsync<List<APublicHolidays>>
-            ($"Utilities/GetPublicHolidayCount");
-        }        
+            navigation.NavigateTo("/LoginPage", true);
+        }
+        else
+        {
+            List<Task> t = new List<Task>();
+
+            t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetMonth");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        MonthData = JsonSerializer.Deserialize<List<AMonth>>(content, _options);
+                    }
+                }));
+
+
+            // t.Add(Task.Run(async () =>
+            // {
+            //     var response = await Http.GetAsync($"Utilities/GetPublicHolidayCount");
+            //     if (response.IsSuccessStatusCode)
+            //     {
+            //         var content = await response.Content.ReadAsStringAsync();
+            //         MonthData = JsonSerializer.Deserialize<List<AMonth>>(content, _options);
+            //     }
+            // }));
+
+            t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetYears");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        YearData = JsonSerializer.Deserialize<List<AYears>>(content, _options);
+                    }
+                }));
+
+            t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetDays");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        DaysData = JsonSerializer.Deserialize<List<ADays>>(content, _options);
+                    }
+                }));
+
+            Task _t = Task.WhenAll(t);
+            await _t;
+        }
     }
 
+    private void SearchRecords()
+    {
+        try
+        {
+            loadingspinner = true;
+            MainQuery = new Query();
+            if (searchpanel.DayId != null)
+            {
+                MainQuery.AddParams("DayId", string.Join(",", searchpanel.DayId));
+            }
+            if (searchpanel.MonthId != null)
+            {
+                MainQuery.AddParams("MonthId", string.Join(",", searchpanel.MonthId));
+            }
+            if (searchpanel.YearId != null)
+            {
+                MainQuery.AddParams("YearId", string.Join(",", searchpanel.YearId));
+            }
+
+            if (searchpanel.DayId == null && searchpanel.MonthId == null && searchpanel.YearId == null)
+            {
+                //Hide mudoverlay if some one passes no filters
+                loadingspinner = false;
+                toastService.ClearAll();
+                toastService.ShowSuccess("You have not seleceted any filters");
+            }
+            else
+            {
+                
+            }
+        }
+
+        catch (Exception ex)
+        {
+            toastService.ClearAll();
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            
+            
+        }
+    }
+
+    private void ClearSearchBtnClick()
+    {
+        searchpanel = new();
+        MainQuery = new Query();
+    }
     #region PublicHolidayAdapter
     public class PublicHolidayAdapter : DataAdaptor
     {
@@ -189,19 +394,48 @@
             var data = new List<APublicHolidays>();
             try
             {
-                var response = await Http.GetAsync($"Utilities/GetPublicHoliday");
+                string DayId = null;
+                string MonthId = null;
+                string YearId = null;
+
+                if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
+                {
+                    var val = dataManagerRequest.Params;
+
+                    if (val.FirstOrDefault(o => o.Key == "DayId").Value != null)
+                    {
+                        DayId = val.FirstOrDefault(o => o.Key == "DayId").Value.ToString();
+                    }
+
+                    if (val.FirstOrDefault(o => o.Key == "MonthId").Value != null)
+                    {
+                        MonthId = val.FirstOrDefault(o => o.Key == "MonthId").Value.ToString();
+                    }
+
+                    if (val.FirstOrDefault(o => o.Key == "YearId").Value != null)
+                    {
+                        YearId = val.FirstOrDefault(o => o.Key == "YearId").Value.ToString();
+                    }
+                }
+
+                var response = await Http.GetAsync($"Utilities/GetPublicHoliday?DayId={DayId}&MonthId={MonthId}&YearId={YearId}");
                 var content = await response.Content.ReadAsStringAsync();
                 if (!response.IsSuccessStatusCode)
                 {
+                    toastService.ClearAll();
                     toastService.ShowError(response.ReasonPhrase);
                 }
                 data = JsonSerializer.Deserialize<List<APublicHolidays>>(content, _options);
             }
             catch (Exception ex)
             {
+                toastService.ClearAll();
                 toastService.ShowError(ex.Message.ToString());
             }
-
+            finally
+            {
+                
+            }
             IEnumerable GridData = data;
             int _count = data.Count;
             if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
@@ -254,6 +488,7 @@
                     var result = await Http.PostAsync($"Utilities/CreatePublicHoliday", httpContent);
                     if (result.IsSuccessStatusCode)
                     {
+                        toastService.ClearAll();
                         toastService.ShowSuccess("Record sucessfully saved");
                     }
                     else
@@ -268,6 +503,7 @@
                     var result = await Http.PutAsync($"Utilities/UpdatePublicHoliday", httpContent);
                     if (result.IsSuccessStatusCode)
                     {
+                        toastService.ClearAll();
                         toastService.ShowSuccess("Record sucessfully update");
                     }
                     else
@@ -277,6 +513,7 @@
             }
             catch (Exception ex)
             {
+                toastService.ClearAll();
                 toastService.ShowError(ex.Message.ToString());
             }
             return value;
@@ -287,22 +524,25 @@
             try
             {
                 var val = (value as APublicHolidays);
-                
-                
+
+
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(val);
                 StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
                 var result = await Http.PutAsync($"Utilities/UpdatePublicHoliday", httpContent);
                 if (result.IsSuccessStatusCode)
                 {
+                    toastService.ClearAll();
                     toastService.ShowSuccess("Record sucessfully updated");
                 }
                 else
                 {
+                    toastService.ClearAll();
                     toastService.ShowError(result.ReasonPhrase);
                 }
             }
             catch (Exception ex)
             {
+                toastService.ClearAll();
                 toastService.ShowError(ex.Message.ToString());
             }
 
@@ -319,22 +559,38 @@
 
     public async void HolidayActionComplete(ActionEventArgs<APublicHolidays> args)
     {
-        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
-        {
-            PublicHolidayGrid.PreventRender(false);
-        }
-
-        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
-        {
-            var responseholidaycount = await Http.GetAsync($"Utilities/GetPublicHolidayCount");
-            var holidaycount = await responseholidaycount.Content.ReadAsStringAsync();
-
-            if (responseholidaycount.IsSuccessStatusCode)
+        try
+        {          
+            if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) || args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
             {
-                HolidayCountData = await Http.GetFromJsonAsync<List<APublicHolidays>>
-                ($"Utilities/GetPublicHolidayCount");
+                PublicHolidayGrid.PreventRender(false);
             }
+
+            if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+            {
+                // var responseholidaycount = await Http.GetAsync($"Utilities/GetPublicHolidayCount");
+                // var holidaycount = await responseholidaycount.Content.ReadAsStringAsync();
+
+                // if (responseholidaycount.IsSuccessStatusCode)
+                // {
+                //     HolidayCountData = await Http.GetFromJsonAsync<List<APublicHolidays>>
+                //     ($"Utilities/GetPublicHolidayCount");
+                // }
+            }
+            // if (args.RequestType == Syncfusion.Blazor.Grids.Action.Refresh)
+            // {
+            //     loadingspinner = false;
+            // }
         }
+        catch(Exception ex)
+        {
+            throw ex;            
+        }
+        finally
+        {
+            loadingspinner = false;
+        }
+        
     }
 
     public async void HolidayActionBegin(ActionEventArgs<APublicHolidays> Args)
@@ -344,39 +600,55 @@
         {
             if (Args.Data.HolidayDate == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please choose the date.");
                 Args.Cancel = true;
             }
             else if (String.IsNullOrEmpty(Args.Data.HolidayName))
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please enter the date name of the holiday.");
                 Args.Cancel = true;
             }
-           else if (Args.Data.ReoccursSameDate == null)
+            else if (Args.Data.ReoccursSameDate == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please select whether holiday occurs annually on the same date.");
                 Args.Cancel = true;
             }
             else
             {
+                loadingspinner = true;
+                var countdata = HolidayCountData?.FirstOrDefault(o => o.HolidayDate == Args.Data.HolidayDate);
                 Args.Data.ReoccursSameDate = radiovalue;
 
-                var countdata = HolidayCountData?.FirstOrDefault(o => o.HolidayDate == Args.Data.HolidayDate);
-
-                if (countdata != null)
+                if (Args.Action == "Add")
                 {
-                    toastService.ShowWarning("This date has arleady been captured in the database as " + countdata.HolidayName + ". Record Not Saved");
-                    Args.Cancel = true;
+                    if (countdata != null)
+                    {
+                        toastService.ClearAll();
+                        toastService.ShowWarning("This date has arleady been captured in the database as " + countdata.HolidayName + ". Record Not Saved");
+                        Args.Cancel = true;
+                    }
+                }
+                else if (Args.Action == "Edit")
+                {
+                    if (countdata != null && countdata.HolidayId != Args.Data.HolidayId)
+                    {
+                        toastService.ClearAll();
+                        toastService.ShowWarning("This date has arleady been captured in the database as " + Args.Data.HolidayName + " . Record will not be saved.");
+                        Args.Cancel = true;
+                    }
                 }
             }
         }
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.BeginEdit)
         {
-            
+
         }
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Add)
         {
-            
+
         }
     }
 
@@ -391,6 +663,94 @@
         {
             return "Edit " + Value.HolidayName;
         }
+    }
+
+    public async Task OnCommandClicked(CommandClickEventArgs<APublicHolidays> args)
+    {
+        if (args.CommandColumn.ID == "Delete")
+        {
+            try
+            {
+                selectedemployee = args.RowData;
+                ConfirmationText = "<p>Are you sure you want to delete this record ( " + args.RowData.HolidayName + " || " + args.RowData.HolidayDate.Value.ToString("MM/DD/YYYY") + " ) ! </p>";
+                await this.ConfirmationDeleteDialogue.ShowAsync();
+            }
+            catch (Exception ex)
+            {
+                toastService.ClearAll();
+                toastService.ShowError(ex.Message.ToString());
+            }
+            finally
+            {
+                StateHasChanged();
+            }
+
+        }
+    }
+
+    private async void ComfirmationApproveYes()
+    {
+        try
+        {
+            await this.ConfirmationDeleteDialogue.HideAsync();
+
+            if (PublicHolidayGrid != null)
+            {                
+                await PublicHolidayGrid.EndEditAsync();
+            }
+
+            int? HolidayId = null;
+            HolidayId = selectedemployee.HolidayId;
+
+            loadingspinner = true;
+
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(selectedemployee);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            var result = await Http.PostAsync($"Utilities/DeletePublicHoliday?HolidayId={HolidayId}", httpContent);
+
+            if (result.IsSuccessStatusCode)
+            {
+                try
+                {
+                    if (PublicHolidayGrid != null)
+                    {
+                        await PublicHolidayGrid.Refresh();
+                    }
+
+                    toastService.ClearAll();
+                    toastService.ShowSuccess("Record Successfully Deleted");
+                }
+                catch (Exception ex)
+                {
+
+                }
+                finally
+                {
+                    loadingspinner = false;
+                }
+
+            }
+            else
+            {
+                toastService.ClearAll();
+                toastService.ShowError("Record Not Deleted");
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ClearAll();
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {            
+            StateHasChanged();
+        }
+    }
+
+    private void ComfirmationApproveNo()
+    {
+        this.ConfirmationDeleteDialogue.HideAsync();
     }
 
     #endregion PublicHolidayAdapter

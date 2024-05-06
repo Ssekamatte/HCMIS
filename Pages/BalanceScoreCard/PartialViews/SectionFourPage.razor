@@ -12,6 +12,7 @@
 @inject NavigationManager navigation;
 @inject SystemSettings _SystemSettings;
 @using HCMIS.ViewModel;
+@using Newtonsoft.Json
 @inject IToastService toastService;
 @inject IAuthenticationService AuthService;
 
@@ -90,18 +91,41 @@
     int random = -9999;
     [Parameter]
     public bool IsEmployeeEnabledColumn { get; set; }
+    [Parameter]
+    public int selectebscid { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        if (previousBalanceScoreCardId != BalanceScoreCardId)
+        //toastService.ShowError(selectebscid.ToString());
+        if (selectebscid > 0)
         {
-            int countid = -10000;
-            previousBalanceScoreCardId = BalanceScoreCardId;
-            datasource = new List<BalanceScoreCardTargetDevelopmentPlan>();
-            if (plandata != null && plandata.Count() > 0)
-            {
-                datasource.AddRange(plandata);
-            }
+            await LoadClientsForSelectedGroup();
+        }
+
+        // if (previousBalanceScoreCardId != BalanceScoreCardId)
+        // {
+        //     int countid = -10000;
+        //     previousBalanceScoreCardId = BalanceScoreCardId;
+        //     datasource = new List<BalanceScoreCardTargetDevelopmentPlan>();
+        //     if (plandata != null && plandata.Count() > 0)
+        //     {
+        //         datasource.AddRange(plandata);
+        //     }
+        // }
+    }
+
+    private async Task LoadClientsForSelectedGroup()
+    {
+        var response = await Http.GetAsync($"BalanceScoreCard/GetDevelopmentPlanData?selectebscid={selectebscid}");
+        if (response.IsSuccessStatusCode)
+        {
+            var responseData = await response.Content.ReadAsStringAsync();
+            datasource = JsonConvert.DeserializeObject<List<BalanceScoreCardTargetDevelopmentPlan>>(responseData);
+        }
+        else
+        {
+            // Handle API error
+            // You can display an error message or log the error
         }
     }
 
