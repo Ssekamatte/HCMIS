@@ -17,6 +17,18 @@
 @inject IToastService toastService;
 
 <style>
+    /*to remove the edit button alone*/
+    .e-removeEditcommand .e-unboundcell .e-unboundcelldiv button.e-Editbutton {
+        display: none;
+    }
+
+    /*to remove the delete button alone*/
+    .e-removeDeletecommand .e-unboundcell .e-unboundcelldiv button.e-Deletebutton {
+        display: none;
+    }
+</style>
+
+<style>
    
     .headerbandimg {
         background-image: url(/image/logonhcc.png);
@@ -63,7 +75,11 @@
     <GridEditSettings AllowAdding="false" AllowEditing="false" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
     </GridEditSettings>
     <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
-    
+    <GridEvents 
+                RowDataBound="RowBound"
+                CommandClicked="OnCommandClicked"
+                TValue="AppliedForJobs">
+    </GridEvents>
     <GridColumns>
         
         <GridColumn Field=@nameof(AppliedForJobs.AppliedForJobsId) HeaderText="Applied For Jobs Id" AllowEditing="false" IsPrimaryKey="true" Width="150" Visible="false"></GridColumn>
@@ -123,6 +139,17 @@
                            CustomAttributes="@(new Dictionary<string,
                     object>(){ { "class", "e-attr1" }})">
         </GridForeignColumn>
+
+        <GridColumn HeaderText="Action"
+                    TextAlign="TextAlign.Center"
+                    Width="50"
+                    AllowEditing="aptitudebuttonbool"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+            <GridCommandColumns>
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { IconCss = "e-icons e-edit", CssClass = "e-flat" })" ID="TakeTest"></GridCommandColumn>
+                @*<GridCommandColumn Type="CommandButtonType.None" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})" ID="TakeTest"></GridCommandColumn>*@
+            </GridCommandColumns>
+        </GridColumn>
     </GridColumns>
 </SfGrid>
 
@@ -131,7 +158,10 @@
     List<ViewAppliedForJobsDetails2024>? AppliedforJobsDetailData { get; set; }
     LoginResultModel? Credentials { get; set; }
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-
+    List<AJobTitle>? JobTitleData { get; set; }
+    List<JobDescription>? JobDescriptionData { get; set; }
+    List<ViewJobDescOpening2024>? JobOpeningData { get; set; }
+    bool aptitudebuttonbool { get; set; } = false;
     /// <summary>
     /// Event for Toolbar click for Grid Exporting
     /// </summary>
@@ -157,33 +187,119 @@
         await base.OnInitializedAsync();
 
 
-            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
-            if (isAuthenticated == false)
-            {
+        var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+        if (isAuthenticated == false)
+        {
             navigation.NavigateTo("/LoginPage", true);
-            }
+        }
 
-            else
+        else
+        {
+            Credentials = await AuthService.GetUserCredentials();
+            var tasks = new List<Task>();
+
+            tasks.Add(Task.Run(async () =>
             {
-                Credentials = await AuthService.GetUserCredentials();
-                var tasks = new List<Task>();
 
-                tasks.Add(Task.Run(async () =>
+                var response = await Http.GetAsync($"HumanResource/GetAppliedForJobsDetail");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
                 {
+                    AppliedforJobsDetailData = JsonSerializer.Deserialize<List<ViewAppliedForJobsDetails2024>>(content, _options);
+                }
+            }));
 
-                    var response = await Http.GetAsync($"HumanResource/GetAppliedForJobsDetail");
-                    var content = await response.Content.ReadAsStringAsync();
-                    if (response.IsSuccessStatusCode)
-                    {
-                        AppliedforJobsDetailData = JsonSerializer.Deserialize<List<ViewAppliedForJobsDetails2024>>(content, _options);
-                    }
-                }));
+            tasks.Add(Task.Run(async () =>
+             {
 
-                Task _t = Task.WhenAll(tasks);
-                await _t;
-            }
+                 var response = await Http.GetAsync($"HumanResource/GetJobTitle");
+                 var content = await response.Content.ReadAsStringAsync();
+                 if (response.IsSuccessStatusCode)
+                 {
+                     JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
+                 }
+             }));
+
+            tasks.Add(Task.Run(async () =>
+            {
+
+                var response = await Http.GetAsync($"HumanResource/GetJobDescription");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    JobDescriptionData = JsonSerializer.Deserialize<List<JobDescription>>(content, _options);
+                }
+            }));
+
+            tasks.Add(Task.Run(async () =>
+            {
+
+                var response = await Http.GetAsync($"HumanResource/GetJobOpening");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    JobOpeningData = JsonSerializer.Deserialize<List<ViewJobDescOpening2024>>(content, _options);
+                }
+            }));
+
+            Task _t = Task.WhenAll(tasks);
+            await _t;
+        }
     }
 
+    public async Task OnCommandClicked(CommandClickEventArgs<AppliedForJobs> args)
+    {
+        if (args.CommandColumn.ID == "TakeTest")
+        {
+            int _jobtitleid = 0;
+            int _AppliedForJobsId = args.RowData.AppliedForJobsId;
+
+            if (JobOpeningData != null && JobDescriptionData != null && JobTitleData != null)
+            {
+                var _jobopening = JobOpeningData.FirstOrDefault(o => o.JobOpeningId == args.RowData.JobOpeningId);
+                if (_jobopening != null)
+                {
+                    var _jobdesc = JobDescriptionData.FirstOrDefault(o => o.JobDescriptionId == _jobopening.JobDescriptionId);
+                    if (_jobdesc != null)
+                    {                        
+                        var _jobtitle = JobTitleData.FirstOrDefault(o => o.JobTitleId == _jobdesc.JibTitleId);
+                        if(_jobtitle != null)
+                        {
+                            _jobtitleid = _jobtitle.JobTitleId;
+                        }                       
+                    }                    
+                }
+            }
+
+
+            navigation.NavigateTo($"/ApplicantAptituddeTestPage/{_jobtitleid}/{_AppliedForJobsId}", true);
+        }
+    }
+
+    public void RowBound(RowDataBoundEventArgs<AppliedForJobs> Args)
+    {
+        if (Args.Data.ApplicationStatusId != 4)
+        {
+            Args.Row.AddClass(new string[] { "e-removeEditcommand" });
+        }
+        // else
+        // {
+        //     Args.Row.AddClass(new string[] { "e-removeDeletecommand" });
+        // }
+    }
+
+    public void RowDataBoundHandler(RowDataBoundEventArgs<AppliedForJobs> args)
+    {
+        if(args.Data.ApplicationStatusId == 4)
+        {
+            aptitudebuttonbool = true;
+        }
+        else
+        {
+            aptitudebuttonbool = false;            
+        }
+    }
+    
     #region My Applications Region
     public class MyApplicationsAdapter : DataAdaptor
     {

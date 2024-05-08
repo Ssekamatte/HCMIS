@@ -565,6 +565,34 @@ else
                                     </SfDropDownList>
                                 </div>
 
+                                <div class="form-group col-md-6">
+
+                                    <p>From (Date):<span style="color:red;">*</span></p>
+                                    <SfDatePicker @bind-Value="@(HeaderReviewData.TestFromDate)" TValue="DateTime?" Placeholder="Choose Date & Time" Format="dd/MM/yyyy hh:mm:ss tt" Min="MinDate" Max='@MaxDate' AllowEdit="false">
+                                    </SfDatePicker>
+                                    @*<SfDateTimePicker @bind-Value="@(HeaderReviewData.TestFromDate)" TValue="DateTime?" Placeholder="Choose Date & Time" Format="dd/MM/yyyy hh:mm:ss tt" Min="MinDate" Max='@MaxDate' AllowEdit="false">
+                                    </SfDateTimePicker>*@
+
+                                </div>
+
+                                <div class="form-group col-md-6">
+                                    <p>To (Date):<span style="color:red;">*</span></p>
+                                    <SfDatePicker @bind-Value="@(HeaderReviewData.TestToDate)" TValue="DateTime?" Placeholder="Choose Date & Time" Format="dd/MM/yyyy hh:mm:ss tt" Min="MinDate" Max='@MaxDate' AllowEdit="false">
+                                    </SfDatePicker>
+                                    @*<SfDateTimePicker @bind-Value="@(HeaderReviewData.TestToDate)" TValue="DateTime?" Placeholder="Choose Date & Time" Format="dd/MM/yyyy hh:mm:ss tt" Min="MinDate" Max='@MaxDate' AllowEdit="false">
+                                    </SfDateTimePicker>*@
+                                </div>
+
+                                <div class="form-group col-md-6">
+                                    <p>Location:<span style="color:red;">*</span></p>
+                                    <SfTextBox Multiline="true" CssClass="e-custom" Rows="3" @bind-Value="@(HeaderReviewData.TestLocation)" Enabled="true" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                </div>
+
+                                <div class="form-group col-md-6">
+                                    <p>TestRequirements:<span style="color:red;">*</span></p>
+                                    <SfTextBox Multiline="true" CssClass="e-custom" Rows="3" @bind-Value="@(HeaderReviewData.TestRqeuirements)" Enabled="true" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                </div>
+
                                 <div class="form-group col-md-12">
                                     @{
                                         if (NextStepsData != null && HeaderReviewData.NextStepId != null)
@@ -644,7 +672,8 @@ else
     int invitedapplicantsno = 0;
     string? departmentvalue = string.Empty;
     string? jobtitlevalue = string.Empty;
-
+    public DateTime MinDate { get; set; } = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
+    public DateTime MaxDate { get; set; } = new DateTime(DateTime.Now.Year, 12, 31);
 
     protected override async Task OnInitializedAsync()
     {
@@ -935,14 +964,14 @@ else
     void JobTitleValueChanged(string? _jobtitlevalue)
     {
         jobtitlevalue = _jobtitlevalue;
-        toastService.ShowError("JobTitle" + @jobtitlevalue);
+        //toastService.ShowError("JobTitle" + @jobtitlevalue);
     }
 
     // Event handler to receive the value from the partial page
     void DepartmentValueChanged(string? _departmentvalue)
     {
         departmentvalue = _departmentvalue;
-        toastService.ShowError("Toast Service Dept " + @departmentvalue );
+        //toastService.ShowError("Toast Service Dept " + @departmentvalue );
     }
 
 
@@ -952,6 +981,7 @@ else
         {
             if (DetailData != null)
             {
+                loadingspinner = true;
                 MainQuery = DetailData;
             }
         }
@@ -962,6 +992,8 @@ else
         finally
         {
             StateHasChanged();
+            // loadingspinner  = false;
+            // toastService.ShowError("Into Toggle Search");
         }
 
     }
@@ -990,7 +1022,6 @@ else
     }
 
     private async void NextStepInvitation()
-    //public async Task NextStepInvitation(AppliedForJobReferees data)
     {
         try
         {
@@ -1019,6 +1050,7 @@ else
                 }
                 else
                 {
+                    toastService.ClearAll();
                     toastService.ShowError("You have not selected any record");
                 }
             }            
@@ -1045,16 +1077,40 @@ else
         {
             if (HeaderReviewData.NextStepId == null)
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please select the next action");
             }
-
+            else if (HeaderReviewData.TestFromDate == null)
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please select the start date");
+            }
+            else if (HeaderReviewData.TestToDate == null)
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please select the end date");
+            }
+            else if (string.IsNullOrEmpty(HeaderReviewData.TestLocation))
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please enter the location");
+            }
+            else if (string.IsNullOrEmpty(HeaderReviewData.TestRqeuirements))
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please select the requirements");
+            }
             else
             {
                 loadingspinner = true;
 
                 foreach (var record in selectedrecords)
                 {
-                    record.NextStepId = HeaderReviewData.NextStepId;              
+                    record.NextStepId = HeaderReviewData.NextStepId;    
+                    record.TestFromDate = HeaderReviewData.TestFromDate;
+                    record.TestToDate = HeaderReviewData.TestToDate;
+                    record.TestLocation = HeaderReviewData.TestLocation;
+                    record.TestRqeuirements = HeaderReviewData.TestRqeuirements;
                 }
                 
                 await reopsitory.InviteApplicantsAsync(selectedrecords);
@@ -1100,6 +1156,7 @@ else
         {
             if (string.IsNullOrEmpty(CommentModel.CommentDesc))
             {
+                toastService.ClearAll();
                 toastService.ShowWarning("Please enter your comment before saving this record.");
             }
             else
@@ -1201,9 +1258,9 @@ else
                 {
                     _ReferenceNumber = val.FirstOrDefault(o => o.Key == "ReferenceNumber").Value.ToString();
                 }
-                if (val.FirstOrDefault(o => o.Key == "JobTitle").Value != null)
+                if (val.FirstOrDefault(o => o.Key == "JobTitleId").Value != null)
                 {
-                    _JobTitle = val.FirstOrDefault(o => o.Key == "JobTitle").Value.ToString();
+                    _JobTitle = val.FirstOrDefault(o => o.Key == "JobTitleId").Value.ToString();
                 }
 
             }
@@ -1211,7 +1268,7 @@ else
             var data = new List<AppliedForJobs>();
             try
             {
-                var response = await Http.GetAsync($"HumanResource/GetAppliedForJobsDetail?ShortListId={_ListId}&DepartmentId={_DepartmentId}&ReferenceNumber={_ReferenceNumber}&JobTitle={_JobTitle}&StartDate={_JobTitle}&StartDate={EndDate}&ApplicationStatusId={_ApplicationStatusId}");
+                var response = await Http.GetAsync($"HumanResource/GetAppliedForJobsDetail?ShortListId={_ListId}&DepartmentId={_DepartmentId}&ReferenceNumber={_ReferenceNumber}&JobTitle={_JobTitle}&StartDate={StartDate}&StartDate={EndDate}&ApplicationStatusId={_ApplicationStatusId}");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
@@ -1363,17 +1420,36 @@ else
         }
     }
 
-    public void DataBoundHandler()
-    {
-        // Here, you can customize your code.
-    }
-
     public async void OnActionComplete(ActionEventArgs<AppliedForJobs> args)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Add) ||
         args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.BeginEdit))
         {
             AppliedForJobGrid.PreventRender(false);
+        }
+        if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Refresh))
+        {
+            //Hide Spinner
+            loadingspinner  = false;
+            //toastService.ShowError("Into Action Complete Refresh");
+        }
+    }
+
+    public void DataBoundHandler()
+    {
+        try
+        {
+           
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            //Hide Spinner
+            loadingspinner  = false;
+            // toastService.ShowError("Into Action Complete Refresh");
         }
     }
 }

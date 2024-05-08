@@ -500,6 +500,11 @@
                                            @bind-Value="@EmployeeReviewData.EmailAddress" 
                                            CssClass="form-control" 
                                            FloatLabelType="FloatLabelType.Never">
+
+                                           @if(officialemailaddresserrorbool == true)
+                                           {
+                                            <p style="color:red;font-size: .75rem;text-align: start;font-weight: 400;line-height: 1.66;letter-spacing: .03333em;">Please provide the official email address.</p>
+                                           }
                                        </SfTextBox>                                   
                             </div>
                             <div class="col-md-3">
@@ -510,7 +515,12 @@
                             </div>
                             <div class="col-md-3">
                                     <p> Identification Number (e.g NIN, Driving Permint, Passport)<span style="color:red;">*</span></p>
-                                    <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.NationalIdentificationNumber" CssClass="form-control" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                                    <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.NationalIdentificationNumber" CssClass="form-control" FloatLabelType="FloatLabelType.Never">
+                                    @if(identificationnumbererrorbool == false)
+                                    {
+                                        <p style="color:red;font-size: .75rem;text-align: start;font-weight: 400;line-height: 1.66;letter-spacing: .03333em;">Please enter the Identification Number (e.g NIN, Driving Permint, Passport).</p>
+                                    }
+                                    </SfTextBox>
 
                             </div>
 
@@ -937,6 +947,8 @@
     Syncfusion.Blazor.Grids.Action _previous { get; set; }
     public string maskvalue { get; set; } = "000 000 000 0";
     bool isdobvalid = true;
+    bool officialemailaddresserrorbool = false;
+    bool identificationnumbererrorbool = false;
     public DateTime MaxDate { get; set; } = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
     //Link: https://learn.microsoft.com/en-us/aspnet/core/blazor/images?view=aspnetcore-8.0
     private string? imageSource = $"Image/flags/1x1/";
@@ -1397,12 +1409,12 @@
         try
         {
             string _NationalIdentificationNumber = string.Empty;
-            if(!string.IsNullOrEmpty(EmployeeReviewData.NationalIdentificationNumber))
+            if(EmployeeData != null && EmployeeReviewData != null && !string.IsNullOrEmpty(EmployeeReviewData.NationalIdentificationNumber))
             {
                 _NationalIdentificationNumber = EmployeeReviewData.NationalIdentificationNumber.Trim().ToLower();
-            }
-            var _biometricid = EmployeeData.FirstOrDefault(o=>o.BiometricEmployeeid == EmployeeReviewData.BiometricEmployeeid);
-            var countdata = EmployeeListData?.FirstOrDefault(o => o.NationalIdentificationNumber?.Trim().ToLower()== _NationalIdentificationNumber);
+                var _biometricid = EmployeeData.FirstOrDefault(o=>o.BiometricEmployeeid == EmployeeReviewData.BiometricEmployeeid);
+            
+                            var countdata = EmployeeListData?.FirstOrDefault(o => o.NationalIdentificationNumber?.Trim().ToLower()== _NationalIdentificationNumber);
 
             if (string.IsNullOrEmpty(EmployeeReviewData.FirstName))
             {
@@ -1520,13 +1532,17 @@
                 toastService.ShowWarning("Please select the Contact Person Relationship with Employee before saving this record.");
 
             }
-            else if (EmployeeReviewData.EmailAddress == null)
+            else if (string.IsNullOrEmpty(EmployeeReviewData.EmailAddress))
             {
+                officialemailaddresserrorbool = true;
                 toastService.ClearAll();
                 toastService.ShowWarning("Please provide the official email address.");
 
             }
-
+            else if (!string.IsNullOrEmpty(EmployeeReviewData.EmailAddress))
+            {
+                officialemailaddresserrorbool = false;
+            }
             else if (!string.IsNullOrEmpty(EmployeeReviewData.EmailAddress) &&
             IsValid(EmployeeReviewData.EmailAddress) == false)
             {
@@ -1537,11 +1553,14 @@
 
             else if (string.IsNullOrEmpty(EmployeeReviewData.NationalIdentificationNumber))
             {
+                identificationnumbererrorbool = true;
                 toastService.ClearAll();
                 toastService.ShowWarning("Please enter the Identification Number (e.g NIN, Driving Permint, Passport).");
-
             }
-
+            else if (!string.IsNullOrEmpty(EmployeeReviewData.NationalIdentificationNumber))
+            {
+                identificationnumbererrorbool = false;
+            }
             else if (EmployeeReviewData.DepartmentId == null)
             {
                 toastService.ClearAll();
@@ -1625,6 +1644,9 @@
                     }
                     await EmployeeModelGrid.EndEditAsync();
                 }
+            }
+            
+            
             }
         }
         catch (Exception ex)
@@ -2069,6 +2091,10 @@
                 _previous = args.RequestType;
                 SaveButtons = false;
                 employeenumberenabled = false;
+
+                //Clear the mask value and Image string
+                maskvalue = null;
+                ImageString = null;
                 //args.RowData.EmployeeHeader = new Employee();
             }
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Cancel)
