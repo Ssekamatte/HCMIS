@@ -22,5 +22,7 @@
         public string? ReferenceNumber { get; set; }
 
         public int?[] JobTitleId { get; set; }
+
+        public int?[] ApplicationStatusId { get; set; }
     }
 }

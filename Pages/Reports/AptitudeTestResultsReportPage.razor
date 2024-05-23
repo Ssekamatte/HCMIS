@@ -1,0 +1,580 @@
+﻿@page "/AptitudeTestResultsReportPage"
+@using HCMIS.Data;
+@using HCMIS.Model;
+@using HCMIS.SHARED.Data;
+@using HCMIS.Interface;
+@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject SystemSettings _SystemSettings
+@inject IAuthenticationService AuthService;
+@using HCMIS.SHARED.Models;
+@using HCMIS.ViewModel
+@using Syncfusion.XlsIO;
+@using System.Text.Json;
+@inject IReportService reportservice;
+@inject IToastService toastService;
+@inject Microsoft.JSInterop.IJSRuntime JS;
+@inject IUtilityRepository UtilityRepo;
+
+<style>
+    .e-spinner-pane .e-spinner-inner .e-spin-bootstrap4 {
+        stroke: green;
+    }
+</style>
+
+<MudOverlay Visible="@loadingspinner" DarkBackground="true" Absolute="true" Style="z-index:100000;">
+    <div class="loader">
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--text" style="color:white;"></div>
+    </div>
+</MudOverlay>
+
+<BreadCrumbPage Module="HCMIS" Submodule="APTITUDE TEST RESULTS REPORT" />
+
+<EditForm Model="@InputModel" OnValidSubmit="@OnSearchSubmit">
+    <DataAnnotationsValidator />
+    <div class="row" style="margin-bottom:10px;">
+
+        <div class="col col-md-3">
+            <p>Department</p>
+            <SfMultiSelect @bind-Value="@InputModel.DepartmentId" Enabled="true"
+                           TValue="int?[]" TItem="ADepartment" AllowFiltering="true" Placeholder="Please select" Mode="@VisualMode.CheckBox"
+                           DataSource="@DepartmentData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true"
+                           FilterBarPlaceholder="Search Department" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+                <MultiSelectFieldSettings Value="@nameof(ADepartment.DepartmentId)" Text="@nameof(ADepartment.DepartmentDescription)"></MultiSelectFieldSettings>
+                <MultiSelectEvents TValue="int?[]" TItem="ADepartment" ValueChange="OnDepartmentChange"></MultiSelectEvents>
+            </SfMultiSelect>
+
+        </div>
+
+        <div class="col col-md-3">
+            <p>Job Title</p>
+            <SfMultiSelect @bind-Value="@InputModel.JobTitleId" Query="@IndicatorQuery" TValue="int?[]" TItem="AJobTitle" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@JobTitleData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Job Title" FloatLabelType="FloatLabelType.Never" PopupHeight="350px" Enabled="JobTitleDD">
+                <MultiSelectFieldSettings Value="@nameof(AJobTitle.JobTitleId)" Text="@nameof(AJobTitle.JobTitleDescription)"></MultiSelectFieldSettings>
+            </SfMultiSelect>
+        </div>
+
+        <div class="col-md-3">
+            <p>Job Opening Reference No.</p>
+            <SfTextBox Multiline="false"
+                       @bind-Value="@(InputModel.ReferenceNumber)"
+                       Enabled="true"
+                       FloatLabelType="FloatLabelType.Never">
+            </SfTextBox>
+        </div>
+@* 
+        <div class="col col-md-3">
+            <p>Application Status</p>
+            <SfMultiSelect @bind-Value="@InputModel.ApplicationStatusId" TValue="int?[]" TItem="AApplicationStatus" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@ApplicationStatusData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Please Select" FloatLabelType="FloatLabelType.Never" PopupHeight="350px" PopupWidth="400px" Enabled="true">
+                <MultiSelectFieldSettings Value="@nameof(AApplicationStatus.ApplicationStatusId)" Text="@nameof(AApplicationStatus.ApplicationStatusDesc)"></MultiSelectFieldSettings>
+            </SfMultiSelect>
+        </div> *@
+
+        @if (Downloadreport == false)
+        {
+            <div class="col col-md-12" style="margin-top:10px;">
+                <button @onclick="@OnSearchSubmit" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Download Report</button>
+                <button @onclick="@ClearSearchBtnClick" class="btn btn-danger" data-ripple="true" style="margin-right:10px;">Clear Search</button>
+            </div>
+        }
+
+        <div class="form-group col-md-12">
+            <SfSpinner @ref="DownloadingSpinner" Label="Downloading Report Please Wait....." Size="50"></SfSpinner>
+        </div>
+
+        @if (!string.IsNullOrEmpty(InputModel.Response))
+        {
+            <div class="col col-md-12" style="margin-top:10px;">
+                <div class="alert alert-success">@InputModel.Response</div>
+            </div>
+        }
+    </div>
+    <ValidationSummary />
+</EditForm>
+
+@code {
+    private UtilitiesSearchPanel InputModel = new UtilitiesSearchPanel();
+    SfSpinner? DownloadingSpinner;
+    bool Downloadreport { get; set; } = false;
+    string? filename { get; set; } = null;
+    List<AGender>? GenderData { get; set; }
+    List<ADepartment>? DepartmentData { get; set; }
+    List<AJobTitle>? JobTitleData { get; set; }
+    List<AShortlist>? ShortlistDetailData { get; set; }
+    List<AApplicationStatus>? ApplicationStatusData { get; set; }
+    List<AYears>? YearData { get; set; }
+    List<AptituddeTestHeader>? AptituddeTestHeaderData { get; set; }
+    private string? NHCCLogo { get; set; }
+    private string? NHCCLogoName { get; set; }
+    LoginResultModel? Credentials { get; set; }
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    public bool DepartmentDD { get; set; }
+    public bool JobTitleDD = false;
+    Query? IndicatorQuery { get; set; }
+    string imagepath;
+    private string? JMSLogo { get; set; }
+    private string? JMSLogoName { get; set; }
+    public bool loadingspinner { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            loadingspinner = true;
+            await base.OnInitializedAsync();
+
+
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
+            {
+                Navigation.NavigateTo("/LoginPage", true);
+            }
+
+            else
+            {
+                Credentials = await AuthService.GetUserCredentials();
+                var tasks = new List<Task>();
+
+                tasks.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetApplicationStatus");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        ApplicationStatusData = JsonSerializer.Deserialize<List<AApplicationStatus>>(content, _options);
+                    }
+                }));
+
+                tasks.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"NonStaff/GetRegistrationPrimartData");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var _ExternalRegistrationModel = JsonSerializer.Deserialize<ExternalRegistrationModel>(content, _options);
+
+                        if (_ExternalRegistrationModel != null)
+                        {
+                            ShortlistDetailData = _ExternalRegistrationModel.ShortlistDetail;
+                        }
+                    }
+                }));
+
+                tasks.Add(Task.Run(async () =>
+                {
+
+                    var response = await Http.GetAsync($"Utilities/GetDepartment");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
+                    }
+                }));
+
+                tasks.Add(Task.Run(async () =>
+              {
+
+                  var response = await Http.GetAsync($"HumanResource/GetJobTitle");
+                  var content = await response.Content.ReadAsStringAsync();
+                  if (response.IsSuccessStatusCode)
+                  {
+                      JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
+                  }
+              }));
+
+                tasks.Add(Task.Run(async () =>
+               {
+
+                   var response = await Http.GetAsync($"HumanResource/GetAptituddeTestHeaderData");
+                   var content = await response.Content.ReadAsStringAsync();
+                   if (response.IsSuccessStatusCode)
+                   {
+                       AptituddeTestHeaderData = JsonSerializer.Deserialize<List<AptituddeTestHeader>>(content, _options);
+                   }
+               }));
+
+                Task _t = Task.WhenAll(tasks);
+                await _t;
+            }
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            loadingspinner = false;
+        }
+
+    }
+
+
+    private void OnDepartmentChange(Syncfusion.Blazor.DropDowns.MultiSelectChangeEventArgs<int?[]> args)
+    {
+        if (args.Value != null)
+        {
+            JobTitleDD = true;
+            IndicatorQuery = new Query();
+            List<WhereFilter> filterList = new List<WhereFilter>();
+            foreach (var item in args.Value)
+            {
+                filterList.Add(new WhereFilter() { Field = "DepartmentId", Operator = "equal", value = item, IgnoreCase = true });
+            }
+
+            var orWhere = WhereFilter.Or(filterList);
+            IndicatorQuery = new Query().Where(orWhere);
+        }
+        else
+        {
+            IndicatorQuery = new Query();
+        }
+    }
+
+
+    private async Task OnSearchSubmit()
+    {
+        filename = null;
+        Downloadreport = true;
+        string _text = string.Empty;
+        int _numericvalue = 0;
+        string _applicanttype = string.Empty;
+
+        await DownloadingSpinner.ShowAsync();
+
+        try
+        {
+            string _DepartmentId = null;;
+            if (InputModel.DepartmentId != null && InputModel.DepartmentId.Length > 0)
+            {
+                _DepartmentId = string.Join(",", InputModel.DepartmentId);
+            }
+
+            string _JobTitleId = null; ;
+            if (InputModel.JobTitleId != null && InputModel.JobTitleId.Length > 0)
+            {
+                _JobTitleId = string.Join(",", InputModel.JobTitleId);
+            }
+
+            var data = new List<ViewAppliedForJobsDetails2024>();
+            var response = await Http.GetAsync($"HumanResource/GetAppliedForJobsDetail?ShortListId={null}&DepartmentId={_DepartmentId}&ReferenceNumber={null}&JobTitle={_JobTitleId}&StartDate={null}&StartDate={null}&ApplicationStatusId={null}");
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode)
+            {
+                data = JsonSerializer.Deserialize<List<ViewAppliedForJobsDetails2024>>(content, _options);
+            }
+
+            if (data.Count > 0)
+            {
+                using (ExcelEngine excelEngine = new ExcelEngine())
+                {
+                    IApplication application = excelEngine.Excel;
+                    application.DefaultVersion = ExcelVersion.Excel2013;
+                    IWorkbook workbook = application.Workbooks.Create(1);
+                    IWorksheet worksheet = workbook.Worksheets[0];
+                    worksheet.Name = "Aptitude Test Results";
+
+                    #region Styles
+                    var headerStyle = workbook.Styles.Add("headerStyle");
+
+                    headerStyle.BeginUpdate();
+                    headerStyle.Color = Syncfusion.Drawing.Color.Black;
+                    headerStyle.VerticalAlignment = ExcelVAlign.VAlignCenter;
+                    headerStyle.Font.Bold = true;
+                    headerStyle.Font.FontName = "Arial";
+                    headerStyle.Font.Size = 8f;
+                    headerStyle.Font.Color = ExcelKnownColors.White;
+
+                    headerStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    headerStyle.Borders.Color = ExcelKnownColors.White;
+                    headerStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+                    headerStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+                    headerStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+
+                    headerStyle.WrapText = true;
+
+                    headerStyle.EndUpdate();
+
+                    var Style = workbook.Styles.Add("bodyStyle");
+
+                    Style.BeginUpdate();
+                    Style.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+                    Style.VerticalAlignment = ExcelVAlign.VAlignTop;
+                    Style.Font.Bold = false;
+                    Style.Font.FontName = "Arial";
+                    Style.Font.Size = 8f;
+                    Style.Font.Color = ExcelKnownColors.Black;
+                    Style.WrapText = true;
+                    Style.Borders.Color = ExcelKnownColors.Black;
+                    Style.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+                    Style.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+                    Style.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+                    Style.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
+                    Style.EndUpdate();
+
+
+                    var CategoryStyle = workbook.Styles.Add("CategoryStyle");
+
+                    CategoryStyle.BeginUpdate();
+                    CategoryStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    CategoryStyle.Color = Syncfusion.Drawing.Color.FromArgb(0, 204, 0);
+                    CategoryStyle.Font.Bold = true;
+                    CategoryStyle.Font.FontName = "Arial";
+                    CategoryStyle.Font.Size = 20f;
+                    CategoryStyle.Font.Color = ExcelKnownColors.Brown;
+                    CategoryStyle.WrapText = true;
+                    CategoryStyle.Borders.Color = ExcelKnownColors.White;
+                    CategoryStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+                    CategoryStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+                    CategoryStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+                    CategoryStyle.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
+                    CategoryStyle.EndUpdate();
+
+                    var DivisionStyle = workbook.Styles.Add("DivisionStyle");
+
+                    DivisionStyle.BeginUpdate();
+                    DivisionStyle.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+                    DivisionStyle.Color = Syncfusion.Drawing.Color.FromArgb(255, 0, 0); //RED
+                    DivisionStyle.Font.Bold = true;
+                    DivisionStyle.Font.FontName = "Arial";
+                    DivisionStyle.Font.Size = 8f;
+                    DivisionStyle.Font.Color = ExcelKnownColors.White;
+                    DivisionStyle.WrapText = true;
+                    DivisionStyle.Borders.Color = ExcelKnownColors.White;
+                    DivisionStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.None;
+                    DivisionStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.None;
+                    DivisionStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.None;
+                    DivisionStyle.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.None;
+                    DivisionStyle.EndUpdate();
+
+                    #endregion
+
+                    #region Logo
+
+                    worksheet.Range["A1"].ColumnWidth = 9;
+                    worksheet.Range["A1:A2"].Merge();
+
+                    var images = await UtilityRepo.GetLocalLogos();
+                    byte[]? _imagebyte = null;
+                    if (images != null && images.Count > 0)
+                    {
+                        var JMS = images.FirstOrDefault(o => o.ImageName.Contains("logonhcc"));
+                        if (JMS != null)
+                        {
+
+                            JMSLogo = JMS.ImageString;
+                            JMSLogoName = JMS.ImageName;
+                            if (!string.IsNullOrEmpty(JMS.ImageString))
+                            {
+                                var a = JMS.ImageString.Split(";base64,");
+                                _imagebyte = Convert.FromBase64String(a[1]);
+                            }
+
+                        }
+                    }
+                    if (_imagebyte != null && _imagebyte.Length > 0)
+                    {
+                        MemoryStream _ms = new MemoryStream(_imagebyte);
+
+                        IPictureShape shape = worksheet.Pictures.AddPicture(1, 1, _ms);
+                        //Re-sizing a Picture
+                        shape.Height = 60;
+                        shape.Width = 60;
+                        //shape.IsSizeWithCell = true;
+                        //shape.IsMoveWithCell = true;
+                        shape.Left = 5;
+                        shape.Top = 2;
+                    }
+                    #endregion Logo
+
+                    worksheet.Range["B1"].Text = "NHCC";
+                    worksheet.Range["B1"].CellStyle = CategoryStyle;
+                    worksheet.Range["B1"].CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+                    worksheet.Range["B1"].CellStyle.VerticalAlignment = ExcelVAlign.VAlignTop;
+                    worksheet.Range["B1"].RowHeight = 30;
+                    worksheet.Range["B1:H1"].Merge();
+
+                    worksheet.Range["B2"].Text = "Aptitude Test Results";
+                    worksheet.Range["B2"].CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(71, 44, 76);
+                    worksheet.Range["B2"].CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
+                    worksheet.Range["B2"].CellStyle.Font.FontName = "cambria";
+                    worksheet.Range["B2"].CellStyle.Font.Size = 18;
+                    worksheet.Range["B2:H2"].Merge();
+
+                    int row = 1;
+                    row++;
+                    row++;
+
+
+                    //FILTERS SEARCHED BY
+
+                    worksheet.Range[row, 1].Text = "#";
+                    worksheet.Range[row, 1].CellStyle = headerStyle;
+                    worksheet.Range[row, 1].ColumnWidth = 9;
+                    worksheet.Range[row, 1].WrapText = true;
+
+                    worksheet.Range[row, 2].Text = "Job Title";
+                    worksheet.Range[row, 2].CellStyle = headerStyle;
+                    worksheet.Range[row, 2].ColumnWidth = 17;
+                    worksheet.Range[row, 2].WrapText = true;
+
+                    worksheet.Range[row, 3].Text = "Department";
+                    worksheet.Range[row, 3].CellStyle = headerStyle;
+                    worksheet.Range[row, 3].ColumnWidth = 17;
+                    worksheet.Range[row, 3].WrapText = true;
+
+                    worksheet.Range[row, 4].Text = "Reference No.";
+                    worksheet.Range[row, 4].CellStyle = headerStyle;
+                    worksheet.Range[row, 4].ColumnWidth = 17;
+                    worksheet.Range[row, 4].WrapText = true;
+
+                    worksheet.Range[row, 5].Text = "Applicant Name";
+                    worksheet.Range[row, 5].CellStyle = headerStyle;
+                    worksheet.Range[row, 5].ColumnWidth = 13;
+                    worksheet.Range[row, 5].WrapText = true;
+
+                    worksheet.Range[row, 6].Text = "Test Pass Mark";
+                    worksheet.Range[row, 6].CellStyle = headerStyle;
+                    worksheet.Range[row, 6].ColumnWidth = 13;
+                    worksheet.Range[row, 6].WrapText = true;
+
+                    worksheet.Range[row, 7].Text = "Applicant Score";
+                    worksheet.Range[row, 7].CellStyle = headerStyle;
+                    worksheet.Range[row, 7].ColumnWidth = 17;
+                    worksheet.Range[row, 7].WrapText = true;
+
+                    worksheet.Range[row, 8].Text = "Applicant Status";
+                    worksheet.Range[row, 8].CellStyle = headerStyle;
+                    worksheet.Range[row, 8].ColumnWidth = 17;
+                    worksheet.Range[row, 8].WrapText = true;
+
+                    row++;
+                    int count = 1;
+
+                    foreach (var item in data)
+                    {
+                        worksheet.Range[row, 1].Text = count.ToString();
+                        worksheet.Range[row, 1].VerticalAlignment = ExcelVAlign.VAlignTop;
+                        worksheet.Range[row, 1].HorizontalAlignment = ExcelHAlign.HAlignRight;
+
+
+                        worksheet.Range[row, 2].Text = item.JobTitleDescription;
+                        worksheet.Range[row, 2].WrapText = true;
+                        worksheet.Range[row, 2].VerticalAlignment = ExcelVAlign.VAlignTop;
+                        worksheet.Range[row, 2].HorizontalAlignment = ExcelHAlign.HAlignLeft;
+
+
+                        worksheet.Range[row, 3].Text = item.DepartmentDescription;
+                        worksheet.Range[row, 3].WrapText = true;
+                        worksheet.Range[row, 3].VerticalAlignment = ExcelVAlign.VAlignTop;
+                        worksheet.Range[row, 3].HorizontalAlignment = ExcelHAlign.HAlignLeft;
+
+                        worksheet.Range[row, 4].Text = item.JobOpeningReferenceNumber;
+                        worksheet.Range[row, 4].WrapText = true;
+                        worksheet.Range[row, 4].VerticalAlignment = ExcelVAlign.VAlignTop;
+                        worksheet.Range[row, 4].HorizontalAlignment = ExcelHAlign.HAlignLeft;
+
+                        worksheet.Range[row, 5].Text = item.FullName;
+                        worksheet.Range[row, 5].WrapText = true;
+                        worksheet.Range[row, 5].VerticalAlignment = ExcelVAlign.VAlignTop;
+                        worksheet.Range[row, 5].HorizontalAlignment = ExcelHAlign.HAlignLeft;
+
+                        double _passmark = 0;
+                        double _applicantscore = 0;
+
+                        // if (AptituddeTestHeaderData != null)
+                        // {
+                        //     var _leavetype = AptituddeTestHeaderData.FirstOrDefault(o => o.JobTitleId == item.JobTitleId);
+                        //     if (_leavetype != null && _leavetype.PassMark.HasValue)
+                        //     {
+                        //         _passmark = Convert.ToDouble(_leavetype.PassMark);
+                        //     }
+                        //     worksheet.Range[row, 6].Number = Convert.ToDouble(_passmark);
+                        //     worksheet.Range[row, 6].VerticalAlignment = ExcelVAlign.VAlignTop;
+                        //     worksheet.Range[row, 6].HorizontalAlignment = ExcelHAlign.HAlignRight;                           
+
+                        // }
+
+                        if (item.AptituddeTestPassMark.HasValue)
+                        {
+                            worksheet.Range[row, 7].Number = Convert.ToDouble(item.AptituddeTestPassMark);
+                            worksheet.Range[row, 7].VerticalAlignment = ExcelVAlign.VAlignTop;
+                            worksheet.Range[row, 7].HorizontalAlignment = ExcelHAlign.HAlignRight;
+                            _passmark = Convert.ToDouble(item.AptituddeTestPassMark);
+                        }
+
+                        if (item.AptituddeTestApplicantScore.HasValue)
+                        {
+                            worksheet.Range[row, 7].Number = Convert.ToDouble(item.AptituddeTestApplicantScore);
+                            worksheet.Range[row, 7].VerticalAlignment = ExcelVAlign.VAlignTop;
+                            worksheet.Range[row, 7].HorizontalAlignment = ExcelHAlign.HAlignRight;
+                            _applicantscore = Convert.ToDouble(item.AptituddeTestApplicantScore);
+                        }
+
+                        // if(_applicantscore => _passmark)
+                        if ((item.AptituddeTestApplicantScore.HasValue &&  item.AptituddeTestPassMark.HasValue)
+                        && item.AptituddeTestApplicantScore >= item.AptituddeTestPassMark)
+                        {
+                            worksheet.Range[row, 8].Text = "Passed";
+                            worksheet.Range[row, 8].WrapText = true;
+                            worksheet.Range[row, 8].VerticalAlignment = ExcelVAlign.VAlignTop;
+                            worksheet.Range[row, 8].HorizontalAlignment = ExcelHAlign.HAlignRight;
+                        }
+                        else
+                        {
+                            worksheet.Range[row, 8].Text = "Failed";
+                            worksheet.Range[row, 8].WrapText = true;
+                            worksheet.Range[row, 8].VerticalAlignment = ExcelVAlign.VAlignTop;
+                            worksheet.Range[row, 8].HorizontalAlignment = ExcelHAlign.HAlignRight;
+                        }
+                        
+                        row += 1;
+                        count++;
+                    }
+
+
+                    MemoryStream ms = new MemoryStream();
+                    // Save and close the document.
+                    workbook.SaveAs(ms);
+                    //Reset the memory stream position.
+                    ms.Position = 0;
+                    string _filename = "Aptitude Test Results.xlsx";
+                    filename = _filename;
+                    await JS.InvokeAsync<object>("saveAsFile", filename, Convert.ToBase64String(ms.ToArray()));
+                    ms.Dispose();
+                    workbook.Close();
+                    Downloadreport = false;
+                    InputModel.Response = "Report Downloaded Successfully";
+                }
+            }
+            else
+            {
+                InputModel.Response = "There were no records found that match the given search parameters";
+                Downloadreport = false;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.ToString());
+        }
+        finally
+        {
+            await DownloadingSpinner.HideAsync();
+            StateHasChanged();
+        }
+
+    }
+
+    private void ClearSearchBtnClick()
+    {
+        InputModel = new UtilitiesSearchPanel();
+    }
+
+}
+

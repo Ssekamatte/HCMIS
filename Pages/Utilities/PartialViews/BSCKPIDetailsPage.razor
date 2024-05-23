@@ -2,7 +2,35 @@
 
 @using HCMIS.SHARED.Data;
 @using HCMIS.SHARED.Models
+@inject IJSRuntime Runtime 
 @inject IToastService toastService;
+
+<style>
+    /*Wrap grouping text*/
+    .pp {
+        color: black;
+        /* background-color: #00cc00; */
+        padding: 10px;
+        margin-top: 40px;
+        word-wrap: break-word;
+    }
+
+    .e-grid .e-groupcaption {
+        overflow: visible;
+    }
+</style>
+
+<MudOverlay Visible="@loadingspinner" DarkBackground="true" Absolute="true" Style="z-index:100000;">
+    <div class="loader">
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--text" style="color:white;"></div>
+    </div>
+</MudOverlay>
 
 @{
     var Div = (new string[] { "BscPerspectiveTypeId" });
@@ -20,14 +48,15 @@
 @if (datasource != null)
 {
     <div class="col-md-12">
+        <SfGrid @ref="ObjectivesDetailsDataGrid" DataSource="@datasource" TValue="ABscKpidetails" 
+            ID="Grid1" AllowGrouping="true" ShowColumnChooser="true" AllowTextWrap="true"
+            AllowPaging="true" AllowFiltering="false" GridLines="GridLine.Both" AllowSelection="true">
+        
+        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
 
-        <SfGrid @ref="@ObjectivesDetailsDataGrid" DataSource="@datasource" GridLines="GridLine.Both"
-                TValue="ABscKpidetails" ID="Grid1" AllowTextWrap="true" AllowPaging="false"
-                AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" 
-        AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true" AllowSorting="true">
-    <GridEditSettings AllowAdding="false" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
-    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
-    <GridPageSettings PageSizes="true"></GridPageSettings>
+        <GridEditSettings AllowAdding="false" AllowEditing="true" AllowDeleting="false" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false"></GridEditSettings>
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+        <GridPageSettings PageSizes="true"></GridPageSettings>
        
 
             <GridGroupSettings Columns="@Div" ShowDropArea="false">
@@ -59,6 +88,8 @@
                             <GroupFooterTemplate>
                                 @{
                                     var aggregate = (context as AggregateTemplateContext);
+                                    // _aggvalue = aggregate.Sum;
+
                                     <div>
                                         @if (isentryvalid == true)
                                         {
@@ -78,18 +109,39 @@
                 </GridAggregate>
             </GridAggregates>
 
-            <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell" CellSelectionMode="CellSelectionMode.Box"></GridSelectionSettings>
-
-
+            @*OnCellSave="CellSaveHandler"*@
             <GridEvents CellSelected="PerspectiveCellSelectHandler"
-                        QueryCellInfo="QueryCellInfoHandlerChild"                        
+                        QueryCellInfo="QueryCellInfoHandlerChild"
                         CellSaved="PerspectiveOnCellSaved"
                         OnCellSave="CellSaveHandler"
+                        CommandClicked="OnCommandClicked"
                         TValue="ABscKpidetails">
             </GridEvents>
 
             <GridColumns>
                 @* <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn> *@
+                
+                @*@if (actioncolumnbool == true)
+                {
+                    <GridColumn HeaderText="Action"
+                                Width="30"
+                                CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr3" }})"
+                                TextAlign="TextAlign.Left">
+                        <GridCommandColumns>
+                            <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})" ID="Edit" Title="Add Specific Objective(s)"></GridCommandColumn>
+                        </GridCommandColumns>
+                    </GridColumn>
+                }*@
+
+                <GridColumn HeaderText="Action"
+                            Width="30"
+                            CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr3" }})"
+                            TextAlign="TextAlign.Left"
+                            AllowEditing="actionbool">
+                    <GridCommandColumns>
+                        <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})" ID="Edit" Title="Add Specific Objective(s)"></GridCommandColumn>
+                    </GridCommandColumns>
+                </GridColumn>
 
                 <GridColumn Field=@nameof(ABscKpidetails.BsckpidetailsId)
                             HeaderText="BsckpidetailsId"
@@ -145,7 +197,7 @@
                 </GridColumn>
 
                 <GridForeignColumn Field=@nameof(ABscKpidetails.MeasurementMetricId)
-                                   HeaderText="Basic Unit"
+                                   HeaderText="Performance/Measurement Metric"
                                    TextAlign="TextAlign.Justify"
                                    Width="60"
                                    AllowEditing="true"
@@ -158,6 +210,28 @@
             </GridColumns>
         </SfGrid>
 
+    </div>
+
+    <div class="form-group col-md-12">
+        <SfDialog @ref="@RejectLeaveDialogue" Width="80%" Target=".mainbody" ShowCloseIcon="true" Visible="false" IsModal="true">
+            <DialogTemplates>
+                <Content>
+                    <BSCKPISubDetailsPage 
+                        objectivetext="@objectivetext"
+                                          objectiveweight="@objectiveweight" 
+                                          BscPerspectiveTypeData="@BscPerspectiveTypeData"
+                                          MeasurementUnitData="@MeasurementUnitData" 
+                                          BscPerspectiveTypeId="@BscPerspectiveTypeId" 
+                                          selectebscid="@selectebscid">
+
+                    </BSCKPISubDetailsPage>
+                </Content>
+            </DialogTemplates>
+            <DialogButtons>
+                @*<DialogButton OnClick="@RejectReasonYes" Content="Confirm Rejection" IsPrimary="true" />
+            <DialogButton OnClick="@RejectReasonNo" Content="Cancel" />*@
+            </DialogButtons>
+        </SfDialog>
     </div>
 }
 
@@ -193,38 +267,96 @@
     string? RegisterError { get; set; }
     int _maximumlength = 500;
     public int characterCount = 0;
+    string _aggvalue = string.Empty;
+    double? gsumfinancial = 0;
+    double? gsuminternal = 0;
+    double? gsumcustomer = 0;
+    double? gsumlearning = 0;
+    double? objectiveweight = 0;
+    int? BscPerspectiveTypeId = 0;
+    string  objectivetext = string.Empty;
+    bool specificobjectives = false;
+    public bool loadingspinner { get; set; }
+    SfDialog RejectLeaveDialogue;
+    public int selectebscid { get; set; }
+    bool actioncolumnbool = false;
+    bool actionbool = true;
+
+    public async Task savedetail()
+    {
+        await ObjectivesDetailsDataGrid.EndEditAsync();
+        await onscorecardtoggle.InvokeAsync(datasource);
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        if (previousBsckpiid != Bsckpiid)
+        try
         {
-            int countid = -10000;
-            previousBsckpiid = Bsckpiid;
-            datasource = new List<ABscKpidetails>();
-            if (targetdata != null && targetdata.Count() > 0)
+            loadingspinner = true;
+            if (previousBsckpiid != Bsckpiid)
             {
-                datasource.AddRange(targetdata);
-            }
-            else
-            {
-
-                if (BscPerspectiveTypeDataRepeated != null)
+                int countid = -10000;
+                previousBsckpiid = Bsckpiid;
+                datasource = new List<ABscKpidetails>();
+                if (targetdata != null && targetdata.Count() > 0)
                 {
-                    foreach (var item in BscPerspectiveTypeDataRepeated)
-                    {
-                        var m = new ABscKpidetails();
-                        m.BsckpidetailsId = countid;
-                        m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
-                        m.Bsckpiid = Bsckpiid;
+                    datasource.AddRange(targetdata);
 
-                        datasource.Add(m);
-                        countid++;
+                    foreach (var n in targetdata)
+                    {
+                        if (n.BscPerspectiveTypeId == 1)
+                        {
+                            gsumfinancial += n.IndividualTargetWeight;
+                        }
+                        else if (n.BscPerspectiveTypeId == 2)
+                        {
+                            gsuminternal += n.IndividualTargetWeight;
+                        }
+                        else if (n.BscPerspectiveTypeId == 3)
+                        {
+                            gsumcustomer += n.IndividualTargetWeight;
+                        }
+                        else if (n.BscPerspectiveTypeId == 4)
+                        {
+                            gsumlearning += n.IndividualTargetWeight;
+                        }
+
                     }
 
-                    //datasource = datasource.OrderBy(o => o.BscPerspectiveTypeId).ToList();
+                    // toastService.ShowError("Fin is" + gsumfinancial.ToString());
+                    // toastService.ShowError("Int is" + gsuminternal.ToString());
+                    // toastService.ShowError("Cus is" + gsumcustomer.ToString());
+                    // toastService.ShowError("Lea is" + gsumlearning.ToString());
+                }
+                else
+                {
+
+                    if (BscPerspectiveTypeDataRepeated != null)
+                    {
+                        foreach (var item in BscPerspectiveTypeDataRepeated)
+                        {
+                            var m = new ABscKpidetails();
+                            m.BsckpidetailsId = countid;
+                            m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
+                            m.Bsckpiid = Bsckpiid;
+
+                            datasource.Add(m);
+                            countid++;
+                        }
+
+                        //datasource = datasource.OrderBy(o => o.BscPerspectiveTypeId).ToList();
+                    }
                 }
             }
         }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            loadingspinner = false;
+        }        
     }
 
     private void InputHandler(InputEventArgs args)
@@ -237,8 +369,69 @@
     {
         try
         {
-            await ObjectivesDetailsDataGrid.EndEditAsync();
-            StateHasChanged();
+            if (args.ColumnName == "IndividualTargetWeight")
+            {
+                var myvar = Convert.ToDouble(args.Value) - Convert.ToDouble(args.PreviousValue);
+
+                if (args.RowData.BscPerspectiveTypeId == 1)
+                {
+                    gsumfinancial += myvar;
+
+                    if (perspweightsfinancial != null && (gsumfinancial > perspweightsfinancial.PerspectiveTotalWeight))
+                    {
+                        isentryvalid = false;
+                        RegisterError = "Please ensure your set customer perspective weights equal to : " + perspweightsfinancial.WeightPercentage;
+                        toastService.ClearAll();
+                        toastService.ShowError("Please ensure your set customer perspective weights equal to : " + perspweightsfinancial.WeightPercentage);
+                        args.Cancel = true;
+                    }
+                }
+                else if (args.RowData.BscPerspectiveTypeId == 2)
+                {
+                    gsuminternal += myvar;
+
+                    if (perspweightsinternal != null && (gsuminternal > perspweightsinternal.PerspectiveTotalWeight))
+                    {
+                        isentryvalid = false;
+                        RegisterError = "Please ensure your set internal perspective weights equal to : " + perspweightsinternal.WeightPercentage;
+                        toastService.ClearAll();
+                        toastService.ShowError("Please ensure your set internal perspective weights equal to : " + perspweightsinternal.WeightPercentage);
+                        args.Cancel = true;
+                    }
+                }
+
+                else if (args.RowData.BscPerspectiveTypeId == 3)
+                {
+                    gsumlearning += myvar;
+
+                    if (perspweightscustomer != null && (gsumlearning > perspweightscustomer.PerspectiveTotalWeight))
+                    {
+                        isentryvalid = false;
+                        RegisterError = "Please ensure your set customer perspective weights equal to : " + perspweightscustomer.WeightPercentage;
+                        toastService.ClearAll();
+                        toastService.ShowError("Please ensure your set customer perspective weights equal to : " + perspweightscustomer.WeightPercentage);
+                        args.Cancel = true;
+                    }
+                }
+
+                else if (args.RowData.BscPerspectiveTypeId == 4)
+                {
+                    gsumlearning += myvar;
+
+                    if (perspweightslearning != null && (gsumlearning > perspweightslearning.PerspectiveTotalWeight))
+                    {
+                        isentryvalid = false;
+                        RegisterError = "Please ensure your set learning perspective weights equal to : " + perspweightslearning.WeightPercentage;
+                        toastService.ClearAll();
+                        toastService.ShowError("Please ensure your set learning perspective weights equal to : " + perspweightslearning.WeightPercentage);
+                        args.Cancel = true;
+                    }
+                }
+            }
+
+
+            // await ObjectivesDetailsDataGrid.EndEditAsync();
+            // StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -248,10 +441,54 @@
         {
             string _objective = args.Data.Objective;
             // await this.ObjectivesDetailsDataGrid.EndEditAsync();
-            await onscorecardtoggle.InvokeAsync(datasource);
+            //await onscorecardtoggle.InvokeAsync(datasource);
         }
     }
 
+    public async Task OnCommandClicked(CommandClickEventArgs<ABscKpidetails> args)
+    {
+
+        if (args.CommandColumn.ID == "Edit")
+        {
+            try
+            {
+                // OnClick();
+
+                //End Grid Edit
+                //ObjectivesDetailsDataGrid.EndEdit();
+
+                if (args.RowData.IndividualTargetWeight != null && !string.IsNullOrEmpty(args.RowData.Objective))
+                {
+                    objectiveweight = args.RowData.IndividualTargetWeight;
+                    objectivetext = args.RowData.Objective;
+                    BscPerspectiveTypeId = args.RowData.BscPerspectiveTypeId;
+
+                    // toastService.ShowError("Old Objective is" + objectivetext);
+                    // toastService.ShowError("Old Weight is" + objectiveweight);
+
+
+                    selectebscid = args.RowData.BsckpidetailsId;
+
+                    if (RejectLeaveDialogue != null)
+                    {                        
+                        await RejectLeaveDialogue.ShowAsync();
+                    }
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+                toastService.ClearAll();
+                toastService.ShowError(ex.Message.ToString());
+            }
+            finally
+            {
+                StateHasChanged();
+            }
+
+        }
+    }
 
     //For Child Grid
     //Enable cell edit on single click
@@ -273,93 +510,89 @@
         }
         catch (Exception ex)
         {
-            // throw ex;
+            throw ex;
         }
     }
-
-    // public async void CellSaveHandler(CellSaveArgs<ABscKpidetails> args)
-    // {
-    //     if (!object.Equals(args.Value, args.PreviousValue))
-    //     {
-    //         await ObjectivesDetailsDataGrid.EndEditAsync();
-    //         // get the row index using the primarykey value
-    //         // var RowIndex = await GridInstance.GetRowIndexByPrimaryKey(e.RowData.OrderID);
-    //         // // edit the selected cell using the cell index and column name
-    //         // await GridInstance.EditCell(RowIndex + 1, e.ColumnName);
-    //     }
-
-    //     //Original Data
-    //     //ObjectivesDetailsDataGrid.EndEditAsync();
-    //     ////var datainfo = ObjectivesDetailsDataGrid.CurrentViewData;
-
-    // }
-
 
     public async void CellSaveHandler(CellSaveArgs<ABscKpidetails> args)
     {
         try
         {
-            if (args.ColumnName == "IndividualTargetWeight")
+            // toastService.ShowError("Into Cell Save");
+            var batchChanges = await ObjectivesDetailsDataGrid.GetBatchChanges();
+            // toastService.ShowError("Changed Records are" + batchChanges.ChangedRecords.Count());
+            if (batchChanges.ChangedRecords.Count() > 0)
             {
-
-                List<double?> _summation = new List<double?>();
-                double sumtotal = 0;
-
-                if (!object.Equals(args.Value, args.PreviousValue))
-                {
-                    var datainfo = await ObjectivesDetailsDataGrid.GetCurrentViewRecordsAsync();
-
-                    var filteredList = datainfo.Where(x => x.BscPerspectiveTypeId == args.RowData.BscPerspectiveTypeId).ToList();
-
-                    foreach (var n in filteredList)
-                    {
-                        _summation.Add(n.IndividualTargetWeight);
-                    }
-
-                    sumtotal = _summation.Sum(x => Convert.ToInt32(x));
-
-                    double newsumtotal = (sumtotal - Convert.ToDouble(args.PreviousValue)) + Convert.ToDouble(args.Value);
-                    //toastService.ShowError("Value is " + newsumtotal);
-
-                    @if (perspweightscustomer != null && ((newsumtotal > perspweightscustomer.PerspectiveTotalWeight) || (newsumtotal < perspweightscustomer.PerspectiveTotalWeight)) && args.RowData.BscPerspectiveTypeId == 3)
-                    {
-                        isentryvalid = false;
-                        //args.Cancel = true;
-                        RegisterError = "Please ensure your set customer perspective weights equal to : " + perspweightscustomer.WeightPercentage;
-                        //toastService.ShowError("Value is " + sumtotal);
-                    }
-                    else if (perspweightsfinancial != null && ((newsumtotal > perspweightsfinancial.PerspectiveTotalWeight) || (newsumtotal < perspweightsfinancial.PerspectiveTotalWeight)) && args.RowData.BscPerspectiveTypeId == 1)
-                    {
-                        isentryvalid = false;
-                        //args.Cancel = true;
-                        RegisterError = "Please ensure your set financial perspective weights equal to : " + perspweightsfinancial.WeightPercentage;
-                        //toastService.ShowError("Value is " + sumtotal);
-                    }
-                    else if (perspweightsinternal != null && ((newsumtotal > perspweightsinternal.PerspectiveTotalWeight) || (newsumtotal < perspweightsinternal.PerspectiveTotalWeight)) && args.RowData.BscPerspectiveTypeId == 2)
-                    {
-                        isentryvalid = false;
-                        //args.Cancel = true;
-                        RegisterError = "Please ensure your set internal perspective weights equal to : " + perspweightsinternal.WeightPercentage;
-                        //toastService.ShowError("Value is " + sumtotal);
-                    }
-                    else if (perspweightslearning != null && ((newsumtotal > perspweightslearning.PerspectiveTotalWeight) || (newsumtotal < perspweightslearning.PerspectiveTotalWeight)) && args.RowData.BscPerspectiveTypeId == 4)
-                    {
-                        isentryvalid = false;
-                        //args.Cancel = true;
-                        RegisterError = "Please ensure your set learning perspective weights equal to : " + perspweightslearning.WeightPercentage;
-                        //toastService.ShowError("Value is " + sumtotal);
-                    }
-                    else
-                    {
-                        isentryvalid = true;
-                        RegisterError = string.Empty;
-                    }
-                }
+                actionbool = false;
+                // toastService.ShowError("Unsave Batch Changes");
             }
             else
             {
-
+                actionbool = true;
+                // toastService.ShowError("Saved Batch Changes");
             }
+
+            // if (args.ColumnName == "IndividualTargetWeight")
+            // {
+
+            //     List<double?> _summation = new List<double?>();
+            //     double sumtotal = 0;
+
+            //     if (!object.Equals(args.Value, args.PreviousValue))
+            //     {
+            //         var datainfo = await ObjectivesDetailsDataGrid.GetCurrentViewRecordsAsync();
+
+            //         var filteredList = datainfo.Where(x => x.BscPerspectiveTypeId == args.RowData.BscPerspectiveTypeId).ToList();
+
+            //         foreach (var n in filteredList)
+            //         {
+            //             _summation.Add(n.IndividualTargetWeight);
+            //         }
+
+            //         sumtotal = _summation.Sum(x => Convert.ToInt32(x));
+
+            //         double newsumtotal = (sumtotal - Convert.ToDouble(args.PreviousValue)) + Convert.ToDouble(args.Value);
+            //         //toastService.ShowError("Value is " + newsumtotal);
+
+            //         @if (perspweightscustomer != null && ((newsumtotal > perspweightscustomer.PerspectiveTotalWeight) || (newsumtotal < perspweightscustomer.PerspectiveTotalWeight)) && args.RowData.BscPerspectiveTypeId == 3)
+            //         {
+            //             isentryvalid = false;
+            //             //args.Cancel = true;
+            //             RegisterError = "Please ensure your set customer perspective weights equal to : " + perspweightscustomer.WeightPercentage;
+            //             //toastService.ShowError("Value is " + sumtotal);
+            //         }
+            //         else if (perspweightsfinancial != null && ((newsumtotal > perspweightsfinancial.PerspectiveTotalWeight) || (newsumtotal < perspweightsfinancial.PerspectiveTotalWeight)) && args.RowData.BscPerspectiveTypeId == 1)
+            //         {
+            //             isentryvalid = false;
+            //             //args.Cancel = true;
+            //             RegisterError = "Please ensure your set financial perspective weights equal to : " + perspweightsfinancial.WeightPercentage;
+            //             //toastService.ShowError("Value is " + sumtotal);
+            //         }
+            //         else if (perspweightsinternal != null && ((newsumtotal > perspweightsinternal.PerspectiveTotalWeight) || (newsumtotal < perspweightsinternal.PerspectiveTotalWeight)) && args.RowData.BscPerspectiveTypeId == 2)
+            //         {
+            //             isentryvalid = false;
+            //             //args.Cancel = true;
+            //             RegisterError = "Please ensure your set internal perspective weights equal to : " + perspweightsinternal.WeightPercentage;
+            //             //toastService.ShowError("Value is " + sumtotal);
+            //         }
+            //         else if (perspweightslearning != null && ((newsumtotal > perspweightslearning.PerspectiveTotalWeight) || (newsumtotal < perspweightslearning.PerspectiveTotalWeight)) && args.RowData.BscPerspectiveTypeId == 4)
+            //         {
+            //             isentryvalid = false;
+            //             //args.Cancel = true;
+            //             RegisterError = "Please ensure your set learning perspective weights equal to : " + perspweightslearning.WeightPercentage;
+            //             //toastService.ShowError("Value is " + sumtotal);
+            //         }
+            //         else
+            //         {
+            //             isentryvalid = true;
+            //             RegisterError = string.Empty;
+            //         }
+            //     }
+            // }
+            // else
+            // {
+
+            // }
 
         }
         catch (Exception ex)
@@ -368,15 +601,7 @@
         }
         finally
         {
-            if (!object.Equals(args.Value, args.PreviousValue))
-            {
-                if (ObjectivesDetailsDataGrid != null)
-                {
-                    await ObjectivesDetailsDataGrid.EndEditAsync();
-                }
-            }
-
-            //toastService.ShowError("Value is Okay");
+            
         }
     }
 
@@ -394,15 +619,15 @@
             {
                 Args.Cell.AddClass(new string[] { "financial" });
             }
-            if (Args.Data.BscPerspectiveTypeId == 2)
+            else if (Args.Data.BscPerspectiveTypeId == 2)
             {
                 Args.Cell.AddClass(new string[] { "Internal" });
             }
-            if (Args.Data.BscPerspectiveTypeId == 3)
+            else if (Args.Data.BscPerspectiveTypeId == 3)
             {
                 Args.Cell.AddClass(new string[] { "Customer" });
             }
-            if (Args.Data.BscPerspectiveTypeId == 4)
+            else if (Args.Data.BscPerspectiveTypeId == 4)
             {
                 Args.Cell.AddClass(new string[] { "Learning" });
             }

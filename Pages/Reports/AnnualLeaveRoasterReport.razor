@@ -23,9 +23,16 @@
     }
 </style>
 
-<MudOverlay @bind-Visible="@loadingspinner" DarkBackground="true" AutoClose="false" Absolute="true">
-<SfSpinner @bind-Visible="loadingspinner" Type="@Syncfusion.Blazor.Spinner.SpinnerType.Bootstrap" Size="70" Label="Page loading">
-</SfSpinner>
+<MudOverlay Visible="@loadingspinner" DarkBackground="true" Absolute="true" Style="z-index:100000;">
+    <div class="loader">
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--text" style="color:white;"></div>
+    </div>
 </MudOverlay>
 
 <ol class="breadcrumb" style="margin-top:5px;">
@@ -45,27 +52,29 @@
                 <MultiSelectFieldSettings Value="@nameof(AYears.YearId)" Text="@nameof(AYears.YearDesc)"></MultiSelectFieldSettings>
             </SfMultiSelect>
         </div>
+
         <div class="col col-md-4">
-            <p>Employee</p>
-            <SfMultiSelect @bind-Value="@InputModel.Employeeid"  Enabled="EmployeeDD" TValue="int?[]" TItem="ViewEmployeeDropDown" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" PopupHeight="350px">
-                <MultiSelectFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></MultiSelectFieldSettings>
-            </SfMultiSelect>
-        </div>
-        <div class="col col-md-3">
             <p>Department</p>
             <SfMultiSelect @bind-Value="@InputModel.DepartmentId" Enabled="DepartmentDD"
                            TValue="int?[]" TItem="ADepartment" AllowFiltering="true" Placeholder="Please select" Mode="@VisualMode.CheckBox"
                            DataSource="@DepartmentData" ShowSelectAll="true" EnableSelectionOrder="true" ShowDropDownIcon="true"
-                           FilterBarPlaceholder="Search Department" FloatLabelType="FloatLabelType.Never" PopupHeight="350px">
+                           FilterBarPlaceholder="Search Department" FloatLabelType="FloatLabelType.Never" PopupHeight="350px" PopupWidth="350px">
                 <MultiSelectFieldSettings Value="@nameof(ADepartment.DepartmentId)" Text="@nameof(ADepartment.DepartmentDescription)"></MultiSelectFieldSettings>
                 <MultiSelectEvents TValue="int?[]" TItem="ADepartment" ValueChange="OnDepartmentChange"></MultiSelectEvents>
             </SfMultiSelect>
 
         </div>
-        
-        <div class="form-group col-md-12">
-            <SfSpinner @ref="DownloadingSpinner" Label="Downloading Report Please Wait....." Size="50"></SfSpinner>
+
+        <div class="col col-md-4">
+            <p>Employee</p>
+            <SfMultiSelect @bind-Value="@InputModel.Employeeid"  Enabled="EmployeeDD" TValue="int?[]" TItem="ViewEmployeeDropDown" AllowFiltering="true" 
+            FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" ShowSelectAll="true" 
+            EnableSelectionOrder="true" ShowDropDownIcon="true" FilterBarPlaceholder="Employee" PopupHeight="350px"  PopupWidth="350px" Query="@IndicatorQuery">
+                <MultiSelectFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></MultiSelectFieldSettings>
+            </SfMultiSelect>
         </div>
+        
+        
         @if (!string.IsNullOrEmpty(InputModel.Response))
         {
             <div class="col col-md-12" style="margin-top:10px;">
@@ -91,7 +100,6 @@
 @code {
 
     private UtilitiesSearchPanel InputModel = new UtilitiesSearchPanel();
-    SfSpinner? DownloadingSpinner;
     bool Downloadreport { get; set; } = false;
     string? filename { get; set; } = null;
     List<ViewUserManagement>? UsersData { get; set; }
@@ -116,18 +124,18 @@
     public static int numberOfDays2 { get; set; } = 0;
     List<APublicHolidays>? PublicHolidaysData { get; set; }    
     public static DateTime[]? datesselectedd = null;
-    public bool EmployeeDD { get; set; }
+    public bool EmployeeDD { get; set; } = false;
     public bool DepartmentDD { get; set; }
-    public bool JobTitleDD = false;
-    Query? IndicatorQuery { get; set; }
-
+    public bool JobTitleDD;
+    public Query IndicatorQuery = new Query().Take(15);
+    List<WhereFilter> filterList = new List<WhereFilter>();
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            Credentials = await AuthService.GetUserCredentials();
             loadingspinner = true;
+            Credentials = await AuthService.GetUserCredentials();
             List<Task> t = new List<Task>();
             t.Add(Task.Run(async () =>
             {
@@ -207,12 +215,12 @@
             if (Credentials != null && (!string.IsNullOrEmpty(Credentials.UserRole) &&
             Credentials.UserRole.Contains("Administrator") || Credentials.JobTitleId == 44))
             {
-                EmployeeDD = true;
+                //EmployeeDD = true;
                 DepartmentDD = true;
             }
             else
             {
-                EmployeeDD = false;
+                //EmployeeDD = false;
                 DepartmentDD = false;
 
                 if (Credentials != null && EmployeeData != null)
@@ -223,13 +231,22 @@
                     List<int?> _departmentid = new List<int?>();
                     List<int?> _jobtitleid = new List<int?>();
 
-                    _employeeid.Add(Credentials.StaffId);
-                    _departmentid.Add(_employeedetails.DepartmentId);
-                    _jobtitleid.Add(_employeedetails.JibTitleId);
+                    if (_employeedetails != null)
+                    {
+                        _employeeid.Add(Credentials.StaffId);
+                        _departmentid.Add(_employeedetails.DepartmentId);
+                        _jobtitleid.Add(_employeedetails.JibTitleId);
 
-                    InputModel.Employeeid = _employeeid.ToArray();
-                    InputModel.DepartmentId = _departmentid.ToArray();
-                    InputModel.JobTitleId = _jobtitleid.ToArray();
+                        InputModel.Employeeid = _employeeid.ToArray();
+                        InputModel.DepartmentId = _departmentid.ToArray();
+                        InputModel.JobTitleId = _jobtitleid.ToArray();
+
+                        filterList.Add(new WhereFilter() { Field = "DepartmentId", Operator = "equal", value = _employeedetails.DepartmentId, IgnoreCase = true });
+                        var orWhere = WhereFilter.Or(filterList);
+                        IndicatorQuery = new Query().Where(orWhere);
+
+                        // toastService.ShowError("Emp Id" + Credentials.StaffId);
+                    }
                 }
             }
 
@@ -248,6 +265,7 @@
     {
         if (args.Value != null)
         {
+            EmployeeDD = true;
             JobTitleDD = true;
             IndicatorQuery = new Query();
             List<WhereFilter> filterList = new List<WhereFilter>();
@@ -349,7 +367,7 @@
 
         filename = null;
         Downloadreport = true;
-        await DownloadingSpinner.ShowAsync();
+        loadingspinner = true;
         try
         {
             if (InputModel.Year == null)
@@ -362,7 +380,7 @@
             {
                 //https://stackoverflow.com/questions/65591550/calculate-the-number-of-days-per-month-between-two-dates-in-c-sharp#:~:text=The%20DateTime%20class%20does%20a,between%20specific%20dates%20of%20interest.
                 //https://www.codeproject.com/Questions/1086883/Months-start-and-end-dates-and-no-of-days-in-each
-                
+
                 CultureInfo culture = new CultureInfo("en-US");
                 // DateTime start = new DateTime(2020, 1, 2); // 2 January 2020
                 // DateTime end = new DateTime(2020, 3, 4); // 4 March 2020
@@ -398,7 +416,7 @@
                 //Above is my method
 
                 var data = await reportservice.GetAnnualLeaveRoaster(InputModel);
-                var data1 = await reportservice.GetAnnualLeaveRoasterMonthDays(InputModel);
+                //var data1 = await reportservice.GetAnnualLeaveRoasterMonthDays(InputModel);
                 var selecteddates = await reportservice.GetSelectedDates(InputModel);
 
                 var _individualdates = selecteddates.Select(o => new { o.EmployeeId,o.YearId, o.ProposedLeaveStartDate,o.ProposedLeaveEndDate }).ToList().Distinct().ToList();
@@ -704,7 +722,7 @@
                                     {
                                         if (n.ProposedLeaveStartDate.HasValue && n.ProposedLeaveEndDate.HasValue)
                                         {
-                                            concatenateddates += n.ProposedLeaveStartDate.Value.ToString("dd/MM/yyyy") + " - " + n.ProposedLeaveEndDate.Value.ToString("dd/MM/yyyy") + ", ";
+                                            concatenateddates += n.ProposedLeaveStartDate.Value.ToString("dd-MMM-yy") + " - " + n.ProposedLeaveEndDate.Value.ToString("dd-MMM-yy") + ", ";
                                         }                                        
                                     }
                                     worksheet.Range[row, 22].Text = concatenateddates;
@@ -815,7 +833,7 @@
         }
         finally
         {
-            await DownloadingSpinner.HideAsync();
+            loadingspinner = false;
             Downloadreport = false;
             StateHasChanged();
         }

@@ -24,6 +24,7 @@
     <GridEvents CellSelected="CellSelectHandler"
                 CellSaved="CellSavedHandler"
                 OnBatchAdd="BatchAddHandler"
+                OnCellEdit="CellEditHandler"
                 TValue="EmployeeQualification">
     </GridEvents>
 
@@ -42,8 +43,12 @@
                     TextAlign="TextAlign.Justify"
                     AllowEditing="true"
                     ValidationRules="@(new ValidationRules { Required = false })"
-                    Width="80"
+                    Width="100"
                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+
+            <EditTemplate Context="InstitutionNameContext">
+                <SfTextBox Multiline=true rowspan="8" @bind-Value=@((InstitutionNameContext as EmployeeQualification).InstitutionName) Placeholder="Please Type" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+            </EditTemplate>
         </GridColumn>
         <GridForeignColumn Field=@nameof(EmployeeQualification.LevelofEducationId)
                            HeaderText="Education Level"
@@ -55,6 +60,13 @@
                            AllowFiltering="false"
                            IsFrozen="false"
                            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+
+            <EditTemplate Context="EducationContext">
+                <SfDropDownList @bind-Value=@((EducationContext as EmployeeQualification).LevelofEducationId) Enabled="true" TItem="ALevelofEducation" TValue="int?" DataSource="@LevelofEducationData" 
+                    Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" ShowClearButton="true" PopupWidth="350px">
+                    <DropDownListFieldSettings Value="@nameof(ALevelofEducation.LevelofEducationId)" Text="@nameof(ALevelofEducation.LevelofEducationDesc)"></DropDownListFieldSettings>
+                </SfDropDownList>
+            </EditTemplate>
         </GridForeignColumn>
         <GridForeignColumn Field=@nameof(EmployeeQualification.DegreeClassId)
                            HeaderText="Degree Class"
@@ -66,35 +78,56 @@
                            AllowFiltering="false"
                            IsFrozen="false"
                            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+
+            <EditTemplate Context="DegreeClassContext">
+                <SfDropDownList @bind-Value=@((DegreeClassContext as EmployeeQualification).LevelofEducationId) Enabled="true" TItem="ADegreeClass" TValue="int?" DataSource="@DegreeClassData"
+                                Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" ShowClearButton="true" PopupWidth="350px">
+                    <DropDownListFieldSettings Value="@nameof(ADegreeClass.DegreeClassId)" Text="@nameof(ADegreeClass.DegreeClassDesc)"></DropDownListFieldSettings>
+                </SfDropDownList>
+            </EditTemplate>
         </GridForeignColumn>
         <GridColumn Field=@nameof(EmployeeQualification.QualificationAttained)
                     HeaderText="Award/Qualification Attained"
-                    Width="80"
+                    Width="100"
                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+
+            <EditTemplate Context="QualificationAttainedContext">
+                <SfTextBox Multiline=true rowspan="8" @bind-Value=@((QualificationAttainedContext as EmployeeQualification).QualificationAttained) Placeholder="Please Type" FloatLabelType="FloatLabelType.Never"></SfTextBox>                
+            </EditTemplate>
+
         </GridColumn>
         <GridColumn Field=@nameof(EmployeeQualification.StartDate)
                     HeaderText="From"
                     EditType="EditType.DatePickerEdit"
-                    Format="dd/MMMM/yyyy"
+                    Format="dd-MMM-yy"
                     Type="ColumnType.Date"
-                    Width="80"
+                    Width="50"
                     AllowEditing="true"
                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+            <EditTemplate Context="FromContext">
+                <SfDatePicker @bind-Value=@((FromContext as EmployeeQualification).StartDate) Format="dd-MMM-yy" FloatLabelType="FloatLabelType.Never" AllowEdit="false"></SfDatePicker>
+            </EditTemplate>
         </GridColumn>
         <GridColumn Field=@nameof(EmployeeQualification.IsCurrent)
                     HeaderText="Current"
                     DisplayAsCheckBox="true"
-                    Width="150"
+                    Width="60"
                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+            @* <EditTemplate Context="IsCurrentContext">
+                <SfCheckBox Label="Is Alive?" TChecked="isChecked" @bind-Value=@((IsCurrentContext as EmployeeQualification).IsCurrent)></SfCheckBox>
+            </EditTemplate> *@
         </GridColumn>
         <GridColumn Field=@nameof(EmployeeQualification.EndDate)
                     HeaderText="To"
                     EditType="EditType.DatePickerEdit"
-                    Format="dd/MMMM/yyyy"
+                    Format="dd-MMM-yy"
                     Type="ColumnType.Date"
-                    Width="80"
+                    Width="50"
                     AllowEditing="true"
                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
+            <EditTemplate Context="ToContext">
+                <SfDatePicker @bind-Value=@((ToContext as EmployeeQualification).EndDate) Format="dd-MMM-yy" FloatLabelType="FloatLabelType.Never" AllowEdit="false"></SfDatePicker>
+            </EditTemplate>
         </GridColumn>
     </GridColumns>
 </SfGrid>
@@ -120,6 +153,9 @@
 
     [Parameter]
     public List<ALevelofEducation>? LevelofEducationData { get; set; }
+
+    private bool isChecked = true;
+    public int IndexValue { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -181,6 +217,47 @@
         random++;
     }
 
+    public async Task CellEditHandler(CellEditArgs<EmployeeQualification> args)
+    {
+        try
+        {
+            IndexValue = await EmployeeQualificationGrid.GetRowIndexByPrimaryKeyAsync(args.RowData.QualificationId);
+
+            if ((args.ColumnName == nameof(EmployeeQualification.EndDate)))
+            {
+                //Enable Other Institution Column
+                if (args.RowData.IsCurrent == false)
+                {
+
+                }
+                //Disable for those that are not others
+                else
+                {
+                    await EmployeeQualificationGrid.UpdateCellAsync(IndexValue, nameof(EmployeeQualification.EndDate), null);
+
+                    if(EmployeeQualificationGrid != null)
+                    {
+                        await EmployeeQualificationGrid.EndEditAsync();
+                    }
+                    
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Cannot enter the to date since you selected this qualification as current");
+                    args.Cancel = true;
+                }
+            }
+        }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {            
+            StateHasChanged();
+        }
+
+        
+
+    }
 }
 
 

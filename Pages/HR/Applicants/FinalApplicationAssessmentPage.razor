@@ -46,7 +46,20 @@
     }
 </style>
 
-<BreadcrumbPage CategoryName="Applications" PageName="Final Candidates" />
+
+<BreadCrumbPage Module="HCMIS" Submodule="FINAL CANDIDATES"/>
+
+<MudOverlay Visible="@loadingspinner" DarkBackground="true" Absolute="true" Style="z-index:100000;">
+    <div class="loader">
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--text" style="color:white;"></div>
+    </div>
+</MudOverlay>
 
 <SfGrid @ref=@AppliedForJobGrid TValue="AppliedForJobs" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
         AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true"
@@ -64,6 +77,10 @@
                 {
                     <div class="row">
                         <HCMIS.Pages.HR.Applicants.PartialPages.ApplicantHeaderPartialPage HeaderReviewData="@HeaderReviewData" ShowAptituddeTestResults=true />
+
+                        <HCMIS.Pages.HR.Applicants.PartialPages.ApplicantHeaderPartialPage HeaderReviewData="@HeaderReviewData" ContractLengthTypeData="@ContractLengthTypeData" DepartmentData="@DepartmentData" JobDescriptionData="@JobDescriptionData" JobOpeningData="@JobOpeningData" JobTitleData="@JobTitleData" JobTypeData="@JobTypeData" LevelofEducationData="@LevelofEducationData"
+                                                                                           SalaryScaleData="@SalaryScaleData" EmployeeData="@EmployeeData" NonStaffData="@NonStaffData" DistrictData="@DistrictData" ParishData="@ParishData" SubCountyData="SubCountyData" VillageData="@VillageData" ShowAptituddeTestResults=true />
+                        
                         <div class="col-md-12">
                             <SfTab>
                                 <TabItems>
@@ -77,16 +94,34 @@
                                             </div>
                                         </ContentTemplate>
                                     </TabItem>
+
                                     <TabItem>
                                         <ChildContent>
                                             <TabHeader Text="Qualifications"></TabHeader>
                                         </ChildContent>
                                         <ContentTemplate>
-                                            <div style="margin:10px; width:100%;">
-                                                @*<HCMIS.Pages.HR.Applicants.PartialPages.QualificationPartialPage QualificationData="@HeaderReviewData.NonStaff.NonStaffQualification.ToList()" FieldOfStudyData="@FieldOfStudyData"
-                                                                                                         JobDescriptionKnowledgeData="@HeaderReviewData.JobOpening.JobDescription.JobDescriptionKnowledge.ToList()"
-                                                                                                         LevelofEducationData="@LevelofEducationData" AccessToken="@AccessToken" />*@
-                                            </div>
+                                            @{
+                                                List<ApplicationNonStaffQualification> _nonstaffqualification = new List<ApplicationNonStaffQualification>();
+                                                List<ApplicationNonStaffQualification> _employeequalification = new List<ApplicationNonStaffQualification>();
+
+                                                <div style="margin:10px; width:100%;">
+                                                    @*Employee*@
+                                                    @if (HeaderReviewData != null && HeaderReviewData.Employeeid != null && HeaderReviewData.NonStaffid == null && QualificationData != null)
+                                                    {
+                                                        _employeequalification = QualificationData.Where(o => o.EmployeeId == HeaderReviewData.Employeeid).ToList();
+                                                    }
+                                                    @*NonStaff*@
+                                                    else if (HeaderReviewData != null && HeaderReviewData.NonStaffid != null && HeaderReviewData.Employeeid == null && QualificationData != null)
+                                                    {
+                                                        _nonstaffqualification = QualificationData.Where(o => o.NonStaffid == HeaderReviewData.NonStaffid).ToList();
+                                                    }
+
+                                                    <HCMIS.Pages.HR.Applicants.PartialPages.QualificationPartialPage QualificationData="_nonstaffqualification.ToList()"
+                                                                                                                     FieldOfStudyData="@FieldOfStudyData"
+                                                                                                                     LevelofEducationData="@LevelofEducationData"
+                                                                                                                     AccessToken="@AccessToken" />
+                                                </div>
+                                            }
                                         </ContentTemplate>
                                     </TabItem>
                                     <TabItem>
@@ -94,11 +129,25 @@
                                             <TabHeader Text="Work Experience"></TabHeader>
                                         </ChildContent>
                                         <ContentTemplate>
-                                            <div style="margin:10px; width:100%;">
-                                                @*<HCMIS.Pages.HR.Applicants.PartialPages.WorkExperiencePatialPage JobDescriptionWorkExperienceRequirementData="@HeaderReviewData.JobOpening.JobDescription.JobDescriptionWorkExperienceRequirement.ToList()"
-                                                                                                         JobDescriptionResponsibilityData=@HeaderReviewData.JobOpening.JobDescription.JobDescriptionResponsibility.ToList()
-                                                                                                         WorkExperienceData="@HeaderReviewData.NonStaff.NonStaffWorkExperience.ToList()" AccessToken="@AccessToken" />*@
-                                            </div>
+                                            @{
+                                                List<ApplicationNonStaffWorkExperience> _nonstaffqualification = new List<ApplicationNonStaffWorkExperience>();
+                                                List<ApplicationNonStaffWorkExperience> _employeequalification = new List<ApplicationNonStaffWorkExperience>();
+
+                                                <div style="margin:10px; width:100%;">
+                                                    @*Employee*@
+                                                    @if (HeaderReviewData != null && HeaderReviewData.Employeeid != null && HeaderReviewData.NonStaffid == null && WorkExperienceData != null)
+                                                    {
+                                                        _employeequalification = WorkExperienceData.Where(o => o.EmployeeId == HeaderReviewData.Employeeid).ToList();
+                                                    }
+                                                    @*NonStaff*@
+                                                    else if (HeaderReviewData != null && HeaderReviewData.NonStaffid != null && HeaderReviewData.Employeeid == null && WorkExperienceData != null)
+                                                    {
+                                                        _nonstaffqualification = WorkExperienceData.Where(o => o.NonStaffid == HeaderReviewData.NonStaffid).ToList();
+                                                    }
+
+                                                    <HCMIS.Pages.HR.Applicants.PartialPages.WorkExperiencePatialPage WorkExperienceData="@_nonstaffqualification.ToList()" />
+                                                </div>
+                                            }
                                         </ContentTemplate>
                                     </TabItem>
                                     <TabItem>
@@ -106,10 +155,27 @@
                                             <TabHeader Text="Skills"></TabHeader>
                                         </ChildContent>
                                         <ContentTemplate>
-                                            <div style="margin:10px; width:100%;">
-                                                <HCMIS.Pages.HR.Applicants.PartialPages.SkillsPartialPage SkillsData="@HeaderReviewData.NonStaff.NonStaffSkills.ToList()"
-                                                                                                  SkillLevelData="@SkillLevelData" AccessToken="@AccessToken" />
-                                            </div>
+                                            @{
+                                                List<NonStaffSkills> _nonstaffskills = new List<NonStaffSkills>();
+                                                // List<ApplicationNonStaffWorkExperience> _employeequalification = new List<ApplicationNonStaffWorkExperience>();
+
+                                                <div style="margin:10px; width:100%;">
+                                                    @*Employee*@
+                                                    @if (HeaderReviewData != null && HeaderReviewData.Employeeid != null && HeaderReviewData.NonStaffid == null && NonStaffSkillsData != null)
+                                                    {
+                                                        // _nonstaffskills = NonStaffSkillsData.Where(o => o.NonStaffid == HeaderReviewData.Employeeid).ToList();
+                                                    }
+                                                    @*NonStaff*@
+                                                    else if (HeaderReviewData != null && HeaderReviewData.NonStaffid != null && HeaderReviewData.Employeeid == null && NonStaffSkillsData != null)
+                                                    {
+                                                        _nonstaffskills = NonStaffSkillsData.Where(o => o.NonStaffid == HeaderReviewData.NonStaffid).ToList();
+                                                    }
+
+                                                    <HCMIS.Pages.HR.Applicants.PartialPages.SkillsPartialPage SkillsData="@_nonstaffskills.ToList()"
+                                                                                                              SkillLevelData="@SkillLevelData"
+                                                                                                              AccessToken="@AccessToken" />
+                                                </div>
+                                            }
                                         </ContentTemplate>
                                     </TabItem>
                                     <TabItem>
@@ -117,23 +183,63 @@
                                             <TabHeader Text="Languages Known"></TabHeader>
                                         </ChildContent>
                                         <ContentTemplate>
+                                            @{
+                                                List<NonStaffLanguagesKnown> _nonstafflanguages = new List<NonStaffLanguagesKnown>();
+                                                // List<ApplicationNonStaffWorkExperience> _employeequalification = new List<ApplicationNonStaffWorkExperience>();
+
+                                                <div style="margin:10px; width:100%;">
+                                                    @*Employee*@
+                                                    @if (HeaderReviewData != null && HeaderReviewData.Employeeid != null && HeaderReviewData.NonStaffid == null && NonStaffLanguagesKnownData != null)
+                                                    {
+                                                        // _nonstaffskills = NonStaffSkillsData.Where(o => o.NonStaffid == HeaderReviewData.Employeeid).ToList();
+                                                    }
+                                                    @*NonStaff*@
+                                                    else if (HeaderReviewData != null && HeaderReviewData.NonStaffid != null && HeaderReviewData.Employeeid == null && NonStaffLanguagesKnownData != null)
+                                                    {
+                                                        _nonstafflanguages = NonStaffLanguagesKnownData.Where(o => o.NonStaffid == HeaderReviewData.NonStaffid).ToList();
+                                                    }
+
+                                                    <HCMIS.Pages.HR.Applicants.PartialPages.LanguageKnownPartialPage KnownLanguageData="@_nonstafflanguages.ToList()"
+                                                                                                                     LanguageProlificData="@LanguageProlificData" LanguagesData="@LanguagesData" />
+
+                                                </div>
+                                            }
                                             <div style="margin:10px; width:100%;">
-                                                <HCMIS.Pages.HR.Applicants.PartialPages.LanguageKnownPartialPage KnownLanguageData="@HeaderReviewData.NonStaff.NonStaffLanguagesKnown.ToList()"
-                                                                                                         LanguageProlificData="@LanguageProlificData" LanguagesData="@LanguagesData" />
+                                                @*<HCMIS.Pages.HR.Applicants.PartialPages.LanguageKnownPartialPage KnownLanguageData="@HeaderReviewData.NonStaff.NonStaffLanguagesKnown.ToList()"
+                                        LanguageProlificData="@LanguageProlificData" LanguagesData="@LanguagesData" />
+                                        *@
                                             </div>
                                         </ContentTemplate>
                                     </TabItem>
+
                                     <TabItem>
                                         <ChildContent>
                                             <TabHeader Text="Referees"></TabHeader>
                                         </ChildContent>
                                         <ContentTemplate>
-                                            <div style="margin:10px; width:100%;">
-                                                @*<HCMIS.Pages.HR.Applicants.PartialPages.RefereesPartialPage JobRefereesData="@HeaderReviewData.AppliedForJobReferees.ToList()"
-                                                                                                    CountryData="@CountryData" />*@
-                                            </div>
+                                            @{
+                                                List<ApplicationAppliedForJobReferees> _nonstaffdata = new List<ApplicationAppliedForJobReferees>();
+                                                // List<ApplicationNonStaffWorkExperience> _employeequalification = new List<ApplicationNonStaffWorkExperience>();
+
+                                                <div style="margin:10px; width:100%;">
+                                                    @*Employee*@
+                                                    @if (HeaderReviewData != null && HeaderReviewData.Employeeid != null && HeaderReviewData.NonStaffid == null && NonStaffSkillsData != null)
+                                                    {
+                                                        // _nonstaffskills = NonStaffSkillsData.Where(o => o.NonStaffid == HeaderReviewData.Employeeid).ToList();
+                                                    }
+                                                    @*NonStaff*@
+                                                    else if (HeaderReviewData != null && HeaderReviewData.NonStaffid != null && HeaderReviewData.Employeeid == null && JobRefereesData != null)
+                                                    {
+                                                        _nonstaffdata = JobRefereesData.Where(o => o.NonStaffid == HeaderReviewData.NonStaffid).ToList();
+                                                    }
+
+                                                    <HCMIS.Pages.HR.Applicants.PartialPages.RefereesPartialPage CountryData="@CountryData" JobRefereesData="@_nonstaffdata.ToList()" />
+
+                                                </div>
+                                            }
                                         </ContentTemplate>
                                     </TabItem>
+
                                 </TabItems>
                             </SfTab>
                         </div>
@@ -198,14 +304,62 @@
     </GridEditSettings>
     <GridColumns>
         <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobs.AppliedForJobsId))" Visible=false IsPrimaryKey=true IsIdentity=true HeaderText="Ref Id" Width="120" AllowFiltering="true"></GridColumn>
-        @* <GridColumn Field="@(nameof(AppliedForJobs.ReferenceNumber))" HeaderText="Ref No" Width="120" AllowFiltering="true"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobs.DepartmentDescription))" HeaderText="Department" Width="120" AllowFiltering="true"></GridColumn>
+        @* <GridColumn Field="@(nameof(AppliedForJobs.AppliedForJobsId))" Visible=false IsPrimaryKey=true IsIdentity=true HeaderText="Ref Id" Width="120" AllowFiltering="true"></GridColumn>
+        <GridColumn Field="@(nameof(AppliedForJobs.JobReferenceNo))" HeaderText="Ref No" Width="120" AllowFiltering="true"></GridColumn>
+         *@
+        <GridForeignColumn Field=@nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId)
+                           HeaderText="Department"
+                           Width="60"
+                           AllowEditing="true"
+                           ForeignKeyField="@(nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId))"
+                           ForeignKeyValue="@(nameof(ViewAppliedForJobsDetails2024.DepartmentDescription))"
+                           ForeignDataSource="@AppliedforJobsDetailData" AllowFiltering="false"
+                           CustomAttributes="@(new Dictionary<string,
+                    object>(){ { "class", "e-attr1" }})">
+        </GridForeignColumn>
+
+        <GridForeignColumn Field=@nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId)
+                           HeaderText="Job Title"
+                           Width="50"
+                           AllowEditing="false"
+                           ForeignKeyField="@(nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId))"
+                           ForeignKeyValue="@(nameof(ViewAppliedForJobsDetails2024.JobTitleDescription))"
+                           ForeignDataSource="@JobTitleData"
+                           AllowFiltering="false">
+        </GridForeignColumn>
+
+        <GridForeignColumn Field=@nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId)
+                           HeaderText="Applicant"
+                           Width="50"
+                           AllowEditing="false"
+                           ForeignKeyField="@(nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId))"
+                           ForeignKeyValue="@(nameof(ViewAppliedForJobsDetails2024.FullName))"
+                           ForeignDataSource="@AppliedforJobsDetailData" AllowFiltering="false"
+                           CustomAttributes="@(new Dictionary<string,
+                    object>(){ { "class", "e-attr1" }})">
+        </GridForeignColumn>
+
+        <GridForeignColumn Field=@nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId)
+                           HeaderText="Applicant"
+                           Width="50"
+                           AllowEditing="false"
+                           ForeignKeyField="@(nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId))"
+                           ForeignKeyValue="@(nameof(ViewAppliedForJobsDetails2024.EmailAddress))"
+                           ForeignDataSource="@AppliedforJobsDetailData" AllowFiltering="false"
+                           CustomAttributes="@(new Dictionary<string,
+                    object>(){ { "class", "e-attr1" }})">
+        </GridForeignColumn>
+
+        @*
+
         <GridColumn Field="@(nameof(AppliedForJobs.JobTitleDescription))" HeaderText="Job Title" Width="120" AllowFiltering="true"></GridColumn>
         <GridColumn Field="@(nameof(AppliedForJobs.FullName))" HeaderText="Name" Width="120" AllowFiltering="true"></GridColumn>
         <GridColumn Field="@(nameof(AppliedForJobs.GenderDesc))" HeaderText="Gender" Width="120" AllowFiltering="true"></GridColumn>
         <GridColumn Field="@(nameof(AppliedForJobs.DoB))" HeaderText="Date of Birth" Width="120" AllowFiltering="true"></GridColumn>
-        <GridColumn Field="@(nameof(AppliedForJobs.EmailAddress))" HeaderText="Email" Width="120" AllowFiltering="true"></GridColumn> *@
+        <GridColumn Field="@(nameof(AppliedForJobs.EmailAddress))" HeaderText="Email" Width="120" AllowFiltering="true"></GridColumn> 
+        
+        *@
+
         <GridColumn HeaderText="Aptitudde Test">
             <GridColumns>
                 <GridColumn Field="@(nameof(AppliedForJobs.AptituddeTestPassMark))" HeaderText="Pass mark" Width="120" AllowFiltering="true"></GridColumn>
@@ -227,49 +381,281 @@
     List<ALanguages>? LanguagesData { get; set; }
     List<ALanguageProlific>? LanguageProlificData { get; set; }
     List<ASkillLevel>? SkillLevelData { get; set; }
+    List<ADepartment>? DepartmentData { get; set; }
+    List<AJobTitle>? JobTitleData { get; set; }
+    List<ViewAppliedForJobsDetails2024>? AppliedforJobsDetailData { get; set; }
+    List<ApplicationNonStaffQualification>? QualificationData { get; set; }
+    List<ApplicationAppliedForJobReferees>? JobRefereesData { get; set; }
+    List<ApplicationNonStaffQualificationAttachment>? QualificationAttachmentData { get; set; }
+    List<ApplicationNonStaffWorkExperience>? WorkExperienceData { get; set; }
+    List<NonStaffSkills>? NonStaffSkillsData { get; set; }
+    List<NonStaffLanguagesKnown>? NonStaffLanguagesKnownData { get; set; }
+    List<AContractLengthType>? ContractLengthTypeData { get; set; }
+    List<JobDescription>? JobDescriptionData { get; set; }
+    List<AJobType>? JobTypeData { get; set; }
+    List<ViewJobDescOpening2024>? JobOpeningData { get; set; }
+    List<ASalaryScale>? SalaryScaleData { get; set; }
+    List<ViewEmployeeDropDown>? EmployeeData { get; set; }
+    List<ViewNonStaffDropDown>? NonStaffData { get; set; }
+    List<ADistrict>? DistrictData { get; set; }
+    List<ViewAparish>? ParishData { get; set; }
+    List<ASubCounty>? SubCountyData { get; set; }
+    List<ViewAvillage>? VillageData { get; set; }
+
     string? AccessToken { get; set; }
     AppliedForJobsComment? CommentModel { get; set; }
     int? previousStatusId { get; set; }
     LoginResultModel? Credentials { get; set; }
+    public bool loadingspinner { get; set; } = false;
 
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
     protected override async Task OnInitializedAsync()
     {
-        await base.OnInitializedAsync();
+        try
+        {
+            loadingspinner = true;
+            await base.OnInitializedAsync();
 
-        var isAuthenticated = await AuthService.CheckAuthenticationStatus();
-        if (isAuthenticated == false)
-        {
-            navManager.NavigateTo("/LoginPage", true);
-        }
-        else
-        {
-            Credentials = await AuthService.GetUserCredentials();
-            var tasks = new List<Task>();
-            tasks.Add(Task.Run(async () =>
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
             {
-                var response = await Http.GetAsync($"NonStaff/GetRegistrationPrimartData");
+                navManager.NavigateTo("/LoginPage", true);
+            }
+            else
+            {
+                Credentials = await AuthService.GetUserCredentials();
+                var tasks = new List<Task>();
+
+                //Get Administrative Units Primary Data at once Because its too big
+                var response = await Http.GetAsync($"Employeez/GetEmployeePrimaryDataList");
                 var content = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    var _ExternalRegistrationModel = JsonSerializer.Deserialize<ExternalRegistrationModel>(content, _options);
+                    var _EmployeeRegistrationModel = JsonSerializer.Deserialize<EmployeeRegistrationModel>(content, _options);
 
-                    if (_ExternalRegistrationModel != null)
+                    if (_EmployeeRegistrationModel != null)
                     {
-                        if (_ExternalRegistrationModel.Coutry != null)
-                        {
-                            CountryData = _ExternalRegistrationModel.Coutry.OrderBy(o => o.CountryDesc).ToList();
-                        }
-                        FieldOfStudyData = _ExternalRegistrationModel.FieldOfStudy;
-                        LevelofEducationData = _ExternalRegistrationModel.LevelofEducation;
-                        SkillLevelData = _ExternalRegistrationModel.SkillLevel;
-                        LanguageProlificData = _ExternalRegistrationModel.LanguageProlific;
-                        LanguagesData = _ExternalRegistrationModel.Languages;
+                        DistrictData = _EmployeeRegistrationModel.District;
+                        SubCountyData = _EmployeeRegistrationModel.SubCounty;
+                        VillageData = _EmployeeRegistrationModel.Village;
+                        ParishData = _EmployeeRegistrationModel.Parish;
                     }
                 }
+
+                tasks.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"NonStaff/GetRegistrationPrimartData");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var _ExternalRegistrationModel = JsonSerializer.Deserialize<ExternalRegistrationModel>(content, _options);
+
+                        if (_ExternalRegistrationModel != null)
+                        {
+                            if (_ExternalRegistrationModel.Coutry != null)
+                            {
+                                CountryData = _ExternalRegistrationModel.Coutry.OrderBy(o => o.CountryDesc).ToList();
+                            }
+                            FieldOfStudyData = _ExternalRegistrationModel.FieldOfStudy;
+                            LevelofEducationData = _ExternalRegistrationModel.LevelofEducation;
+                            SkillLevelData = _ExternalRegistrationModel.SkillLevel;
+                            LanguageProlificData = _ExternalRegistrationModel.LanguageProlific;
+                            LanguagesData = _ExternalRegistrationModel.Languages;
+                        }
+                    }
+                }));
+
+                tasks.Add(Task.Run(async () =>
+                    {
+
+                        var response = await Http.GetAsync($"Utilities/GetDepartment");
+                        var content = await response.Content.ReadAsStringAsync();
+                        if (response.IsSuccessStatusCode)
+                        {
+                            DepartmentData = JsonSerializer.Deserialize<List<ADepartment>>(content, _options);
+                        }
+                    }));
+
+                tasks.Add(Task.Run(async () =>
+                  {
+
+                      var response = await Http.GetAsync($"HumanResource/GetJobTitle");
+                      var content = await response.Content.ReadAsStringAsync();
+                      if (response.IsSuccessStatusCode)
+                      {
+                          JobTitleData = JsonSerializer.Deserialize<List<AJobTitle>>(content, _options);
+                      }
+                  }));
+
+                tasks.Add(Task.Run(async () =>
+                    {
+
+                        var response = await Http.GetAsync($"HumanResource/GetAppliedForJobsDetail");
+                        var content = await response.Content.ReadAsStringAsync();
+                        if (response.IsSuccessStatusCode)
+                        {
+                            AppliedforJobsDetailData = JsonSerializer.Deserialize<List<ViewAppliedForJobsDetails2024>>(content, _options);
+                        }
+                    }));
+
+                tasks.Add(Task.Run(async () =>
+                    {
+                        var response = await Http.GetAsync($"HumanResource/GetApplicationQualification");
+                        var content = await response.Content.ReadAsStringAsync();
+                        if (response.IsSuccessStatusCode)
+                        {
+                            QualificationData = JsonSerializer.Deserialize<List<ApplicationNonStaffQualification>>(content, _options);
+                        }
+                    }));
+
+                tasks.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"HumanResource/GetApplicationJobReferees");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        JobRefereesData = JsonSerializer.Deserialize<List<ApplicationAppliedForJobReferees>>(content, _options);
+                    }
+                }));
+
+                tasks.Add(Task.Run(async () =>
+                    {
+                        var response = await Http.GetAsync($"HumanResource/GetApplicationQualificationAttachment");
+                        var content = await response.Content.ReadAsStringAsync();
+                        if (response.IsSuccessStatusCode)
+                        {
+                            QualificationAttachmentData = JsonSerializer.Deserialize<List<ApplicationNonStaffQualificationAttachment>>(content, _options);
+                        }
+                    }));
+
+                tasks.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"HumanResource/GetApplicationWorkExperience");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        WorkExperienceData = JsonSerializer.Deserialize<List<ApplicationNonStaffWorkExperience>>(content, _options);
+                    }
+                }));
+
+                tasks.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"HumanResource/GetNonStaffSkills");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        NonStaffSkillsData = JsonSerializer.Deserialize<List<NonStaffSkills>>(content, _options);
+                    }
+                }));
+
+                tasks.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"HumanResource/GetNonStaffLanguagesKnown");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        NonStaffLanguagesKnownData = JsonSerializer.Deserialize<List<NonStaffLanguagesKnown>>(content, _options);
+                    }
+                }));
+
+                tasks.Add(Task.Run(async () =>
+                  {
+
+                      var response = await Http.GetAsync($"Utilities/GetContractLengthType");
+                      var content = await response.Content.ReadAsStringAsync();
+                      if (response.IsSuccessStatusCode)
+                      {
+                          ContractLengthTypeData = JsonSerializer.Deserialize<List<AContractLengthType>>(content, _options);
+                      }
+                  }));
+
+                tasks.Add(Task.Run(async () =>
+                {
+
+                    var response = await Http.GetAsync($"HumanResource/GetJobDescription");
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        JobDescriptionData = JsonSerializer.Deserialize<List<JobDescription>>(content, _options);
+                    }
+                }));
+
+                tasks.Add(Task.Run(async () =>
+              {
+
+                  var response = await Http.GetAsync($"HumanResource/GetJobOpening");
+                  var content = await response.Content.ReadAsStringAsync();
+                  if (response.IsSuccessStatusCode)
+                  {
+                      JobOpeningData = JsonSerializer.Deserialize<List<ViewJobDescOpening2024>>(content, _options);
+                  }
+              }));
+
+                tasks.Add(Task.Run(async () =>
+                   {
+
+                       var response = await Http.GetAsync($"Utilities/GetJobType");
+                       var content = await response.Content.ReadAsStringAsync();
+                       if (response.IsSuccessStatusCode)
+                       {
+                           JobTypeData = JsonSerializer.Deserialize<List<AJobType>>(content, _options);
+                       }
+                   }));
+
+                tasks.Add(Task.Run(async () =>
+            {
+
+                var response = await Http.GetAsync($"Utilities/GetSalaryScale");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    SalaryScaleData = JsonSerializer.Deserialize<List<ASalaryScale>>(content, _options);
+                }
             }));
+
+                tasks.Add(Task.Run(async () =>
+                  {
+
+                      var response = await Http.GetAsync($"Utilities/GetContractLengthType");
+                      var content = await response.Content.ReadAsStringAsync();
+                      if (response.IsSuccessStatusCode)
+                      {
+                          ContractLengthTypeData = JsonSerializer.Deserialize<List<AContractLengthType>>(content, _options);
+                      }
+                  }));
+
+                tasks.Add(Task.Run(async () =>
+                  {
+                      var response = await Http.GetAsync($"Utilities/GetEmployeeDD");
+                      if (response.IsSuccessStatusCode)
+                      {
+                          var content = await response.Content.ReadAsStringAsync();
+                          EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(content, _options);
+                      }
+                  }));
+
+                tasks.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetNonStaffDD");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        NonStaffData = JsonSerializer.Deserialize<List<ViewNonStaffDropDown>>(content, _options);
+                    }
+                }));
+
+            }
         }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            loadingspinner = false;
+        }
+        
     }
 
     private void ApproveApplicant()
@@ -332,16 +718,19 @@
     public class FinalStageApplicationAdapter : DataAdaptor
     {
         private IJobApplications reopsitory;
-        public FinalStageApplicationAdapter(IJobApplications _reopsitory)
+        public IToastService toastService;
+        public FinalStageApplicationAdapter(IJobApplications _reopsitory, IToastService ts)
         {
             reopsitory = _reopsitory;
+            toastService = ts;
         }
         public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
         {
-            var data = await reopsitory.GetApplicationsAsync("8",null,null,null);
+            var data = await reopsitory.GetApplicationsAsync("6,8",null,null,null);
 
             IEnumerable GridData = data;
             int _count = data.Count;
+            //toastService.ShowWarning("Count is" + _count.ToString());
             if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
             {
                 // Searching

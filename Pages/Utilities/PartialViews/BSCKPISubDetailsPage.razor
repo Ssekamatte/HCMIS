@@ -1,0 +1,597 @@
+﻿@using HCMIS.Interface
+@using HCMIS.SHARED.Data;
+@using HCMIS.SHARED.Models
+@using System.Text.Json
+@using System.Collections
+@inject IToastService toastService;
+@inject HttpClient Http
+
+<style>
+    /*Wrap grouping text*/
+    .pp {
+        color: black;
+        /* background-color: #00cc00; */
+        padding: 10px;
+        margin-top: 40px;
+        word-wrap: break-word;
+    }
+
+    .e-grid .e-groupcaption {
+        overflow: visible;
+    }
+</style>
+
+
+<BreadCrumbPage Module="HCMIS" Submodule="CAPTURE SPECIFIC OBJECTIVES FORM"/>
+
+<MudOverlay Visible="@loadingspinner" DarkBackground="true" Absolute="true" Style="z-index:100000;">
+    <div class="loader">
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--text" style="color:white;"></div>
+    </div>
+</MudOverlay>
+
+
+<div class="row">
+    @if (BscPerspectiveTypeData != null && BscPerspectiveTypeId != null)
+    {
+        string _text = string.Empty;
+        var _data = BscPerspectiveTypeData.FirstOrDefault(o => o.BscPerspectiveTypeId == BscPerspectiveTypeId);
+        if (!string.IsNullOrEmpty(_data.BscPerspectiveTypeDescription))
+        {
+            _text = _data.BscPerspectiveTypeDescription;
+        }
+
+        <div class="col-md-3">
+            <p>Perspective:<span style="color:red;">*</span>  @_text </p>
+        </div>
+    }
+
+    <div class="col-md-3">
+        <p>Objective:<span style="color:red;">*</span>  @objectivetext </p>
+    </div>
+
+    <div class="col-md-3">
+        <p>Weight:<span style="color:red;">*</span> @objectiveweight %</p>
+    </div>
+
+    <div class="col-md-3">
+        <p>%Achieved:</p>
+        <p class="numbers"> @_yourprogress %</p>
+    </div>
+
+
+    @* <div class="col-md-3">
+        <p class="numbers">%Achieved:<span style="color:red;">*</span> @_yourprogress %</p>
+    </div> *@
+
+</div>
+
+<div class="col-md-12">    
+    <MudAlert Severity="Severity.Info" Elevation="3">
+        Ensure the sub objectives here do not exceed @objectiveweight % as this is your overrall weight for this KPI
+    </MudAlert>
+</div>
+
+<div class="col-md-12" style="margin-bottom:10px;">
+    @if (!string.IsNullOrEmpty(RegisterError))
+    {
+        <MudAlert Severity="Severity.Error" Elevation="3">
+            @RegisterError
+        </MudAlert>
+    }
+</div>
+<div class="col-md-12">
+    <SfGrid @ref="ObjectivesSubDetailsDataGrid" TValue="ABscKpisubDetails" 
+            Toolbar="@(new string[] {"Add"})" AllowGrouping="true" ShowColumnChooser="true" AllowTextWrap="true"
+            AllowPaging="true" AllowFiltering="false" GridLines="GridLine.Both" AllowSelection="true">
+        @* <GridGroupSettings Columns="@GroupedColumns"></GridGroupSettings> *@
+        <SfDataManager AdaptorInstance="@typeof(SubDetailsAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" CellSelectionMode="CellSelectionMode.Box" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell"></GridSelectionSettings>
+        <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
+
+        @*OnCellSave="CellSaveHandler"*@
+        <GridEvents CellSelected="PerspectiveCellSelectHandler"
+                    OnBatchAdd="BatchAddHandler"
+                    CellSaved="PerspectiveOnCellSaved"                    
+                    TValue="ABscKpisubDetails">
+        </GridEvents>
+        <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" Mode="@EditMode.Batch" ShowConfirmDialog=false NewRowPosition="NewRowPosition.Bottom">
+
+        </GridEditSettings>
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+        <GridPageSettings PageSize="20"></GridPageSettings>
+
+        <GridAggregates>
+            <GridAggregate>
+                <GridAggregateColumns>
+                    <GridAggregateColumn Field=@nameof(ABscKpisubDetails.IndividualTargetWeight) Type="Syncfusion.Blazor.Grids.AggregateType.Sum">
+                        <FooterTemplate>
+                            @{
+                                var aggregate = (context as AggregateTemplateContext);
+                                // _aggvalue = aggregate.Sum;
+                                <div>
+                                    @if (isentryvalid == true)
+                                    {
+                                        <p span style="color:Purple;">Total: @aggregate.Sum %</p>
+                                        _aggvalue = aggregate.Sum;
+                                    }
+                                    else
+                                    {
+                                        <p span style="color:red;">Total: @aggregate.Sum %</p>
+                                        // <p>You have validation errors</p>
+                                    }
+
+                                </div>
+                            }
+                        </FooterTemplate>
+                    </GridAggregateColumn>
+                </GridAggregateColumns>
+            </GridAggregate>
+        </GridAggregates>
+
+        <GridColumns>
+            @* <GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn> *@
+
+            <GridColumn Field=@nameof(ABscKpisubDetails.BsckpisubDetailsId)
+                        HeaderText="BsckpisubDetailsId"
+                        AllowEditing="false"
+                        IsPrimaryKey="true"
+                        Width="80"
+                        Visible="false"
+                        CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr3" }})">
+            </GridColumn>
+
+            <GridColumn Field=@nameof(ABscKpisubDetails.BsckpidetailsId) HeaderText="BsckpidetailsId" TextAlign="TextAlign.Right" AllowEditing="false" ValidationRules="@(new ValidationRules { Required = false })" EditType="EditType.NumericEdit" Visible=false Width="180" IsFrozen="true"></GridColumn>
+
+            <GridColumn Field=@nameof(ABscKpisubDetails.Objective)
+                        HeaderText="Objective (s)"
+                        TextAlign="TextAlign.Justify"
+                        AllowEditing="true"
+                        ValidationRules="@(new ValidationRules { Required = false })"
+                        Width="150"
+                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+                <EditTemplate Context="ObjectiveContext">
+                    <SfTextBox Multiline=true rowspan="8" @bind-Value=@((ObjectiveContext as ABscKpisubDetails).Objective) Placeholder="Please Type" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                </EditTemplate>
+            </GridColumn>
+
+            <GridColumn Field=@nameof(ABscKpisubDetails.IndividualTargetWeight)
+                        HeaderText="Individual Target Weight (%)"
+                        TextAlign="TextAlign.Justify"
+                        AllowEditing="true"
+                        ValidationRules="@(new ValidationRules { Required = false, Min = 1 , Max=Convert.ToInt32(@objectiveweight)})"
+                        EditType="EditType.NumericEdit"
+                        Format="###.##"
+                        Width="50"
+                        EditorSettings="@(new NumericEditCellParams() {Params = new Syncfusion.Blazor.Inputs.NumericTextBoxModel<object>(){ShowSpinButton=false}})"
+                        ClipMode="ClipMode.EllipsisWithTooltip"
+                        CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+            </GridColumn>
+
+            <GridForeignColumn Field=@nameof(ABscKpisubDetails.MeasurementMetricId)
+                               HeaderText="Performance/Measurement Metric"
+                               TextAlign="TextAlign.Justify"
+                               Width="60"
+                               AllowEditing="true"
+                               ValidationRules="@(new ValidationRules { Required = false})"
+                               ForeignKeyField="@(nameof(AMeasurementMetric.MeasurementMetricId))"
+                               ForeignKeyValue="@(nameof(AMeasurementMetric.MeasurementMetricDesc))"
+                               ForeignDataSource="@MeasurementUnitData"
+                               CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+            </GridForeignColumn>
+        </GridColumns>
+
+    </SfGrid>
+</div>
+
+@if (showsubmitbutton == true)
+{
+    <div style="margin-top: 10px;text-align: right;">
+        <button @onclick="@onSubmitForm" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Save</button>
+        @* <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel</button>  *@
+    </div>
+}
+
+@code {
+    [Parameter]
+    public List<ABscKpisubDetails>? targetdata { get; set; }
+    [Parameter]
+    public int Bsckpiid { get; set; }
+    [Parameter]
+    public EventCallback<List<ABscKpisubDetails>?> onscorecardtoggle { get; set; }
+    public SfGrid<ABscKpisubDetails>? ObjectivesSubDetailsDataGrid { get; set; }
+    List<ABscKpisubDetails>? datasource { get; set; }
+    [Parameter]
+    public List<ABscPerspectivesType>? BscPerspectiveTypeData { get; set; }
+    [Parameter]
+    public List<ABscPerspectivesType>? BscPerspectiveTypeDataRepeated { get; set; }
+    [Parameter]
+    public List<AMeasurementMetric>? MeasurementUnitData { get; set; }
+
+    // Syncfusion.Blazor.Grids.CaptionTemplateContext? dvn { get; set; }
+    //Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
+    int? previousBsckpiid { get; set; }
+    [Parameter]
+    public ViewABscPerspectivesDetail? perspweightsfinancial { get; set; }
+    [Parameter]
+    public ViewABscPerspectivesDetail? perspweightsinternal { get; set; }
+    [Parameter]
+    public ViewABscPerspectivesDetail? perspweightscustomer { get; set; }
+    [Parameter]
+    public ViewABscPerspectivesDetail? perspweightslearning { get; set; }
+    bool isentryvalid = true;
+    string? RegisterError { get; set; }
+    int _maximumlength = 500;
+    public int characterCount = 0;
+    string _aggvalue = string.Empty;
+    double? gsumfinancial = 0;
+    double? gsuminternal = 0;
+    double? gsumcustomer = 0;
+    double? gsumlearning = 0;
+    bool showsubmitbutton = false;
+    public bool loadingspinner { get; set; }
+    [Parameter]
+    public int selectebscid { get; set; }
+    [Parameter]
+    public static int _selectebscid { get; set; }
+    [Parameter]
+    public string objectivetext { get; set; } = string.Empty;
+    [Parameter]
+    public double? objectiveweight { get; set; }
+    [Parameter]
+    public int? BscPerspectiveTypeId { get; set; }
+    int random = -9999;
+    JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    double? _yourprogress = 0;
+    double? _pp = 0;
+    double _total = 0;
+    double? PreviousValue = 0;
+    double? NewValue = 0;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            loadingspinner = true;
+            //toastService.ShowError("selectebscid is" + selectebscid.ToString());
+            _selectebscid =  selectebscid;
+
+            var response = await Http.GetAsync($"BscKeyPerformanceIndicator/GetBscKpisubDetailsData?selectebscid={selectebscid}");
+            if (response.IsSuccessStatusCode)
+            {
+                var responseData = await response.Content.ReadAsStringAsync();
+                datasource = JsonSerializer.Deserialize<List<ABscKpisubDetails>>(responseData, _options);
+
+                //Calculate IndividualTargetWeight total on form load
+                foreach (var n in datasource)
+                {
+                    _pp += n.IndividualTargetWeight;
+                }
+
+                //Calculate % Progress on form load
+                _yourprogress = (_pp / objectiveweight) * 100;
+
+                //Hide or show save button on form load
+                if (_pp > objectiveweight)
+                {
+                    showsubmitbutton = false;                    
+                }
+                else
+                {
+                    showsubmitbutton = true;
+                }
+                //toastService.ShowError("Initialized _pp is " + _pp.ToString());
+            }
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            loadingspinner = false;
+        }
+    }
+
+    private async Task LoadClientsForSelectedGroup()
+    {
+        var response = await Http.GetAsync($"BscKeyPerformanceIndicator/GetBscKpisubDetailsData?selectebscid={selectebscid}");
+        if (response.IsSuccessStatusCode)
+        {
+            var responseData = await response.Content.ReadAsStringAsync();
+            datasource = JsonSerializer.Deserialize<List<ABscKpisubDetails>>(responseData, _options);
+            // datasource = JsonConvert.DeserializeObject<List<ABscKpisubDetails>>(responseData);
+
+            // double _total = 0;
+            foreach (var n in datasource)
+            {
+                _pp += n.IndividualTargetWeight;
+            }
+
+            toastService.ShowError("Initialized _pp is " + _pp.ToString());
+        }
+        else
+        {
+            // Handle API error
+            // You can display an error message or log the error
+        }
+    }
+
+    public async Task onSubmitForm()
+    {
+        try
+        {
+            //toastService.ShowError("You are submitting" );
+
+            if (ObjectivesSubDetailsDataGrid != null)
+            {
+                await ObjectivesSubDetailsDataGrid.EndEditAsync();
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowWarning(ex.Message.ToString());
+        }
+        finally
+        {
+            loadingspinner = false;
+            StateHasChanged();
+        }
+    }
+
+    public async void DialogCancelBtnclicked()
+    {
+        if (ObjectivesSubDetailsDataGrid != null)
+        {
+            await ObjectivesSubDetailsDataGrid.CloseEditAsync();
+        }
+    }
+
+    private async Task PerspectiveOnCellSaved(CellSaveArgs<ABscKpisubDetails> args)
+    {
+        try
+        {
+            if (args.ColumnName == "IndividualTargetWeight")
+            {
+                if (ObjectivesSubDetailsDataGrid != null)
+                {
+                    var myvar = Convert.ToDouble(args.Value) - Convert.ToDouble(args.PreviousValue);
+                    _pp += myvar;
+                    //Calculate progress for a specific objective
+                    _yourprogress = (_pp / objectiveweight) * 100;
+
+                    if (_pp > objectiveweight)
+                    {
+                        showsubmitbutton = false;
+                        isentryvalid = false;
+                        RegisterError = "Please ensure your set weights equal to : " + objectiveweight;
+                        //toastService.ClearAll();
+                        toastService.ShowError("Please ensure your set weights equal to : " + objectiveweight);
+                        args.Cancel = true;
+                    }
+                    else
+                    {
+                        showsubmitbutton = true;
+                    }
+
+
+                    // toastService.ShowError("myvar is " + myvar.ToString());
+                    // toastService.ShowError("_pp is " + _pp.ToString());
+                    // toastService.ShowError("Your progress is " + _yourprogress);
+
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message);
+        }
+        finally
+        {
+
+        }
+    }
+
+    //For Child Grid
+    //Enable cell edit on single click
+    public async Task PerspectiveCellSelectHandler(CellSelectEventArgs<ABscKpisubDetails> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await ObjectivesSubDetailsDataGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await ObjectivesSubDetailsDataGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await ObjectivesSubDetailsDataGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+    }
+
+    public void BatchAddHandler(BeforeBatchAddArgs<ABscKpisubDetails> Args)
+    {
+        Args.DefaultData.BsckpisubDetailsId = random;
+        random++;
+    }
+        
+    public class SubDetailsAdapter : DataAdaptor
+    {
+        HttpClient Http;
+        private readonly JsonSerializerOptions _options;
+        public IToastService toastService;
+        IAuthenticationService _AuthService;
+        
+        //private UserManagement _userManagement;
+        public SubDetailsAdapter(HttpClient _http, IToastService ts, IAuthenticationService authservice)
+        {
+            Http = _http;
+            _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            toastService = ts;
+            _AuthService = authservice;
+        }
+        
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<ABscKpisubDetails>();
+            try
+            {
+                int? NonstaffId = null;
+                string? AccessToken = null;
+                string? BaseUrl = null;
+                if (dataManagerRequest.Params != null && dataManagerRequest.Params.Count > 0)
+                {
+                    var val = dataManagerRequest.Params;
+                    if (val.FirstOrDefault(o => o.Key == "NonstaffId").Value != null)
+                    {
+                        NonstaffId = Convert.ToInt32(val.FirstOrDefault(o => o.Key == "NonstaffId").Value.ToString());
+                    }
+                    if (val.FirstOrDefault(o => o.Key == "AccessToken").Value != null)
+                    {
+                        AccessToken = val.FirstOrDefault(o => o.Key == "AccessToken").Value.ToString();
+                    }
+                    if (val.FirstOrDefault(o => o.Key == "BaseUrl").Value != null)
+                    {
+                        BaseUrl = val.FirstOrDefault(o => o.Key == "BaseUrl").Value.ToString();
+                    }
+                }
+
+                var response = await Http.GetAsync($"BscKeyPerformanceIndicator/GetBscKpisubDetailsData?selectebscid={_selectebscid}");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    data = JsonSerializer.Deserialize<List<ABscKpisubDetails>>(content, _options);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                toastService.ClearAll();
+                toastService.ShowError(ex.Message.ToString());
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Where != null && dataManagerRequest.Where.Count > 0)
+            {
+                // Filtering
+                GridData = DataOperations.PerformFiltering(GridData, dataManagerRequest.Where, dataManagerRequest.Where[0].Operator);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<ABscKpisubDetails>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<object> BatchUpdateAsync(DataManager dataManager, object changedRecords, object addedRecords, object deletedRecords, string primaryColumnName, string key, int? dropIndex)
+        {
+            int? NonstaffId = null;
+
+            var credentials = await _AuthService.GetUserCredentials();
+            if (credentials != null)
+            {
+                NonstaffId = credentials.StaffId;
+            }
+
+            object ReturnValue = changedRecords;
+            if (changedRecords != null)
+            {
+                ReturnValue = changedRecords;
+
+                var val = (changedRecords as List<ABscKpisubDetails>);
+                if (val != null && val.Count > 0)
+                {
+                    foreach (var item in val)
+                    {
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(item);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                        var result = await Http.PutAsync($"BscKeyPerformanceIndicator/UpdateKPISubObjective", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            toastService.ClearAll();
+                            toastService.ShowSuccess("Record was sucessfully updated");
+                        }
+                        else
+                        {
+                            toastService.ClearAll();
+                            toastService.ShowError("Ooops. Something went wrong");
+                        }
+                    }
+                }
+            }
+
+            if (addedRecords != null)
+            {
+                
+                ReturnValue = addedRecords;
+
+                var val = (addedRecords as List<ABscKpisubDetails>);
+
+                if (val != null && val.Count > 0)
+                {
+                    foreach (var item in val)
+                    {
+                        string json = Newtonsoft.Json.JsonConvert.SerializeObject(item);
+                        StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                        var result = await Http.PostAsync($"BscKeyPerformanceIndicator/CreateKPISubObjective?selectedId={_selectebscid}", httpContent);
+                        if (result.IsSuccessStatusCode)
+                        {
+                            toastService.ClearAll();
+                            toastService.ShowSuccess("Record was sucessfully added");
+                        }
+                        else
+                        {
+                            toastService.ClearAll();
+                            toastService.ShowError("Ooops. Something went wrong");
+                        }
+                    }
+                }
+            }
+
+            return ReturnValue;
+        }
+
+    }
+}

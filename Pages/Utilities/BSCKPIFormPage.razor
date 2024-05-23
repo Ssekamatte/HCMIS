@@ -107,11 +107,13 @@
         color: white;
     }
 
-    .pp {
+/*     .pp {
         color: ghostwhite;
-        background-color: #2ecc71;
+        background-color: #00cc00;
         padding: 10px;
-    }
+        margin-top: 40px;
+        text-wrap: wrap;
+    } */
 
     .disablecell {  
         background-color: #8e44ad; /*wisteria*/
@@ -172,21 +174,24 @@
     }
 </style>
 
-<ol class="breadcrumb" style="margin-top:5px;">
-    <li class="breadcrumb-item active" style="color: brown;">
-        <strong>
-            <img src="/Image/logonhcc.png" width="40" height="25"/> HCMIS
-        </strong>| FINANCIAL YEAR OBJECTIVES
-    </li>
-</ol>
+<MudOverlay Visible="@loadingspinner" DarkBackground="true" Absolute="true" Style="z-index:100000;">
+    <div class="loader">
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--text" style="color:white;"></div>
+    </div>
+</MudOverlay>
+
+<BreadCrumbPage Module="HCMIS" Submodule="TARGET SETTING"/>
 
 @{
     var Div = (new string[] { "BscPerspectiveTypeId"});
 }
 
-<SfSpinner @ref="SpinnerObj" Label="Loading Please Wait....." Size="50">
-    @*Render custom spinner component.*@
-</SfSpinner>
 
 <SfGrid @ref="@ObjectivesGrid" ID="Grid" TValue="ABscKpi" @attributes="@GridAttributes" Query="@ChildQuery" AllowPaging="false"
         AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="true" AllowExcelExport="true" AllowPdfExport="true" AllowSelection="true"
@@ -303,8 +308,6 @@
             }
         </DetailTemplate>
     </GridTemplates>
-
-   
 
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog"  Dialog="@DialogParams">
         <HeaderTemplate>
@@ -446,7 +449,7 @@
             else
             {
                 <button @onclick="@onSaveDraftForm" disabled=@IsDraftDisabled hidden=@IsHiddenDraft class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
-                <button @onclick="@onSubmitForm" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Save</button>
+                <button @onclick="@onSubmitForm" disabled=@IsSubmitDisabled class="btn btn-success" data-ripple="true" style="margin-right:10px;">Submit</button>
             }
             
             <button @onclick="@DialogCancelBtnclicked" class="btn btn-danger" data-ripple="true">Cancel</button> 
@@ -541,6 +544,7 @@
 
 
 @code {
+    public bool loadingspinner { get; set; }
     SfGrid<ABscKpidetails>? DetailsDataGrid { get; set; }
     /// <summary>
     /// Event for Toolbar click for Grid Exporting
@@ -590,7 +594,6 @@
     public bool BasicUnitDD = true;
     public bool EmployeeDD = false;
     private  ViewEmployeeDropDown? employeeno { get; set; }
-    SfSpinner? SpinnerObj;
     private Dictionary<string, object> GridAttributes { get; set; } = new Dictionary<string, object>();
     bool isFinancialYearEnabled { get; set; } = false;
     int? finyearid = null;
@@ -607,6 +610,7 @@
     private  ViewABscPerspectivesDetail? perspweightscustomer { get; set; }
     private  ViewABscPerspectivesDetail? perspweightslearning { get; set; }
     bool IsDraftDisabled;
+    bool IsSubmitDisabled;
     bool IsHiddenDraft;
 
     BSCKPIDetailsPage detailsref;
@@ -622,145 +626,158 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await base.OnInitializedAsync();
-        var isAuthenticated = await AuthService.CheckAuthenticationStatus();
-        if (isAuthenticated == false)
+        try
         {
-            navManager.NavigateTo("/LoginPage", true);
-        }
-        else
-        {
-
-            Credentials = await AuthService.GetUserCredentials();
-
-            employeeno = null;
-            perspweightsfinancial = null;
-            perspweightsinternal = null;
-            perspweightscustomer = null;
-            perspweightslearning = null;
-
-            List<Task> t = new List<Task>();
-            
-            t.Add(Task.Run(async () =>
+            loadingspinner = true;
+            await base.OnInitializedAsync();
+            var isAuthenticated = await AuthService.CheckAuthenticationStatus();
+            if (isAuthenticated == false)
             {
-                var responsebscperspective = await Http.GetAsync($"BscPerspectives/GetBscPerspectives");
-                if (responsebscperspective.IsSuccessStatusCode)
-                {
-                    var contentbscperspective = await responsebscperspective.Content.ReadAsStringAsync();
-                    BscPerspectiveData = JsonSerializer.Deserialize<List<ABscPerspectives>>(contentbscperspective, _options);
-                }
-            }));
-
-            t.Add(Task.Run(async () =>
+                navManager.NavigateTo("/LoginPage", true);
+            }
+            else
             {
-                var response = await Http.GetAsync($"Utilities/GetBSCStatus");
-                if (response.IsSuccessStatusCode)
+
+                Credentials = await AuthService.GetUserCredentials();
+
+                employeeno = null;
+                perspweightsfinancial = null;
+                perspweightsinternal = null;
+                perspweightscustomer = null;
+                perspweightslearning = null;
+
+                List<Task> t = new List<Task>();
+
+                t.Add(Task.Run(async () =>
                 {
-                    var content = await response.Content.ReadAsStringAsync();
-                    BSCStatusData = JsonSerializer.Deserialize<List<ABscstatus>>(content, _options);
-                }
-            }));
-
-            
-            // t.Add(Task.Run(async () =>
-            // {
-            //     var responsebscperspectivedetail = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicator");
-            //     if (responsebscperspectivedetail.IsSuccessStatusCode)
-            //     {
-            //         var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
-            //         BscKpiDetailData = JsonSerializer.Deserialize<List<ABscKpidetails>>(contentbscperspectivedetail, _options);
-            //     }
-            // }));
-
-            t.Add(Task.Run(async () =>
-            {
-                var responsefinyear = await Http.GetAsync($"FinancialYear/list");
-                if (responsefinyear.IsSuccessStatusCode)
-                {
-                    var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
-                    FinancialYearData = JsonSerializer.Deserialize<List<AFinancialYear>>(contentfinyear, _options);
-
-                    DateTime currentdate = DateTime.Now;
-                    string? financialyeardesc = null;
-                    if (currentdate.Month >= 6)
+                    var responsebscperspective = await Http.GetAsync($"BscPerspectives/GetBscPerspectives");
+                    if (responsebscperspective.IsSuccessStatusCode)
                     {
-                        financialyeardesc = $"{currentdate.Year}/{(currentdate.Year + 1)}";
+                        var contentbscperspective = await responsebscperspective.Content.ReadAsStringAsync();
+                        BscPerspectiveData = JsonSerializer.Deserialize<List<ABscPerspectives>>(contentbscperspective, _options);
                     }
-                    else if (currentdate.Month < 6)
+                }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetBSCStatus");
+                    if (response.IsSuccessStatusCode)
                     {
-                        financialyeardesc = $"{(currentdate.Year - 1)}/{currentdate.Year}";
+                        var content = await response.Content.ReadAsStringAsync();
+                        BSCStatusData = JsonSerializer.Deserialize<List<ABscstatus>>(content, _options);
                     }
+                }));
 
-                    var b = FinancialYearData.FirstOrDefault(o => o.FinancialYear.Trim() == financialyeardesc.Trim());
-                    if (b != null)
+
+                // t.Add(Task.Run(async () =>
+                // {
+                //     var responsebscperspectivedetail = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicator");
+                //     if (responsebscperspectivedetail.IsSuccessStatusCode)
+                //     {
+                //         var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
+                //         BscKpiDetailData = JsonSerializer.Deserialize<List<ABscKpidetails>>(contentbscperspectivedetail, _options);
+                //     }
+                // }));
+
+                t.Add(Task.Run(async () =>
+                {
+                    var responsefinyear = await Http.GetAsync($"FinancialYear/list");
+                    if (responsefinyear.IsSuccessStatusCode)
                     {
-                        finyearid = b.Id;
+                        var contentfinyear = await responsefinyear.Content.ReadAsStringAsync();
+                        FinancialYearData = JsonSerializer.Deserialize<List<AFinancialYear>>(contentfinyear, _options);
 
-                        //Load ABscPerspectivesDetail Data after getting current Financial Year ID
-                        var responsebscperspectivedetail = await Http.GetAsync($"BscPerspectives/GetBscPerspectivesDetail?YearId={finyearid}&EmployeeId={Credentials.StaffId}");
-                        if (responsebscperspectivedetail.IsSuccessStatusCode)
+                        DateTime currentdate = DateTime.Now;
+                        string? financialyeardesc = null;
+                        if (currentdate.Month >= 6)
                         {
-                            var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
-                            PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscPerspectivesDetail>>(contentbscperspectivedetail, _options);
+                            financialyeardesc = $"{currentdate.Year}/{(currentdate.Year + 1)}";
+                        }
+                        else if (currentdate.Month < 6)
+                        {
+                            financialyeardesc = $"{(currentdate.Year - 1)}/{currentdate.Year}";
+                        }
+
+                        var b = FinancialYearData.FirstOrDefault(o => o.FinancialYear.Trim() == financialyeardesc.Trim());
+                        if (b != null)
+                        {
+                            finyearid = b.Id;
+
+                            //Load ABscPerspectivesDetail Data after getting current Financial Year ID
+                            var responsebscperspectivedetail = await Http.GetAsync($"BscPerspectives/GetBscPerspectivesDetail?YearId={finyearid}&EmployeeId={Credentials.StaffId}");
+                            if (responsebscperspectivedetail.IsSuccessStatusCode)
+                            {
+                                var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
+                                PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscPerspectivesDetail>>(contentbscperspectivedetail, _options);
+                            }
                         }
                     }
-                }
-            }));
+                }));
 
-            t.Add(Task.Run(async () =>
-            {
-                var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
-                if (responsebscperspectivetype.IsSuccessStatusCode)
+                t.Add(Task.Run(async () =>
                 {
-                    var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
-                    BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesType>>(contentbscperspectivetype, _options);
-                }
-            }));
+                    var responsebscperspectivetype = await Http.GetAsync($"Utilities/BSCPerspectiveType");
+                    if (responsebscperspectivetype.IsSuccessStatusCode)
+                    {
+                        var contentbscperspectivetype = await responsebscperspectivetype.Content.ReadAsStringAsync();
+                        BscPerspectiveTypeData = JsonSerializer.Deserialize<List<ABscPerspectivesType>>(contentbscperspectivetype, _options);
+                    }
+                }));
 
-            t.Add(Task.Run(async () =>
-            {
-                var responsedepartment = await Http.GetAsync($"Utilities/GetDepartment");
-                if (responsedepartment.IsSuccessStatusCode)
+                t.Add(Task.Run(async () =>
                 {
-                    var contentdepartment = await responsedepartment.Content.ReadAsStringAsync();
-                    DepartmentsData = JsonSerializer.Deserialize<List<ADepartment>>(contentdepartment, _options);
-                }
-            }));
+                    var responsedepartment = await Http.GetAsync($"Utilities/GetDepartment");
+                    if (responsedepartment.IsSuccessStatusCode)
+                    {
+                        var contentdepartment = await responsedepartment.Content.ReadAsStringAsync();
+                        DepartmentsData = JsonSerializer.Deserialize<List<ADepartment>>(contentdepartment, _options);
+                    }
+                }));
 
-            t.Add(Task.Run(async () =>
-            {
-                var responsemetric = await Http.GetAsync($"Utilities/GetMeasurementMetric");
-                if (responsemetric.IsSuccessStatusCode)
+                t.Add(Task.Run(async () =>
                 {
-                    var contentmetric = await responsemetric.Content.ReadAsStringAsync();
-                    MeasurementUnitData = JsonSerializer.Deserialize<List<AMeasurementMetric>>(contentmetric, _options);
-                    //.Where(o=>o.ArchivedRecord==false)
-                }
-            }));
+                    var responsemetric = await Http.GetAsync($"Utilities/GetMeasurementMetric");
+                    if (responsemetric.IsSuccessStatusCode)
+                    {
+                        var contentmetric = await responsemetric.Content.ReadAsStringAsync();
+                        MeasurementUnitData = JsonSerializer.Deserialize<List<AMeasurementMetric>>(contentmetric, _options);
+                        //.Where(o=>o.ArchivedRecord==false)
+                    }
+                }));
 
-            t.Add(Task.Run(async () =>
-            {
-                var responseemployee = await Http.GetAsync($"Utilities/GetEmployeeDD");
-                if (responseemployee.IsSuccessStatusCode)
+                t.Add(Task.Run(async () =>
                 {
-                    var contentemployee = await responseemployee.Content.ReadAsStringAsync();
-                    EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(contentemployee, _options);
-                }
-            }));
+                    var responseemployee = await Http.GetAsync($"Utilities/GetEmployeeDD");
+                    if (responseemployee.IsSuccessStatusCode)
+                    {
+                        var contentemployee = await responseemployee.Content.ReadAsStringAsync();
+                        EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(contentemployee, _options);
+                    }
+                }));
 
-            t.Add(Task.Run(async () =>
-            {
-                var responsebscperspectivetyperepeated = await Http.GetAsync($"Utilities/BSCPerspectiveTypeRepeat");
-                if (responsebscperspectivetyperepeated.IsSuccessStatusCode)
+                t.Add(Task.Run(async () =>
                 {
-                    var contentbscperspectivetyperepeated = await responsebscperspectivetyperepeated.Content.ReadAsStringAsync();
-                    BscPerspectiveTypeDataRepeated = JsonSerializer.Deserialize<List<ABscPerspectivesType>>(contentbscperspectivetyperepeated, _options);
-                }
-            }));
+                    var responsebscperspectivetyperepeated = await Http.GetAsync($"Utilities/BSCPerspectiveTypeRepeat");
+                    if (responsebscperspectivetyperepeated.IsSuccessStatusCode)
+                    {
+                        var contentbscperspectivetyperepeated = await responsebscperspectivetyperepeated.Content.ReadAsStringAsync();
+                        BscPerspectiveTypeDataRepeated = JsonSerializer.Deserialize<List<ABscPerspectivesType>>(contentbscperspectivetyperepeated, _options);
+                    }
+                }));
 
-            Task _t = Task.WhenAll(t);
-            await _t;
+                Task _t = Task.WhenAll(t);
+                await _t;
+            }
         }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            loadingspinner = false;
+        }
+
     }
 
     private void ToggleKpidetails(List<ABscKpidetails>? TargetChange)
@@ -828,6 +845,13 @@
     {
         try
         {
+            IsDraftDisabled = true;
+
+            if(detailsref != null)
+            {
+                await detailsref.savedetail();
+            }
+
             if (ObjectivesGrid != null)
             {
                 await LoadingDialogue.ShowAsync();
@@ -838,7 +862,7 @@
                 {
                     await DetailsDataGrid.EndEditAsync();
                 }
-                
+
                 await ObjectivesGrid.EndEditAsync();
 
                 //await detailsref.DetailsDataGrid.EndEditAsync();
@@ -853,6 +877,7 @@
         }
         finally
         {
+            IsDraftDisabled = false;
             await LoadingDialogue.HideAsync();
             StateHasChanged();
         }
@@ -862,11 +887,18 @@
     {
         try
         {
+            IsSubmitDisabled = true;
+
             if (ObjectivesGrid != null)
             {
-                if (detailsref != null && detailsref.ObjectivesDetailsDataGrid != null)
+                // if (detailsref != null && detailsref.ObjectivesDetailsDataGrid != null)
+                // {
+                //     await detailsref.ObjectivesDetailsDataGrid.EndEditAsync();
+                // }
+
+                if (detailsref != null)
                 {
-                    await detailsref.ObjectivesDetailsDataGrid.EndEditAsync();
+                    await detailsref.savedetail();
                 }
 
                 if (PerspectivesDetailData != null)
@@ -986,7 +1018,6 @@
 
                     }
 
-
                     //Learning
                     else if (perspweightslearning != null && (learningtotalscore > perspweightslearning.PerspectiveTotalWeight))
                     {
@@ -1004,6 +1035,12 @@
                     else
                     {
                         await LoadingDialogue.ShowAsync();
+
+                        // if (detailsref != null)
+                        // {
+                        //     await detailsref.savedetail();
+                        // }
+
                         await ObjectivesGrid.EndEditAsync();
                     }
                 }
@@ -1017,6 +1054,7 @@
         }
         finally
         {
+            IsSubmitDisabled = false;
             await LoadingDialogue.HideAsync();
             StateHasChanged();
         }
@@ -1238,14 +1276,14 @@
 
     public async void LoadHandler()
     {
-        SpinnerObj.ShowAsync();
+        loadingspinner = true; 
         GridAttributes.Add("disable", "yes");
     }
 
     public async void DataBound()
     {
         GridAttributes["disable"] = "no";
-        await SpinnerObj.HideAsync();
+        loadingspinner = false;
 
         //Check if there are records arleady and only allow editing
         if(ObjectivesGrid != null && ObjectivesGrid.CurrentViewData.Count() > 0)

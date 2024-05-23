@@ -81,6 +81,8 @@ using HCMIS.Data.AutoLogOut;
 using ProtoBuf.Meta;
 using dymaptic.GeoBlazor.Core.Model;
 using dymaptic.GeoBlazor.Core;
+using static HCMIS.Pages.HR.Applicants.AptitudeTestsResultsPage;
+using static HCMIS.Pages.Utilities.PartialViews.BSCKPISubDetailsPage;
 
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -152,6 +154,7 @@ builder.Services.AddScoped<NonStaffQualificationAdapter>();
 builder.Services.AddScoped<NonStaffWorkExperienceAdapter>();
 builder.Services.AddScoped<NonStaffSkillsAdapter>();
 builder.Services.AddScoped<NonStaffLanguagesKnownAdapter>();
+builder.Services.AddScoped<SubDetailsAdapter>();
 //builder.Services.AddScoped<EmployeeRecordAdapter>();
 
 //builder.Services.AddScoped<PreviousCaseAdapter>();
@@ -191,6 +194,7 @@ builder.Services.AddScoped<LoginLogAdapter>();
 builder.Services.AddScoped<RefereesAdapter>();
 builder.Services.AddScoped<MyApplicationsAdapter>();
 builder.Services.AddScoped<ReviewedApplicationAdapter>();
+builder.Services.AddScoped<AptituddeTestResultAdapter>();
 
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IReportService, ReportService>();

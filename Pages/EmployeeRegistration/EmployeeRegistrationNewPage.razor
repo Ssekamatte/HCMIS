@@ -1,7 +1,7 @@
 ﻿@page "/EmployeeRegistrationNewPage"
 
 @using HCMIS.Pages.EmployeeRegistration.PartialViews
-@using HCMIS.SHARED.DTO
+
 @using HCMIS.SHARED.Data
 @using HCMIS.SHARED
 @using HCMIS.Data
@@ -75,16 +75,27 @@
         display: none;
     }
 
+        /*hide the Default Grid spinner */
+    .e-grid .e-spinner-pane {
+        display: none;
+    }
 </style>
 
-<MudOverlay @bind-Visible="@loadingspinner" DarkBackground="true" AutoClose="false" Absolute="true">
-    <SfSpinner @bind-Visible="loadingspinner" Type="@Syncfusion.Blazor.Spinner.SpinnerType.Bootstrap" Size="70" Label="Page loading">
-    </SfSpinner>
+<MudOverlay Visible="@loadingspinner" DarkBackground="true" Absolute="true" Style="z-index:100000;">
+    <div class="loader">
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--text" style="color:white;"></div>
+    </div>
 </MudOverlay>
 
 <BreadCrumbPage Module="HCMIS" Submodule="EMPLOYEE REGISTRATION"/>
 
-<div class="form-row">
+<div class="row">
     <div class="col-md-12">
         <SfAccordion ExpandMode="ExpandMode.Single">
             <AccordionItems>
@@ -93,27 +104,32 @@
                     <ContentTemplate>
                         <div style="padding:10px;">
                             <EditForm Model="@SearchModel" OnValidSubmit="@SearchRecords">
-                                <div class="form-row">
-                                    <div class="col-md-6">
-                                        <p>Employee</p>  
+                                <div class="row">
+                                    <div class="col-md-2">
+                                            <p>Employee:</p>
+                                        </div>
+                                        
+                                        <div class="col-md-7">
+                                            <SfMultiSelect @bind-Value="@SearchModel.Employeeid" TValue="int?[]" TItem="ViewEmployeeDropDown" 
+                                            AllowFiltering="true" Placeholder="Please select" 
+                                            Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" 
+                                            ShowSelectAll="true" 
+                                            EnableSelectionOrder="true" 
+                                            ShowDropDownIcon="true" 
+                                            FilterBarPlaceholder="Type to search" 
+                                            FloatLabelType="FloatLabelType.Never" 
+                                            PopupHeight="350px"
+                                            FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                <MultiSelectFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></MultiSelectFieldSettings>       
+                                                <MultiSelectEvents TValue="int?[]" TItem="ViewEmployeeDropDown" OnValueRemove="@OnValueRemove" OnValueSelect="OnValueSelecthandler"></MultiSelectEvents>
+                                            </SfMultiSelect>
+                                        </div>
 
-                                        <SfMultiSelect @bind-Value="@SearchModel.Employeeid" TValue="int?[]" TItem="ViewEmployeeDropDown" 
-                                        AllowFiltering="true" Placeholder="Please select" 
-                                        Mode="@VisualMode.CheckBox" DataSource="@EmployeeData" 
-                                        ShowSelectAll="true" 
-                                        EnableSelectionOrder="true" 
-                                        ShowDropDownIcon="true" 
-                                        FilterBarPlaceholder="Search Employee" 
-                                        FloatLabelType="FloatLabelType.Never" 
-                                        PopupHeight="350px"
-                                        FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                            <MultiSelectFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)" Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)"></MultiSelectFieldSettings>                                         
-                                        </SfMultiSelect>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <button @onclick="@SearchRecords" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Search</button>
-                                        <button @onclick="@ClearSearchBtnClick" class="btn btn-danger" data-ripple="true" style="margin-right:10px;">Clear Search</button>
-                                    </div>
+                                        <div class="col-md-3">
+                                            @*<button @onclick="@SearchRecords" class="btn btn-success" data-ripple="true" style="margin-right:10px;">Search</button>*@
+                                            <button @onclick="@ClearSearchBtnClick" class="btn btn-danger" data-ripple="true" style="margin-right:10px;">Clear</button>
+                                        </div>
+
                                     <div class="col-md-12">
                                         <DataAnnotationsValidator />
                                         <ValidationSummary/>
@@ -129,10 +145,8 @@
     </div>
 </div>
 
-
-<SfSpinner @ref="SpinnerObj" Label="Loading Please Wait....." Size="50">
-    @*Render custom spinner component.*@
-</SfSpinner>
+@* <SfSpinner @ref="SpinnerObj" Label="Loading Please Wait....." Size="50">
+</SfSpinner> *@
 
 <SfGrid @ref="EmployeeModelGrid" TValue="Employee"  @attributes="@GridAttributes" ID="GridMain" Query="@mainQuery"
         Toolbar="@ToolbarMenu" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
@@ -195,7 +209,7 @@
                                       </div>
                                       <div class="col-md-4">
                                            <p>Date of Birth <span style="color:red;">*</span></p>
-                                           <SfDatePicker @bind-Value="@(EmployeeReviewData.DoB)" Format="dd/MM/yyyy" FloatLabelType="FloatLabelType.Never" Max='@MaxDate'>
+                                           <SfDatePicker @bind-Value="@(EmployeeReviewData.DoB)" Format="dd-MMM-yy" FloatLabelType="FloatLabelType.Never" Max='@MaxDate'  AllowEdit="false">
                                                 <DatePickerEvents TValue="DateTime?" ValueChange="OnDOBChange"></DatePickerEvents>
                                                 @if(isdobvalid == false)
                                                 {
@@ -509,12 +523,13 @@
                             </div>
                             <div class="col-md-3">
                                  <p  style="margin-bottom:29px;">Identification</p>
-                                  <SfDropDownList @bind-Value="@(EmployeeReviewData.IdentificationTypeId)" Enabled="true" TItem="AIdentificationType" TValue="int?" DataSource="@IdentificationTypeData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true">
+                                  <SfDropDownList @bind-Value="@(EmployeeReviewData.IdentificationTypeId)" Enabled="true" TItem="AIdentificationType" TValue="int?" DataSource="@IdentificationTypeData" Placeholder="Please Select"
+                                  FloatLabelType="FloatLabelType.Never" AllowFiltering="true" PopupWidth="350px">
                                    <DropDownListFieldSettings Value="@nameof(AIdentificationType.IdentificationTypeId)" Text="@nameof(AIdentificationType.IdentificationTypeDesc)"></DropDownListFieldSettings>
                                   </SfDropDownList>                                 
                             </div>
                             <div class="col-md-3">
-                                    <p> Identification Number (e.g NIN, Driving Permint, Passport)<span style="color:red;">*</span></p>
+                                    <p> Identification Number (e.g NIN, Driving Permit, Passport)<span style="color:red;">*</span></p>
                                     <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.NationalIdentificationNumber" CssClass="form-control" FloatLabelType="FloatLabelType.Never">
                                     @if(identificationnumbererrorbool == false)
                                     {
@@ -527,7 +542,7 @@
                             @if(!string.IsNullOrEmpty(imageSource))
                                       {
                                           <div class="col-md-4">
-                                           <p>Official Phone Number <span style="color:red;">*</span></p>
+                                           <p>Alternative Phone Number</p>
                                             <SfDropDownList TValue="int?" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" TItem="ACountry" Width="50px" DataSource="CountryData" PopupWidth="300px" @bind-Value="@(EmployeeReviewData.OtherCoutryId)">
                                                         <DropDownListTemplates TItem="ACountry">
                                                             <ItemTemplate Context="itemcontext">
@@ -548,7 +563,7 @@
                                                         <DropDownListEvents TValue="int?" TItem="ACountry" ValueChange="officialchangeHandler"></DropDownListEvents>
                                             </SfDropDownList>
 
-                                            <SfMaskedTextBox Mask="@maskvalue" @bind-Value="@(EmployeeReviewData.OfficialPhoneNumber)" Width="150px" Enabled="@(EmployeeReviewData.OtherCoutryId == null ? false : true)"></SfMaskedTextBox>
+                                            <SfMaskedTextBox Mask="@maskvaluealt" @bind-Value="@(EmployeeReviewData.OfficialPhoneNumber)" Width="150px" Enabled="@(EmployeeReviewData.OtherCoutryId == null ? false : true)"></SfMaskedTextBox>
 
                                       </div>
                                       }
@@ -611,13 +626,33 @@
 
                             <div class="col-md-3">
                                     <p  style="margin-bottom:29px;">Date of Appointment <span style="color:red;">*</span></p>
-                                    <SfDatePicker @bind-Value="@(EmployeeReviewData.DateJoined)" Format="dd/MMMM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>
-
+                                    <SfDatePicker @bind-Value="@(EmployeeReviewData.DateJoined)" Format="dd-MMM-yy" FloatLabelType="FloatLabelType.Never" AllowEdit="false"></SfDatePicker>
                             </div>
 
-                             <div class="col-md-3">
+                            <div class="col-md-3">
+                                    <p  style="margin-bottom:29px;">Date of Contract Start <span style="color:red;">*</span></p>
+                                    <SfDatePicker @bind-Value="@(EmployeeReviewData.ContractStartDate)" Format="dd-MMM-yy" FloatLabelType="FloatLabelType.Never" AllowEdit="false"></SfDatePicker>                                 
+                            </div>
+
+                            <div class="col-md-3">
                                     <p  style="margin-bottom:29px;">Date of Contract Expiry <span style="color:red;">*</span></p>
-                                    <SfDatePicker @bind-Value="@(EmployeeReviewData.ContractEndDate)" Format="dd/MMMM/yyyy" FloatLabelType="FloatLabelType.Never"></SfDatePicker>                                 
+                                    <SfDatePicker @bind-Value="@(EmployeeReviewData.ContractEndDate)" Format="dd-MMM-yy" FloatLabelType="FloatLabelType.Never" AllowEdit="false"></SfDatePicker>                                 
+                            </div>
+
+
+                            @if((EmployeeReviewData.ContractEndDate < EmployeeReviewData.DateJoined)
+                            || (EmployeeReviewData.ContractEndDate < EmployeeReviewData.ContractStartDate))
+                            {
+                                <div class="col-md-12;margin-top:10px;">
+                                    <p style="background-color:red;color:whitesmoke;margin-top: 10px;">The contract expiry date should not be before the date of appointment or the date of contract start</p>
+                                </div>
+                            }
+
+                            <div class="col-md-3">
+                                    <p  style="margin-bottom:29px;">Group <span style="color:red;">*</span></p>
+                                    <SfDropDownList @bind-Value="@(EmployeeReviewData.TargetTeamId)" Enabled="true" TItem="TrainingATargetTeam" TValue="int?" DataSource="@TrainingTargetData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                        <DropDownListFieldSettings Value="@nameof(TrainingATargetTeam.Id)" Text="@nameof(TrainingATargetTeam.TargetTeam)"></DropDownListFieldSettings>
+                                    </SfDropDownList>
                             </div>
 
                             <div class="col-md-3">
@@ -626,7 +661,8 @@
                                         <DropDownListFieldSettings Value="@nameof(ABank.BankId)" Text="@nameof(ABank.BankDesc)"></DropDownListFieldSettings>
                                     </SfDropDownList>
 
-                            </div>
+                            </div>                            
+
                             <div class="col-md-3">
                                     <p>Bank Branch<span style="color:red;">*</span></p>
                                     <SfTextBox Type="Syncfusion.Blazor.Inputs.InputType.Text" @bind-Value="@EmployeeReviewData.BankBranch" CssClass="form-control" FloatLabelType="FloatLabelType.Never"></SfTextBox>
@@ -638,36 +674,41 @@
 
                             </div>
 
-                            <div class="col-md-12" style="margin-top:10px;">
-                                <p class="alert alert-danger"><b>Biometric Employee ID</b></p>
-                            </div>
                             <div class="col-md-12">
-                                <p  style="margin-bottom:29px;">Enter Employee ID from Attendance System</p>
-                                <SfNumericTextBox  TValue="int?" @bind-Value="@(EmployeeReviewData.BiometricEmployeeid)" Enabled="true" Placeholder="Enter Number" Format="N0" Min="1" FloatLabelType="FloatLabelType.Never">
-                                </SfNumericTextBox>
-                            </div>
+                                <div class="col-md-6" style="margin-top:10px;">
+                                    <p class="alert alert-danger"><b>Biometric Employee ID</b></p>
 
-                            @if(_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
-                            {
-                                <div class="col-md-12" style="margin-top:10px;">
-                                    <p class="alert alert-danger"><b>Separation of Duty (To be used where necessary)</b></p>
+                                    <p  style="margin-bottom:29px;">Enter Employee ID from Attendance System</p>
+                                        <SfNumericTextBox  TValue="int?" @bind-Value="@(EmployeeReviewData.BiometricEmployeeid)" Enabled="true" Placeholder="Enter Number" Format="N0" Min="1" FloatLabelType="FloatLabelType.Never">
+                                        </SfNumericTextBox>
                                 </div>
-                                <div class="col-md-12">
+                                
+
+                                @if(_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
+                                {
+                                    <div class="col-md-6" style="margin-top:10px;">
+                                        <p class="alert alert-danger"><b>Separation of Duty (To be used where necessary)</b></p>
+
                                         <p  style="margin-bottom:29px;">Separtion of Duty (Reason)</p>
-                                        <SfDropDownList @bind-Value="@(EmployeeReviewData.DutyReasonId)" Enabled="true" TItem="ASeparationofDuty" TValue="int?" DataSource="@DutyReasonData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
-                                            <DropDownListFieldSettings Value="@nameof(ASeparationofDuty.DutyReasonId)" Text="@nameof(ASeparationofDuty.DutyReason)"></DropDownListFieldSettings>
-                                        </SfDropDownList>
+                                            <SfDropDownList @bind-Value="@(EmployeeReviewData.DutyReasonId)" Enabled="true" TItem="ASeparationofDuty" TValue="int?" DataSource="@DutyReasonData" Placeholder="Please Select" FloatLabelType="FloatLabelType.Never" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                                <DropDownListFieldSettings Value="@nameof(ASeparationofDuty.DutyReasonId)" Text="@nameof(ASeparationofDuty.DutyReason)"></DropDownListFieldSettings>
+                                            </SfDropDownList>
 
-                                </div>
-                            }                            
+                                    </div>                                    
+                                }
+                            </div>
+                            
+
+                                                        
                     </div>
             }
         </Template>
         <FooterTemplate>  
             @if (SaveButtons == false)
             {
-                    <button type="button" class="btn btn-success" @onclick="@onSubmitForm">Save Record</button>
-                    <button type="button" class="btn btn-danger" @onclick="@DialogCancelBtnclicked">Cancel</button>
+                <button @onclick="@onSaveDraftForm" class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
+                <button type="button" class="btn btn-success" @onclick="@onSubmitForm">Save Record</button>
+                <button type="button" class="btn btn-danger" @onclick="@DialogCancelBtnclicked">Cancel</button>
             }  
         </FooterTemplate>
     </GridEditSettings>
@@ -724,7 +765,7 @@
         <GridForeignColumn 
             Field=@nameof(Employee.DepartmentId) 
             HeaderText="DEPARTMENT" 
-            Width="80" 
+            Width="60" 
             ForeignKeyField="@(nameof(ADepartment.DepartmentId))" 
             ForeignKeyValue="@(nameof(ADepartment.DepartmentDescription))" 
             ForeignDataSource="@DepartmentData"  
@@ -734,13 +775,24 @@
 
         <GridColumn Field=@nameof(Employee.DateJoined)
                         HeaderText="DATE JOINED"
-                        Format="dd/MMMM/yyyy"
+                        Format="dd-MMM-yy"
                         TextAlign="TextAlign.Justify"
-                        Width="60"
+                        Width="50"
                         ClipMode="ClipMode.EllipsisWithTooltip"
-                        Type="ColumnType.Date"
+                        Type="Syncfusion.Blazor.Grids.ColumnType.Date"
                         CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
         </GridColumn>
+
+        <GridForeignColumn 
+            Field=@nameof(Employee.RecordStatusId) 
+            HeaderText="STATUS" 
+            Width="50" 
+            ForeignKeyField="@(nameof(ARecordStatus.RecordStatusId))" 
+            ForeignKeyValue="@(nameof(ARecordStatus.RecordStatusDescription))" 
+            ForeignDataSource="@RecordStatusData"  
+            CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})"
+            FilterSettings="@(new FilterSettings{ Operator = Operator.Contains })">
+        </GridForeignColumn>
 
         @*<GridColumn 
             Field = "@(nameof(Employee.FirstName) + "." + nameof(Employee.LastName))" 
@@ -843,7 +895,7 @@
                                 <table class="table">
                                     <tr>
                                         <th>Date Joined </th>
-                                        <td>@RowDetails?.DateJoined?.ToString("dd/MM/yyyy")</td>
+                                        <td>@RowDetails?.DateJoined?.ToString("dd-MMM-yy")</td>
                                     </tr>
                                     <tr>
                                         <th>Department </th>
@@ -880,6 +932,7 @@
     List<ViewEmployeeDropDown>? EmployeeData { get; set; }
     List<ARelationship>? ARelationshipData { get; set; }
     List<ADegreeClass>? DegreeClassData { get; set; }
+    List<ARecordStatus>? RecordStatusData { get; set; }
     List<AIdentificationType>? IdentificationTypeData { get; set; }
     List<ABank>? BankData { get; set; }
     EmployeeRegistrationModel inputmodel { get; set; } = new EmployeeRegistrationModel();
@@ -946,6 +999,7 @@
     EmployeeQualificationsPage EmployeeQualificationref;
     Syncfusion.Blazor.Grids.Action _previous { get; set; }
     public string maskvalue { get; set; } = "000 000 000 0";
+    public string maskvaluealt { get; set; } = "000 000 000 0";
     bool isdobvalid = true;
     bool officialemailaddresserrorbool = false;
     bool identificationnumbererrorbool = false;
@@ -953,14 +1007,19 @@
     //Link: https://learn.microsoft.com/en-us/aspnet/core/blazor/images?view=aspnetcore-8.0
     private string? imageSource = $"Image/flags/1x1/";
     public bool loadingspinner { get; set; }
+    public List<int?> selectedItemData = new List<int?>();
+    List<TrainingATargetTeam>? TrainingTargetData { get; set; }
 
     #endregion Declarationsto
 
     private List<object> ToolbarMenu = new List<object>()
      {
             new ItemModel() { Text = "Add Employee", PrefixIcon = "e-add", Id = "GridMain_add"}
+            //,new ItemModel() { Type = ItemType.Input, Template = title, Align = ItemAlign.Right }
             //,new ItemModel(){ Text = "Edit Employee", PrefixIcon= "e-edit", Id="GridMain_edit"}
     };
+
+    // private static RenderFragment title = @<Searchtext></Searchtext>;  
 
     protected override async Task OnInitializedAsync()
     {
@@ -971,21 +1030,34 @@
             List<Task> t = new List<Task>();
             RowDetails = null;
 
-            //Get Administrative Units Primary Data at once Because its too big
-            var response = await Http.GetAsync($"Employeez/GetEmployeePrimaryDataList");
-            var content = await response.Content.ReadAsStringAsync();
-            if (response.IsSuccessStatusCode)
+            t.Add(Task.Run(async () =>
             {
-                var _EmployeeRegistrationModel = JsonSerializer.Deserialize<EmployeeRegistrationModel>(content, _options);
-
-                if (_EmployeeRegistrationModel != null)
+                //Get Administrative Units Primary Data at once Because its too big
+                var response = await Http.GetAsync($"Employeez/GetEmployeePrimaryDataList");
+                var content = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
                 {
-                    DistrictData = _EmployeeRegistrationModel.District;
-                    SubCountyData = _EmployeeRegistrationModel.SubCounty;
-                    VillageData = _EmployeeRegistrationModel.Village;
-                    ParishData = _EmployeeRegistrationModel.Parish;
+                    var _EmployeeRegistrationModel = JsonSerializer.Deserialize<EmployeeRegistrationModel>(content, _options);
+
+                    if (_EmployeeRegistrationModel != null)
+                    {
+                        DistrictData = _EmployeeRegistrationModel.District;
+                        SubCountyData = _EmployeeRegistrationModel.SubCounty;
+                        VillageData = _EmployeeRegistrationModel.Village;
+                        ParishData = _EmployeeRegistrationModel.Parish;
+                    }
                 }
-            }
+            }));
+
+            t.Add(Task.Run(async () =>
+                {
+                    var responsetarget = await Http.GetAsync($"Utilities/GetTargetTeam");
+                    if (responsetarget.IsSuccessStatusCode)
+                    {
+                        var contenttarget = await responsetarget.Content.ReadAsStringAsync();
+                        TrainingTargetData = JsonSerializer.Deserialize<List<TrainingATargetTeam>>(contenttarget, _options);
+                    }
+                }));
 
             t.Add(Task.Run(async () =>
                 {
@@ -1004,6 +1076,16 @@
                 {
                     var contentemployeegender = await responsegender.Content.ReadAsStringAsync();
                     GenderData = JsonSerializer.Deserialize<List<AGender>>(contentemployeegender, _options);
+                }
+            }));
+
+            t.Add(Task.Run(async () =>
+            {
+                var response = await Http.GetAsync($"Utilities/GetRecordStatus");
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    RecordStatusData = JsonSerializer.Deserialize<List<ARecordStatus>>(content, _options);
                 }
             }));
 
@@ -1179,8 +1261,42 @@
         {
             RegisterError = $"Error: {ex.Message}";
         }
+        finally
+        {
+            loadingspinner = false;
+        }
     }
 
+    public void OnValueSelecthandler(SelectEventArgs<ViewEmployeeDropDown> e)
+    {
+        // toastService.ShowSuccess("Into value select" + e.ItemData.Employeeid);
+        selectedItemData.Add(e.ItemData.Employeeid);
+        // toastService.ShowSuccess("Into value select" + selectedItemData);
+
+        mainQuery = new Query();
+
+        SearchModel.Employeeid = selectedItemData.ToArray();
+
+        mainQuery.AddParams("Employeeid", string.Join(",", SearchModel.Employeeid));
+    }
+
+    public void OnValueRemove(RemoveEventArgs <ViewEmployeeDropDown> e)
+    {
+        // toastService.ShowSuccess("Into value remove" + e.ItemData.Employeeid);
+
+        int? foundValue = selectedItemData.FirstOrDefault(item => item == e.ItemData.Employeeid);
+        // toastService.ShowSuccess("Found Value is " + foundValue);
+
+        if(foundValue != null)
+        {
+            // toastService.ShowSuccess("Found Value is not null now" + foundValue);
+            selectedItemData.Remove(foundValue);
+        }
+        mainQuery = new Query();
+
+        SearchModel.Employeeid = selectedItemData.ToArray();
+        mainQuery.AddParams("Employeeid", string.Join(",", SearchModel.Employeeid));
+    }
 
     protected async Task OnDOBChange(ChangedEventArgs<DateTime?> value)
     {
@@ -1278,22 +1394,22 @@
     {
         if(args.ItemData != null)
         {
-            maskvalue = null;
+            maskvaluealt = null;
             if (!string.IsNullOrEmpty(args.ItemData.CountryCode))
             {
                 foreach (var item in args.ItemData.CountryCode.Trim())
                 {
                     if (item != '-')
                     {
-                        maskvalue += $@"\\{item}";
+                        maskvaluealt += $@"\\{item}";
                     }
                 }
-                maskvalue += " 000 000 000";
+                maskvaluealt += " 000 000 000";
             }
         }
         else
         {
-            maskvalue = "000 000 000 000";
+            maskvaluealt = "000 000 000 000";
         }
 
     }
@@ -1404,249 +1520,311 @@
         mainQuery = new Query();
     }
 
+
+    public async Task onSaveDraftForm()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(EmployeeReviewData.FirstName))
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please fill in Employee First Name before saving this record.");
+            }
+            else if (string.IsNullOrEmpty(EmployeeReviewData.LastName))
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please fill in Employee Last Name before saving this record.");
+            }
+            else
+            {
+                if (EmployeeModelGrid != null)
+                {
+                    loadingspinner = true;
+                    EmployeeReviewData.RecordStatusId = 4; // A Draft
+                    if(EmployeeModelGrid != null)
+                    {
+                        await EmployeeModelGrid.EndEditAsync();
+                    }                
+                }
+            }            
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError(ex.Message.ToString());
+        }
+        finally
+        {
+            loadingspinner = false;
+            StateHasChanged();
+        }
+    }
+
     public async Task onSubmitForm()
     {
         try
         {
             string _NationalIdentificationNumber = string.Empty;
             if(EmployeeData != null && EmployeeReviewData != null && !string.IsNullOrEmpty(EmployeeReviewData.NationalIdentificationNumber))
-            {
+            {                
                 _NationalIdentificationNumber = EmployeeReviewData.NationalIdentificationNumber.Trim().ToLower();
                 var _biometricid = EmployeeData.FirstOrDefault(o=>o.BiometricEmployeeid == EmployeeReviewData.BiometricEmployeeid);
-            
-                            var countdata = EmployeeListData?.FirstOrDefault(o => o.NationalIdentificationNumber?.Trim().ToLower()== _NationalIdentificationNumber);
 
-            if (string.IsNullOrEmpty(EmployeeReviewData.FirstName))
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please fill in Employee First Name before saving this record.");
+                var countdata = EmployeeListData?.FirstOrDefault(o => o.NationalIdentificationNumber?.Trim().ToLower()== _NationalIdentificationNumber);
 
-            }
-            else if (string.IsNullOrEmpty(EmployeeReviewData.LastName))
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please fill in Employee Last Name before saving this record.");
-
-            }
-            else if (EmployeeReviewData.GenderId == null)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please select the gender.");
-
-            }
-            else if (EmployeeReviewData.DoB == null)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please enter the Date of Birth.");
-
-            }
-
-            else if(isdobvalid == false)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Date of birth is invalid. 18 Years and above is required");
-            }
-
-            else if (EmployeeReviewData.MaritalStatusId == null)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please select the marital status.");
-
-            }
-            else if (EmployeeReviewData.MobileNumber == null)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please enter the mobile number.");
-
-            }
-            else if (EmployeeReviewData.NationalityId == null)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please select the employee nationality of before saving this record.");
-
-            }
-            else if (EmployeeReviewData.PlaceofResidenceDistrictId == null)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please select the Employee District of Residence before saving this record.");
-
-            }
-            else if (EmployeeReviewData.PlaceofResidenceSubCountyId == null)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please select the Employee SubCounty of Residence before saving this record.");
-
-            }
-            else if (EmployeeReviewData.PlaceofResidenceParishId == null)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please select the Employee Parish of Residence before saving this record.");
-
-            }
-
-            else if (string.IsNullOrEmpty(EmployeeReviewData.EmployeFatherName))
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please fill in Employee Father's Name before saving this record.");
-
-            }
-            else if (string.IsNullOrEmpty(EmployeeReviewData.EmployeMotherName))
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please fill in Employee Mother's Name before saving this record.");
-
-            }
-            else if (string.IsNullOrEmpty(EmployeeReviewData.NextofKinName))
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please fill in Employee Next of Kin's Name before saving this record.");
-
-            }
-            else if (string.IsNullOrEmpty(EmployeeReviewData.NextofKinTelephoneNumber))
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please fill in  Next of Kin Phone Number  before saving this record.");
-
-            }
-            else if (EmployeeReviewData.NextofKinRelationShipId == null)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please select the Next of Kin Relationship with Employee before saving this record.");
-
-            }
-            else if (string.IsNullOrEmpty(EmployeeReviewData.ContactPersonName))
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please fill in Employee Contact Person's Name before saving this record.");
-
-            }
-            else if (string.IsNullOrEmpty(EmployeeReviewData.NextofKinTelephoneNumber))
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please fill in  Contact Person Phone Number  before saving this record.");
-
-            }
-            else if (EmployeeReviewData.ContactPersonRelationShipId == null)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please select the Contact Person Relationship with Employee before saving this record.");
-
-            }
-            else if (string.IsNullOrEmpty(EmployeeReviewData.EmailAddress))
-            {
-                officialemailaddresserrorbool = true;
-                toastService.ClearAll();
-                toastService.ShowWarning("Please provide the official email address.");
-
-            }
-            else if (!string.IsNullOrEmpty(EmployeeReviewData.EmailAddress))
-            {
-                officialemailaddresserrorbool = false;
-            }
-            else if (!string.IsNullOrEmpty(EmployeeReviewData.EmailAddress) &&
-            IsValid(EmployeeReviewData.EmailAddress) == false)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please enter a valid email address.");
-
-            }
-
-            else if (string.IsNullOrEmpty(EmployeeReviewData.NationalIdentificationNumber))
-            {
-                identificationnumbererrorbool = true;
-                toastService.ClearAll();
-                toastService.ShowWarning("Please enter the Identification Number (e.g NIN, Driving Permint, Passport).");
-            }
-            else if (!string.IsNullOrEmpty(EmployeeReviewData.NationalIdentificationNumber))
-            {
-                identificationnumbererrorbool = false;
-            }
-            else if (EmployeeReviewData.DepartmentId == null)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please select the department.");
-
-            }
-
-            else if (EmployeeReviewData.JobDescriptionId == null)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please select the designation.");
-
-            }
-
-
-            else if (EmployeeReviewData.ContractDurationId == null)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please select the contract type.");
-
-            }
-
-
-            else if (EmployeeReviewData.DateJoined == null)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please enter the Date of Appointment.");
-
-            }
-
-            else if (EmployeeReviewData.ContractEndDate == null)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Please enter the date of end of contract.");
-
-            }
-            //New Record
-            else if(countdata != null && EmployeeReviewData.NationalIdentificationNumber != null && _previous == Syncfusion.Blazor.Grids.Action.Add)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("This employee with the Identification Number (e.g NIN, Driving Permint, Passport) " + EmployeeReviewData.NationalIdentificationNumber.Trim() + "  has arleady been registered in the system as " + countdata.FirstName + " " + countdata.MiddleName + " " + countdata.LastName + ". Record Not Saved");
-            }
-            //Edit Existing Record
-            else if ((countdata != null && countdata.Employeeid != EmployeeReviewData.Employeeid) && EmployeeReviewData.NationalIdentificationNumber != null && _previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("This employee with the Identification Number (e.g NIN, Driving Permint, Passport) " + EmployeeReviewData.NationalIdentificationNumber.Trim() + "  has arleady been registered in the system as " + countdata.FirstName + " " + countdata.MiddleName + " " + countdata.LastName + ". Record Not Saved");
-            }
-            //New Record
-            else if(_biometricid != null && EmployeeReviewData.BiometricEmployeeid != null && _previous == Syncfusion.Blazor.Grids.Action.Add)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Biometric ID " +_biometricid.BiometricEmployeeid+ " is arleady registered with " + _biometricid.EmployeeDetails);
-            }
-            //Edit Existing Record
-            else if((_biometricid != null && _biometricid.Employeeid != EmployeeReviewData.Employeeid) && EmployeeReviewData.BiometricEmployeeid != null && _previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
-            {
-                toastService.ClearAll();
-                toastService.ShowWarning("Biometric ID " +_biometricid.BiometricEmployeeid+ " is arleady registered with " + _biometricid.EmployeeDetails);
-            }
-
-            else
-            {
-                await LoadingDialogue.ShowAsync();
-
-                if (EmployeeModelGrid != null)
+                if (string.IsNullOrEmpty(EmployeeReviewData.FirstName))
                 {
-                    if (EmployeeSpouseref != null && EmployeeSpouseref.AEmployeeSpouseGrid != null)
-                    {
-                        await EmployeeSpouseref.AEmployeeSpouseGrid.EndEditAsync();
-                    }
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please fill in Employee First Name before saving this record.");
 
-                    if (EmployeeChildrenref != null && EmployeeChildrenref.AEmployeeChildrenGrid != null)
-                    {
-                        await EmployeeChildrenref.AEmployeeChildrenGrid.EndEditAsync();
-                    }
-
-                    if (EmployeeQualificationref != null && EmployeeQualificationref.EmployeeQualificationGrid != null)
-                    {
-                        await EmployeeQualificationref.EmployeeQualificationGrid.EndEditAsync();
-                    }
-                    await EmployeeModelGrid.EndEditAsync();
                 }
-            }
-            
-            
+                else if (string.IsNullOrEmpty(EmployeeReviewData.LastName))
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please fill in Employee Last Name before saving this record.");
+
+                }
+                else if (EmployeeReviewData.GenderId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the gender.");
+
+                }
+                else if (EmployeeReviewData.DoB == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please enter the Date of Birth.");
+
+                }
+
+                else if(isdobvalid == false)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Date of birth is invalid. 18 Years and above is required");
+                }
+
+                else if (EmployeeReviewData.MaritalStatusId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the marital status.");
+
+                }
+                else if (EmployeeReviewData.MobileNumber == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please enter the mobile number.");
+
+                }
+                else if (EmployeeReviewData.NationalityId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the employee nationality of before saving this record.");
+
+                }
+                else if (EmployeeReviewData.PlaceofResidenceDistrictId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the Employee District of Residence before saving this record.");
+
+                }
+                else if (EmployeeReviewData.PlaceofResidenceSubCountyId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the Employee SubCounty of Residence before saving this record.");
+
+                }
+                else if (EmployeeReviewData.PlaceofResidenceParishId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the Employee Parish of Residence before saving this record.");
+
+                }
+
+                else if (string.IsNullOrEmpty(EmployeeReviewData.EmployeFatherName))
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please fill in Employee Father's Name before saving this record.");
+
+                }
+                else if (string.IsNullOrEmpty(EmployeeReviewData.EmployeMotherName))
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please fill in Employee Mother's Name before saving this record.");
+
+                }
+                else if (string.IsNullOrEmpty(EmployeeReviewData.NextofKinName))
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please fill in Employee Next of Kin's Name before saving this record.");
+
+                }
+                else if (string.IsNullOrEmpty(EmployeeReviewData.NextofKinTelephoneNumber))
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please fill in  Next of Kin Phone Number  before saving this record.");
+
+                }
+                else if (EmployeeReviewData.NextofKinRelationShipId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the Next of Kin Relationship with Employee before saving this record.");
+
+                }
+                else if (string.IsNullOrEmpty(EmployeeReviewData.ContactPersonName))
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please fill in Employee Contact Person's Name before saving this record.");
+
+                }
+                else if (string.IsNullOrEmpty(EmployeeReviewData.NextofKinTelephoneNumber))
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please fill in  Contact Person Phone Number  before saving this record.");
+
+                }
+                else if (EmployeeReviewData.ContactPersonRelationShipId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the Contact Person Relationship with Employee before saving this record.");
+
+                }
+
+                else if (string.IsNullOrEmpty(EmployeeReviewData.EmailAddress))
+                {
+                    //officialemailaddresserrorbool = true;
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please provide the official email address.");
+
+                }
+                // else if (!string.IsNullOrEmpty(EmployeeReviewData.EmailAddress))
+                // {
+                //     officialemailaddresserrorbool = false;
+                // }
+
+                else if (!string.IsNullOrEmpty(EmployeeReviewData.EmailAddress) &&                
+                IsValid(EmployeeReviewData.EmailAddress) == false)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please enter a valid email address.");
+
+                }
+
+                else if (string.IsNullOrEmpty(EmployeeReviewData.NationalIdentificationNumber))
+                {
+                    //identificationnumbererrorbool = true;
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please enter the Identification Number (e.g NIN, Driving Permint, Passport).");
+                }
+
+                // else if (!string.IsNullOrEmpty(EmployeeReviewData.NationalIdentificationNumber))
+                // {
+                //     identificationnumbererrorbool = false;
+                // }
+
+                else if (EmployeeReviewData.DepartmentId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the department.");
+                }
+
+                else if (EmployeeReviewData.JobDescriptionId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the designation.");
+                }
+
+                else if (EmployeeReviewData.ContractDurationId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the contract type.");
+                }
+
+                else if (EmployeeReviewData.DateJoined == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please enter the Date of Appointment.");
+                }
+
+                else if (EmployeeReviewData.ContractStartDate == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please enter the Date of Contract Start.");
+                }
+
+                else if (EmployeeReviewData.ContractEndDate == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please enter the date of end of contract.");
+                }
+
+                // else if (EmployeeReviewData.ContractEndDate < EmployeeReviewData.DateJoined)
+                else if ((EmployeeReviewData.ContractEndDate < EmployeeReviewData.DateJoined)
+                || (EmployeeReviewData.ContractEndDate < EmployeeReviewData.ContractStartDate))
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("The contract expiry date should not be before the date of appointment");
+                }
+
+                else if (EmployeeReviewData.TargetTeamId == null)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Please select the group the employee belongs to.");
+                }
+
+                //New Record
+                else if(countdata != null && EmployeeReviewData.NationalIdentificationNumber != null && _previous == Syncfusion.Blazor.Grids.Action.Add)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("This employee with the Identification Number (e.g NIN, Driving Permint, Passport) " + EmployeeReviewData.NationalIdentificationNumber.Trim() + "  has arleady been registered in the system as " + countdata.FirstName + " " + countdata.MiddleName + " " + countdata.LastName + ". Record Not Saved");
+                }
+
+                //Edit Existing Record
+                else if ((countdata != null && countdata.Employeeid != EmployeeReviewData.Employeeid) && EmployeeReviewData.NationalIdentificationNumber != null && _previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("This employee with the Identification Number (e.g NIN, Driving Permint, Passport) " + EmployeeReviewData.NationalIdentificationNumber.Trim() + "  has arleady been registered in the system as " + countdata.FirstName + " " + countdata.MiddleName + " " + countdata.LastName + ". Record Not Saved");
+                }
+
+                //New Record
+                else if(_biometricid != null && EmployeeReviewData.BiometricEmployeeid != null && _previous == Syncfusion.Blazor.Grids.Action.Add)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Biometric ID " +_biometricid.BiometricEmployeeid+ " is arleady registered with " + _biometricid.EmployeeDetails);
+                }
+
+                //Edit Existing Record
+                else if((_biometricid != null && _biometricid.Employeeid != EmployeeReviewData.Employeeid) && EmployeeReviewData.BiometricEmployeeid != null && _previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
+                {
+                    toastService.ClearAll();
+                    toastService.ShowWarning("Biometric ID " +_biometricid.BiometricEmployeeid+ " is arleady registered with " + _biometricid.EmployeeDetails);
+                }
+
+                else
+                {
+                    //toastService.ShowWarning("You are now saving this record2.");
+                    await LoadingDialogue.ShowAsync();
+                    EmployeeReviewData.RecordStatusId = 1; // Active
+
+                    if (EmployeeModelGrid != null)
+                    {
+                        if (EmployeeSpouseref != null && EmployeeSpouseref.AEmployeeSpouseGrid != null)
+                        {
+                            await EmployeeSpouseref.AEmployeeSpouseGrid.EndEditAsync();
+                        }
+
+                        if (EmployeeChildrenref != null && EmployeeChildrenref.AEmployeeChildrenGrid != null)
+                        {
+                            await EmployeeChildrenref.AEmployeeChildrenGrid.EndEditAsync();
+                        }
+
+                        if (EmployeeQualificationref != null && EmployeeQualificationref.EmployeeQualificationGrid != null)
+                        {
+                            await EmployeeQualificationref.EmployeeQualificationGrid.EndEditAsync();
+                        }
+                        await EmployeeModelGrid.EndEditAsync();
+                    }
+                }
+
+
             }
         }
         catch (Exception ex)
@@ -1755,7 +1933,7 @@
                     {
                         await EmployeeModelGrid.Refresh();
                     }
-                    
+
                     toastService.ClearAll();
                     toastService.ShowSuccess("Record Successfully Deleted");
                 }
@@ -1795,7 +1973,7 @@
 
     public async void LoadHandler()
     {
-        SpinnerObj.ShowAsync();
+        loadingspinner = true;
         GridAttributes.Add("disable", "yes");
 
         if (Credentials != null && !string.IsNullOrEmpty(Credentials.UserRole) &&
@@ -1812,7 +1990,6 @@
     {
         loadingspinner = false;
         GridAttributes["disable"] = "no";
-        SpinnerObj.HideAsync();
     }
 
     public void OnDepartmentChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, ADepartment> args)
@@ -1873,8 +2050,8 @@
                     }
                 }
 
-                //
-                //
+                // toastService.ShowSuccess("Into read async" + Employeeid);
+                
                 //var response = await Http.GetAsync($"Employeez/GetEmployeeList");
                 var response = await Http.GetAsync($"Employeez/GetEmployeeList?Employeeid={Employeeid}");
                 var content = await response.Content.ReadAsStringAsync();
@@ -2094,6 +2271,7 @@
 
                 //Clear the mask value and Image string
                 maskvalue = null;
+                maskvaluealt = null;
                 ImageString = null;
                 //args.RowData.EmployeeHeader = new Employee();
             }

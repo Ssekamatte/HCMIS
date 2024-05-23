@@ -165,7 +165,17 @@
             else if (showCompetionPage == true)
             {
                 <div class="col-md-12">
-                    <p class="alert alert-success" style="padding:10px;">Your Test has been successfully Submitted. Please click <a href="/MyApplicationsPage">here</a> to the application's page</p>
+                    @{
+                        if(appliedjobdata != null)
+                        {
+                            var _appliedjobdata = appliedjobdata.FirstOrDefault(o => o.AppliedForJobsId == Convert.ToInt32(AppliedForJobsId));
+                            if (_appliedjobdata != null)
+                            {
+                                <p class="alert alert-success" style="padding:10px;">Your Test has been successfully Submitted.You have scored @_appliedjobdata.AptituddeTestApplicantScore %.  Please click <a href="/MyApplicationsPage">here</a> to go to the application's page</p>
+                            }
+
+                        }                                            
+                    }                    
                 </div>
             }
         </div>
@@ -264,6 +274,7 @@ else
     private string timerColor { get; set; } = "black";
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     LoginResultModel? Credentials { get; set; }
+    List<ViewAppliedForJobsDetails2024>? appliedjobdata { get; set; }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -685,6 +696,14 @@ else
         var result = await TestRepo.SaveTestDone(TestDoneModel);
         if (result != null && result.TestDoneHeader != null)
         {
+            //Get Appliedforjobsdata            
+            var response = await http.GetAsync($"HumanResource/GetAppliedForJobsDetail?ShortListId={null}&DepartmentId={null}&ReferenceNumber={null}&JobTitle={null}&StartDate={null}&StartDate={null}&ApplicationStatusId={null}");
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode)
+            {
+                appliedjobdata = JsonSerializer.Deserialize<List<ViewAppliedForJobsDetails2024>>(content, _options);
+            }
+
             TestDoneModel = result;
             showCompetionPage = true;
             showQuestions = false;

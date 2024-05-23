@@ -30,5 +30,9 @@ namespace HCMIS.Interface
         Task<List<ViewTimeandAttendance>> GetBiometricRawData(UtilitiesSearchPanel SearchModel);
         Task<List<ViewTimeandAttendanceSummary>> GetAttendanceData(UtilitiesSearchPanel SearchModel);
         Task<List<AttendanceDaysAccounting>> GetAttendanceDaysAccountingData(UtilitiesSearchPanel SearchModel);
+
+        Task<List<ViewJobDescOpening2024>> GetJobOpeningReport(UtilitiesSearchPanel SearchModel);
+
+        Task<List<AptituddeTestHeader>> GetAptituddeTestHeaderReport(UtilitiesSearchPanel SearchModel);
     }
 }

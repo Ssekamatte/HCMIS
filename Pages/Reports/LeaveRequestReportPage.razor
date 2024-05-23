@@ -22,10 +22,18 @@
     }
 </style>
 
-<MudOverlay @bind-Visible="@loadingspinner" DarkBackground="true" AutoClose="false" Absolute="true">
-    <SfSpinner @bind-Visible="loadingspinner" Type="@Syncfusion.Blazor.Spinner.SpinnerType.Bootstrap" Size="70" Label="Page loading">
-    </SfSpinner>
+<MudOverlay Visible="@loadingspinner" DarkBackground="true" Absolute="true" Style="z-index:100000;">
+    <div class="loader">
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--text" style="color:white;"></div>
+    </div>
 </MudOverlay>
+
 
 <BreadCrumbPage Module="HCMIS" Submodule="LEAVE REQUEST REPORT - EMPLOYEE" />
 
@@ -77,10 +85,10 @@
             <p>Commencement Date Range<span style="color:red;">*</span></p>
             <div class="row">
                 <div class="col-md-5" style="margin-left: -30px;">
-                    <SfDatePicker @bind-Value="@(InputModel.StartDate)" AllowEdit="false" Enabled="true" Placeholder="Start Date" FloatLabelType="FloatLabelType.Never" Format="dd/MM/yyyy" Width="150px"></SfDatePicker>
+                    <SfDatePicker @bind-Value="@(InputModel.StartDate)" AllowEdit="false" Enabled="true" Placeholder="Start Date" FloatLabelType="FloatLabelType.Never" Format="dd-MMM-yy" Width="150px"></SfDatePicker>
                 </div>
                 <div class="col-md-5" style="margin-left: 30px;">
-                    <SfDatePicker @bind-Value="@(InputModel.EndDate)" AllowEdit="false" Enabled="true" Placeholder="End Date" FloatLabelType="FloatLabelType.Never" Format="dd/MM/yyyy" Width="150px"></SfDatePicker>
+                    <SfDatePicker @bind-Value="@(InputModel.EndDate)" AllowEdit="false" Enabled="true" Placeholder="End Date" FloatLabelType="FloatLabelType.Never" Format="dd-MMM-yy" Width="150px"></SfDatePicker>
                 </div>
             </div>
         </div>
@@ -126,7 +134,7 @@
     private string? NHCCLogoName { get; set; }
     LoginResultModel? Credentials { get; set; }
     JsonSerializerOptions _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-    public bool EmployeeDD { get; set; }
+    public bool EmployeeDD { get; set; } = false;
     public bool DepartmentDD { get; set; }
     public bool JobTitleDD = false;
     Query? IndicatorQuery { get; set; }
@@ -248,12 +256,12 @@
                 if (Credentials != null && (!string.IsNullOrEmpty(Credentials.UserRole) &&
                 Credentials.UserRole.Contains("Administrator") || Credentials.JobTitleId == 44))
                 {
-                    EmployeeDD = true;
+                    //EmployeeDD = true;
                     DepartmentDD = true;
                 }
                 else
                 {
-                    EmployeeDD = false;
+                    //EmployeeDD = false;
                     DepartmentDD = false;
 
                     if (Credentials != null && EmployeeData != null)
@@ -264,13 +272,17 @@
                         List<int?> _departmentid = new List<int?>();
                         List<int?> _jobtitleid = new List<int?>();
 
-                        _employeeid.Add(Credentials.StaffId);
-                        _departmentid.Add(_employeedetails.DepartmentId);
-                        _jobtitleid.Add(_employeedetails.JibTitleId);
+                        if (_employeedetails != null)
+                        {
+                            _employeeid.Add(Credentials.StaffId);
+                            _departmentid.Add(_employeedetails.DepartmentId);
+                            _jobtitleid.Add(_employeedetails.JibTitleId);
 
-                        InputModel.Employeeid = _employeeid.ToArray();
-                        InputModel.DepartmentId = _departmentid.ToArray();
-                        InputModel.JobTitleId = _jobtitleid.ToArray();
+                            InputModel.Employeeid = _employeeid.ToArray();
+                            InputModel.DepartmentId = _departmentid.ToArray();
+                            InputModel.JobTitleId = _jobtitleid.ToArray();
+                        }
+                        
                     }
                 }
             }
@@ -592,14 +604,14 @@
 
                         if (item.CommencementDate.HasValue)
                         {
-                            worksheet.Range[row, 6].Text = item.CommencementDate.Value.ToString("dd/MM/yyyy");
+                            worksheet.Range[row, 6].Text = item.CommencementDate.Value.ToString("dd-MMM-yy");
                             worksheet.Range[row, 6].VerticalAlignment = ExcelVAlign.VAlignTop;
                             worksheet.Range[row, 6].HorizontalAlignment = ExcelHAlign.HAlignRight;
                         }
 
                         if (item.EndDate.HasValue)
                         {
-                            worksheet.Range[row, 7].Text = item.EndDate.Value.ToString("dd/MM/yyyy");
+                            worksheet.Range[row, 7].Text = item.EndDate.Value.ToString("dd-MMM-yy");
                             worksheet.Range[row, 7].VerticalAlignment = ExcelVAlign.VAlignTop;
                             worksheet.Range[row, 7].HorizontalAlignment = ExcelHAlign.HAlignRight;
                         }
@@ -638,7 +650,7 @@
 
                         if (item.SupervisorApprovalDate.HasValue)
                         {
-                            worksheet.Range[row, 11].Text = item.SupervisorApprovalDate.Value.ToString("dd/MM/yyyy  hh:mm:ss");
+                            worksheet.Range[row, 11].Text = item.SupervisorApprovalDate.Value.ToString("dd-MMM-yy  hh:mm:ss");
                             worksheet.Range[row, 11].VerticalAlignment = ExcelVAlign.VAlignTop;
                             worksheet.Range[row, 11].HorizontalAlignment = ExcelHAlign.HAlignLeft;
                         }
@@ -657,7 +669,7 @@
 
                         if (item.HodapprovalDate.HasValue)
                         {
-                            worksheet.Range[row, 13].Text = item.HodapprovalDate.Value.ToString("dd/MM/yyyy  hh:mm:ss");
+                            worksheet.Range[row, 13].Text = item.HodapprovalDate.Value.ToString("dd-MMM-yy  hh:mm:ss");
                             worksheet.Range[row, 13].VerticalAlignment = ExcelVAlign.VAlignTop;
                             worksheet.Range[row, 13].HorizontalAlignment = ExcelHAlign.HAlignRight;
                         }
@@ -676,7 +688,7 @@
 
                         if (item.ChroapprovalDate.HasValue)
                         {
-                            worksheet.Range[row, 15].Text = item.ChroapprovalDate.Value.ToString("dd/MM/yyyy  hh:mm:ss");
+                            worksheet.Range[row, 15].Text = item.ChroapprovalDate.Value.ToString("dd-MMM-yy  hh:mm:ss");
                             worksheet.Range[row, 15].VerticalAlignment = ExcelVAlign.VAlignTop;
                             worksheet.Range[row, 15].HorizontalAlignment = ExcelHAlign.HAlignRight;
                         }
