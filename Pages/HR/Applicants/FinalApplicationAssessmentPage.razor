@@ -63,7 +63,7 @@
 
 <SfGrid @ref=@AppliedForJobGrid TValue="AppliedForJobs" AllowGrouping="false" ShowColumnChooser="true" AllowTextWrap="true"
         AllowPaging="true" AllowFiltering="true" GridLines="GridLine.Both" AllowSelection="true"
-        Toolbar="@(new string[] {"Edit","Update","Cancel","ColumnChooser"})">
+        Toolbar="@(new string[] {"Update","Cancel","ColumnChooser"})">
     <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
     <GridSearchSettings IgnoreCase="true"></GridSearchSettings>
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
@@ -76,7 +76,7 @@
                 if (HeaderReviewData != null)
                 {
                     <div class="row">
-                        <HCMIS.Pages.HR.Applicants.PartialPages.ApplicantHeaderPartialPage HeaderReviewData="@HeaderReviewData" ShowAptituddeTestResults=true />
+                        @*<HCMIS.Pages.HR.Applicants.PartialPages.ApplicantHeaderPartialPage HeaderReviewData="@HeaderReviewData" ShowAptituddeTestResults=true />*@
 
                         <HCMIS.Pages.HR.Applicants.PartialPages.ApplicantHeaderPartialPage HeaderReviewData="@HeaderReviewData" ContractLengthTypeData="@ContractLengthTypeData" DepartmentData="@DepartmentData" JobDescriptionData="@JobDescriptionData" JobOpeningData="@JobOpeningData" JobTitleData="@JobTitleData" JobTypeData="@JobTypeData" LevelofEducationData="@LevelofEducationData"
                                                                                            SalaryScaleData="@SalaryScaleData" EmployeeData="@EmployeeData" NonStaffData="@NonStaffData" DistrictData="@DistrictData" ParishData="@ParishData" SubCountyData="SubCountyData" VillageData="@VillageData" ShowAptituddeTestResults=true />
@@ -297,16 +297,27 @@
             }
         </Template>
         <FooterTemplate>
-            <button class="btn btn-primary" @onclick=@ApproveApplicant>Award Contract</button>
-            <button class="btn btn-dark" @onclick=@RejectApplicant>Do Not Award Contract</button>
-            <button class="btn btn-danger" @onclick=@SaveApplicant>Save Application</button>
+            @* @onclick=@ApproveApplicant *@
+            <button class="btn btn-primary" @onclick="() => ApproveApplicant(HeaderReviewData)">Register</button>
+            @* <button class="btn btn-dark" @onclick=@RejectApplicant>Do Not Award Contract</button> *@
+            <button class="btn btn-danger" @onclick=@CloseForn>Close</button>
         </FooterTemplate>
     </GridEditSettings>
     <GridColumns>
-        <GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
-        @* <GridColumn Field="@(nameof(AppliedForJobs.AppliedForJobsId))" Visible=false IsPrimaryKey=true IsIdentity=true HeaderText="Ref Id" Width="120" AllowFiltering="true"></GridColumn>
+         @*<GridColumn Type="ColumnType.CheckBox" Width="50"></GridColumn>
+        <GridColumn Field="@(nameof(AppliedForJobs.AppliedForJobsId))" Visible=false IsPrimaryKey=true IsIdentity=true HeaderText="Ref Id" Width="120" AllowFiltering="true"></GridColumn>
         <GridColumn Field="@(nameof(AppliedForJobs.JobReferenceNo))" HeaderText="Ref No" Width="120" AllowFiltering="true"></GridColumn>
          *@
+
+        <GridColumn HeaderText="View"
+                    Width="20"
+                    CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr1" }})"
+                    TextAlign="TextAlign.Left">
+            <GridCommandColumns>
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() { CssClass="e-icons e-view-details",Content="View" })" Title="View"></GridCommandColumn>
+            </GridCommandColumns>
+        </GridColumn>
+
         <GridForeignColumn Field=@nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId)
                            HeaderText="Department"
                            Width="60"
@@ -324,7 +335,7 @@
                            AllowEditing="false"
                            ForeignKeyField="@(nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId))"
                            ForeignKeyValue="@(nameof(ViewAppliedForJobsDetails2024.JobTitleDescription))"
-                           ForeignDataSource="@JobTitleData"
+                           ForeignDataSource="@AppliedforJobsDetailData"
                            AllowFiltering="false">
         </GridForeignColumn>
 
@@ -340,7 +351,7 @@
         </GridForeignColumn>
 
         <GridForeignColumn Field=@nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId)
-                           HeaderText="Applicant"
+                           HeaderText="Email"
                            Width="50"
                            AllowEditing="false"
                            ForeignKeyField="@(nameof(ViewAppliedForJobsDetails2024.AppliedForJobsId))"
@@ -374,6 +385,7 @@
     SfDialog? CommentDialog;
     SfGrid<AppliedForJobs>? AppliedForJobGrid { get; set; }
     AppliedForJobs? HeaderReviewData { get; set; }
+    NonStaff? selecteddecision { get; set; }
     private DialogSettings DialogParams = new DialogSettings { Height = "auto", MinHeight = "80vh", Width = "96%" };
     List<ACountry>? CountryData { get; set; }
     List<ALevelofEducation>? LevelofEducationData { get; set; }
@@ -397,6 +409,7 @@
     List<ASalaryScale>? SalaryScaleData { get; set; }
     List<ViewEmployeeDropDown>? EmployeeData { get; set; }
     List<ViewNonStaffDropDown>? NonStaffData { get; set; }
+    List<NonStaff>? _NonStaffData { get; set; }
     List<ADistrict>? DistrictData { get; set; }
     List<ViewAparish>? ParishData { get; set; }
     List<ASubCounty>? SubCountyData { get; set; }
@@ -645,6 +658,8 @@
                     }
                 }));
 
+                Task _t = Task.WhenAll(tasks);
+                await _t;
             }
         }
         catch(Exception ex)
@@ -655,13 +670,40 @@
         {
             loadingspinner = false;
         }
-        
+
     }
 
-    private void ApproveApplicant()
+    private async void ApproveApplicant(AppliedForJobs data)
     {
-        previousStatusId = HeaderReviewData.ApplicationStatusId;
-        HeaderReviewData.ApplicationStatusId = 10;
+        // previousStatusId = HeaderReviewData.ApplicationStatusId;
+        // HeaderReviewData.ApplicationStatusId = 10;
+
+        if (data != null && NonStaffData != null)
+        {
+            //Get Non Staff Records
+            var tasks = new List<Task>();
+
+            tasks.Add(Task.Run(async () =>
+                {
+                    var response = await Http.GetAsync($"Utilities/GetNonStaffRecord?id={data.NonStaffid}");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        _NonStaffData = JsonSerializer.Deserialize<List<NonStaff>>(content, _options);
+                    }
+                }));
+
+            Task _t = Task.WhenAll(tasks);
+            await _t;
+
+            if (_NonStaffData != null)
+            {
+                var _data = _NonStaffData.FirstOrDefault(o => o.NonStaffid == data.NonStaffid);
+                selecteddecision = _data;
+            }
+
+        }
+        // selecteddecision = data;
         ConfirmationDialog.ShowAsync();
     }
     private void RejectApplicant()
@@ -670,19 +712,62 @@
         HeaderReviewData.ApplicationStatusId = 11;
         ConfirmationDialog.ShowAsync();
     }
-    private void SaveApplicant()
+    private void CloseForn()
     {
         //HeaderReviewData.ApplicationStatusId = 3;
         AppliedForJobGrid.EndEditAsync();
     }
-    private void ConfirmationYes()
+    private async void ConfirmationYes()
     {
+        try
+        {
+            loadingspinner = true;
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(selecteddecision);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            var result = await Http.PostAsync($"Employeez/RegisterNonStaffAsEmployee?appliedjobid={HeaderReviewData.AppliedForJobsId}", httpContent);
+
+            if (result.IsSuccessStatusCode)
+            {
+                if (AppliedForJobGrid != null)
+                {
+                    await AppliedForJobGrid.Refresh();
+                }
+
+                toastService.ClearAll();
+                toastService.ShowSuccess("Record Successfully Saved");
+            }
+            else
+            {
+                toastService.ClearAll();
+                toastService.ShowError("Record Not Saved");
+            }
+        }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            loadingspinner = false;
+            CommentModel = new AppliedForJobsComment();
+            CommentModel.CommentDate = DateTime.Now;
+            CommentModel.CommentedBy = _SystemSettings.AccountHolderName;
+            if (ConfirmationDialog != null)
+            {
+                ConfirmationDialog.HideAsync();
+            }
+            if (CommentDialog != null)
+            {
+                CommentDialog.ShowAsync();
+            }            
+        }        
+
         //AppliedForJobGrid.EndEditAsync();
-        CommentModel = new AppliedForJobsComment();
-        CommentModel.CommentDate = DateTime.Now;
-        CommentModel.CommentedBy = _SystemSettings.AccountHolderName;
-        ConfirmationDialog.HideAsync();
-        CommentDialog.ShowAsync();
+        // CommentModel = new AppliedForJobsComment();
+        // CommentModel.CommentDate = DateTime.Now;
+        // CommentModel.CommentedBy = _SystemSettings.AccountHolderName;
+        // ConfirmationDialog.HideAsync();
+        // CommentDialog.ShowAsync();
 
     }
     private void ConfirmationNo()
