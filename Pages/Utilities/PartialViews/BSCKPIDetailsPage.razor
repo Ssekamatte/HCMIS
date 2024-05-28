@@ -93,11 +93,11 @@
                                     <div>
                                         @if (isentryvalid == true)
                                         {
-                                            <p span style="color:Purple;">Total: @aggregate.Sum</p>
+                                            <p span style="color:Purple;">Total: @aggregate.Sum %</p>
                                         }
                                         else
                                         {
-                                            <p span style="color:red;">Total: @aggregate.Sum</p>
+                                            <p span style="color:red;">Total: @aggregate.Sum %</p>
                                             // <p>You have validation errors</p>
                                         }
 
@@ -113,6 +113,7 @@
             <GridEvents CellSelected="PerspectiveCellSelectHandler"
                         QueryCellInfo="QueryCellInfoHandlerChild"
                         CellSaved="PerspectiveOnCellSaved"
+                        RowDataBound="RowDataBoundHandler"
                         OnCellSave="CellSaveHandler"
                         CommandClicked="OnCommandClicked"
                         TValue="ABscKpidetails">
@@ -133,11 +134,12 @@
                     </GridColumn>
                 }*@
 
+                @*AllowEditing="actionbool"*@
+
                 <GridColumn HeaderText="Action"
                             Width="30"
                             CustomAttributes="@(new Dictionary<string,object>(){ { "class", "e-attr3" }})"
-                            TextAlign="TextAlign.Left"
-                            AllowEditing="actionbool">
+                            TextAlign="TextAlign.Left">
                     <GridCommandColumns>
                         <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss = "e-icons e-edit", CssClass = "e-flat"})" ID="Edit" Title="Add Specific Objective(s)"></GridCommandColumn>
                     </GridCommandColumns>
@@ -174,6 +176,10 @@
                             ValidationRules="@(new ValidationRules { Required = false })"
                             Width="150"
                             CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+                    <Template Context="ObjectiveContext">
+                        <SfTextBox Multiline=true rowspan="8" @bind-Value=@((ObjectiveContext as ABscKpidetails).Objective) Placeholder="Please Type" FloatLabelType="FloatLabelType.Never"></SfTextBox>
+                    </Template>
+
                     <EditTemplate Context="ObjectiveContext">
                         <SfTextBox Multiline=true rowspan="8" @bind-Value=@((ObjectiveContext as ABscKpidetails).Objective) Placeholder="Please Type" FloatLabelType="FloatLabelType.Never" ></SfTextBox>
                         @* maxlength="@_maximumlength" Input="@InputHandler" *@
@@ -184,7 +190,7 @@
                 </GridColumn>
 
                 <GridColumn Field=@nameof(ABscKpidetails.IndividualTargetWeight)
-                            HeaderText="Individual Target Weight"
+                            HeaderText="Individual Target Weight (%)"
                             TextAlign="TextAlign.Justify"
                             AllowEditing="true"
                             ValidationRules="@(new ValidationRules { Required = false, Min = 1 , Max=100 })"
@@ -200,7 +206,7 @@
                                    HeaderText="Performance/Measurement Metric"
                                    TextAlign="TextAlign.Justify"
                                    Width="60"
-                                   AllowEditing="true"
+                                   AllowEditing="false"
                                    ValidationRules="@(new ValidationRules { Required = false})"
                                    ForeignKeyField="@(nameof(AMeasurementMetric.MeasurementMetricId))"
                                    ForeignKeyValue="@(nameof(AMeasurementMetric.MeasurementMetricDesc))"
@@ -445,6 +451,15 @@
         }
     }
 
+    public async Task RowDataBoundHandler(RowDataBoundEventArgs<ABscKpidetails> args)
+    {
+        var index = await ObjectivesDetailsDataGrid.GetRowIndexByPrimaryKeyAsync(args.Data.BsckpidetailsId);
+
+        //Assign % as basic unit
+        await ObjectivesDetailsDataGrid.UpdateCellAsync(index, nameof(ABscPerspectivesDetail.MeasurementMetricId), 1);
+    }
+
+
     public async Task OnCommandClicked(CommandClickEventArgs<ABscKpidetails> args)
     {
 
@@ -474,7 +489,11 @@
                         await RejectLeaveDialogue.ShowAsync();
                     }
                 }
-
+                else
+                {
+                    toastService.ClearAll();
+                   toastService.ShowWarning("Please ensure you have set the objective(s) and individual target weight on this row or ensure you have saved the form before you click here"); 
+                }
 
             }
             catch (Exception ex)

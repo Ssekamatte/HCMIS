@@ -12,6 +12,7 @@
 @inject NavigationManager navigation;
 @inject SystemSettings _SystemSettings;
 @using HCMIS.ViewModel;
+@using Newtonsoft.Json
 @inject IToastService toastService;
 @inject IAuthenticationService AuthService;
 
@@ -25,7 +26,17 @@
     }
 </style>
 
-
+<MudOverlay Visible="@loadingspinner" DarkBackground="true" Absolute="true" Style="z-index:100000;">
+    <div class="loader">
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--text" style="color:white;"></div>
+    </div>
+</MudOverlay>
 <SfGrid @ref="@BehavioralGrid" DataSource="@datasource" GridLines="GridLine.Both"
         TValue="BalanceScoreCardBehavioral" ID="Grid1" AllowTextWrap="true" AllowPaging="false" 
         AllowFiltering="false" AllowReordering="true" AllowResizing="true" AllowGrouping="false" 
@@ -139,7 +150,7 @@
                 <GridColumn Field=@nameof(BalanceScoreCardBehavioral.EmployeeSelfAssessment)
                             HeaderText="Employee Self Assessment"
                             TextAlign="TextAlign.Justify"
-                            AllowEditing="@IsEmployeeEnabledColumn"
+                            AllowEditing="false"
                             ValidationRules="@(new ValidationRules { Required = false })"
                             EditType="EditType.NumericEdit"
                             Format="###.##"
@@ -235,40 +246,156 @@
     public Syncfusion.Blazor.Grids.Action _previous { get; set; }
     [Parameter]
     public int? approvalstatsid { get; set; }
-
-
+    [Parameter]
+    public int selectebscid { get; set; }
+    public bool loadingspinner { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        if (previousBalanceScoreCardId != BalanceScoreCardId)
+        try
         {
-            int countid = -10000;
-            previousBalanceScoreCardId = BalanceScoreCardId;
-            datasource = new List<BalanceScoreCardBehavioral>();
-            if (behaviourdata != null && behaviourdata.Count() > 0)
+            //toastService.ShowError("Args is Oniniti" + _previous.ToString());
+            loadingspinner = true;
+            if (_previous == Syncfusion.Blazor.Grids.Action.Add)
             {
-                datasource.AddRange(behaviourdata);
-            }
-            else
-            {
-                if (CompetenceData != null)
+                //toastService.ShowError("You are adding");
+                if (previousBalanceScoreCardId != BalanceScoreCardId)
                 {
-                    foreach (var item in CompetenceData)
+                    int countid = -10000;
+                    previousBalanceScoreCardId = BalanceScoreCardId;
+                    datasource = new List<BalanceScoreCardBehavioral>();
+                    if (CompetenceData != null)
                     {
-                        var m = new BalanceScoreCardBehavioral();
-                        m.BehavioralId = countid;
-                        m.CompetenceId = item.CompetenceId;
+                        foreach (var item in CompetenceData)
+                        {
+                            var m = new BalanceScoreCardBehavioral();
+                            m.BehavioralId = countid;
+                            m.CompetenceId = item.CompetenceId;
 
-                        datasource.Add(m);
-                        countid++;
+                            datasource.Add(m);
+                            countid++;
+                        }
+
+                        datasource = datasource.OrderBy(o => o.CompetenceId).ToList();
                     }
+                }
+            }
+            //When editing a record
+            else if (_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+                //toastService.ShowError("You are editing");
+                if (selectebscid > 0)
+                {
+                    await LoadClientsForSelectedGroup();
+                }
+            }
 
-                    datasource = datasource.OrderBy(o => o.CompetenceId).ToList();
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            loadingspinner = false;
+        }
+
+        // if (previousBalanceScoreCardId != BalanceScoreCardId)
+        // {
+        //     int countid = -10000;
+        //     previousBalanceScoreCardId = BalanceScoreCardId;
+        //     datasource = new List<BalanceScoreCardBehavioral>();
+        //     if (behaviourdata != null && behaviourdata.Count() > 0)
+        //     {
+        //         datasource.AddRange(behaviourdata);
+        //     }
+        //     else
+        //     {
+        //         if (CompetenceData != null)
+        //         {
+        //             foreach (var item in CompetenceData)
+        //             {
+        //                 var m = new BalanceScoreCardBehavioral();
+        //                 m.BehavioralId = countid;
+        //                 m.CompetenceId = item.CompetenceId;
+
+        //                 datasource.Add(m);
+        //                 countid++;
+        //             }
+
+        //             datasource = datasource.OrderBy(o => o.CompetenceId).ToList();
+        //         }
+        //     }
+        // }
+    }
+
+    //On ParameterAsync is called each time the page is referenced
+    protected override async Task OnParametersSetAsync()
+    {
+        //toastService.ShowError("Args is OnPara" + _previous.ToString());
+        await base.OnParametersSetAsync();
+        try
+        {
+            //toastService.ShowError("Args is Oniniti" + _previous.ToString());
+            loadingspinner = true;
+            if (_previous == Syncfusion.Blazor.Grids.Action.Add)
+            {
+                //toastService.ShowError("You are adding");
+                if (previousBalanceScoreCardId != BalanceScoreCardId)
+                {
+                    int countid = -10000;
+                    previousBalanceScoreCardId = BalanceScoreCardId;
+                    datasource = new List<BalanceScoreCardBehavioral>();
+                    if (CompetenceData != null)
+                    {
+                        foreach (var item in CompetenceData)
+                        {
+                            var m = new BalanceScoreCardBehavioral();
+                            m.BehavioralId = countid;
+                            m.CompetenceId = item.CompetenceId;
+
+                            datasource.Add(m);
+                            countid++;
+                        }
+
+                        datasource = datasource.OrderBy(o => o.CompetenceId).ToList();
+                    }
+                }
+            }
+            //When editing a record
+            else if (_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+                //toastService.ShowError("You are editing");
+                if (selectebscid > 0)
+                {
+                    await LoadClientsForSelectedGroup();
                 }
             }
         }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            loadingspinner = false;
+        }
     }
 
+    private async Task LoadClientsForSelectedGroup()
+    {
+        var response = await Http.GetAsync($"BalanceScoreCard/GetBSCBehavioralData?selectebscid={selectebscid}");
+        if (response.IsSuccessStatusCode)
+        {
+            var responseData = await response.Content.ReadAsStringAsync();
+            datasource = JsonConvert.DeserializeObject<List<BalanceScoreCardBehavioral>>(responseData);
+        }
+        else
+        {
+            // Handle API error
+            // You can display an error message or log the error
+        }
+    }
     #region BehaviourMethods
 
     //For Behavioral Plan Grid

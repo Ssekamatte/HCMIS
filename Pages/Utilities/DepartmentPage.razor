@@ -73,6 +73,7 @@
                                         <p>Department<span style="color:red;">*</span></p>
                                         <SfTextBox Multiline="false" @bind-Value="@(DepartmentReviewData.DepartmentDescription)" Enabled="true" Placeholder="Enter Name" FloatLabelType="FloatLabelType.Never"></SfTextBox>
                                     </div>
+
                                     <div class="col-md-12">
                                         <p>Reports To</p>
                                         <SfMultiSelect @ref="DepartmentObj" TValue="int[]" TItem="ADepartment" AllowFiltering="true" Placeholder="Please select" Mode="@VisualMode.CheckBox" DataSource="@DepartmentData"
@@ -82,6 +83,24 @@
                                             <MultiSelectEvents TValue="int[]" TItem="ADepartment" ValueChange="OnDepartmentChange" DataBound="OnDepartmentBound"></MultiSelectEvents>
                                         </SfMultiSelect>
                                     </div>
+
+                                    <div class="col-md-12">
+                                        <p>Head of Department<span style="color:red;">*</span></p>
+                                        <SfDropDownList @bind-Value="@(DepartmentReviewData.HoDemployeeId)"
+                                                        Enabled="true"
+                                                        TItem="ViewEmployeeDropDown"
+                                                        TValue="int?"
+                                                        DataSource="@EmployeeData"
+                                                        Placeholder="Please select"
+                                                        FloatLabelType="FloatLabelType.Never"
+                                                        AllowFiltering="true"
+                                                        FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains">
+                                            <DropDownListFieldSettings Value="@nameof(ViewEmployeeDropDown.Employeeid)"
+                                                                       Text="@nameof(ViewEmployeeDropDown.EmployeeDetails)">
+                                            </DropDownListFieldSettings>
+                                        </SfDropDownList>
+                                    </div>
+
                                 </div>
                             </div>
                         }
@@ -212,6 +231,7 @@
     SfGrid<ADepartment>? DepartmentGrid;
     private ADepartment? DepartmentReviewData { get; set; }
     public List<ADepartment>? DepartmentData { get; set; }
+    List<ViewEmployeeDropDown>? EmployeeData { get; set; }
 
     public List<ViewOrgStructureDepartment> OrgaStructureDepartmentData { get; set; }
 
@@ -350,6 +370,16 @@
                        }
                    }
                }));
+
+                tasks.Add(Task.Run(async () =>
+                 {
+                     var response = await Http.GetAsync($"Utilities/GetEmployeeDD");
+                     if (response.IsSuccessStatusCode)
+                     {
+                         var content = await response.Content.ReadAsStringAsync();
+                         EmployeeData = JsonSerializer.Deserialize<List<ViewEmployeeDropDown>>(content, _options);
+                     }
+                 }));
 
                 Task t = Task.WhenAll(tasks);
                 await t;
@@ -786,22 +816,41 @@
         var data = Args.Data;
         if (Args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
         {
-            if (Args.Data.DepartmentDescription == null)
+            if (string.IsNullOrEmpty(Args.Data.DepartmentDescription))
             {
                 toastService.ClearAll();
                 toastService.ShowWarning("Please enter the department !");
                 Args.Cancel = true;
             }
+            else if (Args.Data.HoDemployeeId == null)
+            {
+                toastService.ClearAll();
+                toastService.ShowWarning("Please select the Head of Department !");
+                Args.Cancel = true;
+            }
             else
             {
+               
                 var countdata = DepartmentData?
                 .FirstOrDefault(o => o.DepartmentDescription.Trim().ToLower() 
                 == Args.Data.DepartmentDescription.Trim().ToLower());
 
-                if (countdata != null)
+                if (Args.Action == "Add")
                 {
-                    toastService.ShowWarning("This department has arleady been captured in the database as " + countdata.DepartmentDescription + ". Record Not Saved");
-                    Args.Cancel = true;
+                    if (countdata != null)
+                    {
+                        toastService.ShowWarning("This department has arleady been captured in the database as " + countdata.DepartmentDescription + ". Record Not Saved");
+                        Args.Cancel = true;
+                    }
+                }
+                else if (Args.Action == "Edit")
+                {
+                    if (countdata != null && countdata.DepartmentId != Args.Data.DepartmentId)
+                    {
+                        toastService.ClearAll();
+                        toastService.ShowWarning("This department has arleady been captured in the database as " + countdata.DepartmentDescription + ". Record Not Saved");
+                        Args.Cancel = true;
+                    }
                 }
             }
         }

@@ -13,6 +13,7 @@
 @inject SystemSettings _SystemSettings;
 
 @using HCMIS.ViewModel;
+@using Newtonsoft.Json
 @inject IToastService toastService;
 @inject IAuthenticationService AuthService;
 @inject IJSRuntime JSRuntime
@@ -51,6 +52,18 @@
         top: 30px;
     } */
 </style>
+
+<MudOverlay Visible="@loadingspinner" DarkBackground="true" Absolute="true" Style="z-index:100000;">
+    <div class="loader">
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--text" style="color:white;"></div>
+    </div>
+</MudOverlay>
 
 @if (datasource != null
 && datasource.Count > 0)
@@ -322,7 +335,7 @@
                         </GridColumn>
 
                         <GridColumn Field=@nameof(BalanceScoreCardTargetSetting.EmployeeSelfAssessTgt)
-                                    HeaderText="Employee Self Assessment % Target Achievement"
+                                    HeaderText="Employee Self Assessment % Target Achievement (ie 60%,80%)"
                                     TextAlign="TextAlign.Justify"
                                     AllowEditing="@IsEmployeeEnabledColumn"
                                     EditType="EditType.NumericEdit"
@@ -341,7 +354,7 @@
                             CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
                     <GridColumns>
                         <GridColumn Field=@nameof(BalanceScoreCardTargetSetting.SupervisorAssessTgt)
-                                    HeaderText="Supervisor Assessment % Target Achievement"
+                                    HeaderText="Supervisor Assessment % Target Achievement (ie 60%,80%)"
                                     TextAlign="TextAlign.Justify"
                                     AllowEditing="@IsSupervisorEnabledColumn"
                                     EditType="EditType.NumericEdit"
@@ -400,8 +413,8 @@ else
 
 @code
 {
-    [Parameter]
-    public List<BalanceScoreCardTargetSetting>? targetdata { get; set; }
+    // [Parameter]
+    // public List<BalanceScoreCardTargetSetting>? targetdata { get; set; }
     [Parameter]
     public int BalanceScoreCardId { get; set; }
     [Parameter]
@@ -446,59 +459,134 @@ else
     [Parameter]
     public LoginResultModel? Credentials { get; set; }
     public string[] Div = (new string[] { "BscPerspectiveTypeId" });
+    [Parameter]
+    public int selectebscid { get; set; }
+    [Parameter]
+    public Syncfusion.Blazor.Grids.Action _previous { get; set; }
+    public bool loadingspinner { get; set; }
 
+    //On initialized is only called once
     protected override async Task OnInitializedAsync()
     {
-        if(previousBalanceScoreCardId!=BalanceScoreCardId)
+        try
         {
-            int countid = -10000;
-            previousBalanceScoreCardId = BalanceScoreCardId;
-            datasource = new List<BalanceScoreCardTargetSetting>();
-            if(targetdata != null && targetdata.Count() > 0)
+            //toastService.ShowError("Args is Oniniti" + _previous.ToString());
+            loadingspinner = true;
+            if (_previous == Syncfusion.Blazor.Grids.Action.Add)
             {
-                datasource.AddRange(targetdata);            
-            }
-            else
-            {
-                // if(PopulatedData != null)
-                // {
-                //     foreach (var item in PopulatedData)
-                //     {
-                //         var m = new BalanceScoreCardTargetSetting();
-                //         m.TargetSettingId = countid;
-                //         m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
-                //         //m.PerspectiveTotalWeight = item.PerspectiveTotalWeight; //Check if department weight is same as this
-                //         m.BsckpidetailsId = item.BsckpidetailsId;
-                //         m.MeasurementMetricId = item.MeasurementMetricId;
-                //         m.IndividualTargetWeight = item.IndividualTargetWeight;
-
-                //         datasource.Add(m);
-                //         countid++;
-                //     }
-
-                //     datasource = datasource.OrderBy(o => o.BscPerspectiveTypeId).ToList();
-                // }       
-
-                if (PopulatedData != null && PerspectivesDetailData != null)
+                //toastService.ShowError("You are adding");
+                if (previousBalanceScoreCardId != BalanceScoreCardId)
                 {
-                    foreach (var item in PopulatedData)
+                    int countid = -10000;
+                    previousBalanceScoreCardId = BalanceScoreCardId;
+                    datasource = new List<BalanceScoreCardTargetSetting>();
+                    if (PopulatedData != null && PerspectivesDetailData != null)
                     {
-                        var _perspectivetype = PerspectivesDetailData.FirstOrDefault(o=>o.BscPerspectiveTypeId == item.BscPerspectiveTypeId);
-                        var m = new BalanceScoreCardTargetSetting();
-                        m.TargetSettingId = countid;
-                        m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
-                        //m.PerspectiveTotalWeight = _perspectivetype.PerspectiveTotalWeight; 
-                        m.BsckpidetailsId = item.BsckpidetailsId;
-                        m.MeasurementMetricId = item.MeasurementMetricId;
-                        m.IndividualTargetWeight = item.IndividualTargetWeight;
+                        foreach (var item in PopulatedData)
+                        {
+                            var _perspectivetype = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == item.BscPerspectiveTypeId);
+                            var m = new BalanceScoreCardTargetSetting();
+                            m.TargetSettingId = countid;
+                            m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
+                            //m.PerspectiveTotalWeight = _perspectivetype.PerspectiveTotalWeight;
+                            m.BsckpidetailsId = item.BsckpidetailsId;
+                            m.MeasurementMetricId = item.MeasurementMetricId;
+                            m.IndividualTargetWeight = item.IndividualTargetWeight;
 
-                        datasource.Add(m);
-                        countid++;
+                            datasource.Add(m);
+                            countid++;
+                        }
+
+                        datasource = datasource.OrderBy(o => o.BscPerspectiveTypeId).ToList();
                     }
-
-                    datasource = datasource.OrderBy(o => o.BscPerspectiveTypeId).ToList();
                 }
             }
+            //When editing a record
+            else if (_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+                //toastService.ShowError("You are editing");
+                if (selectebscid > 0)
+                {
+                    await LoadClientsForSelectedGroup();
+                }
+            }
+
+        }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            loadingspinner = false;
+        }        
+    }
+
+    //On ParameterAsync is called each time the page is referenced
+    protected override async Task OnParametersSetAsync()
+    {
+        //toastService.ShowError("Args is OnPara" + _previous.ToString());
+        await base.OnParametersSetAsync();
+        try
+        {
+            if (_previous == Syncfusion.Blazor.Grids.Action.Add)
+            {
+                //toastService.ShowError("You are adding");
+                if (previousBalanceScoreCardId != BalanceScoreCardId)
+                {
+                    int countid = -10000;
+                    previousBalanceScoreCardId = BalanceScoreCardId;
+                    datasource = new List<BalanceScoreCardTargetSetting>();
+                    if (PopulatedData != null && PerspectivesDetailData != null)
+                    {
+                        foreach (var item in PopulatedData)
+                        {
+                            var _perspectivetype = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == item.BscPerspectiveTypeId);
+                            var m = new BalanceScoreCardTargetSetting();
+                            m.TargetSettingId = countid;
+                            m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
+                            //m.PerspectiveTotalWeight = _perspectivetype.PerspectiveTotalWeight;
+                            m.BsckpidetailsId = item.BsckpidetailsId;
+                            m.MeasurementMetricId = item.MeasurementMetricId;
+                            m.IndividualTargetWeight = item.IndividualTargetWeight;
+
+                            datasource.Add(m);
+                            countid++;
+                        }
+
+                        datasource = datasource.OrderBy(o => o.BscPerspectiveTypeId).ToList();
+                    }
+                }
+            }
+            //When editing a record
+            else if (_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+                //toastService.ShowError("You are editing");
+                if (selectebscid > 0)
+                {
+                    await LoadClientsForSelectedGroup();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+
+            //throw;
+        }
+    }
+
+    private async Task LoadClientsForSelectedGroup()
+    {
+        var response = await Http.GetAsync($"BalanceScoreCard/GetBSCTargetSettingData?selectebscid={selectebscid}");
+        if (response.IsSuccessStatusCode)
+        {
+            var responseData = await response.Content.ReadAsStringAsync();
+            datasource = JsonConvert.DeserializeObject<List<BalanceScoreCardTargetSetting>>(responseData);
+        }
+        else
+        {
+            // Handle API error
+            // You can display an error message or log the error
         }
     }
 

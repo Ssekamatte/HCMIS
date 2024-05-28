@@ -536,13 +536,31 @@
 
                                                 @if (LeaveData.EndDate < LeaveData.CommencementDate)
                                                 {
+                                                    hidebutton = false;
+                                                    // StateHasChanged(); // Notify the state change
+
                                                     <div class="col-md-12;margin-top:10px;">
                                                         <p style="background-color:red;color:whitesmoke;margin-top: 10px;">The End Date should not be before the Start Date</p>
                                                     </div>
                                                 }
 
+                                                //Annual Leave
                                                 else if (leavetypedays != null && LeaveData.LeaveTypeId == 1 && (LeaveData.TotalDays > (@leavetypedays.LeaveDaysPerYear - daysunaccountedfor)))
                                                 {
+                                                    hidebutton = true;
+                                                    // StateHasChanged(); // Notify the state change
+
+                                                    <h6 style="margin-top: 10px;">
+                                                        You have exceeded the @leavetypedays.LeaveDaysPerYear working days allocated.
+                                                        Kindly reduce on the number of days.
+                                                    </h6>
+                                                }
+                                                //Compassionate Leave
+                                                else if (leavetypedays != null && LeaveData.LeaveTypeId == 5 && (LeaveData.TotalDays > @leavetypedays.LeaveDaysPerYear))
+                                                {
+                                                    hidebutton = true;
+                                                    // StateHasChanged(); // Notify the state change
+
                                                     <h6 style="margin-top: 10px;">
                                                         You have exceeded the @leavetypedays.LeaveDaysPerYear working days allocated.
                                                         Kindly reduce on the number of days.
@@ -551,6 +569,9 @@
                                                 
                                                 else
                                                 {
+                                                    hidebutton = false;
+                                                    // StateHasChanged(); // Notify the state change
+
                                                     <div class="col-md-3">
                                                     @{
                                                             int? daysentitled = 0;
@@ -861,7 +882,8 @@
                 }
             </Template>
             <FooterTemplate>
-                @if (LeaveData != null && (LeaveData.CommencementDate <= LeaveData.EndDate))
+                 @* && hidebutton == false *@
+                @if ((LeaveData != null && (LeaveData.CommencementDate <= LeaveData.EndDate)))
                 {
                     <button @onclick="@onSaveDraftForm" disabled=@IsDraftDisabled hidden=@IsHiddenDraft class="btn btn-primary" data-ripple="true" style="margin-right:10px;">Save Draft</button>
                     <button @onclick="@onSubmitForm" disabled=@IsSubmitDisabled hidden=@IsHiddenPersonSubmit class="btn btn-success" data-ripple="true" style="margin-right:10px;">Submit Request</button>
@@ -1272,6 +1294,7 @@
     public bool loadingspinner { get; set; }
     private UtilitiesSearchPanel InputModel = new UtilitiesSearchPanel();
     double? daysaccountedfor = 0;
+    public bool hidebutton { get; set; }= true;
 
     private List<object> ToolbarMenu = new List<object>()
     {
