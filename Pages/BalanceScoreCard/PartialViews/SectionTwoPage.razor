@@ -173,6 +173,17 @@
                             </GroupFooterTemplate>
                         </GridAggregateColumn>
 
+                        <GridAggregateColumn Field=@nameof(BalanceScoreCardTargetSetting.EmployeeSelfAssessTgt) Type="Syncfusion.Blazor.Grids.AggregateType.Sum">
+                            <GroupFooterTemplate Context="AssesstgtTemplateContext">
+                                @{
+                                    aggregate = (AssesstgtTemplateContext as AggregateTemplateContext);
+                                    <div>
+                                        <p span style="color:Purple;">Total: @aggregate.Sum </p>
+                                    </div>
+                                }
+                            </GroupFooterTemplate>
+                        </GridAggregateColumn>
+
                         <GridAggregateColumn Field=@nameof(BalanceScoreCardTargetSetting.IndividualTargetObjectiveScore)
                                              Type="Syncfusion.Blazor.Grids.AggregateType.Sum"
                                              Format="N1">
@@ -187,6 +198,22 @@
                                     </div>
                                 }
                             </GroupFooterTemplate>
+                        </GridAggregateColumn>
+
+                        <GridAggregateColumn Field=@nameof(BalanceScoreCardTargetSetting.EmployeeSelfAssessTgt)
+                                             Type="Syncfusion.Blazor.Grids.AggregateType.Sum"
+                                             Format="N1">
+                            <FooterTemplate Context="Footer2TemplateContext">
+                                @{
+                                    aggregate = (Footer2TemplateContext as AggregateTemplateContext);
+                                    <div>
+                                        @if (@aggregate != null)
+                                        {
+                                            <p style="color:purple;">Total Score: @aggregate.Sum %</p>
+                                        }
+                                    </div>
+                                }
+                            </FooterTemplate>
                         </GridAggregateColumn>
 
                         <GridAggregateColumn Field=@nameof(BalanceScoreCardTargetSetting.IndividualTargetObjectiveScore)
@@ -327,22 +354,22 @@
                                     Width="80"
                                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
                             <Template Context="EvidenceContext">
-                                <SfTextBox Multiline=true rowspan="8" @bind-Value=@((EvidenceContext as BalanceScoreCardTargetSetting).EvidenceId) Placeholder="Please Type" FloatLabelType="FloatLabelType.Never" Enabled="@IsEmployeeEnabledColumn"></SfTextBox>
+                                <SfTextBox Multiline=true rowspan="8" @bind-Value=@((EvidenceContext as BalanceScoreCardTargetSetting).EvidenceId) Placeholder="Double click to start typing" FloatLabelType="FloatLabelType.Never" Enabled="@IsEmployeeEnabledColumn"></SfTextBox>
                             </Template>
                             <EditTemplate Context="EvidenceContext">
-                                <SfTextBox Multiline=true rowspan="8" @bind-Value=@((EvidenceContext as BalanceScoreCardTargetSetting).EvidenceId) Placeholder="Please Type" FloatLabelType="FloatLabelType.Never" Enabled="@IsEmployeeEnabledColumn"></SfTextBox>
+                                <SfTextBox Multiline=true rowspan="8" @bind-Value=@((EvidenceContext as BalanceScoreCardTargetSetting).EvidenceId) Placeholder="Double click to start typing" FloatLabelType="FloatLabelType.Never" Enabled="@IsEmployeeEnabledColumn"></SfTextBox>
                             </EditTemplate>
                         </GridColumn>
 
                         <GridColumn Field=@nameof(BalanceScoreCardTargetSetting.EmployeeSelfAssessTgt)
-                                    HeaderText="Employee Self Assessment % Target Achievement (ie 60%,80%)"
+                                    HeaderText="Employee Self Assessment % Target Achievement (i.e 60%,80%)"
                                     TextAlign="TextAlign.Justify"
                                     AllowEditing="@IsEmployeeEnabledColumn"
                                     EditType="EditType.NumericEdit"
                                     Format="###.##"
                                     Width="70"
                                     EditorSettings="@(new NumericEditCellParams() {Params = new Syncfusion.Blazor.Inputs.NumericTextBoxModel<object>(){ShowSpinButton=false}})"
-                                    ValidationRules="@(new ValidationRules { Required = false, Min = 1 , Max=100 })"
+                                    ValidationRules="@(new ValidationRules {Min = 1 , Max=100 })"
                                     ClipMode="ClipMode.EllipsisWithTooltip"
                                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
                         </GridColumn>
@@ -354,14 +381,14 @@
                             CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr2" }})">
                     <GridColumns>
                         <GridColumn Field=@nameof(BalanceScoreCardTargetSetting.SupervisorAssessTgt)
-                                    HeaderText="Supervisor Assessment % Target Achievement (ie 60%,80%)"
+                                    HeaderText="Supervisor Assessment % Target Achievement (i.e 60%,80%)"
                                     TextAlign="TextAlign.Justify"
                                     AllowEditing="@IsSupervisorEnabledColumn"
                                     EditType="EditType.NumericEdit"
                                     Format="###.##"
                                     Width="70"
                                     EditorSettings="@(new NumericEditCellParams() {Params = new Syncfusion.Blazor.Inputs.NumericTextBoxModel<object>(){ShowSpinButton=false}})"
-                                    ValidationRules="@(new ValidationRules { Required = false, Min = 1 , Max=100 })"
+                                    ValidationRules="@(new ValidationRules {Min = 1 , Max=100 })"
                                     ClipMode="ClipMode.EllipsisWithTooltip"
                                     CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
                         </GridColumn>
@@ -523,57 +550,57 @@ else
     }
 
     //On ParameterAsync is called each time the page is referenced
-    protected override async Task OnParametersSetAsync()
-    {
-        //toastService.ShowError("Args is OnPara" + _previous.ToString());
-        await base.OnParametersSetAsync();
-        try
-        {
-            if (_previous == Syncfusion.Blazor.Grids.Action.Add)
-            {
-                //toastService.ShowError("You are adding");
-                if (previousBalanceScoreCardId != BalanceScoreCardId)
-                {
-                    int countid = -10000;
-                    previousBalanceScoreCardId = BalanceScoreCardId;
-                    datasource = new List<BalanceScoreCardTargetSetting>();
-                    if (PopulatedData != null && PerspectivesDetailData != null)
-                    {
-                        foreach (var item in PopulatedData)
-                        {
-                            var _perspectivetype = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == item.BscPerspectiveTypeId);
-                            var m = new BalanceScoreCardTargetSetting();
-                            m.TargetSettingId = countid;
-                            m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
-                            //m.PerspectiveTotalWeight = _perspectivetype.PerspectiveTotalWeight;
-                            m.BsckpidetailsId = item.BsckpidetailsId;
-                            m.MeasurementMetricId = item.MeasurementMetricId;
-                            m.IndividualTargetWeight = item.IndividualTargetWeight;
+    // protected override async Task OnParametersSetAsync()
+    // {
+    //     //toastService.ShowError("Args is OnPara" + _previous.ToString());
+    //     await base.OnParametersSetAsync();
+    //     try
+    //     {
+    //         if (_previous == Syncfusion.Blazor.Grids.Action.Add)
+    //         {
+    //             //toastService.ShowError("You are adding");
+    //             if (previousBalanceScoreCardId != BalanceScoreCardId)
+    //             {
+    //                 int countid = -10000;
+    //                 previousBalanceScoreCardId = BalanceScoreCardId;
+    //                 datasource = new List<BalanceScoreCardTargetSetting>();
+    //                 if (PopulatedData != null && PerspectivesDetailData != null)
+    //                 {
+    //                     foreach (var item in PopulatedData)
+    //                     {
+    //                         var _perspectivetype = PerspectivesDetailData.FirstOrDefault(o => o.BscPerspectiveTypeId == item.BscPerspectiveTypeId);
+    //                         var m = new BalanceScoreCardTargetSetting();
+    //                         m.TargetSettingId = countid;
+    //                         m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
+    //                         //m.PerspectiveTotalWeight = _perspectivetype.PerspectiveTotalWeight;
+    //                         m.BsckpidetailsId = item.BsckpidetailsId;
+    //                         m.MeasurementMetricId = item.MeasurementMetricId;
+    //                         m.IndividualTargetWeight = item.IndividualTargetWeight;
 
-                            datasource.Add(m);
-                            countid++;
-                        }
+    //                         datasource.Add(m);
+    //                         countid++;
+    //                     }
 
-                        datasource = datasource.OrderBy(o => o.BscPerspectiveTypeId).ToList();
-                    }
-                }
-            }
-            //When editing a record
-            else if (_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
-            {
-                //toastService.ShowError("You are editing");
-                if (selectebscid > 0)
-                {
-                    await LoadClientsForSelectedGroup();
-                }
-            }
-        }
-        catch (Exception ex)
-        {
+    //                     datasource = datasource.OrderBy(o => o.BscPerspectiveTypeId).ToList();
+    //                 }
+    //             }
+    //         }
+    //         //When editing a record
+    //         else if (_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
+    //         {
+    //             //toastService.ShowError("You are editing");
+    //             if (selectebscid > 0)
+    //             {
+    //                 await LoadClientsForSelectedGroup();
+    //             }
+    //         }
+    //     }
+    //     catch (Exception ex)
+    //     {
 
-            //throw;
-        }
-    }
+    //         //throw;
+    //     }
+    // }
 
     private async Task LoadClientsForSelectedGroup()
     {
@@ -703,8 +730,8 @@ else
         }
         finally
         {
-            await TargetsettingGrid.EndEditAsync();
-            await onscorecardtoggle.InvokeAsync(datasource);
+            // await TargetsettingGrid.EndEditAsync();
+            // await onscorecardtoggle.InvokeAsync(datasource);
         }
     }
 
@@ -801,6 +828,11 @@ else
         //}
     }
 
+    public async Task savedetail()
+    {
+        await TargetsettingGrid.EndEditAsync();
+        await onscorecardtoggle.InvokeAsync(datasource);
+    }
     #endregion TargetMethods
 }
 
