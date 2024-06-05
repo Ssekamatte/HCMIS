@@ -578,10 +578,10 @@
     List<ABscPerspectivesType>? BscPerspectiveTypeData { get; set; }
     List<ABscPerspectivesType>? BscPerspectiveTypeDataRepeated { get; set; }
     List<AMeasurementMetric>? MeasurementUnitData { get; set; }
-    List<ABscKpidetails>? BscKpiDetailData { get; set; }
     List<ViewEmployeeDropDown>? EmployeeData { get; set; }
     List<ABscstatus>? BSCStatusData { get; set; }
     List<ViewABscPerspectivesDetail>? PerspectivesDetailData { get; set; }
+    List<ABscKpi>? BscKpiDetailData { get; set; }
 
     Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
     Syncfusion.Blazor.Grids.CaptionTemplateContext? dvn { get; set; }
@@ -668,17 +668,6 @@
                     }
                 }));
 
-
-                // t.Add(Task.Run(async () =>
-                // {
-                //     var responsebscperspectivedetail = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicator");
-                //     if (responsebscperspectivedetail.IsSuccessStatusCode)
-                //     {
-                //         var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
-                //         BscKpiDetailData = JsonSerializer.Deserialize<List<ABscKpidetails>>(contentbscperspectivedetail, _options);
-                //     }
-                // }));
-
                 t.Add(Task.Run(async () =>
                 {
                     var responsefinyear = await Http.GetAsync($"FinancialYear/list");
@@ -689,11 +678,22 @@
 
                         DateTime currentdate = DateTime.Now;
                         string? financialyeardesc = null;
-                        if (currentdate.Month >= 6)
+                        // if (currentdate.Month >= 6)
+                        // {
+                        //     financialyeardesc = $"{currentdate.Year}/{(currentdate.Year + 1)}";
+                        // }
+                        // else if (currentdate.Month < 6)
+                        // {
+                        //     financialyeardesc = $"{(currentdate.Year - 1)}/{currentdate.Year}";
+                        // }
+
+                        //1st July - 30th June
+
+                        if (currentdate.Month >= 7)
                         {
                             financialyeardesc = $"{currentdate.Year}/{(currentdate.Year + 1)}";
                         }
-                        else if (currentdate.Month < 6)
+                        else if (currentdate.Month < 7)
                         {
                             financialyeardesc = $"{(currentdate.Year - 1)}/{currentdate.Year}";
                         }
@@ -710,6 +710,47 @@
                                 var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
                                 PerspectivesDetailData = JsonSerializer.Deserialize<List<ViewABscPerspectivesDetail>>(contentbscperspectivedetail, _options);
                             }
+
+                            //Load ABSCKPI Table Data
+                            t.Add(Task.Run(async () =>
+                            {
+                                var response = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicator");
+                                if (response.IsSuccessStatusCode)
+                                {
+                                    var content = await response.Content.ReadAsStringAsync();
+                                    BscKpiDetailData = JsonSerializer.Deserialize<List<ABscKpi>>(content, _options);
+
+                                    if (BscKpiDetailData != null)
+                                    {
+                                        //toastService.ShowError("finyearid is " + finyearid.ToString());
+
+                                        var _persdata = BscKpiDetailData.Where(o => o.FinancialYearId == finyearid).ToList();
+                                        if (_persdata.Count > 0)
+                                        {
+                                            //toastService.ShowError("Count is greater than 0");
+
+                                            ToolbarMenu = new List<object>()
+                                            {
+                                                //new ItemModel(){ Text = "Edit Objective", PrefixIcon= "e-edit", Id="Grid_edit"},
+                                            };
+                                        }
+                                        else
+                                        {
+                                            //toastService.ShowError("Count is less than 0");
+
+                                            ToolbarMenu = new List<object>()
+                                            {
+                                                new ItemModel() { Text = "Add Objective", PrefixIcon = "e-add", Id = "Grid_add"}
+                                                //new ItemModel(){ Text = "Edit Objective", PrefixIcon= "e-edit", Id="Grid_edit"},
+                                            };
+                                        }
+                                    }
+                                    else
+                                    {
+                                        //toastService.ShowError("BscPerspectiveData is empty");
+                                    }
+                                }
+                            }));
                         }
                     }
                 }));
@@ -1098,33 +1139,6 @@
                 }
             }));
 
-
-            // if (BscKpiDetailData != null)
-            // {
-            //     KpiData.ABscKpidetails = BscKpiDetailData;
-            // }
-            // if (KpiData.ABscKpidetails == null)
-            // {
-            //     KpiData.ABscKpidetails = new List<ABscKpidetails>();
-            // }
-
-            // foreach (var item in BscPerspectiveTypeData)
-            // {
-            //     var exist = KpiData.ABscKpidetails
-            //     .FirstOrDefault(o => o.BscPerspectiveTypeId == item.BscPerspectiveTypeId);
-
-            //     if (exist == null)
-            //     {
-            //         var m = new ABscKpidetails();
-            //         m.BsckpidetailsId = countid;
-            //         m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
-
-            //         KpiData.ABscKpidetails.Add(m);
-            //         countid++;
-            //     }
-            // }
-            // KpiData.ABscKpidetails = KpiData.ABscKpidetails.OrderBy(o => o.BscPerspectiveTypeId).ToList();
-
             StateHasChanged();
 
             Task _t = Task.WhenAll(t);
@@ -1236,16 +1250,6 @@
                 }
             }));
 
-            // t.Add(Task.Run(async () =>
-            // {
-            //     var responsebscperspectivedetail = await Http.GetAsync($"BscKeyPerformanceIndicator/GetKeyPerformanceIndicatorDetail");
-            //     if (responsebscperspectivedetail.IsSuccessStatusCode)
-            //     {
-            //         var contentbscperspectivedetail = await responsebscperspectivedetail.Content.ReadAsStringAsync();
-            //         BscKpiDetailData = JsonSerializer.Deserialize<List<ABscKpidetails>>(contentbscperspectivedetail, _options);
-            //     }
-            // }));
-
             Task _t = Task.WhenAll(t);
             await _t;
         }
@@ -1286,14 +1290,14 @@
         GridAttributes["disable"] = "no";
         loadingspinner = false;
 
-        //Check if there are records arleady and only allow editing
-        if(ObjectivesGrid != null && ObjectivesGrid.CurrentViewData.Count() > 0)
-        {
-            ToolbarMenu = new List<object>()
-            {
-                //new ItemModel(){ Text = "Edit Objective", PrefixIcon= "e-edit", Id="Grid_edit"}
-            };
-        }
+        // //Check if there are records arleady and only allow editing
+        // if(ObjectivesGrid != null && ObjectivesGrid.CurrentViewData.Count() > 0)
+        // {
+        //     ToolbarMenu = new List<object>()
+        //     {
+        //         //new ItemModel(){ Text = "Edit Objective", PrefixIcon= "e-edit", Id="Grid_edit"}
+        //     };
+        // }
     }
 
     #region ObjectivesAdapter

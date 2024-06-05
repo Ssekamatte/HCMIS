@@ -1,0 +1,422 @@
+﻿@inject ApiConfig _ApiConfig;
+@inject HttpClient Http
+@using HCMIS.Interface;
+@using HCMIS.Data
+@using HCMIS.Model
+@using System.Text.Json
+@using System.Collections;
+@using System.IO;
+@using HCMIS.SHARED.Models;
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager navigation;
+@inject SystemSettings _SystemSettings;
+@using HCMIS.ViewModel;
+@using Newtonsoft.Json
+@inject IToastService toastService;
+@inject IAuthenticationService AuthService;
+
+<style>
+
+    .disablecell {
+        background-color: #ff6b81;
+        pointer-events: none;
+        display: none;
+    }
+
+    .e-grid .e-gridcontent .e-rowcell.disablecell {
+        color: black;
+    }
+
+    .disablebasicunit {
+        background-color: #8e44ad;
+        pointer-events: none;
+        display: none;
+    }
+
+    .e-grid .e-gridcontent .e-rowcell.disablebasicunit {
+        color: black;
+    }
+
+</style>
+
+
+<MudOverlay Visible="@loadingspinner" DarkBackground="true" Absolute="true" Style="z-index:100000;">
+    <div class="loader">
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--dot"></div>
+        <div class="loader--text" style="color:white;"></div>
+    </div>
+</MudOverlay>
+
+<div class="col-md-12" style="margin-bottom:10px;margin-top: 10px;">
+    @if (!string.IsNullOrEmpty(RegisterError))
+    {
+        <MudAlert Severity="Severity.Error" Elevation="3">
+            @RegisterError
+        </MudAlert>
+    }
+</div>
+
+<SfGrid @ref="@ChildDataGrid"
+        TValue="ABscPerspectivesDetail"
+        ID="ChGrid"
+        DataSource="@datasource"
+        AllowPaging="false" AllowFiltering="false" AllowReordering="true"
+        AllowResizing="true" AllowGrouping="false" AllowExcelExport="true"
+        AllowPdfExport="true" AllowSelection="true" AllowSorting="true"
+        AllowTextWrap="true" Height="250px" GridLines="GridLine.Both">
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Batch" ShowConfirmDialog="false">
+
+    </GridEditSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridPageSettings PageSizes="true"></GridPageSettings>
+
+    <GridAggregates>
+        <GridAggregate>
+            <GridAggregateColumns>
+                <GridAggregateColumn Field=@nameof(ABscPerspectivesDetail.PerspectiveTotalWeight) Type="Syncfusion.Blazor.Grids.AggregateType.Sum">
+                    <FooterTemplate>
+                        @{
+                            aggregate = (context as AggregateTemplateContext);
+                            <div>
+                                @if (@aggregate != null)
+                                {
+                                    <p style="color:purple;">Total Percentage: @aggregate.Sum %</p>
+                                    @*weighttotalpercentage = Convert.ToInt32(@aggregate.Sum);*@
+                                }
+                            </div>
+                        }
+                    </FooterTemplate>
+                </GridAggregateColumn>
+            </GridAggregateColumns>
+        </GridAggregate>
+    </GridAggregates>
+
+    <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell" CellSelectionMode="CellSelectionMode.Box"></GridSelectionSettings>
+    
+    <GridEvents CellSelected="PerspectiveCellSelectHandler"
+                RowDataBound="RowDataBoundHandler"
+                QueryCellInfo="QueryCellInfoHandlerChild"
+                CellSaved="CellSavedHandler"
+                TValue="ABscPerspectivesDetail">
+    </GridEvents>
+
+    <GridColumns>
+        @*<GridColumn Type="ColumnType.CheckBox" Width="50" Visible="false"></GridColumn>*@
+        <GridColumn Field=@nameof(ABscPerspectivesDetail.BscPerspectiveDetailId)
+                    HeaderText="BscPerspectiveDetailId"
+                    AllowEditing="false"
+                    IsPrimaryKey="true"
+                    Width="70"
+                    Visible="false">
+        </GridColumn>
+        <GridForeignColumn Field=@nameof(ABscPerspectivesDetail.BscPerspectiveTypeId)
+                           HeaderText="Perspective"
+                           Width="120"
+                           AllowEditing="false"
+                           ForeignKeyField="@(nameof(ABscPerspectivesType.BscPerspectiveTypeId))"
+                           ForeignKeyValue="@(nameof(ABscPerspectivesType.BscPerspectiveTypeDescription))"
+                           ForeignDataSource="@BscPerspectiveTypeData"
+                           AllowFiltering="false"
+                           IsFrozen="false"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridForeignColumn>
+
+        <GridColumn Field=@nameof(ABscPerspectivesDetail.PerspectiveTotalWeight)
+                    HeaderText="Perspective Total Weight"
+                    TextAlign="TextAlign.Right"
+                    AllowEditing="true"
+                    ValidationRules="@(new ValidationRules { Required = false, Min = 1 , Max=100 })"
+                    EditType="EditType.NumericEdit"
+                    Format="###.##"
+                    Width="70"
+                    ClipMode="ClipMode.EllipsisWithTooltip"
+                    CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridColumn>
+
+        <GridForeignColumn Field=@nameof(ABscPerspectivesDetail.MeasurementMetricId)
+                           HeaderText="Basic Unit"
+                           Width="70"
+                           AllowEditing="false"
+                           ValidationRules="@(new ValidationRules { Required = false})"
+                           ForeignKeyField="@(nameof(AMeasurementMetric.MeasurementMetricId))"
+                           ForeignKeyValue="@(nameof(AMeasurementMetric.MeasurementMetricDesc))"
+                           ForeignDataSource="@MeasurementUnitData"
+                           CustomAttributes="@(new Dictionary<string, object>(){ { "class", "e-attr3" }})">
+        </GridForeignColumn>
+
+    </GridColumns>
+</SfGrid>
+
+@code {
+    [Parameter]
+    public EventCallback<List<ABscPerspectivesDetail>?> onscorecardtoggle { get; set; }
+    public SfGrid<ABscPerspectivesDetail>? ChildDataGrid { get; set; }
+    List<ABscPerspectivesDetail>? datasource { get; set; }
+    [Parameter]
+    public int selectedid { get; set; }
+
+    Syncfusion.Blazor.Grids.AggregateTemplateContext? aggregate { get; set; }
+    int? previousBscPerspectiveId { get; set; }
+    [Parameter]
+    public Syncfusion.Blazor.Grids.Action _previous { get; set; }
+
+    int random = -9999;
+    [Parameter]
+    public List<ABscPerspectivesType>? BscPerspectiveTypeData { get; set; }
+    [Parameter]
+    public List<AMeasurementMetric>? MeasurementUnitData { get; set; }
+    public bool loadingspinner { get; set; }
+    [Parameter]
+    public int BscPerspectiveId { get; set; }
+    double? _pp = 0;
+    string? RegisterError { get; set; }
+    double? learninggrowthvalue = 10.0;
+    [Parameter]
+    public EventCallback<bool?> isentryvalidcallback { get; set; }
+    bool isentryvalid = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            //toastService.ShowError(selectedid.ToString());
+            loadingspinner = true;
+            //When adding a record
+            if (_previous == Syncfusion.Blazor.Grids.Action.Add)
+            {
+                //toastService.ShowError("You are adding");
+                if (previousBscPerspectiveId != BscPerspectiveId)
+                {                    
+                    int countid = -10000;
+                    previousBscPerspectiveId = BscPerspectiveId;
+                    datasource = new List<ABscPerspectivesDetail>();
+                    if (BscPerspectiveTypeData != null)
+                    {
+                        //toastService.ShowError("BscPerspectiveTypeData count is " + BscPerspectiveTypeData.Count());
+                        foreach (var item in BscPerspectiveTypeData)
+                        {
+                            //toastService.ShowError("Inside for each ");
+                            var m = new ABscPerspectivesDetail();
+                            m.BscPerspectiveDetailId = countid;
+                            m.BscPerspectiveTypeId = item.BscPerspectiveTypeId;
+
+                            //Learning and Growth
+                            if (item.BscPerspectiveTypeId == 4)
+                            {
+                                m.PerspectiveTotalWeight = learninggrowthvalue;
+                            }
+                            else
+                            {
+                                m.PerspectiveTotalWeight = 0.0;
+                            }
+
+                            datasource.Add(m);
+                            countid++;
+                        }
+
+                        datasource = datasource.OrderBy(o => o.BscPerspectiveTypeId).ToList();
+                        //toastService.ShowError("datasource count is " + datasource.Count());
+
+                        //Calculate IndividualTargetWeight total on form load
+                        foreach (var n in datasource)
+                        {
+                            _pp += n.PerspectiveTotalWeight;
+                        }
+                        //toastService.ShowError("On Add PP is " + _pp.ToString());
+                    }
+                }
+            }
+            //When editing a record
+            else if (_previous == Syncfusion.Blazor.Grids.Action.BeginEdit)
+            {
+                if (selectedid > 0)
+                {
+                    await LoadClientsForSelectedGroup();
+                }
+            }     
+
+            await isentryvalidcallback.InvokeAsync(isentryvalid);
+            StateHasChanged();
+        }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            loadingspinner = false;
+        }        
+    }
+
+    private async Task LoadClientsForSelectedGroup()
+    {
+        var response = await Http.GetAsync($"BscPerspectives/GetBscPerspectivesScores?selectedid={selectedid}");
+        if (response.IsSuccessStatusCode)
+        {
+            var responseData = await response.Content.ReadAsStringAsync();
+            datasource = JsonConvert.DeserializeObject<List<ABscPerspectivesDetail>>(responseData);
+
+            if (datasource != null)
+            {
+                foreach (var n in datasource)
+                {
+                    _pp += n.PerspectiveTotalWeight;
+                }
+            }            
+        }
+        else
+        {
+            // Handle API error
+            // You can display an error message or log the error
+        }
+    }
+    //For Appraisee Comments Grid
+    //Enable cell edit on single click
+    public async Task PerspectiveCellSelectHandler(CellSelectEventArgs<ABscPerspectivesDetail> args)
+    {
+        try
+        {
+            //get selected cell index
+            var CellIndexes = await ChildDataGrid.GetSelectedRowCellIndexesAsync();
+
+            //get the row and cell index
+            var CurrentEditRowIndex = CellIndexes[0].Item1;
+            var CurrentEditCellIndex = (int)CellIndexes[0].Item2;
+
+            //get the available fields
+            var fields = await ChildDataGrid.GetColumnFieldNamesAsync();
+            // edit the selected cell using the cell index and column name
+            await ChildDataGrid.EditCellAsync(CurrentEditRowIndex, fields[CurrentEditCellIndex]);
+        }
+        catch (Exception ex)
+        {
+            // throw ex;
+        }
+    }
+
+    public async Task RowDataBoundHandler(RowDataBoundEventArgs<ABscPerspectivesDetail> args)
+    {
+        var index = await ChildDataGrid.GetRowIndexByPrimaryKeyAsync(args.Data.BscPerspectiveDetailId);
+
+        //Assign 10 as weight in Learning and Growth
+        if (_previous == Syncfusion.Blazor.Grids.Action.Add && args.Data.BscPerspectiveTypeId == 4)
+        {
+            await ChildDataGrid.UpdateCellAsync(index, nameof(ABscPerspectivesDetail.PerspectiveTotalWeight),learninggrowthvalue);
+        }
+
+        //Assign % as basic unit
+        await ChildDataGrid.UpdateCellAsync(index, nameof(ABscPerspectivesDetail.MeasurementMetricId), 1);
+    }
+
+    public async void QueryCellInfoHandlerChild(QueryCellInfoEventArgs<ABscPerspectivesDetail> Args)
+    {
+        if (Args.Column.Field == nameof(ABscPerspectivesDetail.PerspectiveTotalWeight))
+        {
+            //Disable Learning and Growth
+            if (Args.Data.BscPerspectiveTypeId == 4)
+            {
+                Args.Cell.AddClass(new string[] { "disablecell" });
+            }
+        }
+
+        if (Args.Column.Field == nameof(ABscPerspectivesDetail.MeasurementMetricId))
+        {
+            //Disable Basic Unit
+            Args.Cell.AddClass(new string[] { "disablebasicunit" });
+        }
+    }
+
+    public async void CellSavedHandler(CellSaveArgs<ABscPerspectivesDetail> args)
+    {
+        //toastService.ShowError("Into Cell Saved ");
+        if (args.ColumnName == "PerspectiveTotalWeight")
+        {
+
+            if (ChildDataGrid != null)
+            {
+                var myvar = Convert.ToDouble(args.Value) - Convert.ToDouble(args.PreviousValue);
+                _pp += myvar;
+                
+                //Check is the totals are not less or greater than 70
+                if (_pp != 70)
+                {
+                    isentryvalid = false;
+                    RegisterError = "Please ensure your set weights equal to 70%";
+                    toastService.ClearAll();
+                    toastService.ShowError("Please ensure your set weights equal to 70%");
+                    args.Cancel = true;
+                }
+                else
+                {
+                    isentryvalid = true;
+                }
+
+                //Pass the new valid value to the main page
+                await isentryvalidcallback.InvokeAsync(isentryvalid);
+
+                // toastService.ShowError("myvar is " + myvar.ToString());
+                // toastService.ShowError("_pp is " + _pp.ToString());
+                // toastService.ShowError("Your progress is " + _yourprogress);
+
+            }
+        }
+        // ComputeDetail();
+        //StateHasChanged();
+    }
+
+    // public void DataBoundHandler()
+    // {
+    //     ComputeDetail();
+    // }
+
+    // public async Task ComputeDetail()
+    // {
+    //     if (ChildDataGrid != null)
+    //     {
+    //         var ChangedData = await ChildDataGrid.GetBatchChangesAsync();
+
+    //         if (ChangedData != null && ChangedData.ChangedRecords.Count > 0)
+    //         {
+    //             foreach (ABscPerspectivesDetail row in ChangedData.ChangedRecords)
+    //             {
+    //                 _finyearid.Add(row.PerspectiveTotalWeight);
+    //             }
+    //             weighttotalpercentage = ChangedData.ChangedRecords.Sum((x => Convert.ToInt32(x.PerspectiveTotalWeight)));
+    //         }
+    //         //On Edit
+    //         else
+    //         {
+    //             foreach (ABscPerspectivesDetail row in PerspectivesDetailData)
+    //             {
+    //                 _finyearid.Add(row.PerspectiveTotalWeight);
+    //             }
+    //             weighttotalpercentage = ChangedData.ChangedRecords.Sum((x => Convert.ToInt32(x.PerspectiveTotalWeight)));
+
+    //         }
+
+    //         if (weighttotalpercentage == 70)
+    //         {
+    //             savebuttons = true;
+    //         }
+    //         else
+    //         {
+    //             savebuttons = false;
+    //         }
+    //     }
+    // }
+
+    public async Task savedetail()
+    {
+        if (ChildDataGrid != null)
+        {
+            await ChildDataGrid.EndEditAsync();
+        }
+        
+        await onscorecardtoggle.InvokeAsync(datasource);
+    }
+}
